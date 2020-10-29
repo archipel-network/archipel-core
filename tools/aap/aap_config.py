@@ -2,53 +2,17 @@
 # encoding: utf-8
 
 import argparse
-import socket
-import uuid
+import logging
 
-from pyupcn.aap import AAPMessage, AAPMessageType, InsufficientAAPDataError
 from pyupcn.agents import ConfigMessage, make_contact
 
+from aapclient import AAPTCPClient, AAPUnixClient
 
-def recv_aap(sock):
-    buf = bytearray()
-    msg = None
-    while msg is None:
-        buf += sock.recv(1)
-        try:
-            msg = AAPMessage.parse(buf)
-        except InsufficientAAPDataError:
-            continue
-    return msg
-
-
-def send_bundle_via_aap(sock, config_message):
-    eid_suffix = str(uuid.uuid4())
-
-    print("Connected to uPCN, awaiting WELCOME message...")
-
-    msg_welcome = recv_aap(sock)
-    assert msg_welcome.msg_type == AAPMessageType.WELCOME
-    print("WELCOME message received! ~ EID = {}".format(msg_welcome.eid))
-    base_eid = msg_welcome.eid
-
-    print("Sending REGISTER message...")
-    sock.send(AAPMessage(AAPMessageType.REGISTER, eid_suffix).serialize())
-    msg_ack = recv_aap(sock)
-    assert msg_ack.msg_type == AAPMessageType.ACK
-    print("ACK message received!")
-
-    print("Sending configure bundle...")
-    sock.send(AAPMessage(AAPMessageType.SENDBUNDLE,
-                         base_eid + "/config",
-                         config_message).serialize())
-    msg_sendconfirm = recv_aap(sock)
-    assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
-    print("SENDCONFIRM message received! ~ ID = {}".format(
-        msg_sendconfirm.bundle_id
-    ))
-
-    print("Terminating connection...")
-    sock.shutdown(socket.SHUT_RDWR)
+from helpers import (
+    add_socket_group_parser_arguments,
+    add_verbosity_parser_argument,
+    logging_level,
+)
 
 
 if __name__ == "__main__":
@@ -58,28 +22,17 @@ if __name__ == "__main__":
         description="create or update a node in uPCN",
     )
 
-    socket_group = parser.add_mutually_exclusive_group()
-    socket_group.add_argument(
-        "--socket",
-        metavar="PATH",
-        default="/tmp/upcn.socket",
-        type=str,
-        help=(
-            "AAP UNIX domain socket to connect to "
-            "(default: /tmp/upcn.socket)"
-        )
-    )
-    socket_group.add_argument(
-        "--tcp",
-        nargs=2,
-        metavar=("IP", "PORT"),
-        type=str,
-        help="AAP TCP socket to connect to",
-    )
+    add_socket_group_parser_arguments(parser)
+    add_verbosity_parser_argument(parser)
 
     parser.add_argument(
+        "--dest_eid",
+        default=None,
+        help="the EID of the node to which the configuration belongs",
+    )
+    parser.add_argument(
         "eid",
-        help="the EID of the node",
+        help="the EID of the node to which the contact exists",
     )
     parser.add_argument(
         "cla_address",
@@ -104,6 +57,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    if args.verbosity:
+        logging.basicConfig(level=logging_level(args.verbosity))
+
     if not args.schedule:
         print("at least one -s/--schedule argument must be given",
               file=sys.stderr)
@@ -122,10 +78,12 @@ if __name__ == "__main__":
     print(msg)
 
     if args.tcp:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.connect((args.tcp[0], int(args.tcp[1])))
-            send_bundle_via_aap(sock, msg)
+        with AAPTCPClient(address=(args.tcp[0], args.tcp[1])) as aap_client:
+            aap_client.register()
+            dest_eid = args.dest_eid or aap_client.node_eid
+            aap_client.send_bundle(f"{dest_eid}/config", msg)
     else:
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.connect(args.socket)
-            send_bundle_via_aap(sock, msg)
+        with AAPUnixClient(address=args.socket) as aap_client:
+            aap_client.register()
+            dest_eid = args.dest_eid or aap_client.node_eid
+            aap_client.send_bundle(f"{dest_eid}/config", msg)
