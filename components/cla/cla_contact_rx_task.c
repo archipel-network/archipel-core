@@ -26,6 +26,15 @@ static void bundle_send(struct bundle *bundle, void *param)
 
 	ASSERT(bundle != NULL);
 
+	if (strncmp(config->bundle_agent_interface->local_eid,
+		    bundle->source,
+		    strlen(config->bundle_agent_interface->local_eid)) == 0) {
+		LOGF("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
+		     bundle->source);
+		bundle_free(bundle);
+		return;
+	}
+
 	new_id = bundle_storage_add(bundle);
 	if (new_id != BUNDLE_INVALID_ID) {
 		LOGF("CLA: Received new bundle #%d from \"%s\" to \"%s\" via CLA %s",
