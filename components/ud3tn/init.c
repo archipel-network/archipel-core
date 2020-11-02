@@ -99,7 +99,8 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 			DEFAULT_TASK_STACK_SIZE,
 			(void *)BUNDLE_PROCESSOR_TASK_TAG);
 
-	config_agent_setup(bundle_agent_interface.router_signaling_queue);
+	config_agent_setup(bundle_agent_interface.router_signaling_queue,
+			   bundle_agent_interface.local_eid);
 	management_agent_setup();
 
 	const struct application_agent_config *aa_cfg = application_agent_setup(
