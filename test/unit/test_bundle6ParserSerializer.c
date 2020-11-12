@@ -22,6 +22,7 @@ TEST_GROUP(bundle6ParserSerializer);
 TEST_SETUP(bundle6ParserSerializer)
 {
 	char *payload = malloc(sizeof(test_payload));
+	uint64_t creation_timestamp_s = 658489863; // 2020-11-12T09:51:03+00:00
 
 	memcpy(payload, test_payload, sizeof(test_payload));
 	b = bundle6_create_local(
@@ -29,7 +30,7 @@ TEST_SETUP(bundle6ParserSerializer)
 		sizeof(test_payload),
 		"dtn:sourceeid",
 		"dtn:desteid",
-		hal_time_get_timestamp_s(), 42,
+		creation_timestamp_s, 42,
 		BUNDLE_FLAG_REPORT_DELIVERY |
 		BUNDLE_V6_FLAG_CUSTODY_TRANSFER_REQUESTED
 	);
@@ -75,7 +76,8 @@ static void verify_bundle(struct bundle *b)
 		b->proc_flags
 	);
 	TEST_ASSERT_EQUAL(1, b->sequence_number);
-	TEST_ASSERT_EQUAL(42000000, b->lifetime);
+	TEST_ASSERT_EQUAL(658489863000, b->creation_timestamp_ms);
+	TEST_ASSERT_EQUAL(42000, b->lifetime_ms);
 	TEST_ASSERT_NOT_EQUAL(0, b->primary_block_length);
 
 	TEST_ASSERT_NOT_NULL(b->source);

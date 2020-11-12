@@ -17,7 +17,7 @@ from binascii import hexlify
 import cbor  # type: ignore
 from cbor.cbor import CBOR_ARRAY  # type: ignore
 from .crc import crc16_x25, crc32_c
-from .helpers import DTN_EPOCH, dtn2unix
+from .helpers import DTN_EPOCH, UNIX_TO_DTN_OFFSET
 
 
 __all__ = [
@@ -189,13 +189,13 @@ class CreationTimestamp(tuple):
             time = datetime.fromtimestamp(time, timezone.utc)
 
         return super().__new__(cls, [
-            int(round((time - DTN_EPOCH).total_seconds())),
+            int(round((time - DTN_EPOCH).total_seconds() * 1000)),
             int(sequence_number),
         ])
 
     @property
     def time(self):
-        return DTN_EPOCH + timedelta(seconds=self[0])
+        return DTN_EPOCH + timedelta(milliseconds=self[0])
 
     @property
     def sequence_number(self):
@@ -208,7 +208,9 @@ class CreationTimestamp(tuple):
     @staticmethod
     def from_cbor(cbor_data):
         assert len(cbor_data) == 2
-        return CreationTimestamp(dtn2unix(cbor_data[0]), cbor_data[1])
+        return CreationTimestamp(
+            cbor_data[0] / 1000 + UNIX_TO_DTN_OFFSET, cbor_data[1]
+        )
 
 
 class PrimaryBlock(object):
@@ -221,7 +223,7 @@ class PrimaryBlock(object):
                  source=None,
                  report_to=None,
                  creation_time=None,
-                 lifetime=24 * 60 * 60,
+                 lifetime=24 * 60 * 60 * 1000,
                  fragment_offset=None,
                  total_payload_length=None,
                  crc_provided=None):
@@ -264,7 +266,7 @@ class PrimaryBlock(object):
             self.source,
             self.report_to,
             self.creation_time,
-            int(self.lifetime * 1000000),
+            self.lifetime,
         ]
 
         # Fragmentation
@@ -372,7 +374,7 @@ class PrimaryBlock(object):
             creation_time=CreationTimestamp.from_cbor(cbor_data[6]),
             fragment_offset=fragment_offset,
             total_payload_length=total_payload_length,
-            lifetime=(cbor_data[7] / 1000000),
+            lifetime=(cbor_data[7]),
             crc_provided=crc,
         )
 
@@ -812,7 +814,7 @@ def create_bundle7(source_eid, destination_eid, payload,
                     else next_sequence_number()
                 ),
             ),
-            lifetime=lifetime,
+            lifetime=lifetime * 1000,
             fragment_offset=fragment_offset,
             total_payload_length=total_adu_length,
         ),

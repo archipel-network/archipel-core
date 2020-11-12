@@ -260,9 +260,9 @@ struct bundle6_dict_descriptor *bundle6_recalculate_header_length_internal(
 		+ sdnv_get_size_u32(
 			ddesc->custodian_eid_info.dict_ssp_offset
 		)
-		+ sdnv_get_size_u64(bundle->creation_timestamp)
+		+ sdnv_get_size_u64(bundle->creation_timestamp_ms / 1000) // ms->s
 		+ sdnv_get_size_u64(bundle->sequence_number)
-		+ sdnv_get_size_u64(bundle->lifetime / 1000000)
+		+ sdnv_get_size_u64(bundle->lifetime_ms / 1000) // ms->s
 		+ sdnv_get_size_u32(ddesc->dict_length_bytes)
 		+ ddesc->dict_length_bytes
 		+ (HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_IS_FRAGMENT)

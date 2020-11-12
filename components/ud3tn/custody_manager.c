@@ -27,7 +27,7 @@ static int get_index(struct bundle *bundle)
 	return -1;
 }
 
-static int find(uint64_t creation_timestamp, uint16_t sequence_number,
+static int find(uint64_t creation_timestamp_ms, uint16_t sequence_number,
 	char *source_eid, uint32_t fragment_offset, uint32_t fragment_length)
 {
 	int i;
@@ -36,7 +36,7 @@ static int find(uint64_t creation_timestamp, uint16_t sequence_number,
 	for (i = 0; i < accepted_bundle_count; i++) {
 		b = accepted_bundles[i];
 		if (
-			b->creation_timestamp == creation_timestamp
+			b->creation_timestamp_ms == creation_timestamp_ms
 			&& b->sequence_number == sequence_number
 			&& strcmp(b->source, source_eid) == 0
 			&& (!bundle_is_fragmented(b)
@@ -51,7 +51,7 @@ static int find(uint64_t creation_timestamp, uint16_t sequence_number,
 
 bool custody_manager_has_redundant_bundle(struct bundle *bundle)
 {
-	return find(bundle->creation_timestamp, bundle->sequence_number,
+	return find(bundle->creation_timestamp_ms, bundle->sequence_number,
 		bundle->source, bundle->fragment_offset,
 		bundle->payload_block->length) != -1;
 }
@@ -90,7 +90,7 @@ struct bundle *custody_manager_get_by_record(
 	int index;
 
 	index = find(
-		record->bundle_creation_timestamp,
+		record->bundle_creation_timestamp_ms,
 		record->bundle_sequence_number,
 		record->bundle_source_eid,
 		record->fragment_offset,

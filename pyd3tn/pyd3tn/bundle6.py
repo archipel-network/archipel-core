@@ -2,7 +2,7 @@ import enum
 import time
 import threading
 
-from .helpers import unix2dtn
+from .helpers import UNIX_TO_DTN_OFFSET
 from .sdnv import sdnv_encode
 
 
@@ -97,7 +97,7 @@ def serialize_bundle6(source_eid, destination_eid, payload,
         cur_dict_offset += len(ssp) + 1
 
     if creation_timestamp is None:
-        creation_timestamp = int(unix2dtn(time.time()))
+        creation_timestamp = int(time.time() - UNIX_TO_DTN_OFFSET)
     header_part2 += sdnv_encode(creation_timestamp)
 
     # If the sequence number is None, the last thread-local sequence number

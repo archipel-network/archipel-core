@@ -103,9 +103,9 @@ void bundle7_recalculate_primary_block_length(struct bundle *bundle)
 		+ bundle7_eid_sizeof(bundle->report_to)
 		// Creation Timestamp
 		+ 1  // CBOR array header
-		+ bundle7_cbor_uint_sizeof(bundle->creation_timestamp)
+		+ bundle7_cbor_uint_sizeof(bundle->creation_timestamp_ms)
 		+ bundle7_cbor_uint_sizeof(bundle->sequence_number)
-		+ bundle7_cbor_uint_sizeof(bundle->lifetime);
+		+ bundle7_cbor_uint_sizeof(bundle->lifetime_ms);
 
 	// Fragmented Bundle
 	if (bundle_is_fragmented(bundle)) {

@@ -34,7 +34,7 @@ static inline size_t record_get_last_fields_size(const struct bundle *bundle)
 
 	// Creation Timestamp
 	payload_size += 1 // array header
-		+ bundle7_cbor_uint_sizeof(bundle->creation_timestamp)
+		+ bundle7_cbor_uint_sizeof(bundle->creation_timestamp_ms)
 		+ bundle7_cbor_uint_sizeof(bundle->sequence_number);
 
 	// Fragment information
@@ -77,7 +77,7 @@ static CborError serialize_last_fields(const struct bundle *bundle,
 
 	// Creation Timestamp
 	cbor_encoder_create_array(encoder, &timestamp, 2);
-	cbor_encode_uint(&timestamp, bundle->creation_timestamp);
+	cbor_encode_uint(&timestamp, bundle->creation_timestamp_ms);
 	cbor_encode_uint(&timestamp, bundle->sequence_number);
 	cbor_encoder_close_container(encoder, &timestamp);
 
@@ -235,7 +235,7 @@ struct bundle *bundle7_generate_status_report(
 
 	// Lifetime
 	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time(bundle) -
+		(int64_t)bundle_get_expiration_time_s(bundle) -
 		(int64_t)hal_time_get_timestamp_s()
 	);
 
@@ -365,7 +365,7 @@ error_t parse_last_fields(struct record_parser *state, CborValue *it)
 		return ERROR_UNEXPECTED;
 
 	cbor_value_get_uint64(&timestamp, &number);
-	state->record->bundle_creation_timestamp = number;
+	state->record->bundle_creation_timestamp_ms = number;
 
 	if (cbor_value_advance_fixed(&timestamp))
 		return ERROR_CBOR;

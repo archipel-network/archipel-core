@@ -1,7 +1,7 @@
 #include "bundle7/timestamp.h"
 
 CborError bundle7_timestamp_parse(CborValue *it,
-	uint64_t *creation_timestamp,
+	uint64_t *creation_timestamp_ms,
 	uint64_t *sequence_number)
 {
 	CborValue recursed;
@@ -22,7 +22,7 @@ CborError bundle7_timestamp_parse(CborValue *it,
 
 	// Extract creation timestamp
 	cbor_value_get_uint64(&recursed, &value);
-	*creation_timestamp = value;
+	*creation_timestamp_ms = value;
 
 	err = cbor_value_advance_fixed(&recursed);
 	if (err)

@@ -35,9 +35,9 @@ static inline void bundle_reset_internal(struct bundle *bundle)
 	bundle->current_custodian = NULL;
 
 	bundle->crc_type = DEFAULT_CRC_TYPE;
-	bundle->creation_timestamp = 0;
+	bundle->creation_timestamp_ms = 0;
 	bundle->sequence_number = 0;
-	bundle->lifetime = 0;
+	bundle->lifetime_ms = 0;
 	bundle->fragment_offset = 0;
 	bundle->total_adu_length = 0;
 	bundle->primary_block_length = 0;
@@ -414,16 +414,16 @@ size_t bundle_get_last_fragment_min_size(struct bundle *bundle)
 	}
 }
 
-uint64_t bundle_get_expiration_time(const struct bundle *bundle)
+uint64_t bundle_get_expiration_time_s(const struct bundle *bundle)
 {
 	return (
 		(
-			bundle->creation_timestamp
-				? bundle->creation_timestamp
+			bundle->creation_timestamp_ms
+				? (bundle->creation_timestamp_ms + 500) / 1000
 				: hal_time_get_timestamp_s()
 		) +
 		// Lifetime, rounded to the next integer
-		(bundle->lifetime + 500000) / 1000000
+		(bundle->lifetime_ms + 500) / 1000
 	);
 }
 
@@ -433,7 +433,7 @@ struct bundle_unique_identifier bundle_get_unique_identifier(
 	return (struct bundle_unique_identifier){
 		.protocol_version = bundle->protocol_version,
 		.source = strdup(bundle->source),
-		.creation_timestamp = bundle->creation_timestamp,
+		.creation_timestamp_ms = bundle->creation_timestamp_ms,
 		.sequence_number = bundle->sequence_number,
 		.fragment_offset = bundle->fragment_offset,
 		.payload_length = bundle->payload_block->length
@@ -461,7 +461,7 @@ bool bundle_is_equal_parent(
 	return (
 		bundle->protocol_version == id->protocol_version &&
 		strcmp(bundle->source, id->source) == 0 && // XXX '==' may be ok
-		bundle->creation_timestamp == id->creation_timestamp &&
+		bundle->creation_timestamp_ms == id->creation_timestamp_ms &&
 		bundle->sequence_number == id->sequence_number
 	);
 }
