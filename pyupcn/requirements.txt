@@ -1,0 +1,2 @@
+# Python dependencies for the pyupcn package
+cbor

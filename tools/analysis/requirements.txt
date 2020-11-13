@@ -1,0 +1,2 @@
+# flake8 is necessary for the Python stylecheck
+flake8

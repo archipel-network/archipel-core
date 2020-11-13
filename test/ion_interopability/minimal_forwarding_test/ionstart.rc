@@ -1,0 +1,55 @@
+## begin ionadmin
+# Initialization command
+1 1 ''
+
+# Start ION
+s
+
+# Add contacts
+a contact +1 +3600 1 1 100000
+
+# Assign ranges
+a range +1 +3600 1 1 1
+
+# Assign production/consumption rates (dummy)
+m production 100000
+m consumption 100000
+## end ionadmin
+
+## begin ionsecadmin
+1
+## end ionsecadmin
+
+## begin bpadmin
+1
+
+# add DTN scheme
+a scheme dtn 'dtn2fw' 'dtn2adminep'
+# the scheme will use the "gethostname" command and
+# automatically create the custodian eid dtn://<hostname>.dtn
+# NOTE: in this situation, the host was named node1. your
+# configuration will be different.
+
+# inform ION which endpoints are on this host ("node1" should be the hostname)
+a endpoint dtn://node1.dtn/ping q
+
+# add the tcp convergence layer and outducts
+# note that your IPs will be different
+a protocol tcp 1400 100
+a induct tcp 0.0.0.0:4556 tcpcli
+
+# add outduct to uPCN2 instance
+a outduct tcp 127.0.0.1:4554 tcpcli
+
+# start daemons
+s
+## end bpadmin
+
+## begin ipnadmin
+# no ipn: EIDs configured
+## end ipnadmin
+
+## begin dtn2admin
+a plan dtn://upcn1.dtn* x tcp/127.0.0.1:4555
+a plan dtn://upcn2.dtn* x tcp/127.0.0.1:4554
+## end dtn2admin
