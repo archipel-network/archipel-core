@@ -1,0 +1,185 @@
+---
+stages:
+    - builds
+    - unit_test
+    - functional_test
+    - code_quality_test
+
+image: buildpack-deps:buster
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+build-posix-debug:
+    stage: builds
+    when: always
+    script:
+        - make werror=yes verbose=yes
+
+build-posix-release:
+    stage: builds
+    when: always
+    script:
+        - make -j4 type=release optimize=yes werror=yes verbose=yes
+
+build-stm32-debug:
+    stage: builds
+    when: always
+    script:
+        - apt-get update
+        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip -y
+        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
+        - unzip -d freertos freertos.zip
+        - make stm32 werror=yes verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0
+
+build-stm32-release:
+    stage: builds
+    when: always
+    script:
+        - apt-get update
+        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip -y
+        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
+        - unzip -d freertos freertos.zip
+        - make stm32 -j4 type=release optimize=yes werror=yes verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0
+
+build-clang-posix-debug:
+    stage: builds
+    when: always
+    script:
+        - apt-get update
+        - apt-get install clang -y
+        - make werror=yes verbose=yes TOOLCHAIN=clang
+
+build-clang-posix-release:
+    stage: builds
+    when: always
+    script:
+        - apt-get update
+        - apt-get install clang -y
+        - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
+
+build-clang-stm32-debug:
+    stage: builds
+    when: always
+    script:
+        - apt-get update
+        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip clang -y
+        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
+        - unzip -d freertos freertos.zip
+        - make stm32 verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0 TOOLCHAIN=clang CLANG_SYSROOT=/usr/lib/arm-none-eabi/
+
+build-clang-stm32-release:
+    stage: builds
+    when: always
+    script:
+        - apt-get update
+        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip clang -y
+        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
+        - unzip -d freertos freertos.zip
+        - make stm32 type=release optimize=yes verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0 TOOLCHAIN=clang CLANG_SYSROOT=/usr/lib/arm-none-eabi/
+
+unit-test-posix-debug:
+    stage: unit_test
+    when: always
+    script:
+        - timeout 60 make run-unittest-posix
+
+unit-test-posix-release:
+    stage: unit_test
+    when: always
+    script:
+        - timeout 60 make type=release run-unittest-posix
+
+unit-test-stm32:
+    stage: unit_test
+    when: always
+    tags: ["stm32", "shell"]
+    script:
+        - bash .gitlab-ci-stm32.sh unittest
+
+integration-test-posix:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - make
+        - make run-posix &
+        - make virtualenv
+        - source .venv/bin/activate && pytest test/integration
+
+integration-test-stm32:
+    stage: functional_test
+    when: always
+    tags: ["stm32", "shell"]
+    script:
+        - bash .gitlab-ci-stm32.sh integrationtest
+
+aap-test:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - make
+        - make run-posix &
+        - make virtualenv
+        - source .venv/bin/activate && python tools/aap/aap_test.py
+
+ion-bpv6-interoperability-test:
+    stage: functional_test
+    when: always
+    script:
+        - bash test/ion_interopability/minimal_forwarding_test/run.sh 6
+
+ion-bpv7-interoperability-test:
+    stage: functional_test
+    when: always
+    script:
+        - bash test/ion_interopability/minimal_forwarding_test/run.sh 7
+
+mtcp-test:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - make
+        - make run-posix &
+        - make virtualenv
+        - source .venv/bin/activate && python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
+        - source .venv/bin/activate && timeout 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
+
+fragment-reassembly-test:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - make
+        - make virtualenv
+        - build/posix/upcn -c "mtcp:*,4222" -e "dtn://upcn1.dtn" -s /tmp/upcn1.socket &
+        - build/posix/upcn -c "mtcp:*,4223" -e "dtn://upcn2.dtn" -s /tmp/upcn2.socket &
+        - source .venv/bin/activate && python tools/aap/aap_config.py --socket /tmp/upcn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://upcn2.dtn mtcp:localhost:4223
+        - source .venv/bin/activate && python tools/aap/aap_send.py --socket /tmp/upcn1.socket dtn://upcn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket /tmp/upcn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+
+stylecheck:
+    stage: code_quality_test
+    when: always
+    image: perl:5
+    script:
+        - make check-style
+
+python-stylecheck:
+    stage: code_quality_test
+    when: always
+    image: python:3.7
+    script:
+        - make virtualenv
+        # We ignore the alignment spaces in pyupcn and bare except in the tests.
+        - source .venv/bin/activate && python -m flake8 pyupcn test/integration tools/aap tools/cla --max-complexity=12 --per-file-ignores='pyupcn/*.py:E221,test/integration/*:E722'
+
+clang-tidy-posix:
+    stage: code_quality_test
+    when: always
+    script:
+        - apt-get update
+        - apt-get install clang clang-tidy -y
+        - make clang-tidy-posix
