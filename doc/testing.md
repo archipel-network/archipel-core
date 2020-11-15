@@ -107,18 +107,46 @@ make clean
 make flash-stm32-openocd-oneshot
 ```
 
-As the integration test framework expects a TCP socket (running the MTCPCL protocol), invoke the helper script to provide this:
+If `openocd` is already running, you can use the command `make flash-stm32-openocd` instead.
+
+As the integration test framework expects a TCP socket (running the MTCPCL protocol), invoke the helper script in another terminal to provide this socket:
 
 ```
 source .venv/bin/activate
 make connect
 ```
 
-Note: A little less convenient option would be to use `socat`, e.g.: `socat /dev/ttyACM0 tcp-listen:4222`
+Note: A little less convenient option would be to use `socat`, e.g., via: `socat /dev/ttyACM0 tcp-listen:4222`
 
 Now, the tests can be run.
 
 ```
 source .venv/bin/activate
 make integration-test-stm32
+```
+
+**STM32 Debugging:**
+
+If you encounter any issues with the tests or while developing new features for STM32, you can attach a debugger as follows:
+
+* Start `openocd` in one terminal and
+* Invoke `make gdb-stm32` in another terminal with the same options you used for compiling `upcn`.
+
+The debugger should automatically connect to `openocd` and stop the currently-run program. You may want to issue a `continue` command, now. Otherwise, you can work with the GDB instance as usual, i.e., set breakpoints, single-step through the code, print backtraces, and so forth.
+
+If the program crashes and you have compiled with `type=debug` (which is the default), you may find yourself with output similar to the following:
+
+```
+Program received signal SIGTRAP, Trace/breakpoint trap.
+halt_fault (fault=0x8028d64 "BusFault", task=0x8028d40 "< NO TASK >", r0=268445368, r1=2779096485, r2=6, r3=2779096485, r12=0, lr=0x80059eb <bundle_is_equal+18>, pc=0x8005a2e <bundle_is_equal_parent+16>,
+    psr=2701197312, scb_shcsr=458754, cfsr=33280, hfsr=0, dfsr=11, afsr=0, bfar=2779096485) at components/platform/stm32/fault_handler.c:26
+26			asm volatile ("bkpt");
+```
+
+This means that the hardware encountered a fault (e.g., an invalid memory access) and cannot continue operation. At this point, uPCN's own fault handler has been invoked with the current contents of all important registers. You can now inspect the memory or simply set a breakpoint at the last position of the program counter (the `pc` argument of this function), which should be the point at which the program crashes:
+
+```
+(gdb) break *0x8005a2e
+(gdb) continue
+<Press RESET on STM32 board>
 ```

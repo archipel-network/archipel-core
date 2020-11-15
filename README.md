@@ -31,9 +31,11 @@ three steps are necessary after connecting the board via STLink-enabled USB:
 
 1. Install or unpack the following dependencies:
    - The `gcc-arm-none-eabi` toolchain including `newlib`.
+   - The [`st-link` tools](https://github.com/stlink-org/stlink)
    - The [Open On-Chip Debugger](http://openocd.org/).
+   - `ncat` (from the `nmap` package).
    - A version of [FreeRTOS](https://www.freertos.org/) (uPCN is currently tested with version 9).
-   - For debugging and testing you may want to install GDB and a recent version
+   - For debugging and testing you may want to install GDB, a recent version
      of Python 3 (>= 3.6).
 
 2. Copy `config.mk.example` to `config.mk` and set at least the following

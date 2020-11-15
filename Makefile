@@ -35,12 +35,12 @@ flash-unittest-stm32-stlink: unittest-stm32
 .PHONY: flash-stm32-openocd
 flash-stm32-openocd: stm32
 	echo "reset init;" "flash write_image erase build/stm32/upcn.bin 0x08000000;" \
-		"reset;" "exit;" | telnet localhost 4444 | tail -n +2 > /dev/null;
+		"reset;" "exit;" | ncat localhost 4444 | tail -n +2 > /dev/null;
 
 .PHONY: flash-unittest-stm32-openocd
 flash-unittest-stm32-openocd: unittest-stm32
 	echo "reset init;" "flash write_image erase build/stm32/testupcn.bin 0x08000000;" \
-		"reset;" "exit;" | telnet localhost 4444 | tail -n +2 > /dev/null;
+		"reset;" "exit;" | ncat localhost 4444 | tail -n +2 > /dev/null;
 
 .PHONY: flash-stm32-openocd-oneshot
 flash-stm32-openocd-oneshot: stm32
