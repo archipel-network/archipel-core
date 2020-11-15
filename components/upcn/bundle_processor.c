@@ -53,7 +53,7 @@ static inline void handle_signal(const struct bundle_processor_signal signal);
 
 static void bundle_dispatch(struct bundle *bundle);
 static bool bundle_endpoint_is_local(struct bundle *bundle);
-static void bundle_forward(struct bundle *bundle);
+static enum upcn_result bundle_forward(struct bundle *bundle, uint16_t timeout);
 static void bundle_forwarding_scheduled(struct bundle *bundle);
 static void bundle_forwarding_success(struct bundle *bundle);
 static void bundle_forwarding_contraindicated(
@@ -202,7 +202,7 @@ static void bundle_dispatch(struct bundle *bundle)
 		return;
 	}
 	/* 5.3-2 */
-	bundle_forward(bundle);
+	bundle_forward(bundle, 0);
 }
 
 /* 5.3-1 */
@@ -222,19 +222,26 @@ static bool bundle_endpoint_is_local(struct bundle *bundle)
 }
 
 /* 5.4 */
-static void bundle_forward(struct bundle *bundle)
+static enum upcn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 {
 	/* 4.3.4. Hop Count (BPv7-bis) */
 	/* TODO: Is this the correct point to perform the hop-count check? */
-	if (!hop_count_validation(bundle))
-		return;
+	if (!hop_count_validation(bundle)) {
+		bundle_delete(bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
+		return UPCN_FAIL;
+	}
 
 	/* 5.4-1 */
 	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING);
 	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
 	/* 5.4-2 */
-	send_bundle(bundle->id, 0);
+	if (send_bundle(bundle->id, timeout) != UPCN_OK) {
+		/* Could not store bundle in queue -> delete it. */
+		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
+		return UPCN_FAIL;
+	}
 	/* For steps after 5.4-2, see below */
+	return UPCN_OK;
 }
 
 /* 5.4-4 */
@@ -735,11 +742,13 @@ static void bundle_dangling(struct bundle *bundle)
 				BUNDLE_RET_CONSTRAINT_FLAG_OWN));
 		break;
 	}
-	/* Send it to the router task again after evaluating policy. */
-	if (!resched || send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT)
-			== UPCN_FAIL
-	) {
+	if (!resched) {
 		bundle_delete(bundle, BUNDLE_SR_REASON_TRANSMISSION_CANCELED);
+	/* Send it to the router task again after evaluating policy. */
+	} else if (send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT) != UPCN_OK) {
+		LOGF("Failed forwarding bundle #%d to router task, dropping.",
+		     bundle->id);
+		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 	}
 }
 
@@ -768,7 +777,9 @@ static void send_status_report(
 	if (b != NULL) {
 		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 		bundle_storage_add(b);
-		bundle_forward(b);
+		if (bundle_forward(b, STATUS_REPORT_TIMEOUT) != UPCN_OK)
+			LOGF("Failed sending status report for bundle #%d.",
+			     bundle->id);
 	}
 }
 
@@ -792,7 +803,10 @@ static void send_custody_signal(struct bundle *bundle,
 		bundle_add_rc(signals->data,
 			BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 		bundle_storage_add(signals->data);
-		bundle_forward(signals->data);
+		if (bundle_forward(signals->data, CUSTODY_SIGNAL_TIMEOUT)
+		    != UPCN_OK)
+			LOGF("Failed sending custody signal for bundle #%d.",
+			     bundle->id);
 
 		/* Free current list entry (but not the bundle itself) */
 		next = signals->next;
