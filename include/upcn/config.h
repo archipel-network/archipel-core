@@ -67,8 +67,14 @@ enum failed_forwarding_policy {
 /* Policy for re-scheduling bundles on dropped contacts, etc. */
 #define FAILED_FORWARD_POLICY POLICY_DROP_IF_NO_CUSTODY
 /* If policy decides to re-schedule, but processing times out => drop */
-/* Set to 0 for infinite delay which means possible deadlock */
-#define FAILED_FORWARD_TIMEOUT 5000
+/* Set this to 0 for an infinite delay - which implies a possible deadlock! */
+#define FAILED_FORWARD_TIMEOUT 1000
+/* If a status report is pending, but the router is blocked => drop */
+/* Set this to 0 for an infinite delay - which implies a possible deadlock! */
+#define STATUS_REPORT_TIMEOUT 1000
+/* If a custody signal is pending, but the router is blocked => drop */
+/* Set this to 0 for an infinite delay - which implies a possible deadlock! */
+#define CUSTODY_SIGNAL_TIMEOUT 1000
 
 
 
