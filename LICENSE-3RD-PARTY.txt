@@ -1,4 +1,4 @@
-µPCN is built with 3rd party software available under one of several free and
+µD3TN is built with 3rd party software available under one of several free and
 open source licenses. Those that require any attribution in the case of
 distribution are reproduced below with their applicable files.
 
