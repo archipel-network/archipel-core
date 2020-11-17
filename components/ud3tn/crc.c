@@ -9,7 +9,7 @@
  * This website can also be used to generate the (reflected) lookup tables.
  */
 
-#include "upcn/crc.h"
+#include "ud3tn/crc.h"
 
 #include <stddef.h>
 #include <stdio.h>

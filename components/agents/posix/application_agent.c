@@ -17,14 +17,14 @@
 
 #include "platform/posix/pipe_queue_util.h"
 
-#include "upcn/agent_manager.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/bundle.h"
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/bundle_processor.h"
-#include "upcn/bundle_storage_manager.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/agent_manager.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/bundle_processor.h"
+#include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/task_tags.h"
 
 #include <stddef.h>
 #include <stdlib.h>

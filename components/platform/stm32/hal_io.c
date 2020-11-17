@@ -8,8 +8,8 @@
 
 #include "platform/hal_semaphore.h"
 
-#include "upcn/config.h"
-#include "upcn/result.h"
+#include "ud3tn/config.h"
+#include "ud3tn/result.h"
 
 #include <stdarg.h>
 #include <stdio.h>

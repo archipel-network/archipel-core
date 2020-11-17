@@ -9,7 +9,7 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_config.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <stdlib.h>
 #include <stdio.h>

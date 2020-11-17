@@ -17,14 +17,14 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/cmdline.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/eid.h"
-#include "upcn/result.h"
-#include "upcn/simplehtab.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/cmdline.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/eid.h"
+#include "ud3tn/result.h"
+#include "ud3tn/simplehtab.h"
+#include "ud3tn/task_tags.h"
 
 #include <errno.h>
 #include <limits.h>

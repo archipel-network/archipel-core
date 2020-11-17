@@ -4,7 +4,7 @@
 #include "platform/hal_platform.h"
 #include "platform/hal_time.h"
 
-#include "upcn/config.h"
+#include "ud3tn/config.h"
 
 #include <sys/stat.h>
 #include <sys/times.h>

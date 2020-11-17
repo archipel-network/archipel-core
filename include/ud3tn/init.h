@@ -3,7 +3,7 @@
 
 #include "platform/hal_types.h"
 
-#include "upcn/cmdline.h"
+#include "ud3tn/cmdline.h"
 
 #include <stdint.h>
 

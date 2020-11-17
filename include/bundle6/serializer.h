@@ -1,8 +1,8 @@
 #ifndef BUNDLE6_SERIALIZER_H_INCLUDED
 #define BUNDLE6_SERIALIZER_H_INCLUDED
 
-#include "upcn/bundle.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/result.h"
 
 #include <stddef.h>
 

@@ -8,7 +8,7 @@
 
 #include "platform/hal_queue.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <FreeRTOS.h>
 #include <queue.h>

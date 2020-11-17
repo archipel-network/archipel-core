@@ -1,7 +1,7 @@
 #include "bundle7/parser.h"
 #include "bundle7/timestamp.h"
 
-#include "upcn/common.h"
+#include "ud3tn/common.h"
 
 #include "compilersupport_p.h"  // Private TinyCBOR header, used for endianess
 

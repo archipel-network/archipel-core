@@ -4,9 +4,9 @@
 
 #include "platform/hal_time.h"
 
-#include "upcn/common.h"
-#include "upcn/parser.h"
-#include "upcn/report_manager.h"
+#include "ud3tn/common.h"
+#include "ud3tn/parser.h"
+#include "ud3tn/report_manager.h"
 
 #include <stdbool.h>
 #include <stdint.h>

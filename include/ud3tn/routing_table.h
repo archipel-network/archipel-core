@@ -1,8 +1,8 @@
 #ifndef ROUTINGTABLE_H_INCLUDED
 #define ROUTINGTABLE_H_INCLUDED
 
-#include "upcn/node.h"
-#include "upcn/result.h"
+#include "ud3tn/node.h"
+#include "ud3tn/result.h"
 
 #include "platform/hal_types.h"
 

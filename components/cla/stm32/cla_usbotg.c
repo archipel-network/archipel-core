@@ -6,9 +6,9 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
 
 #include <FreeRTOS.h>
 

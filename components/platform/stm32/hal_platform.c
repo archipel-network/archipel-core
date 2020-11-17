@@ -13,8 +13,8 @@
 #include "platform/hal_time.h"
 #include "platform/hal_task.h"
 
-#include "upcn/common.h"
-#include "upcn/config.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
 
 #include <stm32f4xx.h>
 #include <usbd_cdc_vcp.h>

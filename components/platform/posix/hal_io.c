@@ -6,7 +6,7 @@
  *
  */
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <stdio.h>
 #include <stdlib.h>

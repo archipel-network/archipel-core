@@ -1,10 +1,10 @@
 #ifndef ROUTER_H_INCLUDED
 #define ROUTER_H_INCLUDED
 
-#include "upcn/bundle.h"
-#include "upcn/config.h"
-#include "upcn/node.h"
-#include "upcn/routing_table.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/config.h"
+#include "ud3tn/node.h"
+#include "ud3tn/routing_table.h"
 
 #include <stddef.h>
 #include <stdint.h>

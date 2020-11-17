@@ -1,8 +1,8 @@
 #include "platform/hal_semaphore.h"
 
-#include "upcn/bundle.h"
-#include "upcn/bundle_storage_manager.h"
-#include "upcn/common.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/common.h"
 
 #include <stdlib.h>
 

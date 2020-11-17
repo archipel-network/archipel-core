@@ -1,7 +1,7 @@
 #ifndef ROUTEROPTIMIZER_H_INCLUDED
 #define ROUTEROPTIMIZER_H_INCLUDED
 
-#include "upcn/node.h"
+#include "ud3tn/node.h"
 
 #include "platform/hal_types.h"
 

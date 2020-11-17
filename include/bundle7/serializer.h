@@ -3,9 +3,9 @@
 
 #include "bundle7/bundle7.h"
 
-#include "upcn/bundle.h"
-#include "upcn/crc.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/crc.h"
+#include "ud3tn/result.h"
 
 #include <stdbool.h>
 #include <stddef.h>

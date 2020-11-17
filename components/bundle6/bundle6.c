@@ -1,8 +1,8 @@
 #include "bundle6/bundle6.h"
 #include "bundle6/sdnv.h"
 
-#include "upcn/bundle.h"
-#include "upcn/common.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/common.h"
 
 #include <stdbool.h>
 #include <stddef.h>

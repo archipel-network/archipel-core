@@ -1,6 +1,6 @@
 #include "platform/hal_platform.h"
 
-#include "upcn/config.h"
+#include "ud3tn/config.h"
 
 #include <FreeRTOS.h>
 #include <task.h>

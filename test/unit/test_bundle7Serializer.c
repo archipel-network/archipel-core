@@ -10,7 +10,7 @@
 
 #include "platform/hal_io.h"
 
-#include "upcn/bundle.h"
+#include "ud3tn/bundle.h"
 
 #include "unity_fixture.h"
 

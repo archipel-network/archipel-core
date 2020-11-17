@@ -1,7 +1,7 @@
 #include "spp/spp.h"
 #include "spp/spp_timecodes.h"
 
-#include "upcn/common.h"
+#include "ud3tn/common.h"
 
 #include "unity_fixture.h"
 

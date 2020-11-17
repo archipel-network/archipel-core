@@ -11,7 +11,7 @@
 
 #include "platform/hal_time.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <stddef.h>
 #include <stdint.h>

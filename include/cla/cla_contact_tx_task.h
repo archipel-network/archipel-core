@@ -3,8 +3,8 @@
 
 #include "cla/cla.h"
 
-#include "upcn/node.h"
-#include "upcn/router.h"
+#include "ud3tn/node.h"
+#include "ud3tn/router.h"
 
 #include "platform/hal_queue.h"
 

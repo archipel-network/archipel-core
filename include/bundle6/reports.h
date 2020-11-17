@@ -1,7 +1,7 @@
 #ifndef BUNDLE6_REPORTS_INCLUDED
 #define BUNDLE6_REPORTS_INCLUDED
 
-#include "upcn/bundle.h"  // struct bundle, struct bundle_status_report
+#include "ud3tn/bundle.h"  // struct bundle, struct bundle_status_report
 
 #include <stddef.h>
 #include <stdint.h>

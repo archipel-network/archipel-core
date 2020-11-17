@@ -1,8 +1,8 @@
 #ifndef BUNDLE_V7_PARSER_H_INCLUDED
 #define BUNDLE_V7_PARSER_H_INCLUDED
 
-#include "upcn/bundle.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/result.h"
 
 #include <inttypes.h>
 #include <stddef.h>

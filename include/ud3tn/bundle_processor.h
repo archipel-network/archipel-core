@@ -1,7 +1,7 @@
 #ifndef BUNDLEPROCESSOR_H_INCLUDED
 #define BUNDLEPROCESSOR_H_INCLUDED
 
-#include "upcn/bundle.h"
+#include "ud3tn/bundle.h"
 
 #include "platform/hal_types.h"
 

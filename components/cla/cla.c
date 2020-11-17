@@ -15,10 +15,10 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 
-#include "upcn/common.h"
-#include "upcn/init.h"
-#include "upcn/result.h"
-#include "upcn/router_task.h"
+#include "ud3tn/common.h"
+#include "ud3tn/init.h"
+#include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 
 #include <unistd.h>
 

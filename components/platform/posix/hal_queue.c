@@ -11,7 +11,7 @@
 
 #include "platform/posix/simple_queue.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <stdlib.h>
 #include <stdio.h>

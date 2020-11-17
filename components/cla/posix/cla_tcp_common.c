@@ -10,9 +10,9 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "upcn/common.h"
-#include "upcn/result.h"
-#include "upcn/router_task.h"
+#include "ud3tn/common.h"
+#include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 
 #include <netdb.h>
 #include <netinet/tcp.h>

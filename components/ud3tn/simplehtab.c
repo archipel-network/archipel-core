@@ -1,5 +1,5 @@
-#include "upcn/common.h"
-#include "upcn/simplehtab.h"
+#include "ud3tn/common.h"
+#include "ud3tn/simplehtab.h"
 
 #include "util/htab_hash.h"
 

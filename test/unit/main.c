@@ -1,5 +1,5 @@
-#include "upcn/init.h"
-#include "upcn/cmdline.h"
+#include "ud3tn/init.h"
+#include "ud3tn/cmdline.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"

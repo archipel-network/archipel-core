@@ -2,7 +2,7 @@
 
 #include "platform/hal_io.h"
 
-#include "upcn/node.h"
+#include "ud3tn/node.h"
 
 #include <stdbool.h>
 #include <stddef.h>

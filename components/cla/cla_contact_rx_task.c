@@ -9,11 +9,11 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "upcn/bundle_processor.h"
-#include "upcn/bundle_storage_manager.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_processor.h"
+#include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/task_tags.h"
 
 #include <signal.h>
 #include <errno.h>

@@ -1,8 +1,8 @@
 #ifndef CUSTODYMANAGER_H_INCLUDED
 #define CUSTODYMANAGER_H_INCLUDED
 
-#include "upcn/bundle.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/result.h"
 
 #include <stdbool.h>
 

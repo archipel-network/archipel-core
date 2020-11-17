@@ -12,12 +12,12 @@
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/cmdline.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/result.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/cmdline.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/result.h"
+#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 

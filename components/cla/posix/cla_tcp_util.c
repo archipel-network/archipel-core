@@ -2,7 +2,7 @@
 
 #include "platform/hal_io.h"
 
-#include "upcn/common.h"
+#include "ud3tn/common.h"
 
 #include <netdb.h>
 #include <netinet/in.h>

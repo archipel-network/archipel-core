@@ -1,7 +1,7 @@
 #ifndef CONTACTMANAGER_H_INCLUDED
 #define CONTACTMANAGER_H_INCLUDED
 
-#include "upcn/node.h"
+#include "ud3tn/node.h"
 
 #include "platform/hal_types.h"
 

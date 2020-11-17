@@ -1,8 +1,8 @@
 #include "agents/config_agent.h"
 #include "agents/config_parser.h"
 
-#include "upcn/agent_manager.h"
-#include "upcn/common.h"
+#include "ud3tn/agent_manager.h"
+#include "ud3tn/common.h"
 
 #include "platform/hal_queue.h"
 #include "platform/hal_types.h"

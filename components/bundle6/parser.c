@@ -1,8 +1,8 @@
 #include "bundle6/parser.h"
 
-#include "upcn/bundle_storage_manager.h"
-#include "upcn/config.h"
-#include "upcn/common.h"
+#include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/config.h"
+#include "ud3tn/common.h"
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -4,9 +4,9 @@
 #include "bundle6/bundle6.h"
 #include "bundle6/sdnv.h"
 
-#include "upcn/bundle.h"
-#include "upcn/parser.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/parser.h"
+#include "ud3tn/result.h"
 
 #include <stdint.h>
 

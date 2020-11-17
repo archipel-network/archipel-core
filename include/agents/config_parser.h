@@ -1,9 +1,9 @@
 #ifndef CONFIGPARSER_H_INCLUDED
 #define CONFIGPARSER_H_INCLUDED
 
-#include "upcn/parser.h"
-#include "upcn/result.h"
-#include "upcn/router_task.h"
+#include "ud3tn/parser.h"
+#include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 
 #include <stdint.h>
 

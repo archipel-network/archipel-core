@@ -3,10 +3,10 @@
 
 #include "cla/cla_contact_rx_task.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/crc.h"
-#include "upcn/node.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/crc.h"
+#include "ud3tn/node.h"
+#include "ud3tn/result.h"
 
 #include "spp/spp_timecodes.h"
 

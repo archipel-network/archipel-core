@@ -4,7 +4,7 @@
 #include "cla/cla.h"
 #include "cla/posix/cla_tcp_common.h"
 
-#include "upcn/bundle_agent_interface.h"
+#include "ud3tn/bundle_agent_interface.h"
 
 #include <stddef.h>
 

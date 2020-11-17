@@ -1,8 +1,8 @@
 #ifndef BUNDLEFRAGMENTER_H_INCLUDED
 #define BUNDLEFRAGMENTER_H_INCLUDED
 
-#include "upcn/bundle.h"
-#include "upcn/node.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/node.h"
 
 #include <stdbool.h>
 #include <stdint.h>

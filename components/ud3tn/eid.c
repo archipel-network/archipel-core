@@ -1,5 +1,5 @@
-#include "upcn/eid.h"
-#include "upcn/result.h"
+#include "ud3tn/eid.h"
+#include "ud3tn/result.h"
 
 #include <stdint.h>
 #include <stdio.h>
