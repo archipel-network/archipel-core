@@ -32,7 +32,7 @@ def add_agentid_parser_argument(parser):
     parser.add_argument(
         "-a", "--agentid",
         default=None,
-        help="the agent id to register with uPCN (default: random UUID)",
+        help="the agent id to register with uD3TN (default: random UUID)",
     )
 
 

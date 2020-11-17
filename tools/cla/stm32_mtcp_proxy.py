@@ -111,7 +111,7 @@ def _main(args):
 
 def _get_argument_parser():
     parser = argparse.ArgumentParser(
-        description="tool to proxy uPCN USB Virtual COM Port to MTCP"
+        description="tool to proxy uD3TN USB Virtual COM Port to MTCP"
     )
     parser.add_argument(
         "-d", "--device",

@@ -11,7 +11,7 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser(
-        description="send a bundle via uPCN's AAP interface",
+        description="send a bundle via uD3TN's AAP interface",
     )
     add_common_parser_arguments(parser)
     parser.add_argument(
