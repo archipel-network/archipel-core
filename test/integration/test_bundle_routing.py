@@ -10,8 +10,8 @@ from pyupcn.spp import TCPSPPConnection
 
 from .helpers import (
     TESTED_CLAS,
-    UPCN_CONFIG_EP,
-    UPCN_HOST,
+    UD3TN_CONFIG_EP,
+    UD3TN_HOST,
     TCPSPP_PORT,
     SPP_USE_CRC,
     TCP_TIMEOUT,
@@ -84,7 +84,7 @@ def configure_contacts(conn, serialize_func, contact_list):
     for eid, start, duration, rate, tx, rx in CONTACT_LIST:
         conn.send_bundle(serialize_func(
             TEST_SCRIPT_EID,
-            UPCN_CONFIG_EP,
+            UD3TN_CONFIG_EP,
             bytes(ConfigMessage(
                 eid,
                 CLA_ADDR[eid],
@@ -188,7 +188,7 @@ def bundle7_is_fragment(bdl):
 def test_routing_spp_bundle7():
     perform_routing_test(
         TCPSPPConnection(
-            UPCN_HOST,
+            UD3TN_HOST,
             TCPSPP_PORT,
             SPP_USE_CRC,
             timeout=TCP_TIMEOUT,

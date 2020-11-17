@@ -116,13 +116,13 @@ function unlock_res {
     fi
 }
 
-function flash_upcn {
+function flash_ud3tn {
     local attempt=1
     local max=3
     while ! make "${1:-}"; do
     attempt=$[attempt + 1]
     if [[ $attempt -gt $max ]]; then
-        echo 'Flashing uPCN failed'
+        echo 'Flashing uD3TN failed'
         exit 1
     fi
     echo 'Trying again after 3 seconds...'
@@ -179,24 +179,24 @@ case $1 in
     # Flash tests
     lock_res
     echo 'Flashing tests to the board...'
-    flash_upcn "flash-unittest-stm32-openocd-oneshot"
+    flash_ud3tn "flash-unittest-stm32-openocd-oneshot"
     sleep 1
     echo 'Running tests...'
-    timeout --kill-after=6 5 openocd -c "script openocd.cfg" -c "reset halt" -c "reset run" | tee "$TDIR/upcn.out"
-    grep -F "uPCN unittests succeeded" "$TDIR/upcn.out"
+    timeout --kill-after=6 5 openocd -c "script openocd.cfg" -c "reset halt" -c "reset run" | tee "$TDIR/ud3tn.out"
+    grep -F "uPCN unittests succeeded" "$TDIR/ud3tn.out"
     ;;
     #op#
     integrationtest)
     prepare_freertos
     generate_configmk
     prepare_venv
-    echo 'Building uPCN and tools...'
+    echo 'Building uD3TN and tools...'
     make clean
     make stm32 type=release
-    # Flash uPCN
+    # Flash uD3TN
     lock_res
-    echo 'Flashing uPCN to the board...'
-    flash_upcn "flash-stm32-openocd-oneshot" "type=release"
+    echo 'Flashing uD3TN to the board...'
+    flash_ud3tn "flash-stm32-openocd-oneshot" "type=release"
     sleep 1
     echo 'Running test scenario...'
     source $TDIR/venv/bin/activate

@@ -57,9 +57,9 @@ def main():
         "6 == RFC 5050, 7 == BPv7-bis"
     )
     parser.add_argument(
-        "-e", "--upcn-config-eid",
-        default="dtn://upcn.dtn/config",
-        help="EID of uPCN's config endpoint"
+        "-e", "--ud3tn-config-eid",
+        default="dtn://ud3tn.dtn/config",
+        help="EID of uD3TN's config endpoint"
     )
     parser.add_argument(
         "--payload",
@@ -90,7 +90,7 @@ def main():
         # Configure contact during which we send a bundle
         conn.send_bundle(serialize_bundle(
             outgoing_eid,
-            args.upcn_config_eid,
+            args.ud3tn_config_eid,
             bytes(ConfigMessage(
                 outgoing_eid,
                 args.type + ":" + outgoing_claaddr,
@@ -102,7 +102,7 @@ def main():
         # Configure contact during which we want to receive the bundle
         conn.send_bundle(serialize_bundle(
             outgoing_eid,
-            args.upcn_config_eid,
+            args.ud3tn_config_eid,
             bytes(ConfigMessage(
                 incoming_eid,
                 incoming_claaddr_full,

@@ -19,7 +19,7 @@ static const int IS_DEBUG_BUILD;
  */
 
 /* Default local EID */
-#define DEFAULT_EID "dtn://upcn.dtn"
+#define DEFAULT_EID "dtn://ud3tn.dtn"
 
 /* Default options string provided to the CLA subsystem */
 #ifdef PLATFORM_STM32
@@ -29,7 +29,7 @@ static const int IS_DEBUG_BUILD;
 #endif // PLATFORM_STM32
 
 /* Default UNIX domain socket path for the application agent interface */
-#define DEFAULT_AAP_SOCKET "/tmp/upcn.socket"
+#define DEFAULT_AAP_SOCKET "/tmp/ud3tn.socket"
 /* Default TCP IP/port used for the application agent interface */
 #define DEFAULT_AAP_NODE "0.0.0.0"
 #define DEFAULT_AAP_SERVICE "4242"

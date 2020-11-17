@@ -154,11 +154,11 @@ fragment-reassembly-test:
     script:
         - make
         - make virtualenv
-        - build/posix/upcn -c "mtcp:*,4222" -e "dtn://upcn1.dtn" -s /tmp/upcn1.socket &
-        - build/posix/upcn -c "mtcp:*,4223" -e "dtn://upcn2.dtn" -s /tmp/upcn2.socket &
-        - source .venv/bin/activate && python tools/aap/aap_config.py --socket /tmp/upcn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://upcn2.dtn mtcp:localhost:4223
-        - source .venv/bin/activate && python tools/aap/aap_send.py --socket /tmp/upcn1.socket dtn://upcn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
-        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket /tmp/upcn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+        - build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn" -s /tmp/ud3tn1.socket &
+        - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn" -s /tmp/ud3tn2.socket &
+        - source .venv/bin/activate && python tools/aap/aap_config.py --socket /tmp/ud3tn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn mtcp:localhost:4223
+        - source .venv/bin/activate && python tools/aap/aap_send.py --socket /tmp/ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket /tmp/ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
 
 stylecheck:
     stage: code_quality_test

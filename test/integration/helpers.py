@@ -10,15 +10,15 @@ TESTED_CLAS = [USER_SELECTED_CLA] if USER_SELECTED_CLA else [
     "smtcp",
 ]
 
-UPCN_HOST = "localhost"
+UD3TN_HOST = "localhost"
 TCPSPP_PORT = 4223
 TCPCL_PORT = 4556
 SMTCP_PORT = 4222
 # MTCP_PORT = 4224
 
-UPCN_EID = "dtn://upcn.dtn"
-UPCN_CONFIG_EP = UPCN_EID + "/config"
-UPCN_MANAGEMENT_EP = UPCN_EID + "/management"
+UD3TN_EID = "dtn://ud3tn.dtn"
+UD3TN_CONFIG_EP = UD3TN_EID + "/config"
+UD3TN_MANAGEMENT_EP = UD3TN_EID + "/management"
 
 TEST_SCRIPT_EID = "dtn://manager.dtn"
 
@@ -68,7 +68,7 @@ def send_delete_gs(conn, serialize_func, gs_iterable):
         print("Sending DELETE command for {}".format(eid))
         conn.send_bundle(serialize_func(
             TEST_SCRIPT_EID,
-            UPCN_CONFIG_EP,
+            UD3TN_CONFIG_EP,
             bytes(ConfigMessage(
                 eid,
                 "NULL",

@@ -5,8 +5,8 @@
 .PHONY: all
 all: posix
 
-.PHONY: upcn
-upcn: posix
+.PHONY: ud3tn
+ud3tn: posix
 
 .PHONY: clean
 clean::
@@ -18,40 +18,40 @@ clean::
 
 .PHONY: run-posix
 run-posix: posix
-	build/posix/upcn
+	build/posix/ud3tn
 
 .PHONY: run-unittest-posix
 run-unittest-posix: unittest-posix
-	build/posix/testupcn
+	build/posix/testud3tn
 
 .PHONY: flash-stm32-stlink
 flash-stm32-stlink: stm32
-	$(ST_FLASH_PREFIX)st-flash --reset write build/stm32/upcn.bin 0x08000000
+	$(ST_FLASH_PREFIX)st-flash --reset write build/stm32/ud3tn.bin 0x08000000
 
 .PHONY: flash-unittest-stm32-stlink
 flash-unittest-stm32-stlink: unittest-stm32
-	$(ST_FLASH_PREFIX)st-flash --reset write build/stm32/testupcn.bin 0x08000000
+	$(ST_FLASH_PREFIX)st-flash --reset write build/stm32/testud3tn.bin 0x08000000
 
 .PHONY: flash-stm32-openocd
 flash-stm32-openocd: stm32
-	echo "reset init;" "flash write_image erase build/stm32/upcn.bin 0x08000000;" \
+	echo "reset init;" "flash write_image erase build/stm32/ud3tn.bin 0x08000000;" \
 		"reset;" "exit;" | ncat localhost 4444 | tail -n +2 > /dev/null;
 
 .PHONY: flash-unittest-stm32-openocd
 flash-unittest-stm32-openocd: unittest-stm32
-	echo "reset init;" "flash write_image erase build/stm32/testupcn.bin 0x08000000;" \
+	echo "reset init;" "flash write_image erase build/stm32/testud3tn.bin 0x08000000;" \
 		"reset;" "exit;" | ncat localhost 4444 | tail -n +2 > /dev/null;
 
 .PHONY: flash-stm32-openocd-oneshot
 flash-stm32-openocd-oneshot: stm32
 	$(OOCD_PREFIX)openocd -c "script openocd.cfg" -c "reset init" \
-			      -c "flash write_image erase build/stm32/upcn.bin 0x08000000" \
+			      -c "flash write_image erase build/stm32/ud3tn.bin 0x08000000" \
 			      -c "reset" -c "shutdown"
 
 .PHONY: flash-unittest-stm32-openocd-oneshot
 flash-unittest-stm32-openocd-oneshot: unittest-stm32
 	$(OOCD_PREFIX)openocd -c "script openocd.cfg" -c "reset init" \
-			      -c "flash write_image erase build/stm32/testupcn.bin 0x08000000" \
+			      -c "flash write_image erase build/stm32/testud3tn.bin 0x08000000" \
 			      -c "reset" -c "shutdown"
 
 ###############################################################################
@@ -60,17 +60,17 @@ flash-unittest-stm32-openocd-oneshot: unittest-stm32
 
 .PHONY: gdb-posix
 gdb-posix: posix
-	$(TOOLCHAIN_POSIX)gdb build/posix/upcn
+	$(TOOLCHAIN_POSIX)gdb build/posix/ud3tn
 
 .PHONY: gdb-stm32
 gdb-stm32: stm32
 	$(TOOLCHAIN_STM32)gdb --eval-command="target remote :4443" \
-		build/stm32/upcn
+		build/stm32/ud3tn
 
 .PHONY: gdb-unittest-stm32
 gdb-unittest-stm32: unittest-stm32
 	$(TOOLCHAIN_STM32)gdb --eval-command="target remote :4443" \
-		build/stm32/testupcn
+		build/stm32/testud3tn
 
 .PHONY: openocd
 openocd:
@@ -225,7 +225,7 @@ endif
 -include config.mk
 
 ###############################################################################
-# uPCN-Builds
+# uD3TN-Builds
 ###############################################################################
 
 .PHONY: posix stm32
@@ -258,11 +258,11 @@ else # ifndef PLATFORM
 include mk/$(PLATFORM).mk
 include mk/build.mk
 
-posix: build/posix/upcn
-posix-lib: build/posix/libupcn.so
-unittest-posix: build/posix/testupcn
+posix: build/posix/ud3tn
+posix-lib: build/posix/libud3tn.so
+unittest-posix: build/posix/testud3tn
 
-stm32: build/stm32/upcn.bin
-unittest-stm32: build/stm32/testupcn.bin
+stm32: build/stm32/ud3tn.bin
+unittest-stm32: build/stm32/testud3tn.bin
 
 endif # ifndef PLATFORM

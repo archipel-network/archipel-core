@@ -47,7 +47,7 @@ three steps are necessary after connecting the board via STLink-enabled USB:
 
 3. Start `openocd`. The config file `openocd.cfg` is loaded automatically.
 
-4. Type `make flash-stm32-openocd` to build the project and to flash `upcn.bin`
+4. Type `make flash-stm32-openocd` to build the project and to flash `ud3tn.bin`
    to the board attached via USB.
    The unittests can be flashed via `make flash-unittest-stm32-openocd`.
    For convenience, GDB commands are available via `make gdb-stm32` and
@@ -71,10 +71,10 @@ three steps are necessary after connecting the board via STLink-enabled USB:
 Getting Started with the Implementation
 ---------------------------------------
 
-The core part of µD3TN is located in `./components/upcn/`.
+The core part of µD3TN is located in `./components/ud3tn/`.
 The starting point of the program can be found in
 `./components/daemon/main.c`, calling init located in
-`./components/upcn/init.c`.
+`./components/ud3tn/init.c`.
 This file is the best place to familiarize with the implementation.
 
 Configurability

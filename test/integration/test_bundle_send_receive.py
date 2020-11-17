@@ -12,9 +12,9 @@ from pyupcn.tcpcl import TCPCLConnection
 
 from .helpers import (
     TESTED_CLAS,
-    UPCN_CONFIG_EP,
-    UPCN_MANAGEMENT_EP,
-    UPCN_HOST,
+    UD3TN_CONFIG_EP,
+    UD3TN_MANAGEMENT_EP,
+    UD3TN_HOST,
     TCPSPP_PORT,
     TCPCL_PORT,
     SMTCP_PORT,
@@ -58,13 +58,13 @@ def perform_basic_test(connection_obj, serialize_func, validate_func, cla_str,
             ts = _wait_for_even_timestamp()
             conn.send_bundle(serialize_func(
                 outgoing_eid,
-                UPCN_MANAGEMENT_EP,
+                UD3TN_MANAGEMENT_EP,
                 serialize_set_time_cmd(ts),
             ))
         # Configure contact during which we send a bundle
         conn.send_bundle(serialize_func(
             outgoing_eid,
-            UPCN_CONFIG_EP,
+            UD3TN_CONFIG_EP,
             bytes(ConfigMessage(
                 outgoing_eid,
                 cla_str + ":" + outgoing_claaddr,
@@ -76,7 +76,7 @@ def perform_basic_test(connection_obj, serialize_func, validate_func, cla_str,
         # Configure contact during which we want to receive the bundle
         conn.send_bundle(serialize_func(
             outgoing_eid,
-            UPCN_CONFIG_EP,
+            UD3TN_CONFIG_EP,
             bytes(ConfigMessage(
                 incoming_eid,
                 cla_str + ":" + incoming_claaddr,
@@ -106,7 +106,7 @@ def perform_basic_test(connection_obj, serialize_func, validate_func, cla_str,
 def test_send_receive_spp_bundle6():
     perform_basic_test(
         TCPSPPConnection(
-            UPCN_HOST,
+            UD3TN_HOST,
             TCPSPP_PORT,
             SPP_USE_CRC,
             timeout=TCP_TIMEOUT,
@@ -121,7 +121,7 @@ def test_send_receive_spp_bundle6():
 def test_send_receive_spp_bundle7():
     perform_basic_test(
         TCPSPPConnection(
-            UPCN_HOST,
+            UD3TN_HOST,
             TCPSPP_PORT,
             SPP_USE_CRC,
             timeout=TCP_TIMEOUT,
@@ -135,7 +135,7 @@ def test_send_receive_spp_bundle7():
 @pytest.mark.skipif("smtcp" not in TESTED_CLAS, reason="not selected")
 def test_send_receive_smtcp_bundle6():
     perform_basic_test(
-        MTCPConnection(UPCN_HOST, SMTCP_PORT, timeout=TCP_TIMEOUT),
+        MTCPConnection(UD3TN_HOST, SMTCP_PORT, timeout=TCP_TIMEOUT),
         serialize_bundle6,
         validate_bundle6,
         "smtcp",
@@ -145,7 +145,7 @@ def test_send_receive_smtcp_bundle6():
 @pytest.mark.skipif("smtcp" not in TESTED_CLAS, reason="not selected")
 def test_send_receive_smtcp_bundle7():
     perform_basic_test(
-        MTCPConnection(UPCN_HOST, SMTCP_PORT, timeout=TCP_TIMEOUT),
+        MTCPConnection(UD3TN_HOST, SMTCP_PORT, timeout=TCP_TIMEOUT),
         serialize_bundle7,
         validate_bundle7,
         "smtcp",
@@ -157,7 +157,7 @@ def test_send_receive_tcpcl_bundle6():
     perform_basic_test(
         TCPCLConnection(
             "dtn://receiver.dtn",
-            UPCN_HOST,
+            UD3TN_HOST,
             TCPCL_PORT,
             timeout=TCP_TIMEOUT,
         ),
@@ -172,7 +172,7 @@ def test_send_receive_tcpcl_bundle7():
     perform_basic_test(
         TCPCLConnection(
             "dtn://receiver.dtn",
-            UPCN_HOST,
+            UD3TN_HOST,
             TCPCL_PORT,
             timeout=TCP_TIMEOUT,
         ),
@@ -185,7 +185,7 @@ def test_send_receive_tcpcl_bundle7():
 @pytest.mark.skipif("usbotg" not in TESTED_CLAS, reason="not selected")
 def test_send_receive_usbotg_bundle6():
     perform_basic_test(
-        MTCPConnection(UPCN_HOST, SMTCP_PORT, timeout=STM32_TIMEOUT),
+        MTCPConnection(UD3TN_HOST, SMTCP_PORT, timeout=STM32_TIMEOUT),
         serialize_bundle6,
         validate_bundle6,
         "usbotg",
@@ -196,7 +196,7 @@ def test_send_receive_usbotg_bundle6():
 @pytest.mark.skipif("usbotg" not in TESTED_CLAS, reason="not selected")
 def test_send_receive_usbotg_bundle7():
     perform_basic_test(
-        MTCPConnection(UPCN_HOST, SMTCP_PORT, timeout=STM32_TIMEOUT),
+        MTCPConnection(UD3TN_HOST, SMTCP_PORT, timeout=STM32_TIMEOUT),
         serialize_bundle7,
         validate_bundle7,
         "usbotg",

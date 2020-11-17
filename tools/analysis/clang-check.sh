@@ -12,7 +12,7 @@ DIRS=(
     components/cla
     components/daemon
     components/spp
-    components/upcn
+    components/ud3tn
 )
 CHECKER_ARGS=(
     -fdiagnostics-color
