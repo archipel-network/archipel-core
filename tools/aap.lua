@@ -1,11 +1,11 @@
--- Wireshark dissector for uPCN AAP
+-- Wireshark dissector for uD3TN AAP
 -- This script may be used to view the on-wire AAP communication in Wireshark.
 -- Use as follows: wireshark -Xlua_script:/path/to/tools/aap.lua
 
-upcn_aap = Proto("upcn_aap", "uPCN Application Agent Protocol")
+ud3tn_aap = Proto("ud3tn_aap", "uD3TN Application Agent Protocol")
 
 local f_version = ProtoField.uint8(
-	"upcn_aap.version", "Version", base.HEX,
+	"ud3tn_aap.version", "Version", base.HEX,
 	nil,
 	0xf0
 )
@@ -23,28 +23,28 @@ local f_type_names = {
 }
 
 local f_type = ProtoField.uint8(
-	"upcn_aap.type", "Type", base.HEX,
+	"ud3tn_aap.type", "Type", base.HEX,
 	f_type_names,
 	0x0f
 )
 
 local f_eid_length = ProtoField.uint16(
-	"upcn_aap.eid_length",
+	"ud3tn_aap.eid_length",
 	"EID Length",
 	base.DEC)
 
-local f_eid = ProtoField.string("upcn_aap.eid", "EID", base.ASCII)
+local f_eid = ProtoField.string("ud3tn_aap.eid", "EID", base.ASCII)
 
 
 local f_bundle_length = ProtoField.uint64(
-	"upcn_aap.bundle_length",
+	"ud3tn_aap.bundle_length",
 	"Bundle Payload Length",
 	base.DEC)
 
-local f_bundle_data = ProtoField.bytes("upcn_aap.bundle", "Bundle Payload")
+local f_bundle_data = ProtoField.bytes("ud3tn_aap.bundle", "Bundle Payload")
 
 local f_bundle_id_sent = ProtoField.uint64(
-	"upcn_aap.bundle_id_sent",
+	"ud3tn_aap.bundle_id_sent",
 	"Sent Bundle ID",
 	base.HEX
 	-- base.NONE,
@@ -52,14 +52,14 @@ local f_bundle_id_sent = ProtoField.uint64(
 )
 
 local f_bundle_id_cancel = ProtoField.uint64(
-	"upcn_aap.bundle_id_cancel",
+	"ud3tn_aap.bundle_id_cancel",
 	"Cancel Bundle ID",
 	base.HEX
 	-- base.NONE,
 	-- frametype.RESPONSE
 )
 
-upcn_aap.fields = {
+ud3tn_aap.fields = {
 	f_version,
 	f_type,
 	f_eid_length,
@@ -134,9 +134,9 @@ end
 
 
 local function dissect_aap(tvb, pinfo, tree)
-	pinfo.cols.protocol = "UPCN AAP";
+	pinfo.cols.protocol = "UD3TN AAP";
 
-	local subtree = tree:add(upcn_aap, tvb(0))
+	local subtree = tree:add(ud3tn_aap, tvb(0))
 	subtree:add(f_version, tvb(0, 1))
 	subtree:add(f_type, tvb(0, 1))
 
@@ -165,11 +165,11 @@ local function dissect_aap(tvb, pinfo, tree)
 end
 
 
-function upcn_aap.dissector(tvb, pkt, root)
+function ud3tn_aap.dissector(tvb, pkt, root)
 	dissect_tcp_pdus(
 		tvb, root, 1, get_aap_length, dissect_aap
 	)
 end
 
 local dissector_table = DissectorTable.get("tcp.port")
-dissector_table:add(4242, upcn_aap)
+dissector_table:add(4242, ud3tn_aap)

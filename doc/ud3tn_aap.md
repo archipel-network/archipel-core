@@ -1,6 +1,6 @@
-# µPCN Application Agent Protocol (AAP)
+# µD3TN Application Agent Protocol (AAP)
 
-The µPCN Application Agent Protocol (AAP) allows applications to register a custom (sub-)EID with µPCN and send and receive bundles via this EID.
+The µD3TN Application Agent Protocol (AAP) allows applications to register a custom (sub-)EID with µD3TN and send and receive bundles via this EID.
 Communication takes place over a plain TCP connection. The default port is 4242. This document describes version 1 (v1) of the protocol.
 
 ## Message Format
@@ -54,7 +54,7 @@ The *ACK* and *NACK* messages do not contain additional data. They acknowledge o
 
 ### EID registration request (REGISTER)
 
-The *REGISTER* message can only be sent by the client and requests that µPCN associates the current connection with a specific EID.
+The *REGISTER* message can only be sent by the client and requests that µD3TN associates the current connection with a specific EID.
 The message is encoded as follows:
 
 ```
@@ -63,7 +63,7 @@ The message is encoded as follows:
 +--------+--------+--------+--------+--------+--------+--------+--------+
 ```
 
-The EID contained within this message is *not* the complete EID that the application will be associated to, but the agent identifier, i.e. only the last part of the EID. The first part of the EID (as communicated in the *WELCOME* message) is configured in µPCN and cannot be altered.
+The EID contained within this message is *not* the complete EID that the application will be associated to, but the agent identifier, i.e. only the last part of the EID. The first part of the EID (as communicated in the *WELCOME* message) is configured in µD3TN and cannot be altered.
 
 ### Bundle transmission request (SENDBUNDLE)
 
@@ -81,7 +81,7 @@ The *SENDBUNDLE* message can only be sent by the client (the application). It co
 
 ### Bundle reception message (RECVBUNDLE)
 
-The *RECVBUNDLE* message can only be sent by the server (µPCN). It is encoded in the same manner as the *SENDBUNDLE* message but instead contains the bundle's source EID:
+The *RECVBUNDLE* message can only be sent by the server (µD3TN). It is encoded in the same manner as the *SENDBUNDLE* message but instead contains the bundle's source EID:
 
 ```
 +--------+--------+--------+--------+--------+--------+--------+--------+
@@ -95,7 +95,7 @@ The *RECVBUNDLE* message can only be sent by the server (µPCN). It is encoded i
 
 ### Bundle transmission confirmation (SENDCONFIRM)
 
-The *SENDCONFIRM* message communicates that a bundle was accepted and queued for transmission. It can only be sent by the server (µPCN) and contains a numeric 64-bit bundle identifier uniquely identifying the queued bundle. This can be used in a *CANCELBUNDLE* message to cancel the transmission request.
+The *SENDCONFIRM* message communicates that a bundle was accepted and queued for transmission. It can only be sent by the server (µD3TN) and contains a numeric 64-bit bundle identifier uniquely identifying the queued bundle. This can be used in a *CANCELBUNDLE* message to cancel the transmission request.
 
 ```
 +--------+--------+--------+--------+--------+--------+--------+--------+--------+
@@ -115,17 +115,17 @@ This message requests cancellation of a queued bundle. It can only be sent by th
 
 ### Connection establishment notice (WELCOME)
 
-This message is only sent by the server (µPCN), once at the start of every connection. It communicates µPCN's EID prefix, i.e. the first part of every EID that can be registered.
+This message is only sent by the server (µD3TN), once at the start of every connection. It communicates µD3TN's EID prefix, i.e. the first part of every EID that can be registered.
 
 ```
 +--------+--------+--------+--------+--------+--------+--------+--------+
-|00010111| EID length (16) | µPCN EID prefix (variable-length)    ...   |
+|00010111| EID length (16) | µD3TN EID prefix (variable-length)    ...   |
 +--------+--------+--------+--------+--------+--------+--------+--------+
 ```
 
 ### Connection liveliness check (PING)
 
-This message can be sent by either the client (the application) or µPCN and is always answered with an *ACK* message. In which intervals the message should be sent is defined by the originating instance.
+This message can be sent by either the client (the application) or µD3TN and is always answered with an *ACK* message. In which intervals the message should be sent is defined by the originating instance.
 
 *PING*:
 
@@ -139,28 +139,28 @@ This message can be sent by either the client (the application) or µPCN and is 
 
 ### Connection establishment
 
-For establishing a connection to µPCN (the server), the application (the client) opens a new TCP connection to the AAP port configured in µPCN. µPCN responds to the newly opened connection with a *WELCOME* message.
+For establishing a connection to µD3TN (the server), the application (the client) opens a new TCP connection to the AAP port configured in µD3TN. µD3TN responds to the newly opened connection with a *WELCOME* message.
 
 ### EID registration
 
-The application can only send and receive bundles if it registers itself under an endpoint identifier (EID). The full EID is composed of two parts: the µPCN EID prefix and the application-defined second part of the EID.
-The first part is communicated by µPCN in the *WELCOME* message at the start of the connection. The second part needs to be registered by the application. Only one EID can be registered per TCP connection. For registering an EID, a *REGISTER* message is sent by the application to µPCN. µPCN responds with either a positive (*ACK*) or a negative (*NACK*) acknowledgment. If the EID has not been registered by another client currently connected and µPCN can allocate the necessary resources, registration will succeed.
+The application can only send and receive bundles if it registers itself under an endpoint identifier (EID). The full EID is composed of two parts: the µD3TN EID prefix and the application-defined second part of the EID.
+The first part is communicated by µD3TN in the *WELCOME* message at the start of the connection. The second part needs to be registered by the application. Only one EID can be registered per TCP connection. For registering an EID, a *REGISTER* message is sent by the application to µD3TN. µD3TN responds with either a positive (*ACK*) or a negative (*NACK*) acknowledgment. If the EID has not been registered by another client currently connected and µD3TN can allocate the necessary resources, registration will succeed.
 
 Re-registration and termination of registrations is possible. If a second *REGISTER* message is sent during an ongoing connection, the existing registration is replaced by the new one, if successful. A registration is deleted by either terminating the TCP connection or by sending a *REGISTER* message with an empty (zero-length) EID. Then, no bundles can be sent or received.
 
 ### Bundle transmission
 
-If EID registration has been performed successfully, bundles can be transmitted via the connection. µPCN handles bundle creation, thus, the client only needs to transmit the destination EID as well as the payload data via a *SENDBUNDLE* message.
-If µPCN could create and queue the bundle for transmission, it sends a *SENDCONFIRM* message back to the client, containing the bundle identifier. If the bundle creation failed or no EID registration was performed beforehand, a *NACK* message is sent back to the client.
+If EID registration has been performed successfully, bundles can be transmitted via the connection. µD3TN handles bundle creation, thus, the client only needs to transmit the destination EID as well as the payload data via a *SENDBUNDLE* message.
+If µD3TN could create and queue the bundle for transmission, it sends a *SENDCONFIRM* message back to the client, containing the bundle identifier. If the bundle creation failed or no EID registration was performed beforehand, a *NACK* message is sent back to the client.
 
 ### Bundle reception
 
-If EID registration has been performed successfully and a bundle destined to the client application is received by µPCN, it will issue a *RECVBUNDLE* message to the client. This message contains the source EID and the payload data of the received bundle.
+If EID registration has been performed successfully and a bundle destined to the client application is received by µD3TN, it will issue a *RECVBUNDLE* message to the client. This message contains the source EID and the payload data of the received bundle.
 
 ### Bundle cancellation
 
-While a bundle is queued for transmission inside µPCN, the planned transmission(s) can be cancelled by the client. For that purpose, a *CANCELBUNDLE* message can be sent to µPCN. µPCN will respond with either an *ACK* or a *NACK* message, depending on whether the bundle could be cancelled successfully. Upon cancellation, the bundle is dropped completely by µPCN.
+While a bundle is queued for transmission inside µD3TN, the planned transmission(s) can be cancelled by the client. For that purpose, a *CANCELBUNDLE* message can be sent to µD3TN. µD3TN will respond with either an *ACK* or a *NACK* message, depending on whether the bundle could be cancelled successfully. Upon cancellation, the bundle is dropped completely by µD3TN.
 
 ### Connection check
 
-For long-lasting connections, it has to be ensured that the operating system does not assume the connection to be dead and closes it automatically. For that purpose, the client or µPCN can (e.g. periodically) send a *PING* message which is answered by the receiving side with an *ACK* message.
+For long-lasting connections, it has to be ensured that the operating system does not assume the connection to be dead and closes it automatically. For that purpose, the client or µD3TN can (e.g. periodically) send a *PING* message which is answered by the receiving side with an *ACK* message.
