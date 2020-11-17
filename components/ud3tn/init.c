@@ -28,10 +28,10 @@ static struct bundle_agent_interface bundle_agent_interface;
 void init(int argc, char *argv[])
 {
 	hal_platform_init(argc, argv);
-	LOG("INIT: uPCN starting up...");
+	LOG("INIT: uD3TN starting up...");
 }
 
-void start_tasks(const struct upcn_cmdline_options *const opt)
+void start_tasks(const struct ud3tn_cmdline_options *const opt)
 {
 	if (!opt) {
 		LOG("INIT: Error parsing options, terminating...");
@@ -130,6 +130,6 @@ int start_os(void)
 	hal_task_start_scheduler();
 	/* Should never get here! */
 	ASSERT(0);
-	hal_platform_restart_upcn();
+	hal_platform_restart();
 	__builtin_unreachable();
 }

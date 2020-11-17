@@ -14,7 +14,7 @@
 
 
 /* define the length that the generated hashes should have */
-#define UPCN_HASH_LENGTH 32
+#define UD3TN_HASH_LENGTH 32
 
 /**
  * @brief hal_hash_init Initialization of underlying OS/HW for hash calculations
@@ -35,7 +35,7 @@ void hal_crc_init(void);
  *	      in the init-methods in hal_plattform.h
  */
 void hal_hash(uint8_t *message, uint32_t message_length,
-	  uint8_t hash[UPCN_HASH_LENGTH]);
+	  uint8_t hash[UD3TN_HASH_LENGTH]);
 
 /**
  * @brief hal_hash_hmac Provides a hmac generation of a given message
@@ -48,7 +48,7 @@ void hal_hash(uint8_t *message, uint32_t message_length,
  *	      in the init-methods in hal_plattform.h
  */
 void hal_hash_hmac(uint8_t *key, uint32_t key_length, uint8_t *message,
-	       uint32_t message_length,	uint8_t hash[UPCN_HASH_LENGTH]);
+	       uint32_t message_length,	uint8_t hash[UD3TN_HASH_LENGTH]);
 
 
 

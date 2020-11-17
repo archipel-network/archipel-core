@@ -64,7 +64,7 @@
   */
 
 /*
- * This file has been modified for uPCN, http://upcn.eu
+ * This file has been modified for uD3TN
  * Modifications Copyright (c) 2016 Felix Walter and the authors of uPCN
  */
 

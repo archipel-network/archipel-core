@@ -1,10 +1,10 @@
 #ifndef TASK_TAGS_H_INCLUDED
 #define TASK_TAGS_H_INCLUDED
 
-// "Tags" are assigned to each task inside uPCN to make tracing in embedded
+// "Tags" are assigned to each task inside uD3TN to make tracing in embedded
 // environments easier.
 
-enum upcn_task_tags {
+enum ud3tn_task_tags {
 	IDLE_TASK_TAG = 0,
 	CONTACT_RX_TASK_TAG,
 	ROUTER_TASK_TAG,

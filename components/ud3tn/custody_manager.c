@@ -14,7 +14,7 @@
 static struct bundle *accepted_bundles[CUSTODY_MAX_BUNDLE_COUNT];
 static int accepted_bundle_count;
 
-static const char *upcn_eid;
+static const char *own_eid;
 
 static int get_index(struct bundle *bundle)
 {
@@ -117,7 +117,7 @@ enum ud3tn_result custody_manager_accept(struct bundle *bundle)
 	switch (bundle->protocol_version) {
 	case 6:
 		free(bundle->current_custodian);
-		bundle->current_custodian = strdup(upcn_eid);
+		bundle->current_custodian = strdup(own_eid);
 		return UD3TN_OK;
 	default:
 		return UD3TN_FAIL;
@@ -150,5 +150,5 @@ void custody_manager_release(struct bundle *bundle)
 
 void custody_manager_init(const char *local_eid)
 {
-	upcn_eid = local_eid;
+	own_eid = local_eid;
 }

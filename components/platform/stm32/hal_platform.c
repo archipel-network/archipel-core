@@ -223,7 +223,7 @@ void hal_platform_init(int argc, char *argv[])
 
 
 __attribute__((noreturn))
-void hal_platform_restart_upcn(void)
+void hal_platform_restart(void)
 {
 	exit(EXIT_SUCCESS);
 }

@@ -237,8 +237,8 @@ g_pfnVectors:
 * Provide weak aliases for each Exception handler to the Default_Handler.
 * As they are weak aliases, any function with the same name will override
 * this definition.
-* NOTE: For some reason, sometimes this does not work. Therefore, we comment
-*       out the things we want to be implemented in uPCN. -- fw, 2019-07-11
+* NOTE: For some reason, sometimes this does not work. Therefore, we commented
+*       out the functions we want to be implemented explicitly in uD3TN.
 *
 *******************************************************************************/
 

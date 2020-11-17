@@ -16,7 +16,7 @@ size_t bundle7_cbor_uint_sizeof(uint64_t num);
 
 
 /**
- * Converts the unified µPCN flags into BPv7-bis protocol-compliant block
+ * Converts the unified uD3TN flags into BPv7-bis protocol-compliant block
  * processing flags.
  *
  * @return BPv7-bis bundle block processing flags

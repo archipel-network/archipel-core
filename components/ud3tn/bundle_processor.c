@@ -211,7 +211,7 @@ static bool bundle_endpoint_is_local(struct bundle *bundle)
 	const size_t local_len = strlen(local_eid);
 	const size_t dest_len = strlen(bundle->destination);
 
-	/* Compare bundle destination EID _prefix_ with configured upcn EID */
+	/* Compare bundle destination EID _prefix_ with configured uD3TN EID */
 	return (
 		// For the memcmp to be safe, the destination EID has to be at
 		// least as long as the local EID.
@@ -762,8 +762,8 @@ static void send_status_report(
 	if (!status_reporting)
 		return;
 
-	/* If the report-to EID is the null endpoint or upcn itself we do not */
-	/* need to create a status report */
+	/* If the report-to EID is the null endpoint or uD3TN itself we do */
+	/* not need to create a status report */
 	if (strcmp(bundle->destination, "dtn:none") == 0
 		|| strcmp(bundle->destination, local_eid) == 0)
 		return;

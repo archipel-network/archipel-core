@@ -102,7 +102,7 @@ size_t spp_tc_get_size(const struct spp_tc_context_t *ctx);
 /**
  * @brief Serialize a timestamp in the format as defined in the given ctx.
  *
- * A DTN timestamp in uPCN consists of a 64 bit "seconds since Jan 1st, 2000"
+ * A DTN timestamp in uD3TN consists of a 64 bit "seconds since Jan 1st, 2000"
  * value and a 32 bit counter.
  *
  * This is not compatible with any of the formats defined in the CCSDS.

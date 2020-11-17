@@ -16,7 +16,7 @@
 #define QUOTE(s) #s
 #define STR(s) QUOTE(s)
 
-static struct upcn_cmdline_options global_cmd_opts;
+static struct ud3tn_cmdline_options global_cmd_opts;
 
 /**
  * Helper function for parsing a 64-bit unsigned integer from a given C-string.
@@ -32,11 +32,11 @@ static void print_usage_text(void);
 
 static void print_help_text(void);
 
-const struct upcn_cmdline_options *parse_cmdline(int argc, char *argv[])
+const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 {
 	// For now, we use a global variable. (Because why not?)
 	// Though, this may be refactored easily.
-	struct upcn_cmdline_options *result = &global_cmd_opts;
+	struct ud3tn_cmdline_options *result = &global_cmd_opts;
 	int opt;
 
 	// If we override sth., first deallocate
@@ -224,7 +224,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 
 static void print_usage_text(void)
 {
-	const char *usage_text = "Usage: upcn\n"
+	const char *usage_text = "Usage: ud3tn\n"
 		"    [-a HOST, --aap-host HOST] [-p PORT, --aap-port PORT]\n"
 		"    [-b 6|7, --bp-version 6|7] [-c CLA_OPTIONS, --cla CLA_OPTIONS]\n"
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
@@ -236,7 +236,7 @@ static void print_usage_text(void)
 
 static void print_help_text(void)
 {
-	const char *help_text = "Usage: upcn [OPTION]...\n\n"
+	const char *help_text = "Usage: ud3tn [OPTION]...\n\n"
 		"Mandatory arguments to long options are mandatory for short options, too.\n"
 		"\n"
 		"  -a, --aap-host HOST         IP / hostname of the application agent service\n"
@@ -252,7 +252,7 @@ static void print_help_text(void)
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
 		"  -u, --usage                 print usage summary and exit\n"
 		"\n"
-		"Default invocation: upcn \\\n"
+		"Default invocation: ud3tn \\\n"
 		"  -b " STR(DEFAULT_BUNDLE_VERSION) " \\\n"
 		"  -c " STR(DEFAULT_CLA_OPTIONS) " \\\n"
 		"  -e " DEFAULT_EID " \\\n"

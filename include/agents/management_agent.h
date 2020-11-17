@@ -2,7 +2,7 @@
 #define MANAGEMENT_AGENT_H_
 
 enum management_command {
-	// Set the time of uPCN, argument: DTN time (64 bit)
+	// Set the time of uD3TN, argument: DTN time (64 bit)
 	MGMT_CMD_SET_TIME,
 };
 

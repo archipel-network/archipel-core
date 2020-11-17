@@ -303,8 +303,8 @@ enum bundle_routing_priority {
 /**
  * A structure that can be leveraged to represent a bundle ADU for exchange
  * with connected bundle applications. The most important feature is that an
- * ADU cannot be fragmented. uPCN will perform fragmentation and reassembly for
- * an ADU.
+ * ADU cannot be fragmented. uD3TN will perform fragmentation and reassembly
+ * for an ADU.
  */
 struct bundle_adu {
 	uint8_t protocol_version;

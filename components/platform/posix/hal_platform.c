@@ -65,7 +65,7 @@ static void setup_exit_handler(void)
 	if (sigaction(SIGTERM, &sa, NULL) == -1)
 		LOG("Error: cannot handle SIGTERM"); /* Should not happen */
 
-	// Ignore SIGPIPE so uPCN does not crash if a connection is closed
+	// Ignore SIGPIPE so uD3TN does not crash if a connection is closed
 	// during sending data. The event will be reported to us by the result
 	// of the send(...) call.
 	signal(SIGPIPE, SIG_IGN);
@@ -105,7 +105,7 @@ void hal_platform_init(int argc, char *argv[])
 }
 
 __attribute__((noreturn))
-void hal_platform_restart_upcn(void)
+void hal_platform_restart(void)
 {
 	// TODO: Try to close open ports (e.g. TCP)
 	LOG("Restarting!");

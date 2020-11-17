@@ -1,5 +1,5 @@
-#ifndef UPCN_COMMON_H_INCLUDED
-#define UPCN_COMMON_H_INCLUDED
+#ifndef UD3TN_COMMON_H_INCLUDED
+#define UD3TN_COMMON_H_INCLUDED
 
 /* POSIX functions provided in libc/Newlib headers */
 
@@ -84,4 +84,4 @@ while (list != NULL) { \
 
 #endif /* DEBUG */
 
-#endif /* UPCN_COMMON_H_INCLUDED */
+#endif /* UD3TN_COMMON_H_INCLUDED */

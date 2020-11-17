@@ -42,10 +42,10 @@ void hal_platform_led_set(int led_preset);
 void hal_platform_init(int argc, char *argv[]);
 
 /**
- * @brief hal_platform_restart_upcn Restarts the application (either by
- *				    restarting the whole system or just the app)
+ * @brief hal_platform_restart Restarts the application (either by
+ *			       restarting the whole system or just the app)
  */
 __attribute__((noreturn))
-void hal_platform_restart_upcn(void);
+void hal_platform_restart(void);
 
 #endif /* HAL_PLATFORM_H_INCLUDED */

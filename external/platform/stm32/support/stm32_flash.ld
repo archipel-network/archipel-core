@@ -34,7 +34,8 @@
  ****************************************************************************/
 
 /*
- * Modified for uPCN
+ * This file has been modified for uD3TN
+ * Modifications Copyright (c) 2016 the authors of uPCN
  */
 
 /* The STM32F405 has 1024Kb of FLASH beginning at address 0x0800:0000 and

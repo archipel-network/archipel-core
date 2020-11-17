@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static inline enum ud3tn_result pdBOOL2upcnresult(BaseType_t pdBOOL)
+static inline enum ud3tn_result pdBOOL2ud3tnresult(BaseType_t pdBOOL)
 {
 	if (pdBOOL == pdTRUE)
 		return UD3TN_OK;
@@ -43,12 +43,12 @@ enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
 {
 	/* try indefinitely */
 	if (timeout == -1)
-		return pdBOOL2upcnresult(
+		return pdBOOL2ud3tnresult(
 			xQueueReceive(queue, targetBuffer, portMAX_DELAY)
 		);
 
 	/* otherwise abort after timeout */
-	return pdBOOL2upcnresult(
+	return pdBOOL2ud3tnresult(
 		xQueueReceive(queue, targetBuffer, timeout/portTICK_PERIOD_MS)
 	);
 }
@@ -65,11 +65,11 @@ enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
 {
 	/* try indefinitely */
 	if (timeout == -1)
-		return pdBOOL2upcnresult(
+		return pdBOOL2ud3tnresult(
 			xQueueSendToBack(queue, item, portMAX_DELAY)
 		);
 
-	return pdBOOL2upcnresult(
+	return pdBOOL2ud3tnresult(
 		xQueueSendToBack(queue, item, timeout/portTICK_PERIOD_MS)
 	);
 }

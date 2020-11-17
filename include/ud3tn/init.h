@@ -13,7 +13,7 @@
  * @param argv the arguments as provided to main(...)
  */
 void init(int argc, char *argv[]);
-void start_tasks(const struct upcn_cmdline_options *opt);
+void start_tasks(const struct ud3tn_cmdline_options *opt);
 int start_os(void);
 
 #endif /* INIT_H_INCLUDED */

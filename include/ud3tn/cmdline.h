@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct upcn_cmdline_options {
+struct ud3tn_cmdline_options {
 	char *eid; // e.g.: dtn://ops-sat.dtn
 	char *cla_options; // e.g.: tcpspp:*,3333,false,1;tcpcl:*,4356
-	char *aap_socket; // e.g.: /tmp/upcn.socket
+	char *aap_socket; // e.g.: /tmp/ud3tn.socket
 	char *aap_node; // e.g.: 127.0.0.1
 	char *aap_service; // e.g.: 4242
 	uint8_t bundle_version;
@@ -17,6 +17,6 @@ struct upcn_cmdline_options {
 	uint64_t lifetime;
 };
 
-const struct upcn_cmdline_options *parse_cmdline(int argc, char *argv[]);
+const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[]);
 
 #endif // CMDLINE_H_INCLUDED
