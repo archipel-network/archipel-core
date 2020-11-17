@@ -2,17 +2,17 @@
 
 #include "unity_fixture.h"
 
-TEST_GROUP(upcn);
+TEST_GROUP(ud3tn);
 
-TEST_SETUP(upcn)
+TEST_SETUP(ud3tn)
 {
 }
 
-TEST_TEAR_DOWN(upcn)
+TEST_TEAR_DOWN(ud3tn)
 {
 }
 
-TEST(upcn, hal_time)
+TEST(ud3tn, hal_time)
 {
 	hal_time_init(1234);
 	TEST_ASSERT_EQUAL_UINT64(1234, hal_time_get_timestamp_s());
@@ -20,7 +20,7 @@ TEST(upcn, hal_time)
 	TEST_ASSERT_EQUAL_UINT64(0, hal_time_get_timestamp_s());
 }
 
-TEST_GROUP_RUNNER(upcn)
+TEST_GROUP_RUNNER(ud3tn)
 {
-	RUN_TEST_CASE(upcn, hal_time);
+	RUN_TEST_CASE(ud3tn, hal_time);
 }

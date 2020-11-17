@@ -10,13 +10,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void testupcn(void);
+void testud3tn(void);
 
 static int test_errors;
 
 void test_task(void *args)
 {
-	static const char *argv[1] = { "testupcn" };
+	static const char *argv[1] = { "testud3tn" };
 
 	LOG("Starting testsuite...");
 	hal_io_message_printf("\n");
@@ -37,7 +37,7 @@ void test_task(void *args)
 
 	/* Disable the logger spamming out output */
 	/* Start Unity */
-	test_errors = UnityMain(1, argv, testupcn);
+	test_errors = UnityMain(1, argv, testud3tn);
 
 	hal_io_message_printf("\n");
 	if (!test_errors) {

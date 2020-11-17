@@ -1,8 +1,8 @@
 #include "unity_fixture.h"
 
-void testupcn(void)
+void testud3tn(void)
 {
-	RUN_TEST_GROUP(upcn);
+	RUN_TEST_GROUP(ud3tn);
 	RUN_TEST_GROUP(simplehtab);
 	RUN_TEST_GROUP(sdnv);
 	RUN_TEST_GROUP(node);

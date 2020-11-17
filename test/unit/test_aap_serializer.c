@@ -11,33 +11,33 @@
 
 #define VALID_MSG_COUNT 9
 
-#define MSG_MAX_LENGTH 18
+#define MSG_MAX_LENGTH 19
 
 static struct aap_message valid_messages[VALID_MSG_COUNT];
 
 static const size_t valid_message_lengths[VALID_MSG_COUNT] = {
 	1,
 	1,
-	1 + 2 + 4,
-	1 + 2 + 4 + 8 + 3,
-	1 + 2 + 4 + 8 + 3,
+	1 + 2 + 5,
+	1 + 2 + 5 + 8 + 3,
+	1 + 2 + 5 + 8 + 3,
 	1 + 8,
 	1 + 8,
-	1 + 2 + 4,
+	1 + 2 + 5,
 	1,
 };
 
 static const uint8_t valid_message_bytes[VALID_MSG_COUNT][MSG_MAX_LENGTH] = {
 	{0x10},
 	{0x11},
-	{0x12, 0x00, 0x04, 'U', 'P', 'C', 'N'},
-	{0x13, 0x00, 0x04, 'U', 'P', 'C', 'N',
+	{0x12, 0x00, 0x05, 'U', 'D', '3', 'T', 'N'},
+	{0x13, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 'P', 'L', '\0'},
-	{0x14, 0x00, 0x04, 'U', 'P', 'C', 'N',
+	{0x14, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 'P', 'L', '\0'},
 	{0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x80},
 	{0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x80},
-	{0x17, 0x00, 0x04, 'U', 'P', 'C', 'N'},
+	{0x17, 0x00, 0x05, 'U', 'D', '3', 'T', 'N'},
 	{0x18},
 };
 
@@ -54,20 +54,20 @@ TEST_SETUP(aap_serializer)
 		},
 		(struct aap_message){
 			.type = AAP_MESSAGE_REGISTER,
-			.eid_length = 4,
-			.eid = "UPCN",
+			.eid_length = 5,
+			.eid = "UD3TN",
 		},
 		(struct aap_message){
 			.type = AAP_MESSAGE_SENDBUNDLE,
-			.eid_length = 4,
-			.eid = "UPCN",
+			.eid_length = 5,
+			.eid = "UD3TN",
 			.payload_length = 3,
 			.payload = (uint8_t *)"PL",
 		},
 		(struct aap_message){
 			.type = AAP_MESSAGE_RECVBUNDLE,
-			.eid_length = 4,
-			.eid = "UPCN",
+			.eid_length = 5,
+			.eid = "UD3TN",
 			.payload_length = 3,
 			.payload = (uint8_t *)"PL",
 		},
@@ -81,8 +81,8 @@ TEST_SETUP(aap_serializer)
 		},
 		(struct aap_message){
 			.type = AAP_MESSAGE_WELCOME,
-			.eid_length = 4,
-			.eid = "UPCN",
+			.eid_length = 5,
+			.eid = "UD3TN",
 		},
 		(struct aap_message){
 			.type = AAP_MESSAGE_PING

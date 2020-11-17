@@ -140,7 +140,7 @@ TEST(aap_parser, parse_nack_message)
 TEST(aap_parser, parse_register_message)
 {
 	const uint8_t msg_register[] = {
-		0x12, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x12, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 	};
 
 	aap_parser_reset(&parser);
@@ -148,17 +148,17 @@ TEST(aap_parser, parse_register_message)
 			  parse(msg_register, ARRAY_SIZE(msg_register)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_REGISTER, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
 	TEST_ASSERT_NOT_NULL(parser.message.eid);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 }
 
 TEST(aap_parser, parse_sendbundle_message)
 {
 	const uint8_t msg_sendbundle[] = {
-		0x13, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x13, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
 		'P', 'A', 'Y', 'L', 'O', 'A', 'D',
 	};
@@ -168,18 +168,18 @@ TEST(aap_parser, parse_sendbundle_message)
 			  parse(msg_sendbundle, ARRAY_SIZE(msg_sendbundle)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_SENDBUNDLE, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT_EQUAL(7, parser.message.payload_length);
 	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", parser.message.payload,
 				 parser.message.payload_length);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 
-	const size_t msg_size_without_payload = 15;
+	const size_t msg_size_without_payload = 16;
 	const size_t payload_size = 1000;
-	uint8_t msg_sendbundle_big[15 + 1000] = {
-		0x13, 0x00, 0x04, 'U', 'P', 'C', 'N',
+	uint8_t msg_sendbundle_big[16 + 1000] = {
+		0x13, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE8,
 	};
 	memset(msg_sendbundle_big + msg_size_without_payload, 42, payload_size);
@@ -198,17 +198,17 @@ TEST(aap_parser, parse_sendbundle_message)
 				ARRAY_SIZE(msg_sendbundle_big)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_SENDBUNDLE, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT_EQUAL(payload_size, parser.message.payload_length);
 	TEST_ASSERT_EQUAL_MEMORY(msg_sendbundle_big + msg_size_without_payload,
 				 parser.message.payload,
 				 parser.message.payload_length);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 
-	uint8_t msg_sendbundle_huge[15] = {
-		0x13, 0x00, 0x04, 'U', 'P', 'C', 'N',
+	uint8_t msg_sendbundle_huge[] = {
+		0x13, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
 	};
 	parser.max_payload_length = 2UL * 1024 * 1024 * 1024; // maybe realistic
@@ -222,7 +222,7 @@ TEST(aap_parser, parse_sendbundle_message)
 TEST(aap_parser, parse_recvbundle_message)
 {
 	const uint8_t msg_recvbundle[] = {
-		0x14, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x14, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
 		'P', 'A', 'Y', 'L', 'O', 'A', 'D',
 	};
@@ -232,9 +232,9 @@ TEST(aap_parser, parse_recvbundle_message)
 			  parse(msg_recvbundle, ARRAY_SIZE(msg_recvbundle)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_RECVBUNDLE, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT_EQUAL(7, parser.message.payload_length);
 	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", parser.message.payload,
 				 parser.message.payload_length);
@@ -281,7 +281,7 @@ TEST(aap_parser, parse_cancelbundle_message)
 TEST(aap_parser, parse_welcome_message)
 {
 	const uint8_t msg_welcome[] = {
-		0x17, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x17, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 	};
 
 	aap_parser_reset(&parser);
@@ -289,16 +289,16 @@ TEST(aap_parser, parse_welcome_message)
 			  parse(msg_welcome, ARRAY_SIZE(msg_welcome)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_WELCOME, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
 	TEST_ASSERT_NOT_NULL(parser.message.eid);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT_NULL(parser.message.payload);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 
 	const uint8_t msg_welcome_with_null[] = {
-		0x17, 0x00, 0x09,
-		'U', 'P', 'C', 'N', ' ', '\0', ' ', '4', '2',
+		0x17, 0x00, 0x0A,
+		'U', 'D', '3', 'T', 'N', ' ', '\0', ' ', '4', '2',
 		0x42,
 	};
 
@@ -308,12 +308,12 @@ TEST(aap_parser, parse_welcome_message)
 				ARRAY_SIZE(msg_welcome_with_null)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_WELCOME, parser.message.type);
-	TEST_ASSERT_EQUAL(9, parser.message.eid_length);
+	TEST_ASSERT_EQUAL(10, parser.message.eid_length);
 	TEST_ASSERT_NOT_NULL(parser.message.eid);
-	TEST_ASSERT_EQUAL_MEMORY("UPCN \0 42\0", parser.message.eid,
+	TEST_ASSERT_EQUAL_MEMORY("UD3TN \0 42\0", parser.message.eid,
 				 parser.message.eid_length + 1);
 	TEST_ASSERT_NULL(parser.message.payload);
-	// The message should be parsed successfully, but is invalid for uPCN.
+	// The message should be parsed successfully, but is invalid for uD3TN.
 	TEST_ASSERT(!aap_message_is_valid(&parser.message));
 }
 
@@ -378,7 +378,7 @@ TEST(aap_parser, parse_invalid_message)
 TEST(aap_parser, parse_chunked_message)
 {
 	const uint8_t msg[] = {
-		0x13, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x13, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
 		'P', 'A', 'Y', 'L', 'O', 'A', 'D',
 		'T', 'R', 'A', 'I', 'L', 'I', 'N', 'G', 'D', 'A', 'T', 'A',
@@ -396,7 +396,7 @@ TEST(aap_parser, parse_chunked_message)
 	 * at once.
 	 */
 	const size_t chunk_sizes[] = {0, 2, 4, 4, 0, 7, 10, 100};
-	const size_t deltas[] = {0, 1, 4, 2, 0, 0, 10, 5};
+	const size_t deltas[] = {0, 1, 4, 3, 0, 0, 10, 5};
 	size_t consumed, delta, c;
 
 	aap_parser_reset(&parser);
@@ -414,9 +414,9 @@ TEST(aap_parser, parse_chunked_message)
 	TEST_ASSERT_EQUAL(msg_size, consumed);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(chunk_sizes), c);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_SENDBUNDLE, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT_EQUAL(7, parser.message.payload_length);
 	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", parser.message.payload,
 				 parser.message.payload_length);
@@ -426,7 +426,7 @@ TEST(aap_parser, parse_chunked_message)
 TEST(aap_parser, parse_empty_payload_message)
 {
 	const uint8_t msg_empty_pl[] = {
-		0x14, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x14, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	};
 
@@ -435,9 +435,9 @@ TEST(aap_parser, parse_empty_payload_message)
 			  parse(msg_empty_pl, ARRAY_SIZE(msg_empty_pl)));
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, parser.status);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_RECVBUNDLE, parser.message.type);
-	TEST_ASSERT_EQUAL(4, parser.message.eid_length);
-	TEST_ASSERT(parser.message.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", parser.message.eid);
+	TEST_ASSERT_EQUAL(5, parser.message.eid_length);
+	TEST_ASSERT(parser.message.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", parser.message.eid);
 	TEST_ASSERT_EQUAL(0, parser.message.payload_length);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 }
@@ -461,7 +461,7 @@ TEST(aap_parser, parse_empty_eid_message)
 TEST(aap_parser, extract_message)
 {
 	const uint8_t msg[] = {
-		0x13, 0x00, 0x04, 'U', 'P', 'C', 'N',
+		0x13, 0x00, 0x05, 'U', 'D', '3', 'T', 'N',
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
 		'P', 'A', 'Y', 'L', 'O', 'A', 'D',
 	};
@@ -479,9 +479,9 @@ TEST(aap_parser, extract_message)
 	TEST_ASSERT_NOT_NULL(msg_extracted.eid);
 	TEST_ASSERT_NOT_NULL(msg_extracted.payload);
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_SENDBUNDLE, msg_extracted.type);
-	TEST_ASSERT_EQUAL(4, msg_extracted.eid_length);
-	TEST_ASSERT(msg_extracted.eid[4] == '\0');
-	TEST_ASSERT_EQUAL_STRING("UPCN", msg_extracted.eid);
+	TEST_ASSERT_EQUAL(5, msg_extracted.eid_length);
+	TEST_ASSERT(msg_extracted.eid[5] == '\0');
+	TEST_ASSERT_EQUAL_STRING("UD3TN", msg_extracted.eid);
 	TEST_ASSERT_EQUAL(7, msg_extracted.payload_length);
 	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", msg_extracted.payload,
 				 msg_extracted.payload_length);
