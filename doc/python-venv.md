@@ -1,6 +1,6 @@
 # Python 3 virtualenv Setup
 
-Multiple functional tests as well as the integration test toolchain in the µPCN
+Multiple functional tests as well as the integration test toolchain in the µD3TN
 project are using Python scripts to speed up development compared to pure C
 test implementations. The scripts are located in the [tools/](tools/) directory.
 The integration test toolchain can be found in the
@@ -9,7 +9,7 @@ implementation of several DTN protocols and convergence layers, provided in the
 [pyupcn/](pyupcn/) directory.
 
 A [venv](https://docs.python.org/3/library/venv.html) is used to isolate the
-µPCN Python environment from the system. The Makefile target `virtualenv`
+µD3TN Python environment from the system. The Makefile target `virtualenv`
 creates a default Python virtualenv including [pip](https://pip.pypa.io/) and
 all required Python packages.
 
