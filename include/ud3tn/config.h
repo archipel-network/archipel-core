@@ -155,14 +155,8 @@ enum failed_forwarding_policy {
  */
 /* Maximum period (in ms) for checking */
 #define CONTACT_CHECKING_MAX_PERIOD 600000
-
-/* Maximum amount of concurrent contacts that can be handled by CM */
-#ifdef UPCN_TEST_BUILD
-/* For unittests we need it to be 1 to test the behavior of the routing table */
-#define MAX_CONCURRENT_CONTACTS 1
-#else // UPCN_TEST_BUILD
+/* Maximum number of concurrent contacts that can be handled by CM */
 #define MAX_CONCURRENT_CONTACTS 10
-#endif // UPCN_TEST_BUILD
 
 
 #endif /* CONFIG_H_INCLUDED */
