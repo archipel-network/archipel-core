@@ -55,7 +55,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging_level(args.verbosity))
 
     if args.tcp:
-        with AAPTCPClient(address=(args.tcp[0], args.tcp[1])) as aap_client:
+        addr = (args.tcp[0], int(args.tcp[1]))
+        with AAPTCPClient(address=addr) as aap_client:
             aap_client.register(args.agentid)
             run_aap_recv(aap_client, args.count, args.verify_pl)
     else:
