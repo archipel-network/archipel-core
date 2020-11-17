@@ -183,7 +183,7 @@ case $1 in
     sleep 1
     echo 'Running tests...'
     timeout --kill-after=6 5 openocd -c "script openocd.cfg" -c "reset halt" -c "reset run" | tee "$TDIR/ud3tn.out"
-    grep -F "uPCN unittests succeeded" "$TDIR/ud3tn.out"
+    grep -F "uD3TN unittests succeeded" "$TDIR/ud3tn.out"
     ;;
     #op#
     integrationtest)

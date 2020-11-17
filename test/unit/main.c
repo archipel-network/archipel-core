@@ -41,10 +41,10 @@ void test_task(void *args)
 
 	hal_io_message_printf("\n");
 	if (!test_errors) {
-		LOG("uPCN unittests succeeded.");
+		LOG("uD3TN unittests succeeded.");
 		exit(EXIT_SUCCESS);
 	} else {
-		LOGF("uPCN unittests resulted in %d error(s).", test_errors);
+		LOGF("uD3TN unittests resulted in %d error(s).", test_errors);
 		exit(EXIT_FAILURE);
 	}
 }
