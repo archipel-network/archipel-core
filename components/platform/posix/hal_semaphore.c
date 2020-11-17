@@ -48,7 +48,7 @@ void hal_semaphore_delete(Semaphore_t sem)
 	free(sem);
 }
 
-enum upcn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
+enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
 {
 	struct timespec ts;
 
@@ -57,7 +57,7 @@ enum upcn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
 	ts.tv_sec += timeout_ms/1000;
 	ts.tv_nsec += (timeout_ms%1000)*1000000;
 	if (sem_timedwait(sem, &ts) == -1)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }

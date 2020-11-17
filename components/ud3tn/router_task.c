@@ -57,7 +57,7 @@ void router_task(void *rt_parameters)
 	parameters = (struct router_task_parameters *)rt_parameters;
 
 	/* Init routing tables */
-	ASSERT(routing_table_init() == UPCN_OK);
+	ASSERT(routing_table_init() == UD3TN_OK);
 	/* Start contact manager */
 	cm_param = contact_manager_start(
 		parameters->router_signaling_queue,
@@ -72,7 +72,7 @@ void router_task(void *rt_parameters)
 	for (;;) {
 		if (hal_queue_receive(
 			parameters->router_signaling_queue, &signal,
-			-1) == UPCN_OK
+			-1) == UD3TN_OK
 		) {
 			process_signal(signal,
 				parameters->bundle_processor_signaling_queue,
@@ -111,7 +111,7 @@ static inline enum bundle_status_report_reason get_reason(int8_t bh_result)
 static void wake_up_contact_manager(QueueIdentifier_t cm_queue,
 				    enum contact_manager_signal cm_signal)
 {
-	if (hal_queue_try_push_to_back(cm_queue, &cm_signal, 0) == UPCN_FAIL) {
+	if (hal_queue_try_push_to_back(cm_queue, &cm_signal, 0) == UD3TN_FAIL) {
 		// To be safe we let the CM re-check everything in this case.
 		cm_signal = (
 			CM_SIGNAL_UPDATE_CONTACT_LIST |

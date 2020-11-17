@@ -56,7 +56,7 @@ struct router_result {
 	(contact_get_cur_remaining_capacity(contact, prio))
 
 struct router_config router_get_config(void);
-enum upcn_result router_update_config(struct router_config config);
+enum ud3tn_result router_update_config(struct router_config config);
 
 struct associated_contact_list *router_lookup_destination(char *dest);
 uint8_t router_calculate_fragment_route(
@@ -69,7 +69,7 @@ struct router_result router_get_first_route(struct bundle *bundle);
 struct router_result router_try_reuse(
 	struct router_result route, struct bundle *bundle);
 
-enum upcn_result router_add_bundle_to_contact(
+enum ud3tn_result router_add_bundle_to_contact(
 	struct contact *contact, struct routed_bundle *rb);
 struct routed_bundle *router_remove_bundle_from_contact(
 	struct contact *contact, bundleid_t id);

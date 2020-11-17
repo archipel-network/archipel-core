@@ -21,7 +21,7 @@ static struct upcn_cmdline_options global_cmd_opts;
 /**
  * Helper function for parsing a 64-bit unsigned integer from a given C-string.
  */
-enum upcn_result parse_uint64(const char *str, uint64_t *result);
+enum ud3tn_result parse_uint64(const char *str, uint64_t *result);
 
 /**
  * Replaces long options in argv with short ones.
@@ -89,7 +89,7 @@ const struct upcn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			result->cla_options = strdup(optarg);
 			break;
 		case 'e':
-			if (!optarg || validate_eid(optarg) != UPCN_OK ||
+			if (!optarg || validate_eid(optarg) != UD3TN_OK ||
 					strcmp("dtn:none", optarg) == 0) {
 				LOG("Invalid EID provided!");
 				return NULL;
@@ -102,14 +102,14 @@ const struct upcn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			return result;
 		case 'l':
 			if (parse_uint64(optarg, &result->lifetime)
-					!= UPCN_OK || !result->lifetime) {
+					!= UD3TN_OK || !result->lifetime) {
 				LOG("Invalid lifetime provided!");
 				return NULL;
 			}
 			break;
 		case 'm':
 			if (parse_uint64(optarg, &result->mbs)
-					!= UPCN_OK || !result->mbs) {
+					!= UD3TN_OK || !result->mbs) {
 				LOG("Invalid maximum bundle size provided!");
 				return NULL;
 			}
@@ -174,19 +174,19 @@ finish:
 	return result;
 }
 
-enum upcn_result parse_uint64(const char *str, uint64_t *result)
+enum ud3tn_result parse_uint64(const char *str, uint64_t *result)
 {
 	char *end;
 	unsigned long long val;
 
 	if (!str)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	errno = 0;
 	val = strtoull(str, &end, 10);
 	if (errno == ERANGE || end == str || *end != 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	*result = (uint64_t)val;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static void shorten_long_cli_options(const int argc, char *argv[])

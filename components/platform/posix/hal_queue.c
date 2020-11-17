@@ -29,11 +29,11 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item)
 }
 
 
-enum upcn_result hal_queue_receive(QueueIdentifier_t queue, void *targetBuffer,
+enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue, void *targetBuffer,
 				   int timeout)
 {
 	return queuePop(queue, targetBuffer, timeout) == 0
-		? UPCN_OK : UPCN_FAIL;
+		? UD3TN_OK : UD3TN_FAIL;
 }
 
 
@@ -43,11 +43,11 @@ void hal_queue_reset(QueueIdentifier_t queue)
 }
 
 
-enum upcn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
+enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
 					    const void *item, int timeout)
 {
 	return queuePush(queue, item, timeout, false) == 0
-		? UPCN_OK : UPCN_FAIL;
+		? UD3TN_OK : UD3TN_FAIL;
 }
 
 
@@ -57,10 +57,10 @@ void hal_queue_delete(QueueIdentifier_t queue)
 }
 
 
-enum upcn_result hal_queue_override_to_back(QueueIdentifier_t queue,
+enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
 					    const void *item)
 {
-	return queuePush(queue, item, -1, true) == 0 ? UPCN_OK : UPCN_FAIL;
+	return queuePush(queue, item, -1, true) == 0 ? UD3TN_OK : UD3TN_FAIL;
 }
 
 uint8_t hal_queue_nr_of_items_waiting(QueueIdentifier_t queue)

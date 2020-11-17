@@ -14,9 +14,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-enum upcn_result hal_io_init(void)
+enum ud3tn_result hal_io_init(void)
 {
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 int hal_io_message_printf(const char *format, ...)

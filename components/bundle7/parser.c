@@ -659,7 +659,7 @@ struct parser *bundle7_parser_init(struct bundle7_parser *state,
 	// Set to error that the reset handler does not abort
 	state->basedata->status = PARSER_STATUS_ERROR;
 
-	if (bundle7_parser_reset(state) != UPCN_OK) {
+	if (bundle7_parser_reset(state) != UD3TN_OK) {
 		free(state->basedata);
 		return NULL;
 	}
@@ -668,11 +668,11 @@ struct parser *bundle7_parser_init(struct bundle7_parser *state,
 }
 
 
-enum upcn_result bundle7_parser_reset(struct bundle7_parser *state)
+enum ud3tn_result bundle7_parser_reset(struct bundle7_parser *state)
 {
 	if (state->basedata->status == PARSER_STATUS_GOOD
 		&& state->next == bundle_start)
-		return UPCN_OK;
+		return UD3TN_OK;
 
 	state->basedata->status = PARSER_STATUS_GOOD;
 	state->basedata->flags = PARSER_FLAG_NONE;
@@ -687,20 +687,20 @@ enum upcn_result bundle7_parser_reset(struct bundle7_parser *state)
 		state->bundle = bundle_init();
 
 	if (state->bundle == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	state->current_block_entry = &state->bundle->blocks;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result bundle7_parser_deinit(struct bundle7_parser *state)
+enum ud3tn_result bundle7_parser_deinit(struct bundle7_parser *state)
 {
 	free(state->basedata);
 	if (state->bundle != NULL)
 		bundle_free(state->bundle);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 

@@ -20,15 +20,15 @@ static uint8_t eid_table_initialized;
 
 /* INIT */
 
-enum upcn_result routing_table_init(void)
+enum ud3tn_result routing_table_init(void)
 {
 	if (eid_table_initialized != 0)
-		return UPCN_OK;
+		return UD3TN_OK;
 	node_list = NULL;
 	contact_list = NULL;
 	htab_init(&eid_table, NODE_HTAB_SLOT_COUNT, htab_elem);
 	eid_table_initialized = 1;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 void routing_table_free(void)

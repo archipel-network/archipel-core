@@ -113,7 +113,7 @@ struct endpoint_list *endpoint_list_free(struct endpoint_list *e)
 	return next;
 }
 
-static enum upcn_result endpoint_list_add(
+static enum ud3tn_result endpoint_list_add(
 	struct endpoint_list **list, char *eid)
 {
 	struct endpoint_list **cur_entry, *new_entry;
@@ -124,11 +124,11 @@ static enum upcn_result endpoint_list_add(
 	cur_entry = list;
 	while (*cur_entry != NULL) {
 		if ((*cur_entry)->eid == eid)
-			return UPCN_FAIL;
+			return UD3TN_FAIL;
 		if (strcmp((*cur_entry)->eid, eid) == 0) {
 			// Already contained in list -> free the duplicate
 			free(eid);
-			return UPCN_FAIL;
+			return UD3TN_FAIL;
 		}
 		if ((*cur_entry)->eid > eid && !target_pos)
 			target_pos = cur_entry;
@@ -139,15 +139,15 @@ static enum upcn_result endpoint_list_add(
 	new_entry = malloc(sizeof(struct endpoint_list));
 	if (new_entry == NULL) {
 		free(eid);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 	new_entry->eid = eid;
 	new_entry->next = *target_pos;
 	*target_pos = new_entry;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-static enum upcn_result endpoint_list_remove(
+static enum ud3tn_result endpoint_list_remove(
 	struct endpoint_list **list, char *eid)
 {
 	struct endpoint_list **cur_entry, *tmp;
@@ -160,11 +160,11 @@ static enum upcn_result endpoint_list_remove(
 			tmp = *cur_entry;
 			*cur_entry = (*cur_entry)->next;
 			free(tmp);
-			return UPCN_OK;
+			return UD3TN_OK;
 		}
 		cur_entry = &(*cur_entry)->next;
 	}
-	return UPCN_FAIL;
+	return UD3TN_FAIL;
 }
 
 int endpoint_list_sorted(struct endpoint_list *list)

@@ -15,7 +15,7 @@ struct node_table_entry {
 	struct associated_contact_list *contacts;
 };
 
-enum upcn_result routing_table_init(void);
+enum ud3tn_result routing_table_init(void);
 void routing_table_free(void);
 
 struct node *routing_table_lookup_node(const char *eid);

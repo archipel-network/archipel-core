@@ -84,7 +84,7 @@ struct bundle *bundlefragmenter_initialize_first_fragment(struct bundle *input)
 	}
 
 	// Calculate correct primary block length
-	if (bundle_recalculate_header_length(result) == UPCN_FAIL)
+	if (bundle_recalculate_header_length(result) == UD3TN_FAIL)
 		return NULL;
 	return result;
 }

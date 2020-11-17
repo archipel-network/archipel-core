@@ -53,7 +53,7 @@ static inline void handle_signal(const struct bundle_processor_signal signal);
 
 static void bundle_dispatch(struct bundle *bundle);
 static bool bundle_endpoint_is_local(struct bundle *bundle);
-static enum upcn_result bundle_forward(struct bundle *bundle, uint16_t timeout);
+static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout);
 static void bundle_forwarding_scheduled(struct bundle *bundle);
 static void bundle_forwarding_success(struct bundle *bundle);
 static void bundle_forwarding_contraindicated(
@@ -90,7 +90,7 @@ static void send_status_report(
 static void send_custody_signal(struct bundle *bundle,
 	const enum bundle_custody_signal_type,
 	const enum bundle_custody_signal_reason reason);
-static enum upcn_result send_bundle(bundleid_t bundle, uint16_t timeout);
+static enum ud3tn_result send_bundle(bundleid_t bundle, uint16_t timeout);
 static struct bundle_block *find_block_by_type(struct bundle_block_list *blocks,
 	enum bundle_block_type type);
 
@@ -141,7 +141,7 @@ void bundle_processor_task(void * const param)
 
 	for (;;) {
 		if (hal_queue_receive(p->signaling_queue, &signal,
-			-1) == UPCN_OK
+			-1) == UD3TN_OK
 		) {
 			handle_signal(signal);
 		}
@@ -222,26 +222,26 @@ static bool bundle_endpoint_is_local(struct bundle *bundle)
 }
 
 /* 5.4 */
-static enum upcn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
+static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 {
 	/* 4.3.4. Hop Count (BPv7-bis) */
 	/* TODO: Is this the correct point to perform the hop-count check? */
 	if (!hop_count_validation(bundle)) {
 		bundle_delete(bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	/* 5.4-1 */
 	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING);
 	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
 	/* 5.4-2 */
-	if (send_bundle(bundle->id, timeout) != UPCN_OK) {
+	if (send_bundle(bundle->id, timeout) != UD3TN_OK) {
 		/* Could not store bundle in queue -> delete it. */
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 	/* For steps after 5.4-2, see below */
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 /* 5.4-4 */
@@ -635,7 +635,7 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 /* 5.10 */
 static void bundle_custody_accept(struct bundle *bundle)
 {
-	if (custody_manager_accept(bundle) != UPCN_OK) {
+	if (custody_manager_accept(bundle) != UD3TN_OK) {
 		/* TODO */
 		return;
 	}
@@ -745,7 +745,7 @@ static void bundle_dangling(struct bundle *bundle)
 	if (!resched) {
 		bundle_delete(bundle, BUNDLE_SR_REASON_TRANSMISSION_CANCELED);
 	/* Send it to the router task again after evaluating policy. */
-	} else if (send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT) != UPCN_OK) {
+	} else if (send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT) != UD3TN_OK) {
 		LOGF("Failed forwarding bundle #%d to router task, dropping.",
 		     bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
@@ -777,7 +777,7 @@ static void send_status_report(
 	if (b != NULL) {
 		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 		bundle_storage_add(b);
-		if (bundle_forward(b, STATUS_REPORT_TIMEOUT) != UPCN_OK)
+		if (bundle_forward(b, STATUS_REPORT_TIMEOUT) != UD3TN_OK)
 			LOGF("Failed sending status report for bundle #%d.",
 			     bundle->id);
 	}
@@ -804,7 +804,7 @@ static void send_custody_signal(struct bundle *bundle,
 			BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 		bundle_storage_add(signals->data);
 		if (bundle_forward(signals->data, CUSTODY_SIGNAL_TIMEOUT)
-		    != UPCN_OK)
+		    != UD3TN_OK)
 			LOGF("Failed sending custody signal for bundle #%d.",
 			     bundle->id);
 
@@ -815,7 +815,7 @@ static void send_custody_signal(struct bundle *bundle,
 	}
 }
 
-static enum upcn_result send_bundle(bundleid_t bundle, uint16_t timeout)
+static enum ud3tn_result send_bundle(bundleid_t bundle, uint16_t timeout)
 {
 	struct router_signal signal = {
 		.type = ROUTER_SIGNAL_ROUTE_BUNDLE,
@@ -825,7 +825,7 @@ static enum upcn_result send_bundle(bundleid_t bundle, uint16_t timeout)
 
 	if (timeout == 0) {
 		hal_queue_push_to_back(out_queue, &signal);
-		return UPCN_OK;
+		return UD3TN_OK;
 	}
 	return hal_queue_try_push_to_back(out_queue,
 					  &signal,

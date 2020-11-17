@@ -102,8 +102,8 @@ struct bundle6_parser {
 struct parser *bundle6_parser_init(
 	struct bundle6_parser *state,
 	void (*send_callback)(struct bundle *, void *), void *param);
-enum upcn_result bundle6_parser_reset(struct bundle6_parser *state);
-enum upcn_result bundle6_parser_deinit(struct bundle6_parser *state);
+enum ud3tn_result bundle6_parser_reset(struct bundle6_parser *state);
+enum ud3tn_result bundle6_parser_deinit(struct bundle6_parser *state);
 
 size_t bundle6_parser_read(struct bundle6_parser *state,
 	const uint8_t *buffer, size_t length);

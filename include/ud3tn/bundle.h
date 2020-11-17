@@ -352,7 +352,7 @@ void bundle_drop(struct bundle *bundle);
  */
 void bundle_copy_headers(struct bundle *to, const struct bundle *from);
 
-enum upcn_result bundle_recalculate_header_length(struct bundle *bundle);
+enum ud3tn_result bundle_recalculate_header_length(struct bundle *bundle);
 struct bundle *bundle_dup(const struct bundle *bundle);
 
 enum bundle_routing_priority bundle_get_routing_priority(
@@ -377,7 +377,7 @@ struct bundle_block_list *bundle_block_list_dup(struct bundle_block_list *e);
 /**
  * Serializes a bundle into its on-wire byte-string representation.
  */
-enum upcn_result bundle_serialize(struct bundle *bundle,
+enum ud3tn_result bundle_serialize(struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj);
 

@@ -12,7 +12,7 @@ bool custody_manager_has_accepted(struct bundle *bundle);
 struct bundle *custody_manager_get_by_record(
 	struct bundle_administrative_record *record);
 
-enum upcn_result custody_manager_accept(struct bundle *bundle);
+enum ud3tn_result custody_manager_accept(struct bundle *bundle);
 void custody_manager_release(struct bundle *bundle);
 
 void custody_manager_init(const char *local_eid);

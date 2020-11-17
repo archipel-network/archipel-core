@@ -52,7 +52,7 @@ struct bundle *bundle6_create_local(
 	bundle->payload_block->data = payload;
 	bundle->payload_block->length = payload_length;
 
-	if (bundle_recalculate_header_length(bundle) == UPCN_FAIL) {
+	if (bundle_recalculate_header_length(bundle) == UD3TN_FAIL) {
 		bundle->payload_block->data = NULL; // prevent double-free
 		goto fail;
 	}

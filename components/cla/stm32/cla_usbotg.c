@@ -41,7 +41,7 @@ static const char *usbotg_name_get(void)
 	return "usbotg";
 }
 
-static enum upcn_result usbotg_launch(struct cla_config *const config)
+static enum ud3tn_result usbotg_launch(struct cla_config *const config)
 {
 	struct usbotg_config *const usbotg_config =
 		(struct usbotg_config *)config;
@@ -58,10 +58,10 @@ static enum upcn_result usbotg_launch(struct cla_config *const config)
 
 	usbotg_config->comm_semaphore = hal_semaphore_init_binary();
 	if (usbotg_config->comm_semaphore == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	hal_semaphore_release(usbotg_config->comm_semaphore);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static size_t usbotg_mbs_get(struct cla_config *const config)
@@ -144,7 +144,7 @@ static size_t usbotg_forward_to_specific_parser(struct cla_link *link,
 	return result;
 }
 
-static enum upcn_result usbotg_read(struct cla_link *link,
+static enum ud3tn_result usbotg_read(struct cla_link *link,
 				    uint8_t *buffer, size_t length,
 				    size_t *bytes_read)
 {
@@ -160,7 +160,7 @@ static enum upcn_result usbotg_read(struct cla_link *link,
 	uint8_t *stream = buffer;
 
 	// Receive at least one byte in blocking manner from the RX queue
-	while (hal_queue_receive(rx_queue, stream, -1) != UPCN_OK)
+	while (hal_queue_receive(rx_queue, stream, -1) != UD3TN_OK)
 		;
 	length--;
 	stream++;
@@ -169,14 +169,14 @@ static enum upcn_result usbotg_read(struct cla_link *link,
 	// small timeout.
 	while (length--) {
 		if (hal_queue_receive(rx_queue, stream,
-				      COMM_RX_TIMEOUT) != UPCN_OK)
+				      COMM_RX_TIMEOUT) != UD3TN_OK)
 			break;
 		stream++;
 	}
 
 	*bytes_read = stream - buffer;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 
@@ -202,7 +202,7 @@ static struct cla_tx_queue usbotg_get_tx_queue(
 	};
 }
 
-static enum upcn_result usbotg_start_scheduled_contact(
+static enum ud3tn_result usbotg_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	// STUB - UNUSED
@@ -210,10 +210,10 @@ static enum upcn_result usbotg_start_scheduled_contact(
 	(void)eid;
 	(void)cla_addr;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-static enum upcn_result usbotg_end_scheduled_contact(
+static enum ud3tn_result usbotg_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	// STUB - UNUSED
@@ -221,7 +221,7 @@ static enum upcn_result usbotg_end_scheduled_contact(
 	(void)eid;
 	(void)cla_addr;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static inline void VCP_Transmit_Bytes(QueueIdentifier_t tx_queue,
@@ -240,7 +240,7 @@ static inline void VCP_Transmit_Bytes(QueueIdentifier_t tx_queue,
 		hal_queue_push_to_back(tx_queue, &_buf[i]);
 #else /* !defined(COMM_TX_TIMEOUT) || COMM_TX_TIMEOUT < 0 */
 		if (hal_queue_try_push_to_back(tx_queue, &_buf[i],
-				COMM_TX_TIMEOUT) != UPCN_OK)
+				COMM_TX_TIMEOUT) != UD3TN_OK)
 			return;
 #endif /* !defined(COMM_TX_TIMEOUT) || COMM_TX_TIMEOUT < 0 */
 	}
@@ -323,7 +323,7 @@ struct cla_config *usbotg_create(
 	/* set base_config vtable */
 	config->base.vtable = &usbotg_vtable;
 
-	if (cla_link_init(&config->link, &config->base) != UPCN_OK) {
+	if (cla_link_init(&config->link, &config->base) != UD3TN_OK) {
 		LOG("usbotg: Link initialization failed!");
 		free(config);
 		return NULL;

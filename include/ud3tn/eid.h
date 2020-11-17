@@ -3,6 +3,6 @@
 
 #include "ud3tn/result.h"
 
-enum upcn_result validate_eid(const char *eid);
+enum ud3tn_result validate_eid(const char *eid);
 
 #endif // EID_H_INCLUDED

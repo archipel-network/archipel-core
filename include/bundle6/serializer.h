@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 
-enum upcn_result bundle6_serialize(
+enum ud3tn_result bundle6_serialize(
 	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj);

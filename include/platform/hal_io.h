@@ -33,7 +33,7 @@
  * @brief hal_io_init Initialization of underlying OS/HW for I/O
  * @return Whether the operation was successful
  */
-enum upcn_result hal_io_init(void);
+enum ud3tn_result hal_io_init(void);
 
 /**
  * @brief hal_io_message_printf Write a string with arbitrary length to the

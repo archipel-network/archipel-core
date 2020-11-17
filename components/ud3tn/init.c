@@ -118,7 +118,7 @@ void start_tasks(const struct upcn_cmdline_options *const opt)
 
 	/* Initialize the communication subsystem (CLA) */
 	if (cla_initialize_all(opt->cla_options,
-			       &bundle_agent_interface) != UPCN_OK) {
+			       &bundle_agent_interface) != UD3TN_OK) {
 		LOG("INIT: CLA subsystem could not be initialized!");
 		exit(EXIT_FAILURE);
 	}

@@ -6,7 +6,7 @@
 #include "ud3tn/bundle.h"  // struct bundle
 #include "ud3tn/crc.h"     // struct crc_stream
 #include "ud3tn/parser.h"  // struct parser
-#include "ud3tn/result.h"  // enum upcn_result
+#include "ud3tn/result.h"  // enum ud3tn_result
 
 #include "cbor.h"
 
@@ -82,8 +82,8 @@ struct parser *bundle7_parser_init(
 size_t bundle7_parser_read(struct bundle7_parser *parser,
 	const uint8_t *buffer, size_t length);
 
-enum upcn_result bundle7_parser_reset(struct bundle7_parser *state);
-enum upcn_result bundle7_parser_deinit(struct bundle7_parser *state);
+enum ud3tn_result bundle7_parser_reset(struct bundle7_parser *state);
+enum ud3tn_result bundle7_parser_deinit(struct bundle7_parser *state);
 
 
 #endif /* BUNDLE_V7_PARSER_H_INCLUDED */

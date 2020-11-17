@@ -22,16 +22,16 @@ struct parser *bundle6_parser_init(
 	state->bundle = NULL;
 	state->dict = NULL;
 	state->basedata->status = PARSER_STATUS_ERROR;
-	if (bundle6_parser_reset(state) != UPCN_OK)
+	if (bundle6_parser_reset(state) != UD3TN_OK)
 		return NULL;
 	return state->basedata;
 }
 
-enum upcn_result bundle6_parser_reset(struct bundle6_parser *state)
+enum ud3tn_result bundle6_parser_reset(struct bundle6_parser *state)
 {
 	if (state->basedata->status == PARSER_STATUS_GOOD &&
 			state->current_stage == PARSER_STAGE_VERSION)
-		return UPCN_OK;
+		return UD3TN_OK;
 
 	state->basedata->status = PARSER_STATUS_GOOD;
 	state->basedata->flags = PARSER_FLAG_NONE;
@@ -55,7 +55,7 @@ enum upcn_result bundle6_parser_reset(struct bundle6_parser *state)
 	else
 		state->bundle = bundle_init();
 	if (state->bundle == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	if (state->dict != NULL) {
 		free(state->dict);
@@ -64,10 +64,10 @@ enum upcn_result bundle6_parser_reset(struct bundle6_parser *state)
 
 	state->current_block_entry = &state->bundle->blocks;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result bundle6_parser_deinit(struct bundle6_parser *state)
+enum ud3tn_result bundle6_parser_deinit(struct bundle6_parser *state)
 {
 	free(state->basedata);
 	if (state->bundle != NULL)
@@ -75,7 +75,7 @@ enum upcn_result bundle6_parser_deinit(struct bundle6_parser *state)
 	if (state->dict != NULL)
 		free(state->dict);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static inline bool bundle6_parser_length_known(struct bundle6_parser *state)

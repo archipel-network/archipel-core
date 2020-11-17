@@ -90,7 +90,7 @@ struct tcpclv3_contact_parameters {
  * MGMT
  */
 
-static enum upcn_result cla_tcpclv3_perform_handshake(
+static enum ud3tn_result cla_tcpclv3_perform_handshake(
 	struct tcpclv3_contact_parameters *const param)
 {
 	// Send contact header
@@ -104,12 +104,12 @@ static enum upcn_result cla_tcpclv3_perform_handshake(
 	);
 
 	if (!header)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	if (tcp_send_all(param->socket, header, header_len) == -1) {
 		free(header);
 		LOGF("TCPCLv3: Error sending header: %s", strerror(errno));
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	free(header);
@@ -125,7 +125,7 @@ static enum upcn_result cla_tcpclv3_perform_handshake(
 			memcmp(header_buf, "dtn!", 4) != 0 ||
 			header_buf[4] < 0x03) {
 		LOG("TCPCLv3: Did not receive proper \"dtn!\" magic!");
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	uint8_t cur_byte;
@@ -138,7 +138,7 @@ static enum upcn_result cla_tcpclv3_perform_handshake(
 		sdnv_read_u32(&sdnv_state, &peer_eid_len, cur_byte);
 	if (sdnv_state.status != SDNV_DONE) {
 		LOG("TCPCLv3: Error receiving EID length SDNV!");
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	char *eid_buf = malloc(peer_eid_len + 1);
@@ -146,7 +146,7 @@ static enum upcn_result cla_tcpclv3_perform_handshake(
 	if (!eid_buf) {
 		LOGF("TCPCLv3: Error allocating memory (%u byte(s)) for EID!",
 		     peer_eid_len);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	if (tcp_recv_all(param->socket, eid_buf,
@@ -154,25 +154,25 @@ static enum upcn_result cla_tcpclv3_perform_handshake(
 		free(eid_buf);
 		LOGF("TCPCLv3: Error receiving peer EID of len %u byte(s)",
 		     peer_eid_len);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	eid_buf[peer_eid_len] = 0;
-	if (validate_eid(eid_buf) != UPCN_OK) {
+	if (validate_eid(eid_buf) != UD3TN_OK) {
 		LOGF("TCPCLv3: Received invalid peer EID of len %u: \"%s\"",
 		     peer_eid_len, eid_buf);
 		free(eid_buf);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	LOGF("TCPCLv3: Handshake performed with \"%s\", has EID \"%s\"",
 	     param->cla_addr ? param->cla_addr : "<incoming>", eid_buf);
 	param->eid = eid_buf;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-static enum upcn_result handle_established_connection(
+static enum ud3tn_result handle_established_connection(
 	struct tcpclv3_contact_parameters *const param)
 {
 	struct tcpclv3_config *const tcpclv3_config = param->config;
@@ -229,16 +229,16 @@ static enum upcn_result handle_established_connection(
 
 	if (cla_tcp_link_init(&param->link, param->socket,
 			      &tcpclv3_config->base)
-			!= UPCN_OK) {
+			!= UD3TN_OK) {
 		LOG("TCPCLv3: Error initializing CLA link!");
 		param->state = TCPCLV3_CONNECTING;
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	cla_link_wait_cleanup(&param->link.base);
 
 	param->state = TCPCLV3_CONNECTING;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static void tcpclv3_link_management_task(void *p)
@@ -271,7 +271,7 @@ static void tcpclv3_link_management_task(void *p)
 			param->state = TCPCLV3_CONNECTED;
 		} else if (param->state == TCPCLV3_CONNECTED) {
 			ASSERT(param->socket > 0);
-			if (cla_tcpclv3_perform_handshake(param) == UPCN_OK)
+			if (cla_tcpclv3_perform_handshake(param) == UD3TN_OK)
 				handle_established_connection(param);
 			if (param->opportunistic || !param->cla_addr)
 				break;
@@ -429,7 +429,7 @@ static void tcpclv3_listener_task(void *p)
  * API
  */
 
-static enum upcn_result tcpclv3_launch(struct cla_config *const config)
+static enum ud3tn_result tcpclv3_launch(struct cla_config *const config)
 {
 	struct cla_tcp_config *const tcp_config = (
 		(struct cla_tcp_config *)config
@@ -445,9 +445,9 @@ static enum upcn_result tcpclv3_launch(struct cla_config *const config)
 	);
 
 	if (!tcp_config->listen_task)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static const char *tcpclv3_name_get(void)
@@ -492,7 +492,7 @@ static struct cla_tx_queue tcpclv3_get_tx_queue(
 	return (struct cla_tx_queue){ NULL, NULL };
 }
 
-static enum upcn_result tcpclv3_start_scheduled_contact(
+static enum ud3tn_result tcpclv3_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	struct tcpclv3_config *const tcpclv3_config =
@@ -510,16 +510,16 @@ static enum upcn_result tcpclv3_start_scheduled_contact(
 		param->opportunistic = false;
 		param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
-		return UPCN_OK;
+		return UD3TN_OK;
 	}
 
 	launch_connection_management_task(tcpclv3_config, -1, eid, cla_addr);
 	hal_semaphore_release(tcpclv3_config->param_htab_sem);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-static enum upcn_result tcpclv3_end_scheduled_contact(
+static enum ud3tn_result tcpclv3_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	(void)cla_addr;
@@ -540,7 +540,7 @@ static enum upcn_result tcpclv3_end_scheduled_contact(
 
 	hal_semaphore_release(tcpclv3_config->param_htab_sem);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 /*
@@ -706,15 +706,15 @@ const struct cla_vtable tcpclv3_vtable = {
 	.cla_disconnect_handler = cla_generic_disconnect_handler,
 };
 
-static enum upcn_result tcpclv3_init(
+static enum ud3tn_result tcpclv3_init(
 	struct tcpclv3_config *config,
 	const char *node, const char *service,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
 	if (cla_tcp_config_init(&config->base,
-				bundle_agent_interface) != UPCN_OK)
-		return UPCN_FAIL;
+				bundle_agent_interface) != UD3TN_OK)
+		return UD3TN_FAIL;
 
 	/* set base_config vtable */
 	config->base.base.vtable = &tcpclv3_vtable;
@@ -728,10 +728,10 @@ static enum upcn_result tcpclv3_init(
 	/* Start listening */
 	if (cla_tcp_listen(&config->base, node, service,
 			   CLA_TCP_MULTI_BACKLOG)
-			!= UPCN_OK)
-		return UPCN_FAIL;
+			!= UD3TN_OK)
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 struct cla_config *tcpclv3_create(
@@ -751,7 +751,7 @@ struct cla_config *tcpclv3_create(
 	}
 
 	if (tcpclv3_init(config, options[0], options[1],
-			 bundle_agent_interface) != UPCN_OK) {
+			 bundle_agent_interface) != UD3TN_OK) {
 		free(config);
 		LOG("TCPCLv3: Initialization failed!");
 		return NULL;

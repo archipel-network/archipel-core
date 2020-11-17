@@ -35,7 +35,7 @@ static void cla_contact_tx_task(void *param)
 	struct cla_contact_tx_task_command cmd;
 	struct bundle *b;
 	struct routed_bundle_list *cur;
-	enum upcn_result s;
+	enum ud3tn_result s;
 	void const *cla_send_packet_data =
 		link->config->vtable->cla_send_packet_data;
 	QueueIdentifier_t router_signaling_queue =
@@ -43,7 +43,7 @@ static void cla_contact_tx_task(void *param)
 
 	while (link->active) {
 		if (hal_queue_receive(link->tx_queue_handle,
-				      &cmd, -1) == UPCN_FAIL)
+				      &cmd, -1) == UD3TN_FAIL)
 			continue;
 		else if (cmd.type == TX_COMMAND_FINALIZE)
 			break;
@@ -72,10 +72,10 @@ static void cla_contact_tx_task(void *param)
 			} else {
 				LOGF("TX: Bundle #%d not found!",
 				     cur->data->id);
-				s = UPCN_FAIL;
+				s = UD3TN_FAIL;
 			}
 
-			if (s == UPCN_OK) {
+			if (s == UD3TN_OK) {
 				cur->data->transmitted++;
 				report_bundle(
 					router_signaling_queue,
@@ -98,7 +98,7 @@ static void cla_contact_tx_task(void *param)
 	hal_semaphore_take_blocking(link->tx_queue_sem);
 
 	// Consume the rest of the queue
-	while (hal_queue_receive(link->tx_queue_handle, &cmd, 0) != UPCN_FAIL) {
+	while (hal_queue_receive(link->tx_queue_handle, &cmd, 0) != UD3TN_FAIL) {
 		if (cmd.type == TX_COMMAND_BUNDLES) {
 			while (cmd.bundles != NULL) {
 				cur = cmd.bundles;
@@ -122,7 +122,7 @@ static void cla_contact_tx_task(void *param)
 	hal_task_delete(tx_task_handle);
 }
 
-enum upcn_result cla_launch_contact_tx_task(struct cla_link *link)
+enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 {
 	static uint8_t ctr = 1;
 	static char tname_buf[6];
@@ -141,7 +141,7 @@ enum upcn_result cla_launch_contact_tx_task(struct cla_link *link)
 		(void *)CONTACT_TX_TASK_TAG
 	);
 
-	return link->tx_task_handle ? UPCN_OK : UPCN_FAIL;
+	return link->tx_task_handle ? UD3TN_OK : UD3TN_FAIL;
 }
 
 void cla_contact_tx_task_request_exit(QueueIdentifier_t queue)

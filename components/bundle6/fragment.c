@@ -11,7 +11,7 @@
 #include <string.h>
 
 
-static enum upcn_result replicate_blocks(struct bundle *first,
+static enum ud3tn_result replicate_blocks(struct bundle *first,
 	struct bundle *second);
 
 
@@ -79,9 +79,9 @@ struct bundle *bundle6_fragment_bundle(
 	/* Set fragment flag */
 	working_bundle->proc_flags |= BUNDLE_FLAG_IS_FRAGMENT;
 	/* Recalc sizes */
-	if (bundle_recalculate_header_length(working_bundle) == UPCN_FAIL ||
+	if (bundle_recalculate_header_length(working_bundle) == UD3TN_FAIL ||
 			bundle_recalculate_header_length(remainder) ==
-			UPCN_FAIL)
+			UD3TN_FAIL)
 		return NULL;
 	/* Return created fragment */
 	return remainder;
@@ -89,7 +89,7 @@ struct bundle *bundle6_fragment_bundle(
 
 /* first and second have to be split @ payload block */
 /* payload block has to be last block of first bundle and first of second */
-static enum upcn_result replicate_blocks(
+static enum ud3tn_result replicate_blocks(
 	struct bundle *first, struct bundle *second)
 {
 	struct bundle_block_list *list = NULL;
@@ -109,7 +109,7 @@ static enum upcn_result replicate_blocks(
 			if (*item == NULL) {
 				while (list != NULL)
 					list = bundle_block_entry_free(list);
-				return UPCN_FAIL;
+				return UD3TN_FAIL;
 			}
 			item = &(*item)->next;
 		}
@@ -135,7 +135,7 @@ static enum upcn_result replicate_blocks(
 			if (*item == NULL) {
 				while (list != NULL)
 					list = bundle_block_entry_free(list);
-				return UPCN_FAIL;
+				return UD3TN_FAIL;
 			}
 			item = &(*item)->next;
 		}
@@ -153,5 +153,5 @@ static enum upcn_result replicate_blocks(
 		/* Append */
 		entry->next = list;
 	}
-	return UPCN_OK;
+	return UD3TN_OK;
 }

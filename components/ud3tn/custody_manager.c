@@ -103,7 +103,7 @@ struct bundle *custody_manager_get_by_record(
 }
 
 /* 5.10.1 */
-enum upcn_result custody_manager_accept(struct bundle *bundle)
+enum ud3tn_result custody_manager_accept(struct bundle *bundle)
 {
 	/* Should be checked by bundle processor */
 	ASSERT(!custody_manager_has_redundant_bundle(bundle));
@@ -118,9 +118,9 @@ enum upcn_result custody_manager_accept(struct bundle *bundle)
 	case 6:
 		free(bundle->current_custodian);
 		bundle->current_custodian = strdup(upcn_eid);
-		return UPCN_OK;
+		return UD3TN_OK;
 	default:
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 }
 

@@ -35,7 +35,7 @@ struct router_config router_get_config(void)
 	return RC;
 }
 
-enum upcn_result router_update_config(struct router_config conf)
+enum ud3tn_result router_update_config(struct router_config conf)
 {
 	float w = (
 		conf.node_trustworthiness_weight +
@@ -58,11 +58,11 @@ enum upcn_result router_update_config(struct router_config conf)
 		|| conf.router_def_base_reliability > 1.0f
 		|| conf.router_def_base_reliability <= 0
 	) {
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 	RC = conf;
 	router_optimizer_update_config_int(conf);
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 struct associated_contact_list *router_lookup_destination(char *const dest)
@@ -481,7 +481,7 @@ struct router_result router_try_reuse(
 	return route;
 }
 
-enum upcn_result router_add_bundle_to_contact(
+enum ud3tn_result router_add_bundle_to_contact(
 	struct contact *contact, struct routed_bundle *rb)
 {
 	struct routed_bundle_list *new_entry, **cur_entry;
@@ -491,7 +491,7 @@ enum upcn_result router_add_bundle_to_contact(
 	ASSERT(contact->remaining_capacity_p0 > 0);
 	new_entry = malloc(sizeof(struct routed_bundle_list));
 	if (new_entry == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	new_entry->data = rb;
 	new_entry->next = NULL;
 	cur_entry = &contact->contact_bundles;
@@ -506,7 +506,7 @@ enum upcn_result router_add_bundle_to_contact(
 		if (rb->prio != BUNDLE_RPRIO_NORMAL)
 			contact->remaining_capacity_p2 -= rb->size;
 	}
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 struct routed_bundle *router_remove_bundle_from_contact(
@@ -586,7 +586,7 @@ uint8_t router_update_routed_bundle(
 	added_contacts = 0;
 	for (c = 0; c < r->contact_count; c++) {
 		if (router_add_bundle_to_contact(r->contacts[c], rb)
-				== UPCN_OK)
+				== UD3TN_OK)
 			rb->contacts[added_contacts++] = r->contacts[c];
 	}
 	if (added_contacts != rb->contact_count) {

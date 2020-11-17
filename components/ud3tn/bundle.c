@@ -107,7 +107,7 @@ void bundle_copy_headers(struct bundle *to, const struct bundle *from)
 	to->payload_block = NULL;
 }
 
-enum upcn_result bundle_recalculate_header_length(struct bundle *bundle)
+enum ud3tn_result bundle_recalculate_header_length(struct bundle *bundle)
 {
 	switch (bundle->protocol_version) {
 	// RFC 5050
@@ -119,9 +119,9 @@ enum upcn_result bundle_recalculate_header_length(struct bundle *bundle)
 		bundle7_recalculate_primary_block_length(bundle);
 		break;
 	default:
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 
@@ -347,7 +347,7 @@ struct bundle_block_list *bundle_block_list_dup(struct bundle_block_list *e)
 	return dup;
 }
 
-enum upcn_result bundle_serialize(struct bundle *bundle,
+enum ud3tn_result bundle_serialize(struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj)
 {
@@ -361,9 +361,9 @@ enum upcn_result bundle_serialize(struct bundle *bundle,
 		bundle7_serialize(bundle, write, cla_obj);
 		break;
 	default:
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 size_t bundle_get_first_fragment_min_size(struct bundle *bundle)

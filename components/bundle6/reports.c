@@ -178,13 +178,13 @@ struct record_parser {
 	uint16_t current_index, bytes_remaining;
 };
 
-static enum upcn_result record_parser_init(struct record_parser *parser)
+static enum ud3tn_result record_parser_init(struct record_parser *parser)
 {
 	parser->status = PARSER_STATUS_GOOD;
 	parser->stage = RP_EXPECT_TYPE;
 	parser->record = malloc(sizeof(struct bundle_administrative_record));
 	if (parser->record == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	parser->record->status_report = NULL;
 	parser->record->custody_signal = NULL;
 	parser->record->fragment_offset = 0;
@@ -195,7 +195,7 @@ static enum upcn_result record_parser_init(struct record_parser *parser)
 	parser->record->bundle_sequence_number = 0;
 	parser->record->bundle_source_eid_length = 0;
 	parser->record->bundle_source_eid = NULL;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static void record_parser_next(
@@ -356,7 +356,7 @@ struct bundle_administrative_record *bundle6_parse_administrative_record(
 	const uint8_t *cur_byte;
 
 	ASSERT(data != NULL);
-	if (record_parser_init(&parser) != UPCN_OK)
+	if (record_parser_init(&parser) != UD3TN_OK)
 		return NULL;
 	cur_byte = data;
 	while (parser.status == PARSER_STATUS_GOOD && i < length) {

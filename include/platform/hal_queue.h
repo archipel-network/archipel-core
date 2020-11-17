@@ -57,7 +57,7 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item);
  *		  If this value is -1, receiving will block indefinitely
  * @return Whether the attachment attempt was successful
  */
-enum upcn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
+enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
 					    const void *item,
 					    int timeout);
 
@@ -71,7 +71,7 @@ enum upcn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
  * @return Whether the attachment attempt was successful --> that is per
  *	   functionality of this function always true!
  */
-enum upcn_result hal_queue_override_to_back(QueueIdentifier_t queue,
+enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
 					    const void *item);
 
 /**
@@ -86,7 +86,7 @@ enum upcn_result hal_queue_override_to_back(QueueIdentifier_t queue,
  *		  If this value is -1, receiving will block indefinitely
  * @return Whether the receiving was successful
  */
-enum upcn_result hal_queue_receive(QueueIdentifier_t queue,
+enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
 				   void *targetBuffer,
 				   int timeout);
 
