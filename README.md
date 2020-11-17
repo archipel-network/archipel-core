@@ -5,7 +5,7 @@ See `./LICENSE.txt` and `./LICENSE-3RD-PARTY.txt` for legal information.
 
 **Note:** Currently the documentation does not really deserve its name.
 Additionally, the command line options do not follow the POSIX guidelines so far.
-A basic Manpage can be found in the doc folder (upcn.1).
+A basic Manpage can be found in the doc folder (ud3tn.1).
 
 Platforms
 ---------
