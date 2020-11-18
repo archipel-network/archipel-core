@@ -38,8 +38,8 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item)
 
 
 enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
-				   void *targetBuffer,
-				   int timeout)
+				    void *targetBuffer,
+				    int timeout)
 {
 	/* try indefinitely */
 	if (timeout == -1)
@@ -61,7 +61,7 @@ void hal_queue_reset(QueueHandle_t queue)
 
 
 enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
-					    const void *item, int timeout)
+					     const void *item, int timeout)
 {
 	/* try indefinitely */
 	if (timeout == -1)
@@ -82,7 +82,7 @@ void hal_queue_delete(QueueIdentifier_t queue)
 
 
 enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
-					    const void *item)
+					     const void *item)
 {
 	xQueueOverwrite(queue, item); // will always return pdPASS
 	return UD3TN_OK;

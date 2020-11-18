@@ -30,7 +30,7 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item)
 
 
 enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue, void *targetBuffer,
-				   int timeout)
+				    int timeout)
 {
 	return queuePop(queue, targetBuffer, timeout) == 0
 		? UD3TN_OK : UD3TN_FAIL;
@@ -44,7 +44,7 @@ void hal_queue_reset(QueueIdentifier_t queue)
 
 
 enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
-					    const void *item, int timeout)
+					     const void *item, int timeout)
 {
 	return queuePush(queue, item, timeout, false) == 0
 		? UD3TN_OK : UD3TN_FAIL;
@@ -58,7 +58,7 @@ void hal_queue_delete(QueueIdentifier_t queue)
 
 
 enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
-					    const void *item)
+					     const void *item)
 {
 	return queuePush(queue, item, -1, true) == 0 ? UD3TN_OK : UD3TN_FAIL;
 }

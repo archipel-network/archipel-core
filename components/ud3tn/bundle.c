@@ -347,7 +347,8 @@ struct bundle_block_list *bundle_block_list_dup(struct bundle_block_list *e)
 	return dup;
 }
 
-enum ud3tn_result bundle_serialize(struct bundle *bundle,
+enum ud3tn_result bundle_serialize(
+	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj)
 {

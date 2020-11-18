@@ -145,8 +145,8 @@ static size_t usbotg_forward_to_specific_parser(struct cla_link *link,
 }
 
 static enum ud3tn_result usbotg_read(struct cla_link *link,
-				    uint8_t *buffer, size_t length,
-				    size_t *bytes_read)
+				     uint8_t *buffer, size_t length,
+				     size_t *bytes_read)
 {
 	struct usbotg_config *const usbotg_config =
 		(struct usbotg_config *)link->config;

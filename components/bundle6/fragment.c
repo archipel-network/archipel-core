@@ -11,8 +11,8 @@
 #include <string.h>
 
 
-static enum ud3tn_result replicate_blocks(struct bundle *first,
-	struct bundle *second);
+static enum ud3tn_result replicate_blocks(
+	struct bundle *first, struct bundle *second);
 
 
 struct bundle *bundle6_fragment_bundle(

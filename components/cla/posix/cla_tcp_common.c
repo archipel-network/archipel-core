@@ -73,8 +73,8 @@ enum ud3tn_result cla_tcp_link_init(
 }
 
 enum ud3tn_result cla_tcp_read(struct cla_link *link,
-			      uint8_t *buffer, size_t length,
-			      size_t *bytes_read)
+			       uint8_t *buffer, size_t length,
+			       size_t *bytes_read)
 {
 	struct cla_tcp_link *tcp_link = (struct cla_tcp_link *)link;
 
@@ -101,7 +101,7 @@ enum ud3tn_result cla_tcp_read(struct cla_link *link,
 }
 
 enum ud3tn_result cla_tcp_connect(struct cla_tcp_config *const config,
-				 const char *node, const char *service)
+				  const char *node, const char *service)
 {
 	if (node == NULL || service == NULL)
 		return UD3TN_FAIL;
@@ -127,8 +127,8 @@ enum ud3tn_result cla_tcp_connect(struct cla_tcp_config *const config,
 }
 
 enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
-				const char *node, const char *service,
-				int backlog)
+				 const char *node, const char *service,
+				 int backlog)
 {
 	if (node == NULL || service == NULL)
 		return UD3TN_FAIL;

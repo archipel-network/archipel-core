@@ -153,7 +153,7 @@ enum ud3tn_result cla_config_init(
 }
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
-			       struct cla_config *config)
+				struct cla_config *config)
 {
 	link->config = config;
 	link->active = true;

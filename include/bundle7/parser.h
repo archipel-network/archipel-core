@@ -75,12 +75,13 @@ struct bundle7_parser {
 struct parser *bundle7_parser_init(
 	struct bundle7_parser *state,
 	void (*send_callback)(struct bundle *, void *),
-	void *param
-);
+	void *param);
 
 
-size_t bundle7_parser_read(struct bundle7_parser *parser,
-	const uint8_t *buffer, size_t length);
+size_t bundle7_parser_read(
+	struct bundle7_parser *parser,
+	const uint8_t *buffer,
+	size_t length);
 
 enum ud3tn_result bundle7_parser_reset(struct bundle7_parser *state);
 enum ud3tn_result bundle7_parser_deinit(struct bundle7_parser *state);

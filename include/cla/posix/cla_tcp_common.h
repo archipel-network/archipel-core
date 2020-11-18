@@ -71,15 +71,15 @@ enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_config *config);
 
 enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
-				const char *node, const char *service,
-				int backlog);
+				 const char *node, const char *service,
+				 int backlog);
 
 int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 			       int listener_socket,
 			       char **addr);
 
 enum ud3tn_result cla_tcp_connect(struct cla_tcp_config *config,
-				 const char *node, const char *service);
+				  const char *node, const char *service);
 
 void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 				 const size_t struct_size);
@@ -115,8 +115,8 @@ void cla_tcp_single_disconnect_handler(struct cla_link *link);
  * @return Specifies if the read was successful.
  */
 enum ud3tn_result cla_tcp_read(struct cla_link *link,
-			      uint8_t *buffer, size_t length,
-			      size_t *bytes_read);
+			       uint8_t *buffer, size_t length,
+			       size_t *bytes_read);
 
 /**
  * @brief Parse the "TCP active" command line option.

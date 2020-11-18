@@ -120,7 +120,8 @@ static uint32_t bundle7_filter_protocol_proc_flags(const struct bundle *bundle)
 	return flags;
 }
 
-enum ud3tn_result bundle7_serialize(struct bundle *bundle,
+enum ud3tn_result bundle7_serialize(
+	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj)
 {

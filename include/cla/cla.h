@@ -69,7 +69,7 @@ enum ud3tn_result cla_config_init(
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
-			       struct cla_config *config);
+				struct cla_config *config);
 
 void cla_link_wait_cleanup(struct cla_link *link);
 
@@ -99,12 +99,12 @@ struct cla_vtable {
 						const char *, const char *);
 	/* Initiates a scheduled contact for a given EID and CLA address */
 	enum ud3tn_result (*cla_start_scheduled_contact)(struct cla_config *,
-							const char *,
-							const char *);
+							 const char *,
+							 const char *);
 	/* Ends a scheduled contact for a given EID and CLA address */
 	enum ud3tn_result (*cla_end_scheduled_contact)(struct cla_config *,
-						      const char *,
-						      const char *);
+						       const char *,
+						       const char *);
 
 	// TX Task API
 
@@ -127,7 +127,7 @@ struct cla_vtable {
 
 	/* Reads a chunk of data */
 	enum ud3tn_result (*cla_read)(struct cla_link *, uint8_t *buffer,
-				     size_t length, size_t *bytes_read);
+				      size_t length, size_t *bytes_read);
 
 	/* Cleans up resources after a link broke */
 	void (*cla_disconnect_handler)(struct cla_link *);

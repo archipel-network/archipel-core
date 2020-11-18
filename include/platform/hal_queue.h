@@ -58,8 +58,8 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item);
  * @return Whether the attachment attempt was successful
  */
 enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
-					    const void *item,
-					    int timeout);
+					     const void *item,
+					     int timeout);
 
 /**
  * @brief hal_queue_override_to_back Attach a given item to the back of the
@@ -72,7 +72,7 @@ enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
  *	   functionality of this function always true!
  */
 enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
-					    const void *item);
+					     const void *item);
 
 /**
  * @brief hal_queue_receive Receive a item from the specific queue
@@ -87,8 +87,8 @@ enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
  * @return Whether the receiving was successful
  */
 enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
-				   void *targetBuffer,
-				   int timeout);
+				    void *targetBuffer,
+				    int timeout);
 
 /**
  * @brief hal_queue_reset Reset (i.e. empty) the specific queue

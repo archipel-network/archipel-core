@@ -59,7 +59,8 @@ struct bundle7_serializer {
 /**
  * Creates CBOR-encoded byte stream of a Bundle v7
  */
-enum ud3tn_result bundle7_serialize(struct bundle *bundle,
+enum ud3tn_result bundle7_serialize(
+	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj);
 

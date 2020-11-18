@@ -44,7 +44,7 @@ static void bundle_send(struct bundle *bundle, void *param)
 }
 
 enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
-				   void *cla_config)
+				    void *cla_config)
 {
 	rx_data->payload_type = PAYLOAD_UNKNOWN;
 	rx_data->timeout_occured = false;
