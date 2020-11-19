@@ -120,9 +120,10 @@ in `./doc/testing.md`.
 License
 -------
 
-The code in `./components`, `./include`, `./pyupcn`, `./test`, and `./tools`
-has been developed specifically for µD3TN and is released under a BSD 3-clause
-license. The license can be found in `./LICENSE.txt`.
+The code in `./components`, `./include`, `./pyd3tn`, `./python-ud3tn-utils`,
+`./test`, and `./tools` has been developed specifically for µD3TN and is
+released under a BSD 3-clause license. The license can be found in
+`./LICENSE.txt`, `./pyd3tn/LICENSE`, and `./python-ud3tn-utils/LICENSE`.
 
 External code
 -------------

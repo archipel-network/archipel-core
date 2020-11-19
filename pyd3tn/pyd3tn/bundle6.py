@@ -8,23 +8,23 @@ from .sdnv import sdnv_encode
 
 class RFC5050Flag(enum.IntFlag):
     """Default BPv6 flags"""
-    IS_FRAGMENT                = 0x00001
-    ADMINISTRATIVE_RECORD      = 0x00002
-    MUST_NOT_BE_FRAGMENTED     = 0x00004
+    IS_FRAGMENT = 0x00001
+    ADMINISTRATIVE_RECORD = 0x00002
+    MUST_NOT_BE_FRAGMENTED = 0x00004
     CUSTODY_TRANSFER_REQUESTED = 0x00008
-    SINGLETON_ENDPOINT         = 0x00010
-    ACKNOWLEDGEMENT_REQUESTED  = 0x00020
+    SINGLETON_ENDPOINT = 0x00010
+    ACKNOWLEDGEMENT_REQUESTED = 0x00020
 
     # Priority
-    NORMAL_PRIORITY            = 0x00080
-    EXPEDITED_PRIORITY         = 0x00100
+    NORMAL_PRIORITY = 0x00080
+    EXPEDITED_PRIORITY = 0x00100
 
     # Reports
-    REPORT_RECEPTION           = 0x04000
-    REPORT_CUSTODY_ACCEPTANCE  = 0x08000
-    REPORT_FORWARDING          = 0x10000
-    REPORT_DELIVERY            = 0x20000
-    REPORT_DELETION            = 0x40000
+    REPORT_RECEPTION = 0x04000
+    REPORT_CUSTODY_ACCEPTANCE = 0x08000
+    REPORT_FORWARDING = 0x10000
+    REPORT_DELIVERY = 0x20000
+    REPORT_DELETION = 0x40000
 
 
 RFC5050Flag.DEFAULT_OUTGOING = (
@@ -35,23 +35,23 @@ RFC5050Flag.DEFAULT_OUTGOING = (
 
 class BlockType(enum.IntEnum):
     """(Extension) block types"""
-    PAYLOAD       = 1
+    PAYLOAD = 1
     PREVIOUS_NODE = 7
-    BUNDLE_AGE    = 8
-    HOP_COUNT     = 9
-    MAX           = 255
+    BUNDLE_AGE = 8
+    HOP_COUNT = 9
+    MAX = 255
 
 
 class BlockFlag(enum.IntFlag):
     """(Extension) block flags"""
-    NONE                    = 0x00
-    MUST_BE_REPLICATED      = 0x01
-    REPORT_IF_UNPROC        = 0x02
+    NONE = 0x00
+    MUST_BE_REPLICATED = 0x01
+    REPORT_IF_UNPROC = 0x02
     DELETE_BUNDLE_IF_UNPROC = 0x04
-    LAST_BLOCK              = 0x08
-    DISCARD_IF_UNPROC       = 0x10
-    FWD_UNPROC              = 0x20
-    HAS_EID_REF_FIELD       = 0x40
+    LAST_BLOCK = 0x08
+    DISCARD_IF_UNPROC = 0x10
+    FWD_UNPROC = 0x20
+    HAS_EID_REF_FIELD = 0x40
 
 
 NULL_EID = "dtn:none"

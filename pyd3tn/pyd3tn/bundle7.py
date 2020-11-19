@@ -8,16 +8,6 @@ Dependencies:
     .. code:: bash
 
         pip install cbor
-
-Usage:
-    If you are in the root directory of the µPCN project you can simply run:
-
-    .. code:: bash
-
-        python3 -m tools.pyupcn
-
-    This will execute the ``__main__.py`` script next to this file.
-    See PEP 3122 for more details about it.
 """
 import struct
 import threading
@@ -54,37 +44,37 @@ __all__ = [
 
 
 class BundleProcFlag(IntFlag):
-    NONE                       = 0x000000
-    IS_FRAGMENT                = 0x000001
-    ADMINISTRATIVE_RECORD      = 0x000002
-    MUST_NOT_BE_FRAGMENTED     = 0x000004
-    ACKNOWLEDGEMENT_REQUESTED  = 0x000020
-    REPORT_STATUS_TIME         = 0x000040
-    REPORT_RECEPTION           = 0x004000
-    REPORT_FORWARDING          = 0x010000
-    REPORT_DELIVERY            = 0x020000
-    REPORT_DELETION            = 0x400000
+    NONE = 0x000000
+    IS_FRAGMENT = 0x000001
+    ADMINISTRATIVE_RECORD = 0x000002
+    MUST_NOT_BE_FRAGMENTED = 0x000004
+    ACKNOWLEDGEMENT_REQUESTED = 0x000020
+    REPORT_STATUS_TIME = 0x000040
+    REPORT_RECEPTION = 0x004000
+    REPORT_FORWARDING = 0x010000
+    REPORT_DELIVERY = 0x020000
+    REPORT_DELETION = 0x400000
 
 
 class CRCType(IntEnum):
-    NONE  = 0  # indicates "no CRC is present."
+    NONE = 0   # indicates "no CRC is present."
     CRC16 = 1  # indicates "a CRC-16 (a.k.a., CRC-16-ANSI) is present."
     CRC32 = 2  # indicates "a standard IEEE 802.3 CRC-32 is present."
 
 
 class BlockType(IntEnum):
-    PRIMARY           = -1
-    PAYLOAD           = 1
-    PREVIOUS_NODE     = 6
-    BUNDLE_AGE        = 7
-    HOP_COUNT         = 10
+    PRIMARY = -1
+    PAYLOAD = 1
+    PREVIOUS_NODE = 6
+    BUNDLE_AGE = 7
+    HOP_COUNT = 10
 
 
 class BlockProcFlag(IntFlag):
-    NONE                    = 0x00
-    MUST_BE_REPLICATED      = 0x01
-    DISCARD_IF_UNPROC       = 0x02
-    REPORT_IF_UNPROC        = 0x04
+    NONE = 0x00
+    MUST_BE_REPLICATED = 0x01
+    DISCARD_IF_UNPROC = 0x02
+    REPORT_IF_UNPROC = 0x04
     DELETE_BUNDLE_IF_UNPROC = 0x10
 
 
@@ -94,24 +84,24 @@ class RecordType(IntEnum):
 
 class ReasonCode(IntEnum):
     """Bundle status report reason codes"""
-    NO_INFO                  = 0
-    LIFETIME_EXPIRDE         = 1
+    NO_INFO = 0
+    LIFETIME_EXPIRDE = 1
     FORWARDED_UNIDIRECTIONAL = 2
-    TRANSMISSION_CANCELED    = 3
-    DEPLETED_STORAGE         = 4
-    DEST_EID_UNINTELLIGIBLE  = 5
-    NO_KNOWN_ROUTE           = 6
-    NO_TIMELY_CONTACT        = 7
-    BLOCK_UNINTELLIGIBLE     = 8
-    HOP_LIMIT_EXCEEDED       = 9
-    TRAFFIC_PARED            = 10
+    TRANSMISSION_CANCELED = 3
+    DEPLETED_STORAGE = 4
+    DEST_EID_UNINTELLIGIBLE = 5
+    NO_KNOWN_ROUTE = 6
+    NO_TIMELY_CONTACT = 7
+    BLOCK_UNINTELLIGIBLE = 8
+    HOP_LIMIT_EXCEEDED = 9
+    TRAFFIC_PARED = 10
 
 
 class StatusCode(IntEnum):
-    RECEIVED_BUNDLE  = 0x01
+    RECEIVED_BUNDLE = 0x01
     FORWARDED_BUNDLE = 0x04
     DELIVERED_BUNDLE = 0x08
-    DELETED_BUNDLE   = 0x10
+    DELETED_BUNDLE = 0x10
 
 
 class EID(tuple):
@@ -531,10 +521,10 @@ class BundleStatusReport(AdministrativeRecord):
 
     def __init__(self, infos, reason, bundle, time=None):
         status_info = [
-            [infos & StatusCode.RECEIVED_BUNDLE  != 0],
+            [infos & StatusCode.RECEIVED_BUNDLE != 0],
             [infos & StatusCode.FORWARDED_BUNDLE != 0],
             [infos & StatusCode.DELIVERED_BUNDLE != 0],
-            [infos & StatusCode.DELETED_BUNDLE   != 0],
+            [infos & StatusCode.DELETED_BUNDLE != 0],
         ]
 
         if bundle.primary_block.has_flag(BundleProcFlag.REPORT_STATUS_TIME):
@@ -607,7 +597,7 @@ class BundleMeta(type):
 
             primary_block = args[0][0]     # First element
             payload_block = args[0][-1]    # Last element
-            blocks        = args[0][1:-1]  # Everything in between
+            blocks = args[0][1:-1]         # Everything in between
 
             # Rearrange arguments to fit constructor
             args = (primary_block, payload_block, blocks)

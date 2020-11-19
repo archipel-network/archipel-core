@@ -127,10 +127,9 @@ virtualenv:
 	@python3 -m venv --without-pip $(VENV)
 	@echo "Install latest pip package ..."
 	@$(GET_PIP)
-	@echo "Install pyupcn to site-packages ..."
-	@$(VENV)/bin/python ./pyupcn/install.py
-	@echo "Install dependencies ..."
-	@$(PIP) install -U -r ./pyupcn/requirements.txt
+	@echo "Install local dependencies to site-packages..."
+	@$(PIP) install -U -e ./pyd3tn ./python-ud3tn-utils
+	@echo "Install additional dependencies ..."
 	@$(PIP) install -U -r ./test/integration/requirements.txt
 	@$(PIP) install -U -r ./tools/analysis/requirements.txt
 	@$(PIP) install -U -r ./tools/cla/requirements.txt
@@ -144,7 +143,6 @@ virtualenv:
 .PHONY: update-virtualenv
 update-virtualenv:
 	$(PIP) install -U setuptools pip wheel
-	$(PIP) install -U -r ./pyupcn/requirements.txt
 	$(PIP) install -U -r ./test/integration/requirements.txt
 	$(PIP) install -U -r ./tools/analysis/requirements.txt
 	$(PIP) install -U -r ./tools/cla/requirements.txt

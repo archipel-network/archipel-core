@@ -6,7 +6,7 @@ test implementations. The scripts are located in the [tools/](tools/) directory.
 The integration test toolchain can be found in the
 [test/integration/](test/integration/) directory. Both leverage a Python 3
 implementation of several DTN protocols and convergence layers, provided in the
-[pyupcn/](pyupcn/) directory.
+[pyd3tn/](pyd3tn/) directory.
 
 A [venv](https://docs.python.org/3/library/venv.html) is used to isolate the
 µD3TN Python environment from the system. The Makefile target `virtualenv`
@@ -34,10 +34,10 @@ source .venv/bin/activate
 ```
 
 The `tools/` directory is added to the virtualenv site-packages allowing the
-import of packages residing in `tools/` like the `pyupcn` package, e.g.
+import of packages residing in `tools/` like the `pyd3tn` package, e.g.
 
 ```python
-from pyupcn.bundle7 import serialize_bundle7
+from pyd3tn.bundle7 import serialize_bundle7
 
 serialize_bundle7("dtn:GS1", "dtn:GS2", b"Hello world!")
 ```

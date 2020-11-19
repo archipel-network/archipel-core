@@ -5,14 +5,15 @@ import time
 import socket
 import argparse
 
-from pyupcn.tcpcl import (
+from ud3tn_utils.config import ConfigMessage, make_contact
+
+from pyd3tn.tcpcl import (
     serialize_tcpcl_contact_header,
     decode_tcpcl_contact_header,
     serialize_tcpcl_single_bundle_segment,
 )
-from pyupcn.agents import ConfigMessage, make_contact
-from pyupcn.bundle6 import serialize_bundle6
-from pyupcn.bundle7 import serialize_bundle7
+from pyd3tn.bundle6 import serialize_bundle6
+from pyd3tn.bundle7 import serialize_bundle7
 
 DEFAULT_OUTGOING_EID = "dtn:2"
 DEFAULT_INCOMING_EID = "dtn:1"

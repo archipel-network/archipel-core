@@ -3,12 +3,15 @@ import math
 
 import pytest
 
-from pyupcn.agents import ConfigMessage, make_contact, serialize_set_time_cmd
-from pyupcn.bundle7 import serialize_bundle7
-from pyupcn.bundle6 import serialize_bundle6
-from pyupcn.mtcp import MTCPConnection
-from pyupcn.spp import TCPSPPConnection
-from pyupcn.tcpcl import TCPCLConnection
+from ud3tn_utils.config import (
+    ConfigMessage, make_contact, serialize_set_time_cmd
+)
+
+from pyd3tn.bundle7 import serialize_bundle7
+from pyd3tn.bundle6 import serialize_bundle6
+from pyd3tn.mtcp import MTCPConnection
+from pyd3tn.spp import TCPSPPConnection
+from pyd3tn.tcpcl import TCPCLConnection
 
 from .helpers import (
     TESTED_CLAS,

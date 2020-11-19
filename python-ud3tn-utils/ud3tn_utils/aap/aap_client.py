@@ -5,7 +5,7 @@ import logging
 import socket
 import uuid
 
-from pyupcn.aap import AAPMessage, AAPMessageType, InsufficientAAPDataError
+from .aap_message import AAPMessage, AAPMessageType, InsufficientAAPDataError
 
 
 logger = logging.getLogger(__name__)

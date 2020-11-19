@@ -4,9 +4,10 @@ import copy
 
 import pytest
 
-from pyupcn.agents import ConfigMessage, make_contact
-from pyupcn.bundle7 import serialize_bundle7, BundleProcFlag
-from pyupcn.spp import TCPSPPConnection
+from ud3tn_utils.config import ConfigMessage, make_contact
+
+from pyd3tn.bundle7 import serialize_bundle7, BundleProcFlag
+from pyd3tn.spp import TCPSPPConnection
 
 from .helpers import (
     TESTED_CLAS,
@@ -113,7 +114,7 @@ def receive_and_check(conn, validate_func, is_frag_func, expected_bundles):
         print("Waiting to receive bundle #{}...".format(i))
         try:
             bdl = conn.recv_bundle()
-        except:
+        except Exception:
             print("Reception did not finish.")
             raise
         decoded = validate_func(bdl, None)

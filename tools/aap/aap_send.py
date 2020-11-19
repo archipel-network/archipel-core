@@ -4,7 +4,7 @@
 import argparse
 import logging
 
-from aapclient import AAPUnixClient, AAPTCPClient
+from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
 from helpers import add_common_parser_arguments, logging_level
 
 if __name__ == "__main__":

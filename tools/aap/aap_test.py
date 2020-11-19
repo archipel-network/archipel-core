@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-from aapclient import AAPUnixClient
+from ud3tn_utils.aap import AAPUnixClient
 
 AGENT_ID = "testagent"
 

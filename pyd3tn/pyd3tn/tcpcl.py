@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class TCPCLConnectionFlag(enum.IntFlag):
-    NONE                   = 0x00
-    REQUEST_ACK            = 0x01
+    NONE = 0x00
+    REQUEST_ACK = 0x01
     REACTIVE_FRAGMENTATION = 0x02
-    ALLOW_REFUSAL          = 0x04
-    REQUEST_LENGTH         = 0x08
-    DEFAULT                = NONE
+    ALLOW_REFUSAL = 0x04
+    REQUEST_LENGTH = 0x08
+    DEFAULT = NONE
 
 
 def serialize_tcpcl_contact_header(source_eid,
@@ -78,7 +78,7 @@ class TCPCLConnection(object):
 
     .. code:: python
 
-        from pyupcn.tcpcl import TCPCLConnection
+        from pyd3tn.tcpcl import TCPCLConnection
 
         with TCPCLConnection('dtn://my-eid.dtn', '127.0.0.1', 4223) as conn:
             conn.send(bundle)
@@ -270,7 +270,7 @@ class TCPCLServer(object):
     .. code:: python
 
         import asyncio
-        from pyupcn.tcpcl import TCPCLServer
+        from pyd3tn.tcpcl import TCPCLServer
 
         async def listen():
             async with TCPCLServer('dtn:me', '127.0.0.1', 42420) as server:

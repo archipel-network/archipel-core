@@ -4,9 +4,10 @@
 import argparse
 import logging
 
-from pyupcn.agents import ConfigMessage, make_contact
+from ud3tn_utils.aap import AAPTCPClient, AAPUnixClient
 
-from aapclient import AAPTCPClient, AAPUnixClient
+from ud3tn_utils.config import ConfigMessage, make_contact
+
 
 from helpers import (
     add_socket_group_parser_arguments,
