@@ -346,7 +346,7 @@ class TCPSPPConnection(object):
 
     .. code:: python
 
-        from pyupcn.spp import TCPSPPConnection
+        from pyd3tn.spp import TCPSPPConnection
 
         with TCPSPPConnection('127.0.0.1', 4223) as conn:
             conn.send(bundle)

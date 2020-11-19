@@ -83,7 +83,7 @@ class MTCPConnection(MTCPSocket):
 
     .. code:: python
 
-        from pyupcn.mtcp import MTCPConnection
+        from pyd3tn.mtcp import MTCPConnection
 
         with MTCPConnection('127.0.0.1', 4224) as conn:
             conn.send(bundle)

@@ -5,7 +5,7 @@ import argparse
 import logging
 import sys
 
-from aapclient import AAPUnixClient, AAPTCPClient
+from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
 from helpers import add_common_parser_arguments, logging_level
 
 

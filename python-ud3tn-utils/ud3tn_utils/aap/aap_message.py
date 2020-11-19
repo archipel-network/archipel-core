@@ -1,8 +1,9 @@
-"""uPCN Application Agent Protocol (AAP) Python implementation.
+"""μD3TN Application Agent Protocol (AAP) Python implementation.
 
 Usage:
     Use the AAPMessage class to build, serialize, and parse AAP messages.
-    For a description of the protocol, see doc/upcn_aap.md.
+    For a description of the protocol, see
+    https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/ud3tn_aap.md.
 """
 
 import struct

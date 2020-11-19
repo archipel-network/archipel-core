@@ -1,10 +1,6 @@
-The source code available in the components/, include/, test/ and tools/
-folders and subfolders of them and not explicitly mentioned to be taken from
-other sources is distributed under the license provided below. The Python
-modules available in pyd3tn/ and python-ud3tn-utils/ are subject to the
-licenses documented in the module directories.
+BSD 3-Clause License
 
-Copyright (c) 2014-2020, µPCN team (see below)
+Copyright (c) 2014-2020, µPCN team
 Copyright (c) 2020, µD3TN team and D3TN GmbH (Contact: contact@d3tn.com)
 All rights reserved.
 
@@ -29,14 +25,3 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-Contributors to µPCN, release v0.8.0 have been:
-Markus Dittmann
-Marius Feldmann
-Lucas Kahlert
-Georg Murzik
-Maximilian Nitsch
-Sebastian Schrader
-Felix Walter
-Jonas Wielicki
-Robert Wiewel

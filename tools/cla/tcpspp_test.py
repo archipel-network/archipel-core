@@ -2,10 +2,11 @@
 
 import socket
 
-from pyupcn.agents import ConfigMessage, make_contact
-from pyupcn.bundle7 import serialize_bundle7, Bundle
-from pyupcn.bundle6 import serialize_bundle6
-from pyupcn.spp import SPPPacket, SPPPacketHeader, SPPTimecode
+from ud3tn_utils.config import ConfigMessage, make_contact
+
+from pyd3tn.bundle7 import serialize_bundle7, Bundle
+from pyd3tn.bundle6 import serialize_bundle6
+from pyd3tn.spp import SPPPacket, SPPPacketHeader, SPPTimecode
 
 
 DEFAULT_OUTGOING_EID = "dtn:2"

@@ -8,16 +8,6 @@ Dependencies:
     .. code:: bash
 
         pip install cbor
-
-Usage:
-    If you are in the root directory of the µPCN project you can simply run:
-
-    .. code:: bash
-
-        python3 -m tools.pyupcn
-
-    This will execute the ``__main__.py`` script next to this file.
-    See PEP 3122 for more details about it.
 """
 import struct
 import threading

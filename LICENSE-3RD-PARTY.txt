@@ -533,7 +533,7 @@ OF SUCH DAMAGE.
         - Copyright (c) 2007-14 Mike Karlesky, Mark VanderVoord, Greg Williams
           - external/unity/*
         - Copyright (c) 2015 Bastian Molkenthin
-          - pyupcn/crc.py
+          - pyd3tn/pyd3tn/crc.py
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

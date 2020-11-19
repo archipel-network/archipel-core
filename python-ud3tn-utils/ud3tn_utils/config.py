@@ -3,11 +3,29 @@ import time
 import struct
 
 from collections import namedtuple
-from .helpers import unix2dtn
+from datetime import datetime, timezone
+
+UNIX_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+DTN_EPOCH = datetime(2000, 1, 1, tzinfo=timezone.utc)
+UNIX_TO_DTN_OFFSET = (DTN_EPOCH - UNIX_EPOCH).total_seconds()
+assert UNIX_TO_DTN_OFFSET == 946684800
+
+
+def unix2dtn(unix_timestamp):
+    """Converts a given Unix timestamp into a DTN timestamp
+
+    Its inversion is :func:`dtn2unix`.
+
+    Args:
+        unix_timestamp: Unix timestamp
+    Returns:
+        numeric: DTN timestamp
+    """
+    return unix_timestamp - UNIX_TO_DTN_OFFSET
 
 
 class RouterCommand(enum.IntEnum):
-    """uPCN Command Constants"""
+    """uD3TN Command Constants"""
     ADD    = 1
     UPDATE = 2
     DELETE = 3
@@ -15,7 +33,7 @@ class RouterCommand(enum.IntEnum):
 
 
 Contact = namedtuple('Contact', ['start', 'end', 'bitrate'])
-Contact.__doc__ = """named tuple holding upcn contact information
+Contact.__doc__ = """named tuple holding uD3TN contact information
 
 Attrs:
     start (int): DTN timestamp when the contact starts
@@ -45,8 +63,8 @@ def make_contact(start_offset, duration, bitrate):
 
 
 class ConfigMessage(object):
-    """upcn configuration message that can be processes by its config agent.
-    These messages are used to configure contacts in upcn.
+    """uD3TN configuration message that can be processes by its config agent.
+    These messages are used to configure contacts in uD3TN.
 
     Args:
         eid (str): The endpoint identifier of a contact
@@ -73,7 +91,7 @@ class ConfigMessage(object):
         )
 
     def __str__(self):
-        # missing escaping has to be addresses in uPCN
+        # missing escaping has to be addresses in uD3TN
         for part in [self.eid, self.cla_address] + self.reachable_eids:
             assert "(" not in part
             assert ")" not in part
@@ -110,7 +128,7 @@ class ConfigMessage(object):
 
 
 class ManagementCommand(enum.IntEnum):
-    """uPCN Management Command Constants"""
+    """uD3TN Management Command Constants"""
     SET_TIME = 0
 
 

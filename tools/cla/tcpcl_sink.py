@@ -3,7 +3,7 @@
 import logging
 import signal
 import asyncio
-from pyupcn.tcpcl import TCPCLServer, logger
+from pyd3tn.tcpcl import TCPCLServer, logger
 
 
 DEFAULT_INCOMING_EID = "dtn:1"

@@ -1,7 +1,7 @@
 import os
 
-from pyupcn.agents import ConfigMessage, RouterCommand
-from pyupcn.bundle7 import Bundle, CRCType
+from ud3tn_utils.config import ConfigMessage, RouterCommand
+from pyd3tn.bundle7 import Bundle, CRCType
 
 USER_SELECTED_CLA = os.environ.get("CLA", None)
 TESTED_CLAS = [USER_SELECTED_CLA] if USER_SELECTED_CLA else [

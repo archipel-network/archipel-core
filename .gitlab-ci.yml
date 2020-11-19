@@ -174,7 +174,7 @@ python-stylecheck:
     script:
         - make virtualenv
         # We ignore the alignment spaces in pyupcn and bare except in the tests.
-        - source .venv/bin/activate && python -m flake8 pyupcn test/integration tools/aap tools/cla --max-complexity=12 --per-file-ignores='pyupcn/*.py:E221,test/integration/*:E722'
+        - source .venv/bin/activate && python -m flake8 pyd3tn python-ud3tn-utils test/integration tools/aap tools/cla --max-complexity=12 --per-file-ignores='python-ud3tn-utils/ud3tn_utils/*.py:E221,pyd3tn/*.py:E221,test/integration/*:E722'
 
 clang-tidy-posix:
     stage: code_quality_test

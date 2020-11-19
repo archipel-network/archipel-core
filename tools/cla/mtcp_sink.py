@@ -3,8 +3,8 @@
 import socket
 import sys
 
-from pyupcn.bundle7 import Bundle
-from pyupcn.mtcp import MTCPSocket
+from pyd3tn.bundle7 import Bundle
+from pyd3tn.mtcp import MTCPSocket
 
 
 def main():
