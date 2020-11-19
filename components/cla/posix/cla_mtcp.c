@@ -487,7 +487,7 @@ const struct cla_vtable mtcp_vtable = {
 
 	.cla_read = cla_tcp_read,
 
-	.cla_disconnect_handler = cla_generic_disconnect_handler,
+	.cla_disconnect_handler = cla_tcp_disconnect_handler,
 };
 
 static enum ud3tn_result mtcp_init(

@@ -101,6 +101,8 @@ enum ud3tn_result cla_tcp_single_start_scheduled_contact(
 enum ud3tn_result cla_tcp_single_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr);
 
+void cla_tcp_disconnect_handler(struct cla_link *link);
+
 void cla_tcp_single_disconnect_handler(struct cla_link *link);
 
 /**

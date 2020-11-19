@@ -214,12 +214,20 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 	return sock;
 }
 
+void cla_tcp_disconnect_handler(struct cla_link *link)
+{
+	struct cla_tcp_link *tcp_link = (struct cla_tcp_link *)link;
+
+	close(tcp_link->connection_socket);
+	cla_generic_disconnect_handler(link);
+}
+
 void cla_tcp_single_disconnect_handler(struct cla_link *link)
 {
 	struct cla_tcp_single_config *tcp_config
 		= (struct cla_tcp_single_config *)link->config;
 
-	cla_generic_disconnect_handler(link);
+	cla_tcp_disconnect_handler(link);
 	tcp_config->link = NULL;
 }
 
