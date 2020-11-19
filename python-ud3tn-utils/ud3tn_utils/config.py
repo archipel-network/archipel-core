@@ -26,10 +26,10 @@ def unix2dtn(unix_timestamp):
 
 class RouterCommand(enum.IntEnum):
     """uD3TN Command Constants"""
-    ADD    = 1
+    ADD = 1
     UPDATE = 2
     DELETE = 3
-    QUERY  = 4
+    QUERY = 4
 
 
 Contact = namedtuple('Contact', ['start', 'end', 'bitrate'])
