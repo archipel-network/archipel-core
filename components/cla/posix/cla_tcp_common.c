@@ -264,28 +264,27 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 				 const size_t struct_size)
 {
 	for (;;) {
-		// Wait until _some_ contact starts.
-		hal_semaphore_take_blocking(config->contact_activity_sem);
-		hal_semaphore_release(config->contact_activity_sem);
-
 		LOGF("TCP: CLA \"%s\": Attempting to connect to \"%s:%s\".",
 		     config->base.base.vtable->cla_name_get(),
 		     config->node, config->service);
 
 		if (cla_tcp_connect(&config->base,
 				    config->node, config->service) != UD3TN_OK) {
-			LOGF("TCP: CLA \"%s\": Connection failed, will retry in %d ms.",
+			LOGF("TCP: CLA \"%s\": Connection failed, will retry in %d ms as long as a contact is ongoing.",
 			     config->base.base.vtable->cla_name_get(),
 			     CLA_TCP_RETRY_INTERVAL_MS);
 			hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-			continue;
+		} else {
+			handle_established_connection(config,
+						      config->base.socket,
+						      struct_size);
+			LOGF("TCP: CLA \"%s\": Connection terminated, will reconnect as soon as a contact occurs.",
+			     config->base.base.vtable->cla_name_get());
 		}
 
-		handle_established_connection(config, config->base.socket,
-					      struct_size);
-
-		LOGF("TCP: CLA \"%s\": Connection terminated, will reconnect as soon as a contact occurs.",
-		     config->base.base.vtable->cla_name_get());
+		// Wait until _some_ contact starts.
+		hal_semaphore_take_blocking(config->contact_activity_sem);
+		hal_semaphore_release(config->contact_activity_sem);
 	}
 }
 
