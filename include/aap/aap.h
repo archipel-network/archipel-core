@@ -1,7 +1,7 @@
 #ifndef AAP_H_INCLUDED
 #define AAP_H_INCLUDED
 
-#include "upcn/bundle.h"
+#include "ud3tn/bundle.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -63,10 +63,10 @@ struct aap_message {
 	 * valid in the REGISTER, SENDBUNDLE, RECVBUNDLE, and WELCOME messages.
 	 *
 	 * - In the REGISTER message, this contains the sub-EID
-	 *   requested for registration in uPCN.
+	 *   requested for registration in uD3TN.
 	 * - In the SENDBUNDLE message, this contains the destination EID.
 	 * - In the RECVBUNDLE message, this contains the source EID.
-	 * - In the WELCOME message, this contains the base EID of uPCN.
+	 * - In the WELCOME message, this contains the base EID of uD3TN.
 	 */
 	char *eid;
 	/**

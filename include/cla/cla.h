@@ -3,10 +3,10 @@
 
 #include "cla/cla_contact_rx_task.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/crc.h"
-#include "upcn/node.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/crc.h"
+#include "ud3tn/node.h"
+#include "ud3tn/result.h"
 
 #include "spp/spp_timecodes.h"
 
@@ -54,7 +54,7 @@ struct cla_tx_queue {
  * Global CLA Instance Management
  */
 
-enum upcn_result cla_initialize_all(
+enum ud3tn_result cla_initialize_all(
 	const char *cla_config_str,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
@@ -64,12 +64,12 @@ struct cla_config *cla_config_get(const char *cla_addr);
  * Private API
  */
 
-enum upcn_result cla_config_init(
+enum ud3tn_result cla_config_init(
 	struct cla_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
-enum upcn_result cla_link_init(struct cla_link *link,
-			       struct cla_config *config);
+enum ud3tn_result cla_link_init(struct cla_link *link,
+				struct cla_config *config);
 
 void cla_link_wait_cleanup(struct cla_link *link);
 
@@ -87,9 +87,9 @@ struct cla_vtable {
 	/* Returns a unique identifier of the CLA as part of the CLA address */
 	const char *(*cla_name_get)(void);
 	/* Starts the TX/RX tasks and, e.g., the socket listener */
-	enum upcn_result (*cla_launch)(struct cla_config *);
+	enum ud3tn_result (*cla_launch)(struct cla_config *);
 	/* Frees up memory and resources used by the CLA. - TODO */
-	// enum upcn_result (*cla_destroy)(struct cla_config *);
+	// enum ud3tn_result (*cla_destroy)(struct cla_config *);
 	/* Obtains the max. serialized size of outgoing bundles for this CLA. */
 	size_t (*cla_mbs_get)(struct cla_config *);
 
@@ -98,13 +98,13 @@ struct cla_vtable {
 	struct cla_tx_queue (*cla_get_tx_queue)(struct cla_config *,
 						const char *, const char *);
 	/* Initiates a scheduled contact for a given EID and CLA address */
-	enum upcn_result (*cla_start_scheduled_contact)(struct cla_config *,
-							const char *,
-							const char *);
+	enum ud3tn_result (*cla_start_scheduled_contact)(struct cla_config *,
+							 const char *,
+							 const char *);
 	/* Ends a scheduled contact for a given EID and CLA address */
-	enum upcn_result (*cla_end_scheduled_contact)(struct cla_config *,
-						      const char *,
-						      const char *);
+	enum ud3tn_result (*cla_end_scheduled_contact)(struct cla_config *,
+						       const char *,
+						       const char *);
 
 	// TX Task API
 
@@ -126,8 +126,8 @@ struct cla_vtable {
 							 size_t);
 
 	/* Reads a chunk of data */
-	enum upcn_result (*cla_read)(struct cla_link *, uint8_t *buffer,
-				     size_t length, size_t *bytes_read);
+	enum ud3tn_result (*cla_read)(struct cla_link *, uint8_t *buffer,
+				      size_t length, size_t *bytes_read);
 
 	/* Cleans up resources after a link broke */
 	void (*cla_disconnect_handler)(struct cla_link *);

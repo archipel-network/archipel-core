@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class AAPClient():
-    """A context manager class for connecting to the AAP socket of a uPCN
+    """A context manager class for connecting to the AAP socket of a uD3TN
     instance.
 
     Args:
@@ -28,11 +28,11 @@ class AAPClient():
         self.agent_id = None
 
     def connect(self):
-        """Establish a socket connection to a uPCN instance and return the
+        """Establish a socket connection to a uD3TN instance and return the
         received welcome message.
         """
         self.socket.connect(self.address)
-        logger.info("Connected to uPCN, awaiting WELCOME message...")
+        logger.info("Connected to uD3TN, awaiting WELCOME message...")
         return self._welcome()
 
     def disconnect(self):
@@ -53,7 +53,7 @@ class AAPClient():
         self.disconnect()
 
     def _welcome(self):
-        """Receive the AAP welcome message and store the node EID of the uPCN
+        """Receive the AAP welcome message and store the node EID of the uD3TN
         instance in `self.node_eid`.
         """
         msg_welcome = self.receive()
@@ -145,7 +145,7 @@ class AAPClient():
 
 
 class AAPUnixClient(AAPClient):
-    """A context manager class for connecting to the AAP Unix socket of a uPCN
+    """A context manager class for connecting to the AAP Unix socket of a uD3TN
     instance.
 
     Args:
@@ -153,7 +153,7 @@ class AAPUnixClient(AAPClient):
             calling `socket.connect()`
     """
 
-    def __init__(self, address='/tmp/upcn.socket'):
+    def __init__(self, address='/tmp/ud3tn.socket'):
         super().__init__(
             socket=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM),
             address=address,
@@ -161,7 +161,7 @@ class AAPUnixClient(AAPClient):
 
 
 class AAPTCPClient(AAPClient):
-    """A context manager class for connecting to the AAP TCP socket of a uPCN
+    """A context manager class for connecting to the AAP TCP socket of a uD3TN
     instance.
 
     Args:

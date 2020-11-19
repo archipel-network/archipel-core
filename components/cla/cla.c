@@ -15,10 +15,10 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 
-#include "upcn/common.h"
-#include "upcn/init.h"
-#include "upcn/result.h"
-#include "upcn/router_task.h"
+#include "ud3tn/common.h"
+#include "ud3tn/init.h"
+#include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 
 #include <unistd.h>
 
@@ -49,7 +49,7 @@ const struct available_cla_list_entry AVAILABLE_CLAS[] = {
 
 static void cla_register(struct cla_config *config);
 
-static enum upcn_result initialize_single(
+static enum ud3tn_result initialize_single(
 	char *cur_cla_config,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
@@ -59,7 +59,7 @@ static enum upcn_result initialize_single(
 	ASSERT(cur_cla_config);
 	if (!colon) {
 		LOG("CLA: Could parse config - options delimiter not found!");
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	// Null-terminate the CLA name
@@ -90,7 +90,7 @@ static enum upcn_result initialize_single(
 	}
 	if (!cla_entry) {
 		LOGF("CLA: Specified CLA not found: %s", cla_name);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	struct cla_config *data = cla_entry->create_func(
@@ -101,27 +101,27 @@ static enum upcn_result initialize_single(
 
 	if (!data) {
 		LOGF("CLA: Could not initialize CLA \"%s\"!", cla_name);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	data->vtable->cla_launch(data);
 	cla_register(data);
 	LOGF("CLA: Activated CLA \"%s\".", data->vtable->cla_name_get());
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_initialize_all(
+enum ud3tn_result cla_initialize_all(
 	const char *cla_config_str,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (!cla_config_str)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	char *const cla_config_str_dup = strdup(cla_config_str);
 	char *cur_cla_config = cla_config_str_dup;
 	char *comma = strchr(cur_cla_config, ';');
-	enum upcn_result result = UPCN_FAIL;
+	enum ud3tn_result result = UD3TN_FAIL;
 
 	while (comma) {
 		// Null-terminate the current part of the string
@@ -130,7 +130,7 @@ enum upcn_result cla_initialize_all(
 		if (comma[1] == 0)
 			break;
 		if (initialize_single(cur_cla_config,
-				      bundle_agent_interface) != UPCN_OK)
+				      bundle_agent_interface) != UD3TN_OK)
 			goto cleanup;
 		cur_cla_config = &comma[1];
 		comma = strchr(cur_cla_config, ';');
@@ -142,18 +142,18 @@ cleanup:
 	return result;
 }
 
-enum upcn_result cla_config_init(
+enum ud3tn_result cla_config_init(
 	struct cla_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	config->vtable = NULL;
 	config->bundle_agent_interface = bundle_agent_interface;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_link_init(struct cla_link *link,
-			       struct cla_config *config)
+enum ud3tn_result cla_link_init(struct cla_link *link,
+				struct cla_config *config)
 {
 	link->config = config;
 	link->active = true;
@@ -179,7 +179,7 @@ enum upcn_result cla_link_init(struct cla_link *link,
 	}
 	hal_semaphore_release(link->tx_task_sem);
 
-	if (rx_task_data_init(&link->rx_task_data, config) != UPCN_OK) {
+	if (rx_task_data_init(&link->rx_task_data, config) != UD3TN_OK) {
 		LOG("CLA: Failed to initialize RX task data!");
 		goto fail_rx_data;
 	}
@@ -199,12 +199,12 @@ enum upcn_result cla_link_init(struct cla_link *link,
 	}
 	hal_semaphore_release(link->tx_queue_sem);
 
-	if (cla_launch_contact_rx_task(link) != UPCN_OK) {
+	if (cla_launch_contact_rx_task(link) != UD3TN_OK) {
 		LOG("CLA: Failed to start RX task!");
 		goto fail_rx_task;
 	}
 
-	if (cla_launch_contact_tx_task(link) != UPCN_OK) {
+	if (cla_launch_contact_tx_task(link) != UD3TN_OK) {
 		LOG("CLA: Failed to start TX task!");
 		goto fail_tx_task;
 	}
@@ -219,7 +219,7 @@ enum upcn_result cla_link_init(struct cla_link *link,
 	hal_queue_push_to_back(bundle_agent_interface->router_signaling_queue,
 			       &rt_signal);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 
 fail_tx_task:
 	hal_task_delete(link->rx_task_handle);
@@ -234,7 +234,7 @@ fail_rx_data:
 fail_tx_sem:
 	hal_semaphore_delete(link->rx_task_sem);
 fail_rx_sem:
-	return UPCN_FAIL;
+	return UD3TN_FAIL;
 }
 
 void cla_link_wait_cleanup(struct cla_link *link)
@@ -252,7 +252,7 @@ void cla_link_wait_cleanup(struct cla_link *link)
 
 	// Invalidate queue and unblock anyone waiting to put sth. in the queue
 	link->tx_queue_handle = NULL;
-	while (hal_semaphore_try_take(link->tx_queue_sem, 0) != UPCN_OK)
+	while (hal_semaphore_try_take(link->tx_queue_sem, 0) != UD3TN_OK)
 		hal_semaphore_release(link->tx_queue_sem);
 
 	// Finally drop the tx semaphore and queue handle

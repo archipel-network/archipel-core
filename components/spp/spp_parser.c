@@ -1,7 +1,7 @@
 #include "spp/spp_parser.h"
 #include "spp/spp_internal.h"
 
-#include "upcn/parser.h"
+#include "ud3tn/parser.h"
 
 #include <assert.h>
 

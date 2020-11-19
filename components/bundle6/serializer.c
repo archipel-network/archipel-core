@@ -20,7 +20,7 @@ struct eid_reference {
 	uint16_t ssp_offset;
 };
 
-enum upcn_result bundle6_serialize(
+enum ud3tn_result bundle6_serialize(
 	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj)
@@ -34,7 +34,7 @@ enum upcn_result bundle6_serialize(
 	char *dict = malloc(dict_desc->dict_length_bytes);
 
 	if (dict == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	bundle6_serialize_dictionary(dict, dict_desc);
 
@@ -122,5 +122,5 @@ enum upcn_result bundle6_serialize(
 	free(dict);
 	free(dict_desc);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }

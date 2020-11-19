@@ -14,13 +14,13 @@
 #include "platform/hal_task.h"
 #include "platform/hal_types.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/cmdline.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/result.h"
-#include "upcn/simplehtab.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/cmdline.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/result.h"
+#include "ud3tn/simplehtab.h"
+#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -56,21 +56,21 @@ struct mtcp_contact_parameters {
 };
 
 
-static enum upcn_result handle_established_connection(
+static enum ud3tn_result handle_established_connection(
 	struct mtcp_contact_parameters *const param)
 {
 	struct mtcp_config *const mtcp_config = param->config;
 
 	if (cla_tcp_link_init(&param->link.base, param->socket,
 			      &mtcp_config->base)
-			!= UPCN_OK) {
+			!= UD3TN_OK) {
 		LOG("MTCP: Error initializing CLA link!");
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	cla_link_wait_cleanup(&param->link.base.base);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static void mtcp_link_management_task(void *p)
@@ -230,7 +230,7 @@ static void mtcp_listener_task(void *param)
 	ASSERT(0);
 }
 
-static enum upcn_result mtcp_launch(struct cla_config *const config)
+static enum ud3tn_result mtcp_launch(struct cla_config *const config)
 {
 	struct mtcp_config *const mtcp_config = (struct mtcp_config *)config;
 
@@ -244,9 +244,9 @@ static enum upcn_result mtcp_launch(struct cla_config *const config)
 	);
 
 	if (!mtcp_config->base.listen_task)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static const char *mtcp_name_get(void)
@@ -374,7 +374,7 @@ static struct cla_tx_queue mtcp_get_tx_queue(
 	return (struct cla_tx_queue){ NULL, NULL };
 }
 
-static enum upcn_result mtcp_start_scheduled_contact(
+static enum ud3tn_result mtcp_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	(void)eid;
@@ -391,16 +391,16 @@ static enum upcn_result mtcp_start_scheduled_contact(
 		     cla_addr);
 		param->in_contact = true;
 		hal_semaphore_release(mtcp_config->param_htab_sem);
-		return UPCN_OK;
+		return UD3TN_OK;
 	}
 
 	launch_connection_management_task(mtcp_config, -1, cla_addr);
 	hal_semaphore_release(mtcp_config->param_htab_sem);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-static enum upcn_result mtcp_end_scheduled_contact(
+static enum ud3tn_result mtcp_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	(void)eid;
@@ -425,7 +425,7 @@ static enum upcn_result mtcp_end_scheduled_contact(
 
 	hal_semaphore_release(mtcp_config->param_htab_sem);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 void mtcp_begin_packet(struct cla_link *link, size_t length)
@@ -490,15 +490,15 @@ const struct cla_vtable mtcp_vtable = {
 	.cla_disconnect_handler = cla_generic_disconnect_handler,
 };
 
-static enum upcn_result mtcp_init(
+static enum ud3tn_result mtcp_init(
 	struct mtcp_config *config,
 	const char *node, const char *service,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
 	if (cla_tcp_config_init(&config->base,
-				bundle_agent_interface) != UPCN_OK)
-		return UPCN_FAIL;
+				bundle_agent_interface) != UD3TN_OK)
+		return UD3TN_FAIL;
 
 	/* set base_config vtable */
 	config->base.base.vtable = &mtcp_vtable;
@@ -511,10 +511,10 @@ static enum upcn_result mtcp_init(
 
 	/* Start listening */
 	if (cla_tcp_listen(&config->base, node, service,
-			   CLA_TCP_MULTI_BACKLOG) != UPCN_OK)
-		return UPCN_FAIL;
+			   CLA_TCP_MULTI_BACKLOG) != UD3TN_OK)
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 struct cla_config *mtcp_create(
@@ -534,7 +534,7 @@ struct cla_config *mtcp_create(
 	}
 
 	if (mtcp_init(config, options[0], options[1],
-		      bundle_agent_interface) != UPCN_OK) {
+		      bundle_agent_interface) != UD3TN_OK) {
 		free(config);
 		LOG("mtcp: Initialization failed!");
 		return NULL;

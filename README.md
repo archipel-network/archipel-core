@@ -1,16 +1,16 @@
-µPCN - A Free and Lean DTN Implementation for Microcontrollers and POSIX
+µD3TN - A Free and Lean DTN Implementation for Microcontrollers and POSIX
 =======================================================================
 
 See `./LICENSE.txt` and `./LICENSE-3RD-PARTY.txt` for legal information.
 
 **Note:** Currently the documentation does not really deserve its name.
 Additionally, the command line options do not follow the POSIX guidelines so far.
-A basic Manpage can be found in the doc folder (upcn.1).
+A basic Manpage can be found in the doc folder (ud3tn.1).
 
 Platforms
 ---------
 
-µPCN currently supports two platforms:
+µD3TN currently supports two platforms:
 1. The STM32F4 embedded platform running FreeRTOS
 2. All POSIX-compliant operating systems (plus Linux ;-))
 
@@ -26,7 +26,7 @@ instructions.
 For this platform only the STM32F4 embedded system is supported currently.
 However, porting to other Cortex-M3/M4 based SoCs should be trivial.
 
-In order to run µPCN on bare metal (e.g. the STM32F4Discovery board)
+In order to run µD3TN on bare metal (e.g. the STM32F4Discovery board)
 three steps are necessary after connecting the board via STLink-enabled USB:
 
 1. Install or unpack the following dependencies:
@@ -34,7 +34,7 @@ three steps are necessary after connecting the board via STLink-enabled USB:
    - The [`st-link` tools](https://github.com/stlink-org/stlink)
    - The [Open On-Chip Debugger](http://openocd.org/).
    - `ncat` (from the `nmap` package).
-   - A version of [FreeRTOS](https://www.freertos.org/) (uPCN is currently tested with version 9).
+   - A version of [FreeRTOS](https://www.freertos.org/) (µD3TN is currently tested with version 9).
    - For debugging and testing you may want to install GDB, a recent version
      of Python 3 (>= 3.6).
 
@@ -47,7 +47,7 @@ three steps are necessary after connecting the board via STLink-enabled USB:
 
 3. Start `openocd`. The config file `openocd.cfg` is loaded automatically.
 
-4. Type `make flash-stm32-openocd` to build the project and to flash `upcn.bin`
+4. Type `make flash-stm32-openocd` to build the project and to flash `ud3tn.bin`
    to the board attached via USB.
    The unittests can be flashed via `make flash-unittest-stm32-openocd`.
    For convenience, GDB commands are available via `make gdb-stm32` and
@@ -66,15 +66,15 @@ three steps are necessary after connecting the board via STLink-enabled USB:
    `GCC_TOOLCHAIN_PREFIX_POSIX` variable to the prefix for your
    local `gcc` toolchain (default: `/usr/bin`).
 
-3. Type `make run-posix` to build and execute µPCN on your local machine.
+3. Type `make run-posix` to build and execute µD3TN on your local machine.
 
 Getting Started with the Implementation
 ---------------------------------------
 
-The core part of uPCN is located in `./components/upcn/`.
+The core part of µD3TN is located in `./components/ud3tn/`.
 The starting point of the program can be found in
 `./components/daemon/main.c`, calling init located in
-`./components/upcn/init.c`.
+`./components/ud3tn/init.c`.
 This file is the best place to familiarize with the implementation.
 
 Configurability
@@ -121,7 +121,7 @@ License
 -------
 
 The code in `./components`, `./include`, `./pyupcn`, `./test`, and `./tools`
-has been developed specifically for µPCN and is released under a BSD 3-clause
+has been developed specifically for µD3TN and is released under a BSD 3-clause
 license. The license can be found in `./LICENSE.txt`.
 
 External code

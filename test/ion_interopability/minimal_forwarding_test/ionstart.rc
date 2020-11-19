@@ -38,7 +38,7 @@ a endpoint dtn://node1.dtn/ping q
 a protocol tcp 1400 100
 a induct tcp 0.0.0.0:4556 tcpcli
 
-# add outduct to uPCN2 instance
+# add outduct to uD3TN2 instance
 a outduct tcp 127.0.0.1:4554 tcpcli
 
 # start daemons
@@ -50,6 +50,6 @@ s
 ## end ipnadmin
 
 ## begin dtn2admin
-a plan dtn://upcn1.dtn* x tcp/127.0.0.1:4555
-a plan dtn://upcn2.dtn* x tcp/127.0.0.1:4554
+a plan dtn://ud3tn1.dtn* x tcp/127.0.0.1:4555
+a plan dtn://ud3tn2.dtn* x tcp/127.0.0.1:4554
 ## end dtn2admin

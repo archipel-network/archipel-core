@@ -1,7 +1,7 @@
 #include "bundle6/create.h"
 
-#include "upcn/bundle.h"
-#include "upcn/common.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/common.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -52,7 +52,7 @@ struct bundle *bundle6_create_local(
 	bundle->payload_block->data = payload;
 	bundle->payload_block->length = payload_length;
 
-	if (bundle_recalculate_header_length(bundle) == UPCN_FAIL) {
+	if (bundle_recalculate_header_length(bundle) == UD3TN_FAIL) {
 		bundle->payload_block->data = NULL; // prevent double-free
 		goto fail;
 	}

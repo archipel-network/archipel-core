@@ -22,7 +22,7 @@ void hal_hash_hmac(uint8_t *key, uint32_t key_length, uint8_t *message,
 		   uint32_t message_length, uint8_t hash[])
 {
 	hmac_sha256(key, key_length, message, message_length,
-		hash, UPCN_HASH_LENGTH);
+		hash, UD3TN_HASH_LENGTH);
 }
 
 

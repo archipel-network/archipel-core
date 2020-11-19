@@ -11,7 +11,7 @@
 
 #include "platform/hal_types.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 /**
  * @brief hal_semaphoreInitBinary Creates a new binary semaphore meaning that
@@ -58,7 +58,7 @@ void hal_semaphore_delete(Semaphore_t sem);
  * @param timeout_ms The timeout in Milliseconds
  * @return Whether the operation was successful
  */
-enum upcn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms);
+enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms);
 
 
 #endif /* HAL_SEMAPHORE_H_INCLUDED */

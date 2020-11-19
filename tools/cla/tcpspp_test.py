@@ -102,7 +102,7 @@ def main():
         send_debug(s, wrap_spp(
             serialize_bundle(
                 DEFAULT_OUTGOING_EID,
-                "dtn://upcn.dtn/config",
+                "dtn://ud3tn.dtn/config",
                 bytes(config_msg1),
             ),
             not args.without_crc,
@@ -111,7 +111,7 @@ def main():
         send_debug(s, wrap_spp(
             serialize_bundle(
                 DEFAULT_OUTGOING_EID,
-                "dtn://upcn.dtn/config",
+                "dtn://ud3tn.dtn/config",
                 bytes(config_msg2),
             ),
             not args.without_crc,

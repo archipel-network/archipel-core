@@ -1,7 +1,7 @@
 #include "bundle7/fragment.h"
 
-#include "upcn/bundle.h"
-#include "upcn/bundle_fragmenter.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/bundle_fragmenter.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -122,9 +122,9 @@ struct bundle *bundle7_fragment_bundle(struct bundle *working_bundle,
 	remainder->proc_flags |= BUNDLE_FLAG_IS_FRAGMENT;
 
 	// Recalculate primary block sizes
-	if (bundle_recalculate_header_length(working_bundle) == UPCN_FAIL
+	if (bundle_recalculate_header_length(working_bundle) == UD3TN_FAIL
 			|| bundle_recalculate_header_length(remainder)
-				== UPCN_FAIL)
+				== UD3TN_FAIL)
 		return NULL;
 
 	return remainder;

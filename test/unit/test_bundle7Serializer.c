@@ -10,7 +10,7 @@
 
 #include "platform/hal_io.h"
 
-#include "upcn/bundle.h"
+#include "ud3tn/bundle.h"
 
 #include "unity_fixture.h"
 
@@ -153,7 +153,7 @@ TEST(bundle7Serializer, simple_bundle)
 	memcpy(block->data, payload, sizeof(payload));
 	bundle->payload_block = block;
 
-	TEST_ASSERT_EQUAL(UPCN_OK, bundle7_serialize(bundle, write, NULL));
+	TEST_ASSERT_EQUAL(UD3TN_OK, bundle7_serialize(bundle, write, NULL));
 	TEST_ASSERT_EQUAL(len_simple_bundle, output_bytes);
 
 	bundle_free(bundle);
@@ -240,7 +240,7 @@ TEST(bundle7Serializer, crc16_generation)
 	block->data = NULL;
 	bundle->payload_block = block;
 
-	TEST_ASSERT_EQUAL(UPCN_OK,
+	TEST_ASSERT_EQUAL(UD3TN_OK,
 		bundle7_serialize(bundle, write_crc16_primary_block, NULL));
 	TEST_ASSERT_EQUAL(len_crc16_primary_block, output_bytes);
 
@@ -267,7 +267,7 @@ TEST(bundle7Serializer, crc16_generation)
 	// Reset output counter
 	output_bytes = 0;
 
-	TEST_ASSERT_EQUAL(UPCN_OK,
+	TEST_ASSERT_EQUAL(UD3TN_OK,
 		bundle7_serialize(bundle, write_crc16_payload_block, NULL));
 	TEST_ASSERT_EQUAL(len_crc16_payload_block, output_bytes);
 
@@ -355,7 +355,7 @@ TEST(bundle7Serializer, crc32_generation)
 	block->data = NULL;
 	bundle->payload_block = block;
 
-	TEST_ASSERT_EQUAL(UPCN_OK,
+	TEST_ASSERT_EQUAL(UD3TN_OK,
 		bundle7_serialize(bundle, write_crc32_primary_block, NULL));
 	TEST_ASSERT_EQUAL(len_crc32_primary_block, output_bytes);
 
@@ -382,7 +382,7 @@ TEST(bundle7Serializer, crc32_generation)
 	// Reset output counter
 	output_bytes = 0;
 
-	TEST_ASSERT_EQUAL(UPCN_OK,
+	TEST_ASSERT_EQUAL(UD3TN_OK,
 		bundle7_serialize(bundle, write_crc32_payload_block, NULL));
 	TEST_ASSERT_EQUAL(len_crc32_payload_block, output_bytes);
 

@@ -9,8 +9,8 @@
 #include "bundle7/reports.h"
 #include "bundle7/hopcount.h"
 
-#include "upcn/bundle.h"
-#include "upcn/report_manager.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/report_manager.h"
 
 #include "unity_fixture.h"
 

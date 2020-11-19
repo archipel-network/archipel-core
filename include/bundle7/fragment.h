@@ -1,7 +1,7 @@
 #ifndef BUNDLE7_FRAGMENT_H_INCLUDED
 #define BUNDLE7_FRAGMENT_H_INCLUDED
 
-#include "upcn/bundle.h"
+#include "ud3tn/bundle.h"
 
 #include <stdint.h>
 

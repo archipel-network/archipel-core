@@ -8,7 +8,7 @@
 
 #include "platform/hal_task.h"
 
-#include "upcn/common.h"
+#include "ud3tn/common.h"
 
 #include <FreeRTOS.h>
 #include <task.h>

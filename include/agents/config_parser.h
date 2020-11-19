@@ -1,9 +1,9 @@
 #ifndef CONFIGPARSER_H_INCLUDED
 #define CONFIGPARSER_H_INCLUDED
 
-#include "upcn/parser.h"
-#include "upcn/result.h"
-#include "upcn/router_task.h"
+#include "ud3tn/parser.h"
+#include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 
 #include <stdint.h>
 
@@ -53,6 +53,6 @@ struct parser *config_parser_init(
 	void (*send_callback)(struct router_command *, void *), void *param);
 size_t config_parser_read(struct config_parser *parser,
 	const uint8_t *buffer, size_t length);
-enum upcn_result config_parser_reset(struct config_parser *parser);
+enum ud3tn_result config_parser_reset(struct config_parser *parser);
 
 #endif /* CONFIGPARSER_H_INCLUDED */

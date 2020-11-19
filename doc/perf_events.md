@@ -6,7 +6,7 @@ hardware counters. These counters can be used via the `perf_events` interface of
 the Linux Kernel.
 
 This document describes the usage of this interface. It takes a simple parsing
-tasks in µPCN as an example. For example, this method was used for the RFC 5050
+tasks in µD3TN as an example. For example, this method was used for the RFC 5050
 vs. BPbis parsing performance comparison
 
 ## Header definitions

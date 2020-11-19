@@ -46,8 +46,8 @@ CPPFLAGS += -DHSE_VALUE=$(BOARD_FREQ_STM32) -DBOARD_STM32F4_DISCOVERY
 
 # BIN FILE GENERATION RULES (for flashing EEPROM)
 
-build/stm32/upcn.bin: build/stm32/upcn
+build/stm32/ud3tn.bin: build/stm32/ud3tn
 	$(call cmd,bin)
 
-build/stm32/testupcn.bin: build/stm32/testupcn
+build/stm32/testud3tn.bin: build/stm32/testud3tn
 	$(call cmd,bin)

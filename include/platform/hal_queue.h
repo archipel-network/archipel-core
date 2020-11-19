@@ -11,7 +11,7 @@
 
 #include "platform/hal_types.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -57,9 +57,9 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item);
  *		  If this value is -1, receiving will block indefinitely
  * @return Whether the attachment attempt was successful
  */
-enum upcn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
-					    const void *item,
-					    int timeout);
+enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
+					     const void *item,
+					     int timeout);
 
 /**
  * @brief hal_queue_override_to_back Attach a given item to the back of the
@@ -71,8 +71,8 @@ enum upcn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
  * @return Whether the attachment attempt was successful --> that is per
  *	   functionality of this function always true!
  */
-enum upcn_result hal_queue_override_to_back(QueueIdentifier_t queue,
-					    const void *item);
+enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
+					     const void *item);
 
 /**
  * @brief hal_queue_receive Receive a item from the specific queue
@@ -86,9 +86,9 @@ enum upcn_result hal_queue_override_to_back(QueueIdentifier_t queue,
  *		  If this value is -1, receiving will block indefinitely
  * @return Whether the receiving was successful
  */
-enum upcn_result hal_queue_receive(QueueIdentifier_t queue,
-				   void *targetBuffer,
-				   int timeout);
+enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
+				    void *targetBuffer,
+				    int timeout);
 
 /**
  * @brief hal_queue_reset Reset (i.e. empty) the specific queue

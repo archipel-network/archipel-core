@@ -5,7 +5,7 @@
 
 #include "platform/hal_time.h"
 
-#include "upcn/common.h"
+#include "ud3tn/common.h"
 
 #include "cbor.h"
 

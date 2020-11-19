@@ -1,4 +1,4 @@
-/* Felix Walter, 2016, BSD3-licensed (see uPCN) */
+/* (c) Felix Walter, 2016, BSD3-licensed (part of uD3TN) */
 
 #ifndef JSON_UNESCAPE_H_INCLUDED
 #define JSON_UNESCAPE_H_INCLUDED

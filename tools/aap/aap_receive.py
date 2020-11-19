@@ -32,7 +32,7 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="register an agent with uPCN and wait for bundles",
+        description="register an agent with uD3TN and wait for bundles",
     )
 
     add_common_parser_arguments(parser)

@@ -3,8 +3,8 @@
 
 #include "cla/cla.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/result.h"
 
 #include "platform/hal_types.h"
 
@@ -58,28 +58,28 @@ struct cla_tcp_single_config {
  * Private API
  */
 
-enum upcn_result cla_tcp_config_init(
+enum ud3tn_result cla_tcp_config_init(
 	struct cla_tcp_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
-enum upcn_result cla_tcp_single_config_init(
+enum ud3tn_result cla_tcp_single_config_init(
 	struct cla_tcp_single_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
-enum upcn_result cla_tcp_link_init(
+enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
 	struct cla_tcp_config *config);
 
-enum upcn_result cla_tcp_listen(struct cla_tcp_config *config,
-				const char *node, const char *service,
-				int backlog);
+enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
+				 const char *node, const char *service,
+				 int backlog);
 
 int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 			       int listener_socket,
 			       char **addr);
 
-enum upcn_result cla_tcp_connect(struct cla_tcp_config *config,
-				 const char *node, const char *service);
+enum ud3tn_result cla_tcp_connect(struct cla_tcp_config *config,
+				  const char *node, const char *service);
 
 void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 				 const size_t struct_size);
@@ -95,10 +95,10 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 struct cla_tx_queue cla_tcp_single_get_tx_queue(
 	struct cla_config *config, const char *eid, const char *cla_addr);
 
-enum upcn_result cla_tcp_single_start_scheduled_contact(
+enum ud3tn_result cla_tcp_single_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr);
 
-enum upcn_result cla_tcp_single_end_scheduled_contact(
+enum ud3tn_result cla_tcp_single_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr);
 
 void cla_tcp_single_disconnect_handler(struct cla_link *link);
@@ -114,9 +114,9 @@ void cla_tcp_single_disconnect_handler(struct cla_link *link);
  * @param bytes_read Number of bytes read into the buffer.
  * @return Specifies if the read was successful.
  */
-enum upcn_result cla_tcp_read(struct cla_link *link,
-			      uint8_t *buffer, size_t length,
-			      size_t *bytes_read);
+enum ud3tn_result cla_tcp_read(struct cla_link *link,
+			       uint8_t *buffer, size_t length,
+			       size_t *bytes_read);
 
 /**
  * @brief Parse the "TCP active" command line option.
@@ -125,6 +125,6 @@ enum upcn_result cla_tcp_read(struct cla_link *link,
  * @param tcp_active Returns the "TCP active" flag.
  * @return A value indicating whether the operation was successful.
  */
-enum upcn_result parse_tcp_active(const char *str, bool *tcp_active);
+enum ud3tn_result parse_tcp_active(const char *str, bool *tcp_active);
 
 #endif // CLA_TCP_COMMON_H_INCLUDED

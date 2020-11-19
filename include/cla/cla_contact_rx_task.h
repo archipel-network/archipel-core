@@ -40,8 +40,8 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 				    const uint8_t *buffer,
 				    size_t length);
 
-enum upcn_result rx_task_data_init(struct rx_task_data *rx_data,
-				   void *cla_config);
+enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
+				    void *cla_config);
 void rx_task_data_deinit(struct rx_task_data *rx_data);
 
 // Forward declaration to prevent (circular) inclusion of cla.h here.
@@ -52,6 +52,6 @@ struct cla_link;
  * @param link The link associated to the task
  * @return whether the operation was successful
  */
-enum upcn_result cla_launch_contact_rx_task(struct cla_link *link);
+enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link);
 
 #endif /* CLA_CONTACT_RX_TASK_H_INCLUDED */

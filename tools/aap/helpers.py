@@ -32,7 +32,7 @@ def add_agentid_parser_argument(parser):
     parser.add_argument(
         "-a", "--agentid",
         default=None,
-        help="the agent id to register with uPCN (default: random UUID)",
+        help="the agent id to register with uD3TN (default: random UUID)",
     )
 
 
@@ -41,11 +41,11 @@ def add_socket_group_parser_arguments(parser):
     socket_group.add_argument(
         "--socket",
         metavar="PATH",
-        default="/tmp/upcn.socket",
+        default="/tmp/ud3tn.socket",
         type=str,
         help=(
             "AAP UNIX domain socket to connect to "
-            "(default: /tmp/upcn.socket)"
+            "(default: /tmp/ud3tn.socket)"
         ),
     )
     socket_group.add_argument(

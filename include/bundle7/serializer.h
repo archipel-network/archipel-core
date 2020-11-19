@@ -3,9 +3,9 @@
 
 #include "bundle7/bundle7.h"
 
-#include "upcn/bundle.h"
-#include "upcn/crc.h"
-#include "upcn/result.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/crc.h"
+#include "ud3tn/result.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -59,7 +59,8 @@ struct bundle7_serializer {
 /**
  * Creates CBOR-encoded byte stream of a Bundle v7
  */
-enum upcn_result bundle7_serialize(struct bundle *bundle,
+enum ud3tn_result bundle7_serialize(
+	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj);
 

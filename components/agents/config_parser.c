@@ -2,7 +2,7 @@
 
 #include "platform/hal_io.h"
 
-#include "upcn/node.h"
+#include "ud3tn/node.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -482,11 +482,11 @@ size_t config_parser_read(struct config_parser *parser,
 	return i;
 }
 
-enum upcn_result config_parser_reset(struct config_parser *parser)
+enum ud3tn_result config_parser_reset(struct config_parser *parser)
 {
 	if (parser->basedata->status == PARSER_STATUS_GOOD &&
 			parser->stage == RP_EXPECT_COMMAND_TYPE)
-		return UPCN_OK;
+		return UD3TN_OK;
 	else if (parser->basedata->status == PARSER_STATUS_ERROR)
 		(void)parser;
 	parser->basedata->status = PARSER_STATUS_GOOD;
@@ -506,12 +506,12 @@ enum upcn_result config_parser_reset(struct config_parser *parser)
 	}
 	parser->router_command = malloc(sizeof(struct router_command));
 	if (parser->router_command == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	parser->router_command->type = ROUTER_COMMAND_UNDEFINED;
 	parser->router_command->data = node_create(NULL);
 	if (parser->router_command->data == NULL)
-		return UPCN_FAIL;
-	return UPCN_OK;
+		return UD3TN_FAIL;
+	return UD3TN_OK;
 }
 
 struct parser *config_parser_init(
@@ -525,7 +525,7 @@ struct parser *config_parser_init(
 	parser->send_param = param;
 	parser->basedata->status = PARSER_STATUS_ERROR;
 	parser->router_command = NULL;
-	if (config_parser_reset(parser) != UPCN_OK)
+	if (config_parser_reset(parser) != UD3TN_OK)
 		return NULL;
 	return parser->basedata;
 }

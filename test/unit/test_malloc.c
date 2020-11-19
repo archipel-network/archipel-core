@@ -1,4 +1,4 @@
-#include "upcn/config.h"
+#include "ud3tn/config.h"
 
 #include "unity_fixture.h"
 

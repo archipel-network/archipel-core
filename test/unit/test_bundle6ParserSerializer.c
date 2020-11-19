@@ -2,8 +2,8 @@
 #include "bundle6/serializer.h"
 #include "bundle6/parser.h"
 
-#include "upcn/bundle.h"
-#include "upcn/node.h"
+#include "ud3tn/bundle.h"
+#include "ud3tn/node.h"
 
 #include "platform/hal_time.h"
 

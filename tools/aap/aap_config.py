@@ -19,7 +19,7 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser(
-        description="create or update a node in uPCN",
+        description="create or update a node in uD3TN",
     )
 
     add_socket_group_parser_arguments(parser)

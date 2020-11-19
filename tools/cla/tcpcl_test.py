@@ -25,10 +25,10 @@ def run_simple_forwarding_test(serialize_bundle, concurrent=False):
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("localhost", 4556))
-        print("Connected to uPCN, sending TCPCL header...")
+        print("Connected to uD3TN, sending TCPCL header...")
         sock.sendall(serialize_tcpcl_contact_header(DEFAULT_OUTGOING_EID))
-        upcn_contact_header = sock.recv(1024)
-        header_decoded = decode_tcpcl_contact_header(upcn_contact_header)
+        ud3tn_contact_header = sock.recv(1024)
+        header_decoded = decode_tcpcl_contact_header(ud3tn_contact_header)
         print("Received TCPCL header:", header_decoded)
 
         config_msg1 = ConfigMessage(
@@ -71,15 +71,15 @@ def run_simple_forwarding_test(serialize_bundle, concurrent=False):
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("localhost", 4556))
-        print("Connected to uPCN, sending TCPCL header...")
+        print("Connected to uD3TN, sending TCPCL header...")
         sock.sendall(serialize_tcpcl_contact_header(DEFAULT_OUTGOING_EID))
-        upcn_contact_header = sock.recv(1024)
+        ud3tn_contact_header = sock.recv(1024)
         print(
             "Received TCPCL header:",
-            decode_tcpcl_contact_header(upcn_contact_header),
+            decode_tcpcl_contact_header(ud3tn_contact_header),
         )
 
-        # wait until uPCN has processed the routing command and send the bundle
+        # wait until uD3TN has processed the command and send the bundle
         sock.sendall(serialize_tcpcl_single_bundle_segment(
             serialize_bundle(
                 DEFAULT_OUTGOING_EID,

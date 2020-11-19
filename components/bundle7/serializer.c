@@ -120,13 +120,14 @@ static uint32_t bundle7_filter_protocol_proc_flags(const struct bundle *bundle)
 	return flags;
 }
 
-enum upcn_result bundle7_serialize(struct bundle *bundle,
+enum ud3tn_result bundle7_serialize(
+	struct bundle *bundle,
 	void (*write)(void *cla_obj, const void *, const size_t),
 	void *cla_obj)
 {
 	// Assert that the bundle has correct version
 	if (bundle->protocol_version != 7)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	uint8_t *buffer;
 	CborEncoder encoder;
@@ -135,7 +136,7 @@ enum upcn_result bundle7_serialize(struct bundle *bundle,
 
 	buffer = malloc(BUFFER_SIZE);
 	if (buffer == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	// Bundle start (CBOR indefinite array)
 	buffer[0] = 0x9f;
@@ -162,7 +163,7 @@ enum upcn_result bundle7_serialize(struct bundle *bundle,
 	written = bundle7_eid_serialize(bundle->destination,
 		buffer, BUFFER_SIZE);
 	if (written <= 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	write(cla_obj, buffer, written);
 	feed_crc(&crc, bundle->crc_type, buffer, written);
 
@@ -170,7 +171,7 @@ enum upcn_result bundle7_serialize(struct bundle *bundle,
 	written = bundle7_eid_serialize(bundle->source,
 		buffer, BUFFER_SIZE);
 	if (written <= 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	write(cla_obj, buffer, written);
 	feed_crc(&crc, bundle->crc_type, buffer, written);
 
@@ -178,7 +179,7 @@ enum upcn_result bundle7_serialize(struct bundle *bundle,
 	written = bundle7_eid_serialize(bundle->report_to,
 		buffer, BUFFER_SIZE);
 	if (written <= 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	write(cla_obj, buffer, written);
 	feed_crc(&crc, bundle->crc_type, buffer, written);
 
@@ -266,5 +267,5 @@ enum upcn_result bundle7_serialize(struct bundle *bundle,
 
 	free(buffer);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }

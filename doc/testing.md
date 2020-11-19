@@ -1,8 +1,8 @@
-# µPCN Testing Documentation
+# µD3TN Testing Documentation
 
-µPCN relies on intensive testing to ensure system stability as well as project quality. The following information should be taken into account by all project contributors.
+µD3TN relies on intensive testing to ensure system stability as well as project quality. The following information should be taken into account by all project contributors.
 
-There are currently three ways to check for code quality issues and verify the proper function of µPCN:
+There are currently three ways to check for code quality issues and verify the proper function of µD3TN:
 * Static analysis
 * Unit tests
 * Integration tests
@@ -15,7 +15,7 @@ For patches or pull requests to be accepted, _all_ of the below-listed tests hav
 
 ### Compiler Warnings
 
-Most of the available compiler warnings are turned on automatically in the Makefile. This usually gives already an indication of some obvious problems in new code. To check that there are no problems compiling µPCN for various platforms, the following commands should be run:
+Most of the available compiler warnings are turned on automatically in the Makefile. This usually gives already an indication of some obvious problems in new code. To check that there are no problems compiling µD3TN for various platforms, the following commands should be run:
 
 ```
 make clean && make posix type=debug werror=yes
@@ -26,7 +26,7 @@ make clean && make stm32 werror=yes
 
 ### Linter (clang-tidy)
 
-Clang Tidy is an extensible linter that can be used to check for some typical programming errors. It can be executed for µPCN as follows:
+Clang Tidy is an extensible linter that can be used to check for some typical programming errors. It can be executed for µD3TN as follows:
 
 ```
 make clang-tidy-posix
@@ -34,7 +34,7 @@ make clang-tidy-posix
 
 ### Stylecheck
 
-The `checkpatch.pl` utility available in the Linux kernel source tree is used for µPCN to enforce compatibility with the project's coding style which is the one used for the Linux kernel.
+The `checkpatch.pl` utility available in the Linux kernel source tree is used for µD3TN to enforce compatibility with the project's coding style which is the one used for the Linux kernel.
 The coding style compliance check can be executed by running:
 
 ```
@@ -47,17 +47,17 @@ No errors or warnings must be shown.
 
 For unit testing, the lightweight [Unity](http://www.throwtheswitch.org/unity/) test framework is used. It provides a simple API and everything necessary to check assertions and generate a test report. Most test cases are available and run for the POSIX as well as the STM32 platform.
 
-The tests are located in `test/unit` and, including the Unity test framework, are compiled into the µPCN test binary (via `make unittest-posix`).
+The tests are located in `test/unit` and, including the Unity test framework, are compiled into the µD3TN test binary (via `make unittest-posix`).
 
 ### POSIX
 
-To run all unit tests against the POSIX port of µPCN, a `make` command is provided:
+To run all unit tests against the POSIX port of µD3TN, a `make` command is provided:
 
 ```
 make run-unittest-posix
 ```
 
-This will automatically build µPCN plus the tests and execute them. An output similar to the following should be displayed:
+This will automatically build µD3TN plus the tests and execute them. An output similar to the following should be displayed:
 
 ```
 [...]
@@ -81,11 +81,11 @@ This uses the `sopenocd` utility to upload the tests to the board. They are exec
 
 ## Integration Tests
 
-There are several integration test scenarios which check µPCN's behavior. For the integration tests to work, an instance of uPCN first has to be started and the Python `venv` has to be activates. For the latter, see [python-venv.md](python-venv.md).
+There are several integration test scenarios which check µD3TN's behavior. For the integration tests to work, an instance of µD3TN first has to be started and the Python `venv` has to be activates. For the latter, see [python-venv.md](python-venv.md).
 
 **Example for POSIX:**
 
-Start µPCN in a dedicated terminal:
+Start µD3TN in a dedicated terminal:
 
 ```
 make run-posix
@@ -100,7 +100,7 @@ make integration-test
 
 **Example for STM32:**
 
-Flash µPCN to the board, preferably as a `release` build to prevent delays due to debug output.
+Flash µD3TN to the board, preferably as a `release` build to prevent delays due to debug output.
 
 ```
 make clean
@@ -130,7 +130,7 @@ make integration-test-stm32
 If you encounter any issues with the tests or while developing new features for STM32, you can attach a debugger as follows:
 
 * Start `openocd` in one terminal and
-* Invoke `make gdb-stm32` in another terminal with the same options you used for compiling `upcn`.
+* Invoke `make gdb-stm32` in another terminal with the same options you used for compiling `ud3tn`.
 
 The debugger should automatically connect to `openocd` and stop the currently-run program. You may want to issue a `continue` command, now. Otherwise, you can work with the GDB instance as usual, i.e., set breakpoints, single-step through the code, print backtraces, and so forth.
 
@@ -143,7 +143,7 @@ halt_fault (fault=0x8028d64 "BusFault", task=0x8028d40 "< NO TASK >", r0=2684453
 26			asm volatile ("bkpt");
 ```
 
-This means that the hardware encountered a fault (e.g., an invalid memory access) and cannot continue operation. At this point, uPCN's own fault handler has been invoked with the current contents of all important registers. You can now inspect the memory or simply set a breakpoint at the last position of the program counter (the `pc` argument of this function), which should be the point at which the program crashes:
+This means that the hardware encountered a fault (e.g., an invalid memory access) and cannot continue operation. At this point, µD3TN's own fault handler has been invoked with the current contents of all important registers. You can now inspect the memory or simply set a breakpoint at the last position of the program counter (the `pc` argument of this function), which should be the point at which the program crashes:
 
 ```
 (gdb) break *0x8005a2e

@@ -17,7 +17,7 @@ $(eval $(call addComponentWithRules,components/cla))
 $(eval $(call addComponentWithRules,components/cla/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/platform/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/spp))
-$(eval $(call addComponentWithRules,components/upcn))
+$(eval $(call addComponentWithRules,components/ud3tn))
 
 TINYCBOR_SOURCES := \
 	cborerrorstrings.c \
@@ -61,36 +61,36 @@ endif
 $(eval $(call generateComponentRules,components/daemon))
 $(eval $(call generateComponentRules,test/unit))
 
-build/$(PLATFORM)/libupcn.so: LDFLAGS += $(LDFLAGS_LIB)
-build/$(PLATFORM)/libupcn.so: LIBS = $(LIBS_libupcn.so)
-build/$(PLATFORM)/libupcn.so: $(LIBS_libupcn.so) | build/$(PLATFORM)
+build/$(PLATFORM)/libud3tn.so: LDFLAGS += $(LDFLAGS_LIB)
+build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
+build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
 	$(call cmd,link)
 
 # EXECUTABLE
 
-$(eval $(call addComponent,upcn,components/daemon))
+$(eval $(call addComponent,ud3tn,components/daemon))
 
-build/$(PLATFORM)/upcn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
-build/$(PLATFORM)/upcn: LIBS = $(LIBS_upcn)
-build/$(PLATFORM)/upcn: $(LIBS_upcn) | build/$(PLATFORM)
+build/$(PLATFORM)/ud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
+build/$(PLATFORM)/ud3tn: LIBS = $(LIBS_ud3tn)
+build/$(PLATFORM)/ud3tn: $(LIBS_ud3tn) | build/$(PLATFORM)
 	$(call cmd,link)
 
 # TEST EXECUTABLE
 
-$(eval $(call addComponent,testupcn,test/unit))
+$(eval $(call addComponent,testud3tn,test/unit))
 
-build/$(PLATFORM)/testupcn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
+build/$(PLATFORM)/testud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
 # 64 bit support has to be enabled first.
-build/$(PLATFORM)/testupcn: CPPFLAGS += -DUNITY_SUPPORT_64
+build/$(PLATFORM)/testud3tn: CPPFLAGS += -DUNITY_SUPPORT_64
 # We wrap some functions to make Unity usable without surprises on our platform.
-build/$(PLATFORM)/testupcn: LDFLAGS += -Wl,-wrap,putchar \
+build/$(PLATFORM)/testud3tn: LDFLAGS += -Wl,-wrap,putchar \
                                        -Wl,-wrap,UNITY_OUTPUT_CHAR \
                                        -Wl,-wrap,unity_malloc \
                                        -Wl,-wrap,unity_calloc \
                                        -Wl,-wrap,unity_realloc \
                                        -Wl,-wrap,unity_free
-build/$(PLATFORM)/testupcn: LIBS = $(LIBS_testupcn)
-build/$(PLATFORM)/testupcn: $(LIBS_testupcn) | build/$(PLATFORM)
+build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
+build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
 	$(call cmd,link)
 
 # GENERAL RULES

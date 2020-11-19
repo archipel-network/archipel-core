@@ -1,7 +1,7 @@
 #ifndef APPLICATIONAGENT_H_INCLUDED
 #define APPLICATIONAGENT_H_INCLUDED
 
-#include "upcn/bundle_agent_interface.h"
+#include "ud3tn/bundle_agent_interface.h"
 
 #include <stdint.h>
 

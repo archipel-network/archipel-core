@@ -26,20 +26,20 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_register = {
 		.type = AAP_MESSAGE_REGISTER,
-		.eid_length = 4,
-		.eid = "UPCN",
+		.eid_length = 5,
+		.eid = "UD3TN",
 	};
 	struct aap_message msg_sendbundle = {
 		.type = AAP_MESSAGE_SENDBUNDLE,
-		.eid_length = 4,
-		.eid = "UPCN",
+		.eid_length = 5,
+		.eid = "UD3TN",
 		.payload_length = 3,
 		.payload = (uint8_t *)"PL",
 	};
 	struct aap_message msg_recvbundle = {
 		.type = AAP_MESSAGE_RECVBUNDLE,
-		.eid_length = 4,
-		.eid = "UPCN",
+		.eid_length = 5,
+		.eid = "UD3TN",
 		.payload_length = 0,
 		.payload = NULL, // empty payload
 	};
@@ -53,8 +53,8 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_welcome = {
 		.type = AAP_MESSAGE_WELCOME,
-		.eid_length = 4,
-		.eid = "UPCN",
+		.eid_length = 5,
+		.eid = "UD3TN",
 	};
 	struct aap_message msg_ping = {
 		.type = AAP_MESSAGE_PING
@@ -80,8 +80,8 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_invalid_eid = {
 		.type = AAP_MESSAGE_WELCOME,
-		.eid_length = 5,
-		.eid = "UPCN\0", // EID longer than strlen
+		.eid_length = 6,
+		.eid = "UD3TN\0", // EID longer than strlen
 	};
 	struct aap_message msg_eid_null = {
 		.type = AAP_MESSAGE_REGISTER,
@@ -90,8 +90,8 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_payload_null = {
 		.type = AAP_MESSAGE_SENDBUNDLE,
-		.eid_length = 4,
-		.eid = "UPCN",
+		.eid_length = 5,
+		.eid = "UD3TN",
 		.payload_length = 5,
 		.payload = NULL,
 	};

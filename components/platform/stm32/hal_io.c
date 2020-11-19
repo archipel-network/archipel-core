@@ -8,8 +8,8 @@
 
 #include "platform/hal_semaphore.h"
 
-#include "upcn/config.h"
-#include "upcn/result.h"
+#include "ud3tn/config.h"
+#include "ud3tn/result.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -20,17 +20,17 @@
 static char printf_buffer[DEFAULT_PRINTF_BUFFER_SIZE];
 static Semaphore_t printf_semaphore;
 
-enum upcn_result hal_io_init(void)
+enum ud3tn_result hal_io_init(void)
 {
 	if (!IS_DEBUG_BUILD)
-		return UPCN_OK;
+		return UD3TN_OK;
 
 	printf_semaphore = hal_semaphore_init_binary();
 	if (printf_semaphore == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	hal_semaphore_release(printf_semaphore);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static void write_to_debug(const char *const buffer)

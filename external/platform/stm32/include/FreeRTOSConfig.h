@@ -161,11 +161,4 @@ standard names. */
 #define xPortPendSVHandler PendSV_Handler
 #define xPortSysTickHandler SysTick_Handler
 
-/* Trace macro */
-#ifdef DEBUG_FREERTOS_TRACE
-
-extern void upcn_dbg_trace(int task_tag);
-#define traceTASK_SWITCHED_IN() upcn_dbg_trace( ( int ) pxCurrentTCB->pxTaskTag )
-
-#endif /* DEBUG_FREERTOS_TRACE */
 #endif /* FREERTOS_CONFIG_H */

@@ -1,5 +1,5 @@
-#include "upcn/cmdline.h"
-#include "upcn/init.h"
+#include "ud3tn/cmdline.h"
+#include "ud3tn/init.h"
 
 int main(int argc, char *argv[])
 {

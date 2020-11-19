@@ -3,8 +3,8 @@
 
 #include "cla/cla.h"
 
-#include "upcn/node.h"
-#include "upcn/router.h"
+#include "ud3tn/node.h"
+#include "ud3tn/router.h"
 
 #include "platform/hal_queue.h"
 
@@ -19,7 +19,7 @@ struct cla_contact_tx_task_command {
 	struct routed_bundle_list *bundles;
 };
 
-enum upcn_result cla_launch_contact_tx_task(struct cla_link *link);
+enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link);
 
 void cla_contact_tx_task_request_exit(QueueIdentifier_t queue);
 

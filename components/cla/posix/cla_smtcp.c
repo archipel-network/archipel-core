@@ -12,12 +12,12 @@
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/cmdline.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/result.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/cmdline.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/result.h"
+#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 
@@ -41,7 +41,7 @@ static void smtcp_link_creation_task(void *param)
 	ASSERT(0);
 }
 
-static enum upcn_result smtcp_launch(struct cla_config *const config)
+static enum ud3tn_result smtcp_launch(struct cla_config *const config)
 {
 	struct cla_tcp_single_config *const smtcp_config =
 		(struct cla_tcp_single_config *)config;
@@ -56,9 +56,9 @@ static enum upcn_result smtcp_launch(struct cla_config *const config)
 	);
 
 	if (!smtcp_config->base.listen_task)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 static const char *smtcp_name_get(void)
@@ -89,15 +89,15 @@ const struct cla_vtable smtcp_vtable = {
 	.cla_disconnect_handler = cla_tcp_single_disconnect_handler,
 };
 
-static enum upcn_result smtcp_init(
+static enum ud3tn_result smtcp_init(
 	struct cla_tcp_single_config *config,
 	const char *node, const char *service, const bool tcp_active,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
 	if (cla_tcp_single_config_init(config, bundle_agent_interface)
-			!= UPCN_OK)
-		return UPCN_FAIL;
+			!= UD3TN_OK)
+		return UD3TN_FAIL;
 
 	/* set base_config vtable */
 	config->base.base.vtable = &smtcp_vtable;
@@ -106,7 +106,7 @@ static enum upcn_result smtcp_init(
 	config->node = strdup(node);
 	config->service = strdup(service);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 struct cla_config *smtcp_create(
@@ -121,7 +121,7 @@ struct cla_config *smtcp_create(
 	bool tcp_active = false;
 
 	if (option_count > 2) {
-		if (parse_tcp_active(options[2], &tcp_active) != UPCN_OK) {
+		if (parse_tcp_active(options[2], &tcp_active) != UD3TN_OK) {
 			LOGF("smtcp: Could not parse TCP active flag: %s",
 			     options[2]);
 			return NULL;
@@ -137,7 +137,7 @@ struct cla_config *smtcp_create(
 	}
 
 	if (smtcp_init(config, options[0], options[1], tcp_active,
-		       bundle_agent_interface) != UPCN_OK) {
+		       bundle_agent_interface) != UD3TN_OK) {
 		free(config);
 		LOG("smtcp: Initialization failed!");
 		return NULL;

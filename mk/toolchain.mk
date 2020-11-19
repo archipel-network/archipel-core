@@ -141,9 +141,9 @@ define addComponentWithRules
 
 $(call generateComponentRules,$(1),$(2))
 
-$(call addComponent,libupcn.so,$(1))
-$(call addComponent,upcn,$(1))
-$(call addComponent,testupcn,$(1))
+$(call addComponent,libud3tn.so,$(1))
+$(call addComponent,ud3tn,$(1))
+$(call addComponent,testud3tn,$(1))
 
 endef
 

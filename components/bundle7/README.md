@@ -5,9 +5,9 @@ C implementation of the Bundle Protcol v7 as specified in the [IETF Draft].
 
 ## Dependencies
 
-### upcn
+### µD3TN
 
-The **bundle7** library requires some header files of the **upcn** library as
+The **bundle7** library requires some header files of the **ud3tn** library as
 well as its generic bundle functions from `bundle.c`, `bundle_fragmenter.c*`
 and a small part of its platform abstraction, namely `hal_time`.
 

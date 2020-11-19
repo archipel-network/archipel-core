@@ -14,13 +14,13 @@
 #include "spp/spp_parser.h"
 #include "spp/spp_timecodes.h"
 
-#include "upcn/bundle_agent_interface.h"
-#include "upcn/cmdline.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/parser.h"
-#include "upcn/result.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/cmdline.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/parser.h"
+#include "ud3tn/result.h"
+#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 
@@ -79,7 +79,7 @@ static void tcpspp_link_creation_task(void *param)
 	ASSERT(0);
 }
 
-static enum upcn_result tcpspp_launch(struct cla_config *const config)
+static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
 {
 	struct tcpspp_config *tcpspp_config = (struct tcpspp_config *)config;
 
@@ -93,8 +93,8 @@ static enum upcn_result tcpspp_launch(struct cla_config *const config)
 	);
 
 	if (!tcpspp_config->base.base.listen_task)
-		return UPCN_FAIL;
-	return UPCN_OK;
+		return UD3TN_FAIL;
+	return UD3TN_OK;
 }
 
 static const char *tcpspp_get_name(void)
@@ -366,7 +366,7 @@ const struct cla_vtable tcpspp_vtable = {
 	.cla_disconnect_handler = cla_tcp_single_disconnect_handler,
 };
 
-static enum upcn_result tcpspp_init(
+static enum ud3tn_result tcpspp_init(
 	struct tcpspp_config *const config,
 	const char *node, const char *service,
 	const bool tcp_active, const uint16_t apid,
@@ -374,8 +374,8 @@ static enum upcn_result tcpspp_init(
 {
 	/* Initialize base_config */
 	if (cla_tcp_single_config_init(&config->base,
-				       bundle_agent_interface) != UPCN_OK)
-		return UPCN_FAIL;
+				       bundle_agent_interface) != UD3TN_OK)
+		return UD3TN_FAIL;
 
 	config->apid = apid;
 	config->base.tcp_active = tcp_active;
@@ -419,24 +419,24 @@ static enum upcn_result tcpspp_init(
 		LOG("tcpspp: Not using timecode.");
 	}
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 // Note that this is basically the same as parsing a TCP port number.
-static enum upcn_result parse_apid(const char *str, uint16_t *result)
+static enum ud3tn_result parse_apid(const char *str, uint16_t *result)
 {
 	char *end;
 	long val;
 
 	if (!str)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	errno = 0;
 	val = strtol(str, &end, 10);
 	if (errno == ERANGE || val <= 0  || val > UINT16_MAX ||
 	    end == str || *end != 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	*result = (uint16_t)val;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 struct cla_config *tcpspp_create(
@@ -451,7 +451,7 @@ struct cla_config *tcpspp_create(
 	bool tcp_active = false;
 
 	if (option_count > 2) {
-		if (parse_tcp_active(options[2], &tcp_active) != UPCN_OK) {
+		if (parse_tcp_active(options[2], &tcp_active) != UD3TN_OK) {
 			LOGF("tcpspp: Could not parse TCP active flag: %s",
 			     options[2]);
 			return NULL;
@@ -461,7 +461,7 @@ struct cla_config *tcpspp_create(
 	uint16_t apid = 1;
 
 	if (option_count > 3) {
-		if (parse_apid(options[3], &apid) != UPCN_OK) {
+		if (parse_apid(options[3], &apid) != UD3TN_OK) {
 			LOGF("tcpspp: Could not parse APID: %s", options[3]);
 			return NULL;
 		}

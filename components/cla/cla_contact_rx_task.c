@@ -9,11 +9,11 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "upcn/bundle_processor.h"
-#include "upcn/bundle_storage_manager.h"
-#include "upcn/common.h"
-#include "upcn/config.h"
-#include "upcn/task_tags.h"
+#include "ud3tn/bundle_processor.h"
+#include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/task_tags.h"
 
 #include <signal.h>
 #include <errno.h>
@@ -43,8 +43,8 @@ static void bundle_send(struct bundle *bundle, void *param)
 	}
 }
 
-enum upcn_result rx_task_data_init(struct rx_task_data *rx_data,
-				   void *cla_config)
+enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
+				    void *cla_config)
 {
 	rx_data->payload_type = PAYLOAD_UNKNOWN;
 	rx_data->timeout_occured = false;
@@ -52,29 +52,29 @@ enum upcn_result rx_task_data_init(struct rx_task_data *rx_data,
 
 	if (!bundle6_parser_init(&rx_data->bundle6_parser,
 				 &bundle_send, cla_config))
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	if (!bundle7_parser_init(&rx_data->bundle7_parser,
 				 &bundle_send, cla_config))
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	rx_data->bundle7_parser.bundle_quota = BUNDLE_QUOTA;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 void rx_task_reset_parsers(struct rx_task_data *rx_data)
 {
 	rx_data->payload_type = PAYLOAD_UNKNOWN;
 
-	ASSERT(bundle6_parser_reset(&rx_data->bundle6_parser) == UPCN_OK);
-	ASSERT(bundle7_parser_reset(&rx_data->bundle7_parser) == UPCN_OK);
+	ASSERT(bundle6_parser_reset(&rx_data->bundle6_parser) == UD3TN_OK);
+	ASSERT(bundle7_parser_reset(&rx_data->bundle7_parser) == UD3TN_OK);
 }
 
 void rx_task_data_deinit(struct rx_task_data *rx_data)
 {
 	rx_data->payload_type = PAYLOAD_UNKNOWN;
 
-	ASSERT(bundle6_parser_deinit(&rx_data->bundle6_parser) == UPCN_OK);
-	ASSERT(bundle7_parser_deinit(&rx_data->bundle7_parser) == UPCN_OK);
+	ASSERT(bundle6_parser_deinit(&rx_data->bundle6_parser) == UD3TN_OK);
+	ASSERT(bundle7_parser_deinit(&rx_data->bundle7_parser) == UD3TN_OK);
 }
 
 size_t select_bundle_parser_version(struct rx_task_data *rx_data,
@@ -184,7 +184,7 @@ static uint8_t *bulk_read(struct cla_link *link)
 
 		while (to_read) {
 			/* Read the remaining bytes directly from the HAL. */
-			enum upcn_result result =
+			enum ud3tn_result result =
 				link->config->vtable->cla_read(
 					link,
 					pos,
@@ -193,7 +193,7 @@ static uint8_t *bulk_read(struct cla_link *link)
 				);
 
 			/* We could not read from input, reset all parsers. */
-			if (result != UPCN_OK) {
+			if (result != UD3TN_OK) {
 				link->config->vtable->cla_rx_task_reset_parsers(
 					link
 				);
@@ -248,7 +248,7 @@ static uint8_t *chunk_read(struct cla_link *link)
 	ASSERT(rx_data->input_buffer.start + CLA_RX_BUFFER_SIZE >=
 	       rx_data->input_buffer.end);
 
-	enum upcn_result result = link->config->vtable->cla_read(
+	enum ud3tn_result result = link->config->vtable->cla_read(
 		link,
 		rx_data->input_buffer.end,
 		(rx_data->input_buffer.start + CLA_RX_BUFFER_SIZE)
@@ -260,7 +260,7 @@ static uint8_t *chunk_read(struct cla_link *link)
 	       rx_data->input_buffer.end + read);
 
 	/* We could not read from input, thus, reset all parsers. */
-	if (result != UPCN_OK) {
+	if (result != UD3TN_OK) {
 		link->config->vtable->cla_rx_task_reset_parsers(link);
 		return rx_data->input_buffer.end;
 	}
@@ -384,7 +384,7 @@ static void cla_contact_rx_task(void *const param)
 	hal_task_delete(rx_task_handle);
 }
 
-enum upcn_result cla_launch_contact_rx_task(struct cla_link *link)
+enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
 {
 	static uint8_t ctr = 1;
 	static char tname_buf[6];
@@ -402,5 +402,5 @@ enum upcn_result cla_launch_contact_rx_task(struct cla_link *link)
 		CONTACT_RX_TASK_STACK_SIZE,
 		(void *)CONTACT_RX_TASK_TAG
 	);
-	return link->rx_task_handle ? UPCN_OK : UPCN_FAIL;
+	return link->rx_task_handle ? UD3TN_OK : UD3TN_FAIL;
 }

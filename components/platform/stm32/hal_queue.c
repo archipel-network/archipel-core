@@ -8,7 +8,7 @@
 
 #include "platform/hal_queue.h"
 
-#include "upcn/result.h"
+#include "ud3tn/result.h"
 
 #include <FreeRTOS.h>
 #include <queue.h>
@@ -16,11 +16,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static inline enum upcn_result pdBOOL2upcnresult(BaseType_t pdBOOL)
+static inline enum ud3tn_result pdBOOL2ud3tnresult(BaseType_t pdBOOL)
 {
 	if (pdBOOL == pdTRUE)
-		return UPCN_OK;
-	return UPCN_FAIL;
+		return UD3TN_OK;
+	return UD3TN_FAIL;
 }
 
 
@@ -37,18 +37,18 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item)
 }
 
 
-enum upcn_result hal_queue_receive(QueueIdentifier_t queue,
-				   void *targetBuffer,
-				   int timeout)
+enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
+				    void *targetBuffer,
+				    int timeout)
 {
 	/* try indefinitely */
 	if (timeout == -1)
-		return pdBOOL2upcnresult(
+		return pdBOOL2ud3tnresult(
 			xQueueReceive(queue, targetBuffer, portMAX_DELAY)
 		);
 
 	/* otherwise abort after timeout */
-	return pdBOOL2upcnresult(
+	return pdBOOL2ud3tnresult(
 		xQueueReceive(queue, targetBuffer, timeout/portTICK_PERIOD_MS)
 	);
 }
@@ -60,16 +60,16 @@ void hal_queue_reset(QueueHandle_t queue)
 }
 
 
-enum upcn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
-					    const void *item, int timeout)
+enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
+					     const void *item, int timeout)
 {
 	/* try indefinitely */
 	if (timeout == -1)
-		return pdBOOL2upcnresult(
+		return pdBOOL2ud3tnresult(
 			xQueueSendToBack(queue, item, portMAX_DELAY)
 		);
 
-	return pdBOOL2upcnresult(
+	return pdBOOL2ud3tnresult(
 		xQueueSendToBack(queue, item, timeout/portTICK_PERIOD_MS)
 	);
 }
@@ -81,11 +81,11 @@ void hal_queue_delete(QueueIdentifier_t queue)
 }
 
 
-enum upcn_result hal_queue_override_to_back(QueueIdentifier_t queue,
-					    const void *item)
+enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
+					     const void *item)
 {
 	xQueueOverwrite(queue, item); // will always return pdPASS
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 uint8_t hal_queue_nr_of_items_waiting(QueueIdentifier_t queue)

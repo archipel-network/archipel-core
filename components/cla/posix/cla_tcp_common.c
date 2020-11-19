@@ -10,9 +10,9 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "upcn/common.h"
-#include "upcn/result.h"
-#include "upcn/router_task.h"
+#include "ud3tn/common.h"
+#include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 
 #include <netdb.h>
 #include <netinet/tcp.h>
@@ -26,39 +26,39 @@
 #include <stdlib.h>
 #include <errno.h>
 
-enum upcn_result cla_tcp_config_init(
+enum ud3tn_result cla_tcp_config_init(
 	struct cla_tcp_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
-	if (cla_config_init(&config->base, bundle_agent_interface) != UPCN_OK)
-		return UPCN_FAIL;
+	if (cla_config_init(&config->base, bundle_agent_interface) != UD3TN_OK)
+		return UD3TN_FAIL;
 
 	config->listen_task = NULL;
 	config->socket = -1;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_tcp_single_config_init(
+enum ud3tn_result cla_tcp_single_config_init(
 	struct cla_tcp_single_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (cla_tcp_config_init(&config->base,
-				bundle_agent_interface) != UPCN_OK)
-		return UPCN_FAIL;
+				bundle_agent_interface) != UD3TN_OK)
+		return UD3TN_FAIL;
 
 	config->link = NULL;
 	config->num_active_contacts = 0;
 	config->contact_activity_sem = hal_semaphore_init_binary();
 	if (!config->contact_activity_sem) {
 		LOG("TCP: Cannot allocate memory for contact act. semaphore!");
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_tcp_link_init(
+enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
 	struct cla_tcp_config *config)
 {
@@ -66,15 +66,15 @@ enum upcn_result cla_tcp_link_init(
 	link->connection_socket = connected_socket;
 
 	// This will fire up the RX and TX tasks
-	if (cla_link_init(&link->base, &config->base) != UPCN_OK)
-		return UPCN_FAIL;
+	if (cla_link_init(&link->base, &config->base) != UD3TN_OK)
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_tcp_read(struct cla_link *link,
-			      uint8_t *buffer, size_t length,
-			      size_t *bytes_read)
+enum ud3tn_result cla_tcp_read(struct cla_link *link,
+			       uint8_t *buffer, size_t length,
+			       size_t *bytes_read)
 {
 	struct cla_tcp_link *tcp_link = (struct cla_tcp_link *)link;
 
@@ -88,23 +88,23 @@ enum upcn_result cla_tcp_read(struct cla_link *link,
 	if (ret < 0) {
 		LOGF("TCP: Error reading from socket: %s", strerror(errno));
 		link->config->vtable->cla_disconnect_handler(link);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	} else if (ret == 0) {
 		LOGF("TCP: A peer (via CLA %s) has disconnected gracefully!",
 		     link->config->vtable->cla_name_get());
 		link->config->vtable->cla_disconnect_handler(link);
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 	if (bytes_read)
 		*bytes_read = ret;
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_tcp_connect(struct cla_tcp_config *const config,
-				 const char *node, const char *service)
+enum ud3tn_result cla_tcp_connect(struct cla_tcp_config *const config,
+				  const char *node, const char *service)
 {
 	if (node == NULL || service == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	config->socket = create_tcp_socket(
 		node,
@@ -114,7 +114,7 @@ enum upcn_result cla_tcp_connect(struct cla_tcp_config *const config,
 	);
 
 	if (config->socket < 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	LOGF(
 		"TCP: CLA %s is now connected to [%s]:%s",
@@ -123,15 +123,15 @@ enum upcn_result cla_tcp_connect(struct cla_tcp_config *const config,
 		service
 	);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_tcp_listen(struct cla_tcp_config *config,
-				const char *node, const char *service,
-				int backlog)
+enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
+				 const char *node, const char *service,
+				 int backlog)
 {
 	if (node == NULL || service == NULL)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	config->socket = create_tcp_socket(
 		node,
@@ -141,14 +141,14 @@ enum upcn_result cla_tcp_listen(struct cla_tcp_config *config,
 	);
 
 	if (config->socket < 0)
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
 	// Listen for incoming connections.
 	if (listen(config->socket, backlog) < 0) {
 		LOGF("TCP: Listening to socket failed: %s", strerror(errno));
 		close(config->socket);
 		config->socket = -1;
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 	}
 
 	LOGF(
@@ -158,7 +158,7 @@ enum upcn_result cla_tcp_listen(struct cla_tcp_config *config,
 		service
 	);
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
 int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
@@ -233,7 +233,7 @@ static void handle_established_connection(
 	ASSERT(!config->link);
 	config->link = link;
 
-	if (cla_tcp_link_init(link, sock, &config->base) != UPCN_OK) {
+	if (cla_tcp_link_init(link, sock, &config->base) != UD3TN_OK) {
 		LOG("TCP: Error creating a link instance!");
 	} else {
 		// Notify the router task of the newly established connection...
@@ -265,7 +265,7 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 		     config->node, config->service);
 
 		if (cla_tcp_connect(&config->base,
-				    config->node, config->service) != UPCN_OK) {
+				    config->node, config->service) != UD3TN_OK) {
 			LOGF("TCP: CLA \"%s\": Connection failed, will retry in %d ms.",
 			     config->base.base.vtable->cla_name_get(),
 			     CLA_TCP_RETRY_INTERVAL_MS);
@@ -313,7 +313,7 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 	} else {
 		if (cla_tcp_listen(&config->base,
 				   config->node, config->service,
-				   CLA_TCP_SINGLE_BACKLOG) != UPCN_OK) {
+				   CLA_TCP_SINGLE_BACKLOG) != UD3TN_OK) {
 			LOGF("TCP: CLA \"%s\" failed to bind to \"%s:%s\".",
 			     config->base.base.vtable->cla_name_get(),
 			     config->node, config->service);
@@ -349,7 +349,7 @@ struct cla_tx_queue cla_tcp_single_get_tx_queue(
 	};
 }
 
-enum upcn_result cla_tcp_single_start_scheduled_contact(
+enum ud3tn_result cla_tcp_single_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	struct cla_tcp_single_config *tcp_config
@@ -364,10 +364,10 @@ enum upcn_result cla_tcp_single_start_scheduled_contact(
 	(void)eid;
 	(void)cla_addr;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result cla_tcp_single_end_scheduled_contact(
+enum ud3tn_result cla_tcp_single_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	struct cla_tcp_single_config *tcp_config
@@ -382,17 +382,17 @@ enum upcn_result cla_tcp_single_end_scheduled_contact(
 	(void)eid;
 	(void)cla_addr;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
 
-enum upcn_result parse_tcp_active(const char *str, bool *tcp_active)
+enum ud3tn_result parse_tcp_active(const char *str, bool *tcp_active)
 {
 	if (!strcmp(str, CLA_OPTION_TCP_ACTIVE))
 		*tcp_active = true;
 	else if (!strcmp(str, CLA_OPTION_TCP_PASSIVE))
 		*tcp_active = false;
 	else
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }

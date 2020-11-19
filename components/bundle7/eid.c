@@ -1,7 +1,7 @@
 #include "bundle7/bundle7.h"
 #include "bundle7/eid.h"
 
-#include "upcn/bundle.h"
+#include "ud3tn/bundle.h"
 
 #include "cbor.h"
 

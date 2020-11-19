@@ -42,10 +42,10 @@ void hal_semaphore_delete(Semaphore_t sem)
 	vSemaphoreDelete(sem);
 }
 
-enum upcn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
+enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
 {
 	if (pdFALSE == xSemaphoreTake(sem, timeout_ms / portTICK_PERIOD_MS))
-		return UPCN_FAIL;
+		return UD3TN_FAIL;
 
-	return UPCN_OK;
+	return UD3TN_OK;
 }
