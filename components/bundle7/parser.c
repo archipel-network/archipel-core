@@ -728,6 +728,50 @@ size_t bundle7_parser_read(struct bundle7_parser *state,
 
 	while (parsed < length
 			&& state->basedata->status == PARSER_STATUS_GOOD) {
+		// For arbitrarily-long data such as block payload data, a
+		// "BULK_READ" operation is requested, normally to be handled
+		// by the RX task. Though, sometimes we can handle this on our
+		// own (if we have enough data in the current buffer). Thus, we
+		// first check whether, given the bytes in the buffer, we can
+		// perform the bulk read operation on our own.
+		// NOTE: At this point the CBOR parser may be in an invalid
+		// state because we have to interrupt it before it starts
+		// trying to read the bytes from the array by itself. This is
+		// not possible as the array might be too short and we want to
+		// be able to "stream" the data.
+		if (state->basedata->flags & PARSER_FLAG_BULK_READ) {
+			if (parsed + state->basedata->next_bytes > length) {
+				// Bulk read operation was requested but cannot
+				// be performed by us. -> RX task will do it.
+				break;
+			}
+
+			memcpy(
+				state->basedata->next_buffer,
+				buffer + parsed,
+				state->basedata->next_bytes
+			);
+
+			parsed += state->basedata->next_bytes;
+
+			// Disables bulk read mode again
+			state->basedata->flags &= ~PARSER_FLAG_BULK_READ;
+
+			// Process copied data and proceed to next block if
+			// there is not CRC to be read.
+			// This call to "block_end" is always successful.
+			if (state->parse == block_end) {
+				state->parse(state, NULL);
+				state->parse = state->next;
+			}
+
+			// Re-initialize after the "bulk read".
+			initialize_parser = true;
+
+			// Force checking the loop condition again.
+			continue;
+		}
+
 		if (initialize_parser) {
 			err = cbor_parser_init(
 				buffer + parsed,
@@ -756,39 +800,6 @@ size_t bundle7_parser_read(struct bundle7_parser *state,
 			}
 
 			initialize_parser = false;
-		}
-
-		// First check whether, given the bytes in the buffer, we can
-		// perform the bulk read operation on our own.
-		if (state->basedata->flags & PARSER_FLAG_BULK_READ) {
-			if (parsed + state->basedata->next_bytes > length) {
-				// Bulk read operation requested but cannot be
-				// performed by us.
-				break;
-			}
-
-			memcpy(
-				state->basedata->next_buffer,
-				buffer + parsed,
-				state->basedata->next_bytes
-			);
-
-			parsed += state->basedata->next_bytes;
-
-			// Disables bulk read mode again
-			state->basedata->flags &= ~PARSER_FLAG_BULK_READ;
-
-			// Process copied data and proceed to next block if
-			// there is not CRC to be read.
-			// This call to "block_end" is always successful.
-			if (state->parse == block_end) {
-				state->parse(state, NULL);
-				state->parse = state->next;
-			}
-
-			// Re-initialize after the "bulk read".
-			initialize_parser = true;
-			continue;
 		}
 
 		// Parsing step
