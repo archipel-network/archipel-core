@@ -154,7 +154,7 @@ finish:
 	if (!result->aap_socket &&
 	    !result->aap_node &&
 	    !result->aap_service)
-		result->aap_socket = strdup(DEFAULT_AAP_SOCKET);
+		result->aap_socket = strdup("./" DEFAULT_AAP_SOCKET_FILENAME);
 	// prefere Unix domain socket over TCP
 	else if (result->aap_socket &&
 		(result->aap_node || result->aap_service))
@@ -258,7 +258,7 @@ static void print_help_text(void)
 		"  -e " DEFAULT_EID " \\\n"
 		"  -l " STR(DEFAULT_BUNDLE_LIFETIME) " \\\n"
 		"  -m %lu\n"
-		"  -s " DEFAULT_AAP_SOCKET " \\\n"
+		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\n"
 		"\n"
 		"Please report bugs to <contact@d3tn.com>.\n";
 
