@@ -257,7 +257,7 @@ static void print_help_text(void)
 		"  -c " STR(DEFAULT_CLA_OPTIONS) " \\\n"
 		"  -e " DEFAULT_EID " \\\n"
 		"  -l " STR(DEFAULT_BUNDLE_LIFETIME) " \\\n"
-		"  -m %lu\n"
+		"  -m %lu \\\n"
 		"  -s " DEFAULT_AAP_SOCKET " \\\n"
 		"\n"
 		"Please report bugs to <contact@d3tn.com>.\n";
