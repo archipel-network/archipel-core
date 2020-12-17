@@ -120,8 +120,8 @@ aap-test:
     image: python:3.7
     script:
         - make
-        - make run-posix &
         - make virtualenv
+        - build/posix/ud3tn -s /tmp/ud3tn.socket &
         - source .venv/bin/activate && python tools/aap/aap_test.py
 
 ion-bpv6-interoperability-test:

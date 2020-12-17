@@ -28,11 +28,11 @@ static const int IS_DEBUG_BUILD;
 #define DEFAULT_CLA_OPTIONS "tcpclv3:*,4556;tcpspp:*,4223,false,1;smtcp:*,4222,false;mtcp:*,4224"
 #endif // PLATFORM_STM32
 
-/* Default UNIX domain socket path for the application agent interface */
-#define DEFAULT_AAP_SOCKET "/tmp/ud3tn.socket"
 /* Default TCP IP/port used for the application agent interface */
 #define DEFAULT_AAP_NODE "0.0.0.0"
 #define DEFAULT_AAP_SERVICE "4242"
+/* Filename used for the AAP domain socket */
+#define DEFAULT_AAP_SOCKET_FILENAME "ud3tn.socket"
 /* BP version used for generated bundles */
 #define DEFAULT_BUNDLE_VERSION 7
 /* Default lifetime, in seconds, of bundles sent via AAP */
