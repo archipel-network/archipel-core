@@ -37,7 +37,7 @@ static void addnode(struct endpoint_list **list, char *node)
 }
 
 static struct node *node11, *node1_no_cla1, *node1_no_cla2, *node12, *node13;
-static struct node *node2, *node3;
+static struct node *node2, *node3, *node4;
 static struct contact *c1, *c2, *c3, *c4, *c5, *c6, *c7,
 	*c8, *c9, *c10, *c11, *c12;
 static QueueIdentifier_t sig_queue;
@@ -96,6 +96,8 @@ TEST_SETUP(routingTable)
 	node3 = node_create("node3");
 	node3->cla_addr = strdup("cla:addr5");
 	addnode(&node3->endpoints, "node6");
+	/* node4 */
+	node4 = node_create("node4");
 	/* queue */
 	sig_queue = hal_queue_create(60, 6);
 	/* init rt */
@@ -122,10 +124,11 @@ TEST(routingTable, routing_table_add_delete)
 	struct node_table_entry *nti;
 
 	TEST_ASSERT_TRUE(routing_table_add_node(node11, sig_queue));
-	// Same as ADD
-	TEST_ASSERT_TRUE(routing_table_replace_node(node2, sig_queue));
+	TEST_ASSERT_TRUE(routing_table_add_node(node2, sig_queue));
 	TEST_ASSERT_TRUE(routing_table_add_node(node12, sig_queue));
 	TEST_ASSERT_TRUE(routing_table_add_node(node3, sig_queue));
+	// Replaced/updated node has to exist, thus, REPLACE returns false
+	TEST_ASSERT_FALSE(routing_table_replace_node(node4, sig_queue));
 	TEST_ASSERT_EQUAL_PTR(node11, routing_table_lookup_node("node1"));
 	TEST_ASSERT_EQUAL_PTR(node2, routing_table_lookup_node("node2"));
 	TEST_ASSERT_EQUAL_PTR(node3, routing_table_lookup_node("node3"));
