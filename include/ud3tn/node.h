@@ -77,7 +77,7 @@ struct contact_list *contact_list_difference(
 	struct contact_list **modified, struct contact_list **deleted);
 
 struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el);
-int node_prepare_and_verify(struct node *node);
+int node_prepare_and_verify(struct node *node, uint64_t min_end_time_s);
 void recalculate_contact_capacity(struct contact *contact);
 int32_t contact_get_remaining_capacity_bytes(
 	struct contact *contact, enum bundle_routing_priority prio,

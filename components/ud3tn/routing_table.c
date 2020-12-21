@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
+#include "platform/hal_time.h"
+
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
 #include "ud3tn/node.h"
@@ -143,8 +145,9 @@ bool routing_table_add_node(
 	struct node_list *entry;
 	struct node *cur_node;
 	struct contact_list *cap_modified = NULL, *cur_contact, *next;
+	const uint64_t cur_time_s = hal_time_get_timestamp_s();
 
-	if (!node_prepare_and_verify(new_node)) {
+	if (!node_prepare_and_verify(new_node, cur_time_s)) {
 		free_node(new_node);
 		return false;
 	}
@@ -204,8 +207,9 @@ bool routing_table_replace_node(
 	struct node *node, struct rescheduling_handle rescheduler)
 {
 	struct node_list *entry;
+	const uint64_t cur_time_s = hal_time_get_timestamp_s();
 
-	if (!node_prepare_and_verify(node)) {
+	if (!node_prepare_and_verify(node, cur_time_s)) {
 		free_node(node);
 		return false;
 	}
@@ -249,8 +253,9 @@ bool routing_table_delete_node(
 	struct node_list **entry_ptr, *old_node_entry;
 	struct node *cur_node;
 	struct contact_list *modified = NULL, *deleted = NULL, *next, *tmp;
+	const uint64_t cur_time_s = hal_time_get_timestamp_s();
 
-	if (!node_prepare_and_verify(new_node)) {
+	if (!node_prepare_and_verify(new_node, cur_time_s)) {
 		free_node(new_node);
 		return false;
 	}
