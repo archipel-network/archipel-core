@@ -206,7 +206,7 @@ bool routing_table_replace_node(
 	entry = get_node_entry_by_eid(node->eid);
 
 	if (entry == NULL)
-		return add_new_node(node);
+		return false;
 
 	remove_node_from_tables(entry->node, true,
 				bproc_signaling_queue);
