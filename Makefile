@@ -193,6 +193,10 @@ clang-tidy-posix: ccmds-posix
 
 CPPFLAGS += -Wall
 
+ifdef CONFIG_AGENT_REMOTE_CONFIGURATION
+ CPPFLAGS += -DCONFIG_AGENT_REMOTE_CONFIGURATION
+endif
+
 ifeq "$(type)" "release"
   CPPFLAGS += -O2
 else
