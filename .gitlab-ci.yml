@@ -1,10 +1,10 @@
 ---
 stages:
+    - publish
     - builds
     - unit_test
     - functional_test
     - code_quality_test
-    - publish
 
 image: buildpack-deps:buster
 
@@ -191,9 +191,19 @@ publish-docker-image:
     image:
         name: gcr.io/kaniko-project/executor:debug
         entrypoint: [""]
-    variables:
-        GIT_STRATEGY: none
     script:
+        # find out if the image also should have the "latest" tag
+        - |
+          wget -q "https://gitlab.com/api/v4/projects/22426629/registry/repositories/1612288/tags" -O tags.json
+          sed -i -E 's/\]//g; s/\[//g; s/\},?/\n/g' tags.json
+          sed -i -E 's/(^.*"name":")(.*)(","path.*$)/\2/' tags.json
+          highest_version=$(grep -E "v.*" tags.json | sort -r | head -n1)
+          TAGS="v0.9.0"
+          if [ "$highest_version" = v0.9.0 ]; then TAGS="$TAGS latest"; fi
+          for TAG in $TAGS; do
+            IMAGES="${IMAGES} --destination $CI_REGISTRY_IMAGE:$TAG";
+          done;
+        - echo $IMAGES
         - mkdir -p /kaniko/.docker
         - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-        - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:v0.9.0 --build-arg UD3TN_VERSION=v0.9.0
+        - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --build-arg UD3TN_VERSION=v0.9.0 $IMAGES
