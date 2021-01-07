@@ -4,6 +4,7 @@ stages:
     - unit_test
     - functional_test
     - code_quality_test
+    - publish
 
 image: buildpack-deps:buster
 
@@ -183,3 +184,16 @@ clang-tidy-posix:
         - apt-get update
         - apt-get install clang clang-tidy -y
         - make clang-tidy-posix
+
+publish-docker-image:
+    stage: publish
+    when: always
+    image:
+        name: gcr.io/kaniko-project/executor:debug
+        entrypoint: [""]
+    variables:
+        GIT_STRATEGY: none
+    script:
+        - mkdir -p /kaniko/.docker
+        - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+        - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:v0.9.0 --build-arg UD3TN_VERSION=v0.9.0
