@@ -33,9 +33,9 @@ See https://gitlab.com/d3tn/ud3tn/container_registry/1612288 for a list of
 available tags.
 
 ```sh
-docker pull registry.gitlab.com/d3tn/ud3tn:v0.9.0
-docker run --rm registry.gitlab.com/d3tn/ud3tn:v0.9.0 [µD3TN command line options]
-docker run --rm registry.gitlab.com/d3tn/ud3tn:v0.9.0 --help
+docker pull registry.gitlab.com/d3tn/ud3tn
+docker run --rm registry.gitlab.com/d3tn/ud3tn [µD3TN command line options]
+docker run --rm registry.gitlab.com/d3tn/ud3tn --help
 ```
 
 #### Build and run µD3TN on STM32F4
