@@ -21,7 +21,24 @@ Both platforms can be built, deployed, tested and used in parallel.
 To get started with one or both platforms, just follow the subsequent
 instructions.
 
-#### Quick Start for STM32F4
+This project uses git submodules to manage some code dependencies. Use the
+`--recursive` option if you `git clone` the project or run
+`git submodule init && git submodule update` at a later point in order to
+satisfy them.
+
+#### Run µD3TN with Docker
+
+We provide docker images containing µD3TN at `registry.gitlab.com/d3tn/ud3tn`.
+See https://gitlab.com/d3tn/ud3tn/container_registry/1612288 for a list of
+available tags.
+
+```sh
+docker pull registry.gitlab.com/d3tn/ud3tn:v0.9.0
+docker run --rm registry.gitlab.com/d3tn/ud3tn:v0.9.0 [µD3TN command line options]
+docker run --rm registry.gitlab.com/d3tn/ud3tn:v0.9.0 --help
+```
+
+#### Build and run µD3TN on STM32F4
 
 For this platform only the STM32F4 embedded system is supported currently.
 However, porting to other Cortex-M3/M4 based SoCs should be trivial.
@@ -53,7 +70,7 @@ three steps are necessary after connecting the board via STLink-enabled USB:
    For convenience, GDB commands are available via `make gdb-stm32` and
    `make gdb-unittest-stm32`.
 
-#### Quick Start for POSIX-compliant Operating Systems
+#### Build and run µD3TN on POSIX-compliant Operating Systems
 
 1. Install or unpack the following dependencies:
    - The `gcc` toolchain and `binutils` for your local system.
