@@ -208,6 +208,9 @@ publish-docker-image:
           # Remove everything except the docker image tags (latest, v0.9.0, ...)
           sed -i -E 's/(^.*"name":")(.*)(","path.*$)/\2/' tags.json
 
+          # Append the $CI_COMMIT_TAG to the list of tags
+          echo "$CI_COMMIT_TAG" >> tags.json
+
           # Get the numerically highest *version* tag
           highest_version=$(grep -E "v.*" tags.json | sort -rV | head -n1)
 
