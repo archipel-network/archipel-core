@@ -207,7 +207,7 @@ publish-docker-image:
           sed -i -E 's/(^.*"name":")(.*)(","path.*$)/\2/' tags.json
 
           # Get the numerically highest *version* tag
-          highest_version=$(grep -E "v.*" tags.json | sort -r | head -n1)
+          highest_version=$(grep -E "v.*" tags.json | sort -rV | head -n1)
 
           # Build the string $IMAGES that determines what image_name:image_tag the resulting docker image will have
           TAGS="$CI_COMMIT_TAG"
