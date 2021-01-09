@@ -194,11 +194,13 @@ publish-docker-image:
         # See https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
         name: gcr.io/kaniko-project/executor:debug
         entrypoint: [""]
+    variables:
+        CI_REGISTRY_IMAGE: registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn
     script:
         # find out if the docker image *also* should be tagged with "latest"
         - |
           # Download all existing ud3tn docker image tags from the docker image registry
-          wget -q "https://gitlab.com/api/v4/projects/22426629/registry/repositories/1612288/tags" -O tags.json
+          wget -q "https://gitlab.com/api/v4/projects/23559871/registry/repositories/1616836/tags" -O tags.json
 
           # Remove some json symbols, introduce line feeds for better filtering
           sed -i -E 's/\]//g; s/\[//g; s/\},?/\n/g' tags.json
@@ -218,6 +220,6 @@ publish-docker-image:
         - echo $IMAGES
         # Prepare docker image registry access credentials
         - mkdir -p /kaniko/.docker
-        - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+        - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$UD3TN_CI_DOCKER_DEPLOY_USER\",\"password\":\"$UD3TN_CI_DOCKER_DEPLOY_PASSWORD\"}}}" > /kaniko/.docker/config.json
         # Build and push the docker image
         - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --build-arg UD3TN_VERSION=$CI_COMMIT_TAG $IMAGES

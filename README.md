@@ -28,14 +28,14 @@ satisfy them.
 
 #### Run µD3TN with Docker
 
-We provide docker images containing µD3TN at `registry.gitlab.com/d3tn/ud3tn`.
-See https://gitlab.com/d3tn/ud3tn/container_registry/1612288 for a list of
+We provide docker images containing µD3TN at `registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn`.
+See https://gitlab.com/d3tn/ud3tn-docker-images/container_registry for a list of
 available tags.
 
 ```sh
-docker pull registry.gitlab.com/d3tn/ud3tn
-docker run --rm registry.gitlab.com/d3tn/ud3tn [µD3TN command line options]
-docker run --rm registry.gitlab.com/d3tn/ud3tn --help
+docker pull registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn
+docker run registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn [µD3TN command line options]
+docker run registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn --help
 ```
 
 #### Build and run µD3TN on STM32F4
