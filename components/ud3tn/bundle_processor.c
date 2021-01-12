@@ -136,8 +136,8 @@ void bundle_processor_inform(
 int bundle_processor_perform_agent_action(
 	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
-	char *sink_identifier,
-	void (*callback)(struct bundle_adu data, void *param),
+	const char *sink_identifier,
+	void (*const callback)(struct bundle_adu data, void *param),
 	void *param,
 	bool wait_for_feedback)
 {

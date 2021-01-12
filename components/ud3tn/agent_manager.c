@@ -19,7 +19,7 @@ static struct agent_list **agent_search_ptr(const char *sink_identifier);
 static struct agent_list *agent_entry_node;
 
 int agent_register(const char *sink_identifier,
-		   void (*callback)(struct bundle_adu data, void *param),
+		   void (*const callback)(struct bundle_adu data, void *param),
 		   void *param)
 {
 	struct agent *ag_ptr;
@@ -33,6 +33,8 @@ int agent_register(const char *sink_identifier,
 	}
 
 	ag_ptr = malloc(sizeof(struct agent));
+	if (!ag_ptr)
+		return -1;
 
 	ag_ptr->sink_identifier = sink_identifier;
 	ag_ptr->callback = callback;

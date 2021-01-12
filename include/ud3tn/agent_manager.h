@@ -42,7 +42,7 @@ int agent_forward(const char *sink_identifier, struct bundle_adu data);
  * @not_thread_safe
  */
 int agent_register(const char *sink_identifier,
-		   void (*callback)(struct bundle_adu data, void *param),
+		   void (*const callback)(struct bundle_adu data, void *param),
 		   void *param);
 
 /**

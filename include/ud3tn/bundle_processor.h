@@ -49,13 +49,13 @@ void bundle_processor_inform(
  *	delivered to the agent (BP_SIGNAL_AGENT_REGISTER only)
  * @param param Use this to pass additional arguments to callback
  *	(BP_SIGNAL_AGENT_REGISTER only)
- * @param wait_for_feedback If ture, block and wait for the feedback of the BP
+ * @param wait_for_feedback If true, block and wait for the feedback of the BP
  */
 int bundle_processor_perform_agent_action(
 	QueueIdentifier_t bundle_processor_signaling_queue,
 	enum bundle_processor_signal_type type,
-	char *sink_identifier,
-	void (*callback)(struct bundle_adu data, void *param),
+	const char *sink_identifier,
+	void (*const callback)(struct bundle_adu data, void *param),
 	void *param,
 	bool wait_for_feedback);
 
