@@ -1,0 +1,9 @@
+FROM python:3.8
+COPY . /ud3tn
+RUN cd /ud3tn \
+    && make posix posix-lib \
+    && cp /ud3tn/build/posix/ud3tn /usr/local/bin/ud3tn -v \
+    && cp /ud3tn/build/posix/libud3tn.so /usr/local/lib/libud3tn.so -v \
+    && make clean
+RUN pip install --no-cache-dir /ud3tn/pyd3tn /ud3tn/python-ud3tn-utils
+ENTRYPOINT [ "stdbuf", "-oL", "ud3tn" ]
