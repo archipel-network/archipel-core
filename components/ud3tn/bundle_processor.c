@@ -47,6 +47,12 @@ static struct known_bundle_list {
 	struct known_bundle_list *next;
 } *known_bundle_list;
 
+// for performing (de)register operations
+struct agent_manager_parameters {
+	QueueIdentifier_t feedback_queue;
+	struct agent agent;
+};
+
 /* DECLARATIONS */
 
 static inline void handle_signal(const struct bundle_processor_signal signal);
@@ -111,17 +117,76 @@ static inline void bundle_rem_rc(struct bundle *bundle,
 /* COMMUNICATION */
 
 void bundle_processor_inform(
-	QueueIdentifier_t signaling_queue, bundleid_t bundle,
+	QueueIdentifier_t bundle_processor_signaling_queue, bundleid_t bundle,
 	enum bundle_processor_signal_type type,
 	enum bundle_status_report_reason reason)
 {
 	struct bundle_processor_signal signal = {
 		.type = type,
 		.reason = reason,
-		.bundle = bundle
+		.bundle = bundle,
+		.extra = NULL
 	};
 
+	ASSERT(type != BP_SIGNAL_AGENT_REGISTER && type != BP_SIGNAL_AGENT_DEREGISTER);
+
+	hal_queue_push_to_back(bundle_processor_signaling_queue, &signal);
+}
+
+int bundle_processor_perform_agent_action(
+	QueueIdentifier_t signaling_queue,
+	enum bundle_processor_signal_type type,
+	const char *sink_identifier,
+	void (*const callback)(struct bundle_adu data, void *param),
+	void *param,
+	bool wait_for_feedback)
+{
+	struct bundle_processor_signal signal = {
+		.type = type,
+		.reason = BUNDLE_SR_REASON_NO_INFO,
+		.bundle = BUNDLE_INVALID_ID,
+		.extra = NULL
+	};
+
+	struct agent_manager_parameters *aaps;
+	QueueIdentifier_t feedback_queue;
+	int result;
+
+	ASSERT((type == BP_SIGNAL_AGENT_REGISTER && callback)
+		|| type == BP_SIGNAL_AGENT_DEREGISTER);
+	ASSERT(sink_identifier);
+
+	aaps = malloc(sizeof(struct agent_manager_parameters));
+	if (!aaps)
+		return -1;
+
+	aaps->agent.sink_identifier = sink_identifier;
+	aaps->agent.callback = callback;
+	aaps->agent.param = param;
+	aaps->feedback_queue = NULL;
+	signal.extra = aaps;
+
+	if (!wait_for_feedback) {
+		hal_queue_push_to_back(signaling_queue, &signal);
+		return 0;
+	}
+
+	feedback_queue = hal_queue_create(1, sizeof(int));
+	if (!feedback_queue) {
+		free(aaps);
+		return -1;
+	}
+
+	aaps->feedback_queue = feedback_queue;
 	hal_queue_push_to_back(signaling_queue, &signal);
+
+	if (hal_queue_receive(feedback_queue, &result, -1) == UD3TN_OK) {
+		hal_queue_delete(feedback_queue);
+		return result;
+	}
+
+	hal_queue_delete(feedback_queue);
+	return -1;
 }
 
 void bundle_processor_task(void * const param)
@@ -150,13 +215,18 @@ void bundle_processor_task(void * const param)
 
 static inline void handle_signal(const struct bundle_processor_signal signal)
 {
+	bool bundle_required = signal.type != BP_SIGNAL_AGENT_REGISTER &&
+		signal.type != BP_SIGNAL_AGENT_DEREGISTER;
 	struct bundle *b = bundle_storage_get(signal.bundle);
+	struct agent_manager_parameters *aaps;
+	int feedback;
 
-	if (b == NULL) {
+	if (bundle_required && b == NULL) {
 		LOGI("BundleProcessor: Could not process signal", signal.type);
 		LOGI("BundleProcessor: Bundle not found", signal.bundle);
 		return;
 	}
+
 	switch (signal.type) {
 	case BP_SIGNAL_BUNDLE_INCOMING:
 		bundle_receive(b);
@@ -182,6 +252,21 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 		break;
 	case BP_SIGNAL_BUNDLE_LOCAL_DISPATCH:
 		bundle_dispatch(b);
+		break;
+	case BP_SIGNAL_AGENT_REGISTER:
+		aaps = ((struct agent_manager_parameters *) signal.extra);
+		feedback = agent_register(aaps->agent.sink_identifier,
+			aaps->agent.callback, aaps->agent.param);
+		if (aaps->feedback_queue)
+			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
+		free(aaps);
+		break;
+	case BP_SIGNAL_AGENT_DEREGISTER:
+		aaps = ((struct agent_manager_parameters *) signal.extra);
+		feedback = agent_deregister(aaps->agent.sink_identifier);
+		if (aaps->feedback_queue)
+			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
+		free(aaps);
 		break;
 	default:
 		LOGF("BundleProcessor: Invalid signal (%d) detected",

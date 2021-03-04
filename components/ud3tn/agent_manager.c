@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+static struct agent *agent_search(const char *sink_identifier);
 static int agent_list_add_entry(struct agent *obj);
 static int agent_list_remove_entry(struct agent *obj);
 static struct agent_list **agent_search_ptr(const char *sink_identifier);
@@ -19,7 +19,7 @@ static struct agent_list **agent_search_ptr(const char *sink_identifier);
 static struct agent_list *agent_entry_node;
 
 int agent_register(const char *sink_identifier,
-		   void (*callback)(struct bundle_adu data, void *param),
+		   void (*const callback)(struct bundle_adu data, void *param),
 		   void *param)
 {
 	struct agent *ag_ptr;
@@ -33,6 +33,8 @@ int agent_register(const char *sink_identifier,
 	}
 
 	ag_ptr = malloc(sizeof(struct agent));
+	if (!ag_ptr)
+		return -1;
 
 	ag_ptr->sink_identifier = sink_identifier;
 	ag_ptr->callback = callback;
@@ -50,7 +52,7 @@ int agent_register(const char *sink_identifier,
 	return 0;
 }
 
-int agent_deregister(char *sink_identifier)
+int agent_deregister(const char *sink_identifier)
 {
 	struct agent *ag_ptr;
 

@@ -275,12 +275,34 @@ static bundleid_t create_forward_bundle(
 	return bundle_id;
 }
 
+static int register_sink(char *sink_identifier,
+	struct application_agent_comm_config *config)
+{
+	return bundle_processor_perform_agent_action(
+		config->parent->bundle_agent_interface->bundle_signaling_queue,
+		BP_SIGNAL_AGENT_REGISTER,
+		sink_identifier,
+		agent_msg_recv,
+		config,
+		true
+	);
+}
+
 static void deregister_sink(struct application_agent_comm_config *config)
 {
 	if (config->registered_agent_id) {
 		LOGF("AppAgent: De-registering agent ID \"%s\".",
 		     config->registered_agent_id);
-		agent_deregister(config->registered_agent_id);
+
+		bundle_processor_perform_agent_action(
+			config->parent->bundle_agent_interface->bundle_signaling_queue,
+			BP_SIGNAL_AGENT_DEREGISTER,
+			config->registered_agent_id,
+			NULL,
+			NULL,
+			true
+		);
+
 		free(config->registered_agent_id);
 		config->registered_agent_id = NULL;
 	}
@@ -305,10 +327,7 @@ static int16_t process_aap_message(
 
 		deregister_sink(config);
 
-		if (msg.eid == NULL || msg.eid_length == 0) {
-			// zero-length EID, only de-registering
-			response.type = AAP_MESSAGE_ACK;
-		} else if (agent_register(msg.eid, &agent_msg_recv, config)) {
+		if (register_sink(msg.eid, config)) {
 			response.type = AAP_MESSAGE_NACK;
 		} else {
 			config->registered_agent_id = msg.eid;

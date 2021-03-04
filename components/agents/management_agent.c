@@ -1,6 +1,7 @@
 #include "agents/management_agent.h"
 
 #include "ud3tn/agent_manager.h"
+#include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 
 #include "platform/hal_io.h"
@@ -48,7 +49,14 @@ static void callback(struct bundle_adu data, void *param)
 	bundle_adu_free_members(data);
 }
 
-int management_agent_setup(void)
+int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue)
 {
-	return agent_register("management", callback, NULL);
+	return bundle_processor_perform_agent_action(
+		bundle_processor_signaling_queue,
+		BP_SIGNAL_AGENT_REGISTER,
+		"management",
+		callback,
+		NULL,
+		false
+	);
 }
