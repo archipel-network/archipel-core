@@ -186,9 +186,9 @@ enum ud3tn_result bundle7_serialize(
 	// Creation Timestamp
 	buffer[0] = 0x82;
 	cbor_encoder_init(&encoder, buffer + 1, BUFFER_SIZE - 1, 0);
-	cbor_encode_uint(&encoder, bundle->creation_timestamp);
+	cbor_encode_uint(&encoder, bundle->creation_timestamp_ms);
 	cbor_encode_uint(&encoder, bundle->sequence_number);
-	cbor_encode_uint(&encoder, bundle->lifetime);
+	cbor_encode_uint(&encoder, bundle->lifetime_ms);
 
 	if (bundle_is_fragmented(bundle)) {
 		cbor_encode_uint(&encoder, bundle->fragment_offset);

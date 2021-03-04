@@ -334,8 +334,8 @@ static void bundle_receive(struct bundle *bundle)
 			BUNDLE_SR_FLAG_BUNDLE_RECEIVED,
 			BUNDLE_SR_REASON_NO_INFO);
 	/* Check lifetime - TODO: support Bundle Age block */
-	if (bundle->creation_timestamp != 0 &&
-			bundle_get_expiration_time(bundle) <
+	if (bundle->creation_timestamp_ms != 0 &&
+			bundle_get_expiration_time_s(bundle) <
 			hal_time_get_timestamp_s()) {
 		bundle_delete(bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
 		return;
@@ -452,7 +452,7 @@ static void bundle_deliver_local(struct bundle *bundle)
 static bool may_reassemble(const struct bundle *b1, const struct bundle *b2)
 {
 	return (
-		b1->creation_timestamp == b2->creation_timestamp &&
+		b1->creation_timestamp_ms == b2->creation_timestamp_ms &&
 		b1->sequence_number == b2->sequence_number &&
 		strcmp(b1->source, b2->source) == 0 // XXX: '==' may be ok
 	);
@@ -932,7 +932,7 @@ static bool bundle_record_add_and_check_known(const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &known_bundle_list;
 	uint64_t cur_time = hal_time_get_timestamp_s();
-	const uint64_t bundle_deadline = bundle_get_expiration_time(bundle);
+	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
 
 	if (bundle_deadline < cur_time)
 		return true; // We assume we "know" all expired bundles.
@@ -972,7 +972,7 @@ static bool bundle_record_add_and_check_known(const struct bundle *bundle)
 static bool bundle_reassembled_is_known(const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time(bundle);
+	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
@@ -994,7 +994,7 @@ static bool bundle_reassembled_is_known(const struct bundle *bundle)
 static void bundle_add_reassembled_as_known(const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time(bundle);
+	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;

@@ -24,7 +24,7 @@ static struct bundle *encapsulate_record(
 {
 	// Lifetime
 	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time(bundle) -
+		(int64_t)bundle_get_expiration_time_s(bundle) -
 		(int64_t)hal_time_get_timestamp_s()
 	);
 
@@ -95,7 +95,7 @@ static struct bundle *generate_record(
 	cur += sdnv_write_u64(cur, (millitime / 1000));
 	cur += sdnv_write_u32(cur, (millitime % 1000) * 1000); /* "ns" */
 	/* Copy bundle data */
-	cur += sdnv_write_u64(cur, bundle->creation_timestamp);
+	cur += sdnv_write_u64(cur, bundle->creation_timestamp_ms / 1000);
 	cur += sdnv_write_u64(cur, bundle->sequence_number);
 	/* Bundle source EID (length + data) */
 	eid_length = strlen(bundle->source);
@@ -191,7 +191,7 @@ static enum ud3tn_result record_parser_init(struct record_parser *parser)
 	parser->record->fragment_length = 0;
 	parser->record->event_timestamp = 0;
 	parser->record->event_nanoseconds = 0;
-	parser->record->bundle_creation_timestamp = 0;
+	parser->record->bundle_creation_timestamp_ms = 0;
 	parser->record->bundle_sequence_number = 0;
 	parser->record->bundle_source_eid_length = 0;
 	parser->record->bundle_source_eid = NULL;
@@ -303,10 +303,14 @@ static void record_parser_read_byte(struct record_parser *parser, uint8_t byte)
 		break;
 	case RP_EXPECT_BUNDLE_CREATION_TIMESTAMP:
 		sdnv_read_u64(&parser->sdnv_state,
-			&parser->record->bundle_creation_timestamp,
+			&parser->record->bundle_creation_timestamp_ms,
 			byte);
-		record_parser_wait_for_sdnv(
-			parser, RP_EXPECT_BUNDLE_CREATION_SEQUENCE);
+		// Parse the current byte and apply time conversion to ms if it
+		// is the last byte
+		if (record_parser_wait_for_sdnv(
+			parser, RP_EXPECT_BUNDLE_CREATION_SEQUENCE)
+		)
+			parser->record->bundle_creation_timestamp_ms *= 1000;
 		break;
 	case RP_EXPECT_BUNDLE_CREATION_SEQUENCE:
 		sdnv_read_u64(&parser->sdnv_state,

@@ -74,9 +74,9 @@ TEST(bundle7Serializer, simple_bundle)
 	bundle->source = strdup("ipn:243.350");
 	bundle->report_to = strdup("dtn:none");
 
-	bundle->creation_timestamp = 0;
+	bundle->creation_timestamp_ms = 658489863000; // 2020-11-12T09:51:03
 	bundle->sequence_number = 0;
-	bundle->lifetime = 86400;
+	bundle->lifetime_ms = 86400;
 
 	struct bundle_block_list *prev;
 	struct bundle_block_list *entry;
@@ -224,9 +224,9 @@ TEST(bundle7Serializer, crc16_generation)
 	bundle->source = strdup("dtn:none");
 	bundle->report_to = strdup("dtn:none");
 
-	bundle->creation_timestamp = 0;
+	bundle->creation_timestamp_ms = 0;
 	bundle->sequence_number = 0;
-	bundle->lifetime = 86400;
+	bundle->lifetime_ms = 86400;
 
 	struct bundle_block *block;
 
@@ -339,9 +339,9 @@ TEST(bundle7Serializer, crc32_generation)
 	bundle->source = strdup("dtn:none");
 	bundle->report_to = strdup("dtn:none");
 
-	bundle->creation_timestamp = 0;
+	bundle->creation_timestamp_ms = 0;
 	bundle->sequence_number = 0;
-	bundle->lifetime = 86400;
+	bundle->lifetime_ms = 86400;
 
 	struct bundle_block *block;
 

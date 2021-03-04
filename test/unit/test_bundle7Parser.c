@@ -121,6 +121,9 @@ static void parse_bundle_chunked(const size_t chunk_size)
 	TEST_ASSERT_NULL(state.bundle);
 	TEST_ASSERT_NOT_NULL(bundle);
 
+	// Creation Timestamp 2020-11-12T09:51:03
+	TEST_ASSERT_EQUAL(658489863000, bundle->creation_timestamp_ms);
+
 	// Primary block CRC
 	TEST_ASSERT_EQUAL(BUNDLE_CRC_TYPE_NONE, bundle->crc_type);
 
@@ -408,9 +411,9 @@ TEST(bundle7Parser, status_report_parser)
 	// Primary Block
 	bundle->proc_flags = BUNDLE_FLAG_REPORT_STATUS_TIME
 		| BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
-	bundle->creation_timestamp = 4200;
+	bundle->creation_timestamp_ms = 4200;
 	bundle->sequence_number = 0;
-	bundle->lifetime = 86400;
+	bundle->lifetime_ms = 86400;
 
 	struct bundle_block *payload;
 	struct bundle_block_list *entry;
@@ -438,7 +441,7 @@ TEST(bundle7Parser, status_report_parser)
 	TEST_ASSERT_EQUAL(BUNDLE_AR_STATUS_REPORT, record->type);
 	TEST_ASSERT_EQUAL(0, record->flags);
 
-	TEST_ASSERT_EQUAL(2165, record->bundle_creation_timestamp);
+	TEST_ASSERT_EQUAL(2165, record->bundle_creation_timestamp_ms);
 	TEST_ASSERT_EQUAL(12, record->bundle_sequence_number);
 
 	TEST_ASSERT_EQUAL(10, record->status_report->bundle_received_time);

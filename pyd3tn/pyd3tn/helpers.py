@@ -13,41 +13,6 @@ CCSDS_TO_UNIX_OFFSET = (UNIX_EPOCH - CCSDS_EPOCH).total_seconds()
 CCSDS_TO_DTN_OFFSET = (DTN_EPOCH - CCSDS_EPOCH).total_seconds()
 
 
-def unix2dtn(unix_timestamp):
-    """Converts a given Unix timestamp into a DTN timestamp
-
-    Its inversion is :func:`dtn2unix`.
-
-    Args:
-        unix_timestamp: Unix timestamp
-    Returns:
-        numeric: DTN timestamp
-    """
-    return unix_timestamp - UNIX_TO_DTN_OFFSET
-
-
-def dtn2unix(dtn_timestamp):
-    """Converts a given DTN timestamp into a Unix timestamp
-
-    Its inversion is :func:`unix2dtn`.
-
-    Args:
-        dtn_timestamp: DTN timestamp
-    Returns:
-        numeric: Unix timestamp
-    """
-    return dtn_timestamp + UNIX_TO_DTN_OFFSET
-
-
-def dtntime():
-    """Obtains the current DTN timestamp.
-
-    Returns:
-        float: DTN timestamp
-    """
-    return unix2dtn(time())
-
-
 def ccsdstime():
     """Obtains the current CCSDS timestamp.
 

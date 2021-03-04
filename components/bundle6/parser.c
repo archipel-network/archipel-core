@@ -205,14 +205,14 @@ static inline void bundle6_parser_next(struct bundle6_parser *state)
 		sdnv_reset(&state->sdnv_state);
 		break;
 	case PARSER_STAGE_SEQUENCE_NUM:
+		state->bundle->creation_timestamp_ms *= 1000; // s -> ms
 		sdnv_reset(&state->sdnv_state);
 		break;
 	case PARSER_STAGE_LIFETIME:
 		sdnv_reset(&state->sdnv_state);
 		break;
 	case PARSER_STAGE_DICT_LENGTH:
-		// Seconds -> microseconds
-		state->bundle->lifetime *= 1000000;
+		state->bundle->lifetime_ms *= 1000; // s -> ms
 		sdnv_reset(&state->sdnv_state);
 		break;
 	case PARSER_STAGE_DICTIONARY:
@@ -400,7 +400,7 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 	case PARSER_STAGE_TIMESTAMP:
 		sdnv_read_u64(
 			&state->sdnv_state,
-			&state->bundle->creation_timestamp,
+			&state->bundle->creation_timestamp_ms,
 			byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_SEQUENCE_NUM);
@@ -416,7 +416,7 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 	case PARSER_STAGE_LIFETIME:
 		sdnv_read_u64(
 			&state->sdnv_state,
-			&state->bundle->lifetime,
+			&state->bundle->lifetime_ms,
 			byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_DICT_LENGTH);

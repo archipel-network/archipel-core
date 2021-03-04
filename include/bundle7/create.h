@@ -15,14 +15,14 @@
  * @param payload_length The length of the payload data.
  * @param source The source EID the created bundle originated from.
  * @param destination The destination EID the bundle is addressed to.
- * @param creation_time The bundle creation timestamp (a DTN timestamp).
+ * @param creation_time_s The bundle creation timestamp (a DTN timestamp in seconds).
  * @param lifetime The bundle lifetime, in seconds.
  * @param proc_flags Additional processing flags to be set for the bundle.
  */
 struct bundle *bundle7_create_local(
 	void *payload, size_t payload_length,
 	const char *source, const char *destination,
-	uint64_t creation_time, uint64_t lifetime,
+	uint64_t creation_time_s, uint64_t lifetime_s,
 	enum bundle_proc_flags proc_flags);
 
 #endif // BUNDLE7_CREATE_H_INCLUDED

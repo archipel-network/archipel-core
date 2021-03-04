@@ -74,9 +74,9 @@ enum ud3tn_result bundle6_serialize(
 		      dict_desc->custodian_eid_info.dict_scheme_offset);
 	serialize_u16(buffer,
 		      dict_desc->custodian_eid_info.dict_ssp_offset);
-	serialize_u64(buffer, bundle->creation_timestamp);
+	serialize_u64(buffer, bundle->creation_timestamp_ms / 1000); // ms -> s
 	serialize_u64(buffer, bundle->sequence_number);
-	serialize_u64(buffer, bundle->lifetime / 1000000); // us -> s
+	serialize_u64(buffer, bundle->lifetime_ms / 1000); // ms -> s
 	serialize_u16(buffer, dict_desc->dict_length_bytes);
 	/* Write dictionary byte array */
 	write_bytes(dict_desc->dict_length_bytes, dict);

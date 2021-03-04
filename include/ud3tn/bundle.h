@@ -149,11 +149,11 @@ struct bundle {
 	// RFC 5050
 	char *current_custodian;
 
-	// DTN timestamp of bundle creation, in seconds. Zero if undetermined.
-	uint64_t creation_timestamp;
+	// DTN timestamp of bundle creation, in milliseconds. Zero if undetermined.
+	uint64_t creation_timestamp_ms;
 	uint64_t sequence_number;
 	// Lifetime of the bundle in microseconds (required for BPbis).
-	uint64_t lifetime;
+	uint64_t lifetime_ms;
 	union crc crc;
 
 	uint32_t fragment_offset;
@@ -171,7 +171,7 @@ struct bundle {
 struct bundle_unique_identifier {
 	uint8_t protocol_version;
 	char *source;
-	uint64_t creation_timestamp;
+	uint64_t creation_timestamp_ms;
 	uint64_t sequence_number;
 	uint32_t fragment_offset;
 	uint32_t payload_length;
@@ -281,7 +281,7 @@ struct bundle_administrative_record {
 	uint64_t event_timestamp;
 	uint32_t event_nanoseconds;
 
-	uint64_t bundle_creation_timestamp;
+	uint64_t bundle_creation_timestamp_ms;
 	uint64_t bundle_sequence_number;
 
 	uint16_t bundle_source_eid_length;
@@ -336,7 +336,7 @@ static inline bool bundle_block_must_be_replicated(
 /**
  * Get the approximate latest expiration time of the bundle in seconds.
  */
-uint64_t bundle_get_expiration_time(const struct bundle *bundle);
+uint64_t bundle_get_expiration_time_s(const struct bundle *bundle);
 
 struct bundle *bundle_init(void);
 void bundle_free_dynamic_parts(struct bundle *bundle);

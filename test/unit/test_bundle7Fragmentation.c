@@ -42,9 +42,9 @@ TEST(bundle7Fragmentation, fragment_bundle)
 	bundle->source = strdup("ipn:243.350");
 	bundle->report_to = strdup("dtn:none");
 
-	bundle->creation_timestamp = 0;
+	bundle->creation_timestamp_ms = 0;
 	bundle->sequence_number = 0;
-	bundle->lifetime = 86400;
+	bundle->lifetime_ms = 86400;
 
 	struct bundle_block_list *prev;
 	struct bundle_block_list *entry;

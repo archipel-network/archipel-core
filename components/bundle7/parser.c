@@ -230,7 +230,7 @@ CborError creation_timestamp(struct bundle7_parser *state, CborValue *it)
 	CborError err;
 
 	err = bundle7_timestamp_parse(it,
-		&state->bundle->creation_timestamp,
+		&state->bundle->creation_timestamp_ms,
 		&state->bundle->sequence_number);
 	if (err)
 		return err;
@@ -248,7 +248,7 @@ CborError lifetime(struct bundle7_parser *state, CborValue *it)
 		return CborErrorIllegalType;
 
 	cbor_value_get_uint64(it, &value);
-	state->bundle->lifetime = value;
+	state->bundle->lifetime_ms = value;
 
 	const uint8_t *last_ptr = it->ptr;
 	CborError err = cbor_value_advance_fixed(it);
