@@ -4,6 +4,7 @@ stages:
     - unit_test
     - functional_test
     - code_quality_test
+    - publish
 
 image: buildpack-deps:buster
 
@@ -183,3 +184,45 @@ clang-tidy-posix:
         - apt-get update
         - apt-get install clang clang-tidy -y
         - make clang-tidy-posix
+
+publish-docker-image:
+    stage: publish
+    rules:
+        - if: '$CI_COMMIT_TAG =~ /^v[0-9]+(.[0-9]+)+$/'
+          when: always
+    image:
+        # See https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
+        name: gcr.io/kaniko-project/executor:debug
+        entrypoint: [""]
+    variables:
+        CI_REGISTRY_IMAGE: registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn
+    script:
+        # find out if the docker image *also* should be tagged with "latest"
+        - |
+          # Download all existing ud3tn docker image tags from the docker image registry
+          wget -q "https://gitlab.com/api/v4/projects/23559871/registry/repositories/1616836/tags" -O tags.json
+
+          # Remove some json symbols, introduce line feeds for better filtering
+          sed -i -E 's/\]//g; s/\[//g; s/\},?/\n/g' tags.json
+
+          # Remove everything except the docker image tags (latest, v0.9.0, ...)
+          sed -i -E 's/(^.*"name":")(.*)(","path.*$)/\2/' tags.json
+
+          # Append the $CI_COMMIT_TAG to the list of tags
+          echo "$CI_COMMIT_TAG" >> tags.json
+
+          # Get the numerically highest *version* tag
+          highest_version=$(grep -E "v.*" tags.json | sort -rV | head -n1)
+
+          # Build the string $IMAGES that determines what image_name:image_tag the resulting docker image will have
+          TAGS="$CI_COMMIT_TAG"
+          if [ "$highest_version" = "$CI_COMMIT_TAG" ]; then TAGS="$TAGS latest"; fi
+          for TAG in $TAGS; do
+            IMAGES="${IMAGES} --destination $CI_REGISTRY_IMAGE:$TAG";
+          done;
+        - echo $IMAGES
+        # Prepare docker image registry access credentials
+        - mkdir -p /kaniko/.docker
+        - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$UD3TN_CI_DOCKER_DEPLOY_USER\",\"password\":\"$UD3TN_CI_DOCKER_DEPLOY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+        # Build and push the docker image
+        - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/dockerfiles/ud3tn --build-arg UD3TN_VERSION=$CI_COMMIT_TAG $IMAGES
