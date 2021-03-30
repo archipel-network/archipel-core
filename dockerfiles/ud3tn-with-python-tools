@@ -1,7 +1,7 @@
 FROM python:3.8
 COPY . /ud3tn
 RUN cd /ud3tn \
-    && make posix posix-lib \
+    && ARCH=x86-64 make posix posix-lib \
     && cp /ud3tn/build/posix/ud3tn /usr/local/bin/ud3tn -v \
     && cp /ud3tn/build/posix/libud3tn.so /usr/local/lib/libud3tn.so -v \
     && make clean
