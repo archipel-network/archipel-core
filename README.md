@@ -21,8 +21,11 @@ Both platforms can be built, deployed, tested and used in parallel.
 To get started with one or both platforms, just follow the subsequent
 instructions.
 
-This project uses git submodules to manage some code dependencies. Use the
-`--recursive` option if you `git clone` the project or run
+A **step-by-step quick start guide** for Linux and POSIX systems is provided
+[in the documentation](doc/posix_quick_start_guide.md).
+
+**Note:** This project uses git submodules to manage some code dependencies.
+Use the `--recursive` option if you `git clone` the project or run
 `git submodule init && git submodule update` at a later point in order to
 satisfy them.
 
@@ -38,7 +41,24 @@ docker run registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn [µD3TN command li
 docker run registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn --help
 ```
 
-#### Build and run µD3TN on STM32F4
+#### Build and Run µD3TN on POSIX-compliant Operating Systems
+
+You might want to have a look at our [**step-by-step quick start guide**](doc/posix_quick_start_guide.md).
+
+1. Install or unpack the following dependencies:
+   - The `gcc` toolchain and `binutils` for your local system.
+   - For building with Clang, install a recent version of Clang and LLVM.
+   - For debugging and testing you may want to install GDB and a recent version
+     of Python 3 (>= 3.6).
+
+2. If the build tools are not located in `/usr/bin` for your system, you may
+   copy `config.mk.example` to `config.mk` and set the
+   `GCC_TOOLCHAIN_PREFIX_POSIX` variable to the prefix for your
+   local `gcc` toolchain (default: `/usr/bin`).
+
+3. Type `make run-posix` to build and execute µD3TN on your local machine.
+
+#### Build and Run µD3TN on STM32F4
 
 For this platform only the STM32F4 embedded system is supported currently.
 However, porting to other Cortex-M3/M4 based SoCs should be trivial.
@@ -69,21 +89,6 @@ three steps are necessary after connecting the board via STLink-enabled USB:
    The unittests can be flashed via `make flash-unittest-stm32-openocd`.
    For convenience, GDB commands are available via `make gdb-stm32` and
    `make gdb-unittest-stm32`.
-
-#### Build and run µD3TN on POSIX-compliant Operating Systems
-
-1. Install or unpack the following dependencies:
-   - The `gcc` toolchain and `binutils` for your local system.
-   - For building with Clang, install a recent version of Clang and LLVM.
-   - For debugging and testing you may want to install GDB and a recent version
-     of Python 3 (>= 3.6).
-
-2. If the build tools are not located in `/usr/bin` for your system, you may
-   copy `config.mk.example` to `config.mk` and set the
-   `GCC_TOOLCHAIN_PREFIX_POSIX` variable to the prefix for your
-   local `gcc` toolchain (default: `/usr/bin`).
-
-3. Type `make run-posix` to build and execute µD3TN on your local machine.
 
 Getting Started with the Implementation
 ---------------------------------------
