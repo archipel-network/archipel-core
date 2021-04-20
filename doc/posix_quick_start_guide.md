@@ -42,13 +42,15 @@ make posix
 
 Given your toolchain is working properly, the command should complete without an error code.
 
-You can now try running µD3TN as follows:
+You can now run µD3TN as follows:
 
 ```
 make run-posix
 ```
 
-This will generate some output that µD3TN is starting up. If everything is right, the daemon will continue running and can be terminated as usual via `SIGINT` (Ctrl+C) or `SIGTERM`.
+This will launch a new instance of µD3TN with the default parameters; you will see some output that µD3TN is starting up. When everything is set up, the daemon will continue running and can be terminated as usual via `SIGINT` (Ctrl+C) or `SIGTERM`.
+
+**Note:** For modifying µD3TN's command line parameters, you can directly launch the built binary `build/posix/ud3tn`. Some information on the parameters can be retrieved via `-h` and from the [man page](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/ud3tn.1) via `man -l doc/ud3tn.1`.
 
 ## Python dependencies
 
@@ -81,8 +83,6 @@ build/posix/ud3tn --eid dtn://a.dtn --bp-version 7 --aap-port 4242 \
 
 This will tell µD3TN to run with Node ID `dtn://a.dtn`, generate bundles using version `7` (BPbis / BPv7), use TCP and port `4242` for [AAP](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/ud3tn_aap.md) and listen on TCP port `4224` with the MTCP CLA.
 
-For the command line arguments, you may also consult the help output via `build/posix/ud3tn -h` and the [man page](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/ud3tn.1) via `man -l doc/ud3tn.1`.
-
 ### Step 2 {-}
 
 Open _another_ shell and launch instance `B` as follows:
@@ -101,7 +101,7 @@ Now, both µD3TN instances are up and running. Let's continue with the next step
 µD3TN needs to be _configured_ to know which DTN nodes are reachable during which time intervals (_contacts_) and with which data rates. This configuration occurs at runtime and is not persistent at the moment. Thus, after each start you have to re-configure µD3TN.
 
 Configuration occurs via DTN bundles containing a specific [configuration message format](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/contacts_data_format.md) destined for the configuration endpoint ID `<µD3TN Node ID>/config`.
-In its default configuration (that can be changed via build flags), for security reasons, µD3TN only accepts such bundles via AAP.
+In its default configuration (that can be changed via build flags), for security reasons, µD3TN only accepts such bundles via the local AAP socket.
 
 To simplify the configuration process, we provide a Python tool for configuration.
 Make sure you have activated the Python virtual environment or made available the `pyd3tn` and `ud3tn-utils` packages in another way.
