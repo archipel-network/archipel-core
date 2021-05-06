@@ -52,6 +52,9 @@ static void cla_contact_tx_task(void *param)
 		link->config->vtable->cla_send_packet_data;
 	QueueIdentifier_t signaling_queue =
 		link->config->bundle_agent_interface->bundle_signaling_queue;
+#ifdef CLA_TX_RATE_LIMIT
+	const int rate_sleep_time_ms = 1000 / CLA_TX_RATE_LIMIT;
+#endif // CLA_TX_RATE_LIMIT
 
 	for (;;) {
 		if (hal_queue_receive(link->tx_queue_handle,
@@ -110,6 +113,10 @@ static void cla_contact_tx_task(void *param)
 			rbl = rbl->next;
 			// Free the bundle list from the command step-by-step.
 			free(tmp);
+
+#ifdef CLA_TX_RATE_LIMIT
+			hal_task_delay(rate_sleep_time_ms);
+#endif // CLA_TX_RATE_LIMIT
 		}
 
 		// Free the attached CLA address - a copy is made by the
