@@ -34,7 +34,7 @@ static bool process_router_command(
 	QueueIdentifier_t bp_signaling_queue);
 
 struct bundle_processing_result {
-	int8_t status_or_fragments;
+	int32_t status_or_fragments;
 	bundleid_t fragment_ids[ROUTER_MAX_FRAGMENTS];
 };
 
@@ -200,8 +200,8 @@ static bool process_signal(
 			);
 			success = false;
 		} else {
-			for (int8_t i = 0; i < proc_result.status_or_fragments;
-			     i++) {
+			for (int32_t i = 0;
+			     i < proc_result.status_or_fragments; i++) {
 				bundle_processor_inform(
 					bp_signaling_queue,
 					proc_result.fragment_ids[i],
@@ -353,8 +353,8 @@ static struct bundle_processing_result apply_fragmentation(
 {
 	struct bundle *frags[ROUTER_MAX_FRAGMENTS];
 	uint32_t size;
-	int8_t f, g;
-	uint8_t fragments = route.fragments;
+	int32_t f, g;
+	int32_t fragments = route.fragments;
 	struct bundle_processing_result result = {
 		.status_or_fragments = BUNDLE_RESULT_NO_MEMORY
 	};

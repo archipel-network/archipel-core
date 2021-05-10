@@ -39,7 +39,7 @@ struct fragment_route {
 struct router_result {
 	float probability;
 	struct fragment_route fragment_results[ROUTER_MAX_FRAGMENTS];
-	uint8_t fragments;
+	int32_t fragments;
 	uint8_t preemption_improved;
 };
 

@@ -278,7 +278,7 @@ static inline void router_get_first_route_frag(
 {
 	uint32_t mid_frag_sz, next_frag_sz, remaining_pay, processed_sz;
 	int32_t min_pay, max_pay;
-	uint8_t success, index;
+	int32_t success, index;
 
 	/* Determine fragment minimum sizes */
 	mid_frag_sz = bundle_get_mid_fragment_min_size(bundle);
@@ -416,7 +416,8 @@ struct router_result router_try_reuse(
 	uint32_t remaining_pay = bundle->payload_block->length;
 	uint32_t size, min_cap;
 	struct fragment_route *fr;
-	uint8_t c, f;
+	uint8_t c;
+	int32_t f;
 
 	if (route.fragments == 0 || route.probability < RC.min_probability)
 		return route;
