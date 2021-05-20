@@ -214,9 +214,19 @@ size_t bundle7_get_first_fragment_min_size(struct bundle *bundle)
 
 	// If bundle was not fragmented before, add the "Fragment offset" and
 	// "Total Application Data Unit Length" field sizes
-	if (bundle_is_fragmented(bundle)) {
+	if (!bundle_is_fragmented(bundle)) {
 		size += bundle7_cbor_uint_sizeof(bundle->payload_block->length);
-		size += 1; // Offset "0"
+		// Conservative estimation for maximum "minimum bundle size",
+		// i.e., header length: the fragment offset could have a maximum
+		// size corresponding to the fragment offset. All other values
+		// in the bundle can only decrease.
+		size += bundle7_cbor_uint_sizeof(bundle->payload_block->length);
+	} else {
+		// Conservative estimation rgd. fragment offset
+		size += (
+			bundle7_cbor_uint_sizeof(bundle->total_adu_length) -
+			bundle7_cbor_uint_sizeof(bundle->fragment_offset)
+		);
 	}
 
 	return bundle->primary_block_length + size;
@@ -256,9 +266,19 @@ size_t bundle7_get_last_fragment_min_size(struct bundle *bundle)
 
 	// If bundle was not fragmented before, add the "Fragment offset" and
 	// "Total Application Data Unit Length" field sizes
-	if (bundle_is_fragmented(bundle)) {
+	if (!bundle_is_fragmented(bundle)) {
 		size += bundle7_cbor_uint_sizeof(bundle->payload_block->length);
-		size += 1; // Offset "0"
+		// Conservative estimation for maximum "minimum bundle size",
+		// i.e., header length: the fragment offset could have a maximum
+		// size corresponding to the fragment offset. All other values
+		// in the bundle can only decrease.
+		size += bundle7_cbor_uint_sizeof(bundle->payload_block->length);
+	} else {
+		// Conservative estimation rgd. fragment offset
+		size += (
+			bundle7_cbor_uint_sizeof(bundle->total_adu_length) -
+			bundle7_cbor_uint_sizeof(bundle->fragment_offset)
+		);
 	}
 
 	return bundle->primary_block_length + size;
