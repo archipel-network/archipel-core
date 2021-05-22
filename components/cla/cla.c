@@ -12,6 +12,7 @@
 
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 
@@ -160,6 +161,8 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 
 	link->rx_task_handle = NULL;
 	link->tx_task_handle = NULL;
+
+	link->last_rx_time_ms = hal_time_get_timestamp_ms();
 
 	link->tx_queue_handle = NULL;
 	link->tx_queue_sem = NULL;
