@@ -1,3 +1,4 @@
+#include "cla/blackhole_parser.h"
 #include "cla/cla.h"
 #include "cla/posix/cla_tcpspp.h"
 #include "cla/posix/cla_tcp_common.h"
@@ -184,13 +185,38 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 		// Handle CLA specific payload
 		switch (config->tcpspp_payload_type) {
 		case PAYLOAD_DATA:
+			if (config->spp_parser.header.apid != config->apid) {
+				LOGF("tcpspp: Forwarding payload for APID %hu (length = %zu) to black hole.",
+				     config->spp_parser.header.apid,
+				     config->spp_parser.data_length);
+				rx_data->payload_type = PAYLOAD_IRRELEVANT;
+				rx_data->cur_parser = (
+					rx_data->blackhole_parser.basedata
+				);
+				rx_data->blackhole_parser.to_read = (
+					config->spp_parser.data_length
+				);
+				// CRC length is included in the length.
+				// We must not digest this, otherwise the next
+				// parsing step will be off.
+				if (CLA_TCPSPP_USE_CRC)
+					rx_data->blackhole_parser.to_read -= 2;
+				result = blackhole_parser_read(
+					&rx_data->blackhole_parser,
+					buffer,
+					length
+				);
+				break;
+			}
 			result = select_bundle_parser_version(
 				rx_data,
 				buffer,
 				length
 			);
-			if (result == 0)
+			if (result == 0) {
+				LOG("tcpspp: Cannot determine bundle version, resetting parsers.");
 				tcpspp_reset_parsers(link);
+			}
 			break;
 		case PAYLOAD_CRC16:
 			result = crc16_parser_read(
@@ -223,7 +249,16 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 			length
 		);
 		break;
+	case PAYLOAD_IRRELEVANT:
+		rx_data->cur_parser = rx_data->blackhole_parser.basedata;
+		result = blackhole_parser_read(
+			&rx_data->blackhole_parser,
+			buffer,
+			length
+		);
+		break;
 	default:
+		LOG("tcpspp: Invalid payload type detected, resetting parsers.");
 		tcpspp_reset_parsers(link);
 		return 0;
 	}
