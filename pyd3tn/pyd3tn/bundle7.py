@@ -706,15 +706,9 @@ class Bundle(object, metaclass=BundleMeta):
                     )
                 # Bundle Age
                 elif block.block_type == BlockType.BUNDLE_AGE:
-                    creation_time, _ = self.primary_block.creation_time
-                    creation_time_dtn = int(
-                        round((creation_time - DTN_EPOCH).total_seconds())
+                    raise ValueError(
+                        "There must be only one 'Bundle Age' block"
                     )
-                    if creation_time_dtn == 0:
-                        raise ValueError(
-                            "There must be only one 'Bundle Age' block "
-                            "if the bundle creation time is 0"
-                        )
 
         if new_block.block_number is None:
             new_block.block_number = num + 1
