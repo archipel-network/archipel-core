@@ -21,7 +21,8 @@ Both platforms can be built, deployed, tested and used in parallel.
 To get started with one or both platforms, just follow the subsequent
 instructions.
 
-A **step-by-step quick start guide** for Linux and POSIX systems is provided
+A **step-by-step quick start guide** for Linux and POSIX systems, which also
+covers running multiple instances of µD3TN plus the use of AAP is provided
 [in the documentation](doc/posix_quick_start_guide.md).
 
 **Note:** This project uses git submodules to manage some code dependencies.
