@@ -7,6 +7,7 @@
 #include "bundle7/serializer.h"
 #include "bundle7/eid.h"
 #include "bundle7/hopcount.h"
+#include "bundle7/bundle_age.h"
 
 #include "platform/hal_io.h"
 
@@ -459,6 +460,23 @@ TEST(bundle7Serializer, hop_count)
 		sizeof(cbor_hop_count));
 }
 
+// 42000
+static const uint8_t cbor_bundle_age[] = { 0x19, 0xa4, 0x10 };
+
+TEST(bundle7Serializer, bundle_age)
+{
+	uint64_t bundle_age = 42000;
+	uint8_t *buffer = malloc(BUNDLE_AGE_MAX_ENCODED_SIZE);
+
+	TEST_ASSERT_NOT_NULL(buffer);
+	size_t written = bundle_age_serialize(bundle_age, buffer,
+		BUNDLE_AGE_MAX_ENCODED_SIZE);
+
+	TEST_ASSERT_EQUAL(sizeof(cbor_bundle_age), written);
+	TEST_ASSERT_EQUAL_INT8_ARRAY(cbor_bundle_age, buffer,
+		sizeof(cbor_bundle_age));
+}
+
 
 TEST_GROUP_RUNNER(bundle7Serializer)
 {
@@ -466,6 +484,7 @@ TEST_GROUP_RUNNER(bundle7Serializer)
 	RUN_TEST_CASE(bundle7Serializer, dtn_none);
 	RUN_TEST_CASE(bundle7Serializer, dtn_ipn);
 	RUN_TEST_CASE(bundle7Serializer, hop_count);
+	RUN_TEST_CASE(bundle7Serializer, bundle_age);
 	RUN_TEST_CASE(bundle7Serializer, simple_bundle);
 	RUN_TEST_CASE(bundle7Serializer, crc16_generation);
 	RUN_TEST_CASE(bundle7Serializer, crc32_generation);
