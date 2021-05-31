@@ -176,11 +176,15 @@ class CreationTimestamp(tuple):
     Args:
         time (None, int, datetime.datetime): Timestamp given as Unix timestamp
             (integer) or a Python timezone-aware datetime object. If the time
-            is None, the current time will be used.
+            is None, the current time will be used. If the time is 0, no
+            conversion is performed and the DTN timestamp is set to 0.
         sequence_number (int): Sequence number of the bundle if the device is
             lacking a precise clock
     """
     def __new__(cls, time, sequence_number):
+        if time == 0:
+            return super().__new__(cls, [0, int(sequence_number)])
+
         # Use current datetime
         if time is None:
             time = datetime.now(timezone.utc)
@@ -195,7 +199,13 @@ class CreationTimestamp(tuple):
 
     @property
     def time(self):
-        return DTN_EPOCH + timedelta(milliseconds=self[0])
+        """Returns the DTN timestamp value of the CreationTimestamp tuple as
+        datetime object or None if it's 0.
+        """
+        return (
+            None if self[0] == 0
+            else DTN_EPOCH + timedelta(milliseconds=self[0])
+        )
 
     @property
     def sequence_number(self):
