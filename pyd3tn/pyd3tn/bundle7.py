@@ -660,6 +660,12 @@ class Bundle(object, metaclass=BundleMeta):
                 assert isinstance(block, PrimaryBlock)
     """
     def __init__(self, primary_block, payload_block, blocks=None):
+        assert (
+            primary_block.creation_time.time or
+            blocks and
+            any(b.block_type == BlockType.BUNDLE_AGE for b in blocks)
+        ), "There must be a 'Bundle Age' block if the creation time is 0"
+
         self.primary_block = primary_block
         self.payload_block = payload_block
         self.blocks = []
@@ -816,7 +822,22 @@ def create_bundle7(source_eid, destination_eid, payload,
         crc_type_canonical (CRCType, optional): The kind of CRC used for the
             canonical blocks.
     """
-    bundle = Bundle(
+    blocks = []
+
+    if hop_limit is not None and hop_count is not None:
+        blocks.append(
+            HopCountBlock(hop_limit, hop_count, crc_type=crc_type_canonical)
+        )
+    if previous_node_eid is not None:
+        blocks.append(
+            PreviousNodeBlock(previous_node_eid, crc_type=crc_type_canonical)
+        )
+    if bundle_age is not None:
+        blocks.append(
+            BundleAgeBlock(bundle_age, crc_type=crc_type_canonical)
+        )
+
+    return Bundle(
         PrimaryBlock(
             bundle_proc_flags=flags,
             crc_type=crc_type_primary,
@@ -839,25 +860,8 @@ def create_bundle7(source_eid, destination_eid, payload,
             payload,
             crc_type=crc_type_canonical,
         ),
+        blocks,
     )
-
-    if previous_node_eid is not None:
-        bundle.add(PreviousNodeBlock(
-            previous_node_eid,
-            crc_type=crc_type_canonical,
-        ))
-
-    bundle.add(HopCountBlock(
-        hop_limit,
-        hop_count,
-        crc_type=crc_type_canonical,
-    ))
-    bundle.add(BundleAgeBlock(
-        bundle_age,
-        crc_type=crc_type_canonical,
-    ))
-
-    return bundle
 
 
 def serialize_bundle7(source_eid, destination_eid, payload,
