@@ -566,9 +566,16 @@ class PreviousNodeBlock(CBORBlock):
 
 
 class BundleAgeBlock(CBORBlock):
+    """The Bundle Age block, block type 7, contains the number of milliseconds
+    that have elapsed between the time the bundle was created and time at which
+    it was most recently forwarded.
+
+    Args:
+        age (int): Age value in seconds
+    """
 
     def __init__(self, age, **kwargs):
-        super().__init__(BlockType.BUNDLE_AGE, int(age * 1000000), **kwargs)
+        super().__init__(BlockType.BUNDLE_AGE, int(age * 1000), **kwargs)
 
 
 class HopCountBlock(CBORBlock):
