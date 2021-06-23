@@ -58,6 +58,8 @@ struct application_agent_comm_config {
 	int bundle_pipe_fd[2];
 	Task_t task;
 	char *registered_agent_id;
+	uint64_t last_bundle_timestamp_s;
+	uint64_t last_bundle_sequence_number;
 };
 
 // forward declaration
@@ -136,6 +138,8 @@ static void application_agent_listener_task(void *const param)
 			close(conn_fd);
 			free(child_config);
 		}
+		child_config->last_bundle_timestamp_s = 0;
+		child_config->last_bundle_sequence_number = 0;
 	}
 }
 
@@ -209,6 +213,7 @@ static void agent_msg_recv(struct bundle_adu data, void *param)
 
 static struct bundle *create_bundle(const uint8_t bp_version,
 	const char *local_eid, char *sink_id, char *destination,
+	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
 	const uint64_t lifetime, void *payload, size_t payload_length)
 {
 	const size_t local_eid_length = strlen(local_eid);
@@ -229,12 +234,12 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 	if (bp_version == 6)
 		result = bundle6_create_local(
 			payload, payload_length, source_eid, destination,
-			hal_time_get_timestamp_s(),
+			creation_timestamp_s, sequence_number,
 			lifetime, 0);
 	else
 		result = bundle7_create_local(
 			payload, payload_length, source_eid, destination,
-			hal_time_get_timestamp_s(),
+			creation_timestamp_s, sequence_number,
 			lifetime, 0);
 
 	free(source_eid);
@@ -245,6 +250,7 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 static bundleid_t create_forward_bundle(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const uint8_t bp_version, char *sink_id, char *destination,
+	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
 	const uint64_t lifetime, void *payload, size_t payload_length)
 {
 	struct bundle *bundle = create_bundle(
@@ -252,6 +258,8 @@ static bundleid_t create_forward_bundle(
 		bundle_agent_interface->local_eid,
 		sink_id,
 		destination,
+		creation_timestamp_s,
+		sequence_number,
 		lifetime,
 		payload,
 		payload_length
@@ -308,6 +316,19 @@ static void deregister_sink(struct application_agent_comm_config *config)
 	}
 }
 
+static uint64_t allocate_sequence_number(
+	struct application_agent_comm_config *const config,
+	const uint64_t time_s)
+{
+	if (config->last_bundle_timestamp_s == time_s)
+		return ++config->last_bundle_sequence_number;
+
+	config->last_bundle_timestamp_s = time_s;
+	config->last_bundle_sequence_number = 1;
+
+	return 1;
+}
+
 static int16_t process_aap_message(
 	struct application_agent_comm_config *const config,
 	struct aap_message msg)
@@ -345,11 +366,18 @@ static int16_t process_aap_message(
 			break;
 		}
 
+		const uint64_t time = hal_time_get_timestamp_s();
+		const uint64_t seqnum = allocate_sequence_number(
+			config,
+			time
+		);
 		bundleid_t bundle_id = create_forward_bundle(
 			config->parent->bundle_agent_interface,
 			config->parent->bp_version,
 			config->registered_agent_id,
 			msg.eid,
+			time,
+			seqnum,
 			config->parent->lifetime,
 			msg.payload,
 			msg.payload_length

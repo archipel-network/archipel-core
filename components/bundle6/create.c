@@ -12,7 +12,7 @@
 struct bundle *bundle6_create_local(
 	void *payload, size_t payload_length,
 	const char *source, const char *destination,
-	uint64_t creation_time_s, uint64_t lifetime_s,
+	uint64_t creation_time_s, uint64_t sequence_number, uint64_t lifetime_s,
 	enum bundle_proc_flags proc_flags)
 {
 	struct bundle *bundle = bundle_init();
@@ -27,7 +27,7 @@ struct bundle *bundle6_create_local(
 
 	// Creation time
 	bundle->creation_timestamp_ms = creation_time_s * 1000;
-	bundle->sequence_number = 1;
+	bundle->sequence_number = sequence_number;
 	bundle->lifetime_ms = lifetime_s * 1000;
 
 	// Create payload block and block list

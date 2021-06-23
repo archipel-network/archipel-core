@@ -31,7 +31,7 @@ TEST(bundle6Create, create_bundle)
 	struct bundle *b = bundle6_create_local(
 		payload, sizeof(test_payload),
 		"dtn:sourceeid", "dtn:desteid",
-		creation_timestamp_s, 42,
+		creation_timestamp_s, 1, 42,
 		BUNDLE_FLAG_REPORT_DELIVERY);
 
 	TEST_ASSERT_NOT_NULL(b);
@@ -72,12 +72,12 @@ TEST(bundle6Create, fail_bundle_creation)
 	TEST_ASSERT_NULL(bundle6_create_local(
 		malloc(1), 1,
 		"dtnsource", "dtn:dest",
-		hal_time_get_timestamp_s(), 42, 0
+		hal_time_get_timestamp_s(), 1, 42, 0
 	));
 	TEST_ASSERT_NULL(bundle6_create_local(
 		malloc(1), 1,
 		"dtn:source", "dtndest",
-		hal_time_get_timestamp_s(), 42, 0
+		hal_time_get_timestamp_s(), 1, 42, 0
 	));
 }
 
