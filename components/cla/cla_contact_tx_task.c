@@ -30,6 +30,32 @@ static inline void report_bundle(QueueIdentifier_t signaling_queue,
 	hal_queue_push_to_back(signaling_queue, &signal);
 }
 
+// BPv7 5.4-4 / RFC5050 5.4-5
+static void prepare_bundle_for_forwarding(struct bundle *bundle)
+{
+	struct bundle_block_list **blocks = &bundle->blocks;
+
+	// BPv7 5.4-4: "If the bundle has a Previous Node block ..., then that
+	// block MUST be removed ... before the bundle is forwarded."
+	while (*blocks != NULL) {
+		if ((*blocks)->data->type == BUNDLE_BLOCK_TYPE_PREVIOUS_NODE) {
+			// Replace the first occurrence of the previous node
+			// block by its successor and free it.
+			*blocks = bundle_block_entry_free(*blocks);
+			break;
+		}
+		blocks = &(*blocks)->next;
+	}
+
+	const uint8_t dwell_time_ms = hal_time_get_timestamp_ms() -
+		bundle->reception_timestamp_ms;
+
+	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
+	// possible moment ... the bundle age value MUST be increased ..."
+	if (bundle_age_update(bundle, dwell_time_ms) == UD3TN_FAIL)
+		LOGF("TX: Bundle #%d age block update failed!", bundle->id);
+}
+
 static void cla_contact_tx_task(void *param)
 {
 	struct cla_link *link = param;
@@ -55,11 +81,7 @@ static void cla_contact_tx_task(void *param)
 			cur->data->serialized++;
 			b = bundle_storage_get(cur->data->id);
 			if (b != NULL) {
-				const uint8_t dwell_time_ms = hal_time_get_timestamp_ms() -
-					b->reception_timestamp_ms;
-
-				if (bundle_age_update(b, dwell_time_ms) == UD3TN_FAIL)
-					LOGF("TX: Bundle #%d age block update failed!", b->id);
+				prepare_bundle_for_forwarding(b);
 				LOGF(
 					"TX: Sending bundle #%d via CLA %s",
 					b->id,
