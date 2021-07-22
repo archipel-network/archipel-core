@@ -41,11 +41,11 @@ def add_socket_group_parser_arguments(parser):
     socket_group.add_argument(
         "--socket",
         metavar="PATH",
-        default="/tmp/ud3tn.socket",
+        default="ud3tn.socket",
         type=str,
         help=(
             "AAP UNIX domain socket to connect to "
-            "(default: /tmp/ud3tn.socket)"
+            "(default: ud3tn.socket)"
         ),
     )
     socket_group.add_argument(

@@ -153,7 +153,7 @@ class AAPUnixClient(AAPClient):
             calling `socket.connect()`
     """
 
-    def __init__(self, address='/tmp/ud3tn.socket'):
+    def __init__(self, address='ud3tn.socket'):
         super().__init__(
             socket=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM),
             address=address,

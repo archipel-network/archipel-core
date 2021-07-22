@@ -123,7 +123,7 @@ aap-test:
     script:
         - make
         - make virtualenv
-        - build/posix/ud3tn -s /tmp/ud3tn.socket &
+        - build/posix/ud3tn &
         - source .venv/bin/activate && python tools/aap/aap_test.py
 
 ion-bpv6-interoperability-test:
@@ -156,11 +156,11 @@ fragment-reassembly-test:
     script:
         - make
         - make virtualenv
-        - build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn" -s /tmp/ud3tn1.socket &
-        - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn" -s /tmp/ud3tn2.socket &
-        - source .venv/bin/activate && python tools/aap/aap_config.py --socket /tmp/ud3tn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn mtcp:localhost:4223
-        - source .venv/bin/activate && python tools/aap/aap_send.py --socket /tmp/ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
-        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket /tmp/ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+        - build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn" -s ud3tn1.socket &
+        - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn" -s ud3tn2.socket &
+        - source .venv/bin/activate && python tools/aap/aap_config.py --socket ud3tn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn mtcp:localhost:4223
+        - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
 
 stylecheck:
     stage: code_quality_test
