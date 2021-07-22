@@ -151,8 +151,10 @@ struct bundle {
 
 	// DTN timestamp of bundle creation, in milliseconds. Zero if undetermined.
 	uint64_t creation_timestamp_ms;
+	// DTN timestamp of bundle reception time in milliseconds.
+	uint64_t reception_timestamp_ms;
 	uint64_t sequence_number;
-	// Lifetime of the bundle in microseconds (required for BPbis).
+	// Lifetime of the bundle in milliseconds (required for BPbis).
 	uint64_t lifetime_ms;
 	union crc crc;
 
@@ -338,6 +340,9 @@ static inline bool bundle_block_must_be_replicated(
  */
 uint64_t bundle_get_expiration_time_s(const struct bundle *bundle);
 
+enum ud3tn_result bundle_age_update(struct bundle *bundle,
+	const uint64_t dwell_time_ms);
+
 struct bundle *bundle_init(void);
 void bundle_free_dynamic_parts(struct bundle *bundle);
 void bundle_reset(struct bundle *bundle);
@@ -373,6 +378,8 @@ struct bundle_block_list *bundle_block_entry_free(struct bundle_block_list *e);
 struct bundle_block *bundle_block_dup(struct bundle_block *b);
 struct bundle_block_list *bundle_block_entry_dup(struct bundle_block_list *e);
 struct bundle_block_list *bundle_block_list_dup(struct bundle_block_list *e);
+struct bundle_block *bundle_block_find_first_by_type(
+	struct bundle_block_list *blocks, enum bundle_block_type type);
 
 /**
  * Serializes a bundle into its on-wire byte-string representation.

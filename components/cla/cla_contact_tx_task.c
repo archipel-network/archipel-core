@@ -9,6 +9,7 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
+#include "ud3tn/bundle.h"
 #include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/router_task.h"
@@ -54,6 +55,11 @@ static void cla_contact_tx_task(void *param)
 			cur->data->serialized++;
 			b = bundle_storage_get(cur->data->id);
 			if (b != NULL) {
+				const uint8_t dwell_time_ms = hal_time_get_timestamp_ms() -
+					b->reception_timestamp_ms;
+
+				if (bundle_age_update(b, dwell_time_ms) == UD3TN_FAIL)
+					LOGF("TX: Bundle #%d age block update failed!", b->id);
 				LOGF(
 					"TX: Sending bundle #%d via CLA %s",
 					b->id,

@@ -8,9 +8,11 @@
 
 // BPv7-bis
 #include "bundle7/bundle7.h"
+#include "bundle7/bundle_age.h"
 #include "bundle7/eid.h"
 #include "bundle7/serializer.h"
 
+#include "platform/hal_io.h"
 #include "platform/hal_time.h"
 
 #include <stdint.h>
@@ -36,6 +38,7 @@ static inline void bundle_reset_internal(struct bundle *bundle)
 
 	bundle->crc_type = DEFAULT_CRC_TYPE;
 	bundle->creation_timestamp_ms = 0;
+	bundle->reception_timestamp_ms = 0;
 	bundle->sequence_number = 0;
 	bundle->lifetime_ms = 0;
 	bundle->fragment_offset = 0;
@@ -229,6 +232,19 @@ struct bundle_list *bundle_list_entry_free(struct bundle_list *entry)
 	return next;
 }
 
+struct bundle_block *bundle_block_find_first_by_type(
+	struct bundle_block_list *blocks, enum bundle_block_type type)
+{
+	while (blocks != NULL) {
+		if (blocks->data->type == type)
+			return blocks->data;
+		blocks = blocks->next;
+	}
+
+	return NULL;
+}
+
+
 struct bundle_block *bundle_block_create(enum bundle_block_type t)
 {
 	struct bundle_block *block = malloc(sizeof(struct bundle_block));
@@ -414,17 +430,58 @@ size_t bundle_get_last_fragment_min_size(struct bundle *bundle)
 	}
 }
 
-uint64_t bundle_get_expiration_time_s(const struct bundle *bundle)
+uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle)
 {
-	return (
-		(
-			bundle->creation_timestamp_ms
-				? (bundle->creation_timestamp_ms + 500) / 1000
-				: hal_time_get_timestamp_s()
-		) +
-		// Lifetime, rounded to the next integer
-		(bundle->lifetime_ms + 500) / 1000
-	);
+	if (bundle->creation_timestamp_ms != 0)
+		return (bundle->creation_timestamp_ms + bundle->lifetime_ms +
+			500) / 1000;
+
+	const struct bundle_block *const age_block = bundle_block_find_first_by_type(
+		bundle->blocks, BUNDLE_BLOCK_TYPE_BUNDLE_AGE);
+
+	uint64_t bundle_age_ms;
+
+	if (!age_block || !bundle_age_parse(&bundle_age_ms, age_block->data,
+	    age_block->length))
+		return 0;
+
+	const uint64_t current_time_ms = hal_time_get_timestamp_ms();
+
+	// EXP_TIME = CUR_TIME + REMAINING_LIFETIME
+	// REMAINING_LIFETIME = TOTAL_LIFETIME - TOTAL_AGE
+	// TOTAL_AGE = AGE_IN_BLOCK + LOCAL_STORAGE_DURATION
+	return (current_time_ms + bundle->lifetime_ms - bundle_age_ms -
+		(current_time_ms - bundle->reception_timestamp_ms) + 500) / 1000;
+}
+
+enum ud3tn_result bundle_age_update(struct bundle *bundle,
+	const uint64_t dwell_time_ms)
+{
+	uint64_t bundle_age;
+	struct bundle_block *block = bundle_block_find_first_by_type(
+		bundle->blocks, BUNDLE_BLOCK_TYPE_BUNDLE_AGE);
+
+	// No Age Block found that needs to be updated
+	if (block == NULL)
+		return UD3TN_OK;
+
+	if (!bundle_age_parse(&bundle_age, block->data, block->length))
+		return UD3TN_FAIL;
+
+	bundle_age += dwell_time_ms;
+
+	uint8_t *buffer = malloc(BUNDLE_AGE_MAX_ENCODED_SIZE);
+
+	// Out of memory
+	if (buffer == NULL)
+		return UD3TN_FAIL;
+
+	free(block->data);
+	block->data = buffer;
+	block->length = bundle_age_serialize(bundle_age, buffer,
+		BUNDLE_AGE_MAX_ENCODED_SIZE);
+
+	return UD3TN_OK;
 }
 
 struct bundle_unique_identifier bundle_get_unique_identifier(

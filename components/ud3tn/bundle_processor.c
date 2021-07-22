@@ -10,6 +10,7 @@
 #include "ud3tn/task_tags.h"
 
 #include "bundle6/bundle6.h"
+#include "bundle7/bundle_age.h"
 #include "bundle7/hopcount.h"
 
 #include "platform/hal_io.h"
@@ -97,8 +98,6 @@ static void send_custody_signal(struct bundle *bundle,
 	const enum bundle_custody_signal_type,
 	const enum bundle_custody_signal_reason reason);
 static enum ud3tn_result send_bundle(bundleid_t bundle, uint16_t timeout);
-static struct bundle_block *find_block_by_type(struct bundle_block_list *blocks,
-	enum bundle_block_type type);
 
 static inline void bundle_add_rc(struct bundle *bundle,
 	const enum bundle_retention_constraints constraint)
@@ -411,6 +410,9 @@ static void bundle_receive(struct bundle *bundle)
 	struct bundle_block_list **e;
 	enum bundle_handling_result res;
 
+	// Set the reception time to calculate the bundle's residence time
+	bundle->reception_timestamp_ms = hal_time_get_timestamp_ms();
+
 	/* 5.6-1 Add retention constraint */
 	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 	/* 5.6-2 Request reception */
@@ -418,13 +420,13 @@ static void bundle_receive(struct bundle *bundle)
 		send_status_report(bundle,
 			BUNDLE_SR_FLAG_BUNDLE_RECEIVED,
 			BUNDLE_SR_REASON_NO_INFO);
-	/* Check lifetime - TODO: support Bundle Age block */
-	if (bundle->creation_timestamp_ms != 0 &&
-			bundle_get_expiration_time_s(bundle) <
-			hal_time_get_timestamp_s()) {
+
+	// Check lifetime
+	if (bundle_get_expiration_time_s(bundle) < hal_time_get_timestamp_s()) {
 		bundle_delete(bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
 		return;
 	}
+
 	/* 5.6-3 Handle blocks */
 	e = &bundle->blocks;
 	while (*e != NULL) {
@@ -918,21 +920,6 @@ static enum ud3tn_result send_bundle(bundleid_t bundle, uint16_t timeout)
 }
 
 /**
- * Returns the first occurence if a specific block type in the given list
- */
-static struct bundle_block *find_block_by_type(struct bundle_block_list *blocks,
-	enum bundle_block_type type)
-{
-	while (blocks != NULL) {
-		if (blocks->data->type == type)
-			return blocks->data;
-		blocks = blocks->next;
-	}
-
-	return NULL;
-}
-
-/**
  * 4.3.4. Hop Count (BPv7-bis)
  *
  * Checks if the hop limit exceeds the hop limit. If yes, the bundle gets
@@ -944,8 +931,8 @@ static struct bundle_block *find_block_by_type(struct bundle_block_list *blocks,
  */
 static bool hop_count_validation(struct bundle *bundle)
 {
-	struct bundle_block *block = find_block_by_type(bundle->blocks,
-		BUNDLE_BLOCK_TYPE_HOP_COUNT);
+	struct bundle_block *block = bundle_block_find_first_by_type(
+		bundle->blocks, BUNDLE_BLOCK_TYPE_HOP_COUNT);
 
 	/* No Hop Count block was found */
 	if (block == NULL)
