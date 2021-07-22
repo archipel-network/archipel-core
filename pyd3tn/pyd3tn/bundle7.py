@@ -176,11 +176,15 @@ class CreationTimestamp(tuple):
     Args:
         time (None, int, datetime.datetime): Timestamp given as Unix timestamp
             (integer) or a Python timezone-aware datetime object. If the time
-            is None, the current time will be used.
+            is None, the current time will be used. If the time is 0, no
+            conversion is performed and the DTN timestamp is set to 0.
         sequence_number (int): Sequence number of the bundle if the device is
             lacking a precise clock
     """
     def __new__(cls, time, sequence_number):
+        if time == 0:
+            return super().__new__(cls, [0, int(sequence_number)])
+
         # Use current datetime
         if time is None:
             time = datetime.now(timezone.utc)
@@ -195,7 +199,13 @@ class CreationTimestamp(tuple):
 
     @property
     def time(self):
-        return DTN_EPOCH + timedelta(milliseconds=self[0])
+        """Returns the DTN timestamp value of the CreationTimestamp tuple as
+        datetime object or None if it's 0.
+        """
+        return (
+            None if self[0] == 0
+            else DTN_EPOCH + timedelta(milliseconds=self[0])
+        )
 
     @property
     def sequence_number(self):
@@ -566,9 +576,16 @@ class PreviousNodeBlock(CBORBlock):
 
 
 class BundleAgeBlock(CBORBlock):
+    """The Bundle Age block, block type 7, contains the number of milliseconds
+    that have elapsed between the time the bundle was created and time at which
+    it was most recently forwarded.
+
+    Args:
+        age (int): Age value in seconds
+    """
 
     def __init__(self, age, **kwargs):
-        super().__init__(BlockType.BUNDLE_AGE, int(age * 1000000), **kwargs)
+        super().__init__(BlockType.BUNDLE_AGE, int(age * 1000), **kwargs)
 
 
 class HopCountBlock(CBORBlock):
@@ -643,6 +660,12 @@ class Bundle(object, metaclass=BundleMeta):
                 assert isinstance(block, PrimaryBlock)
     """
     def __init__(self, primary_block, payload_block, blocks=None):
+        assert (
+            primary_block.creation_time.time or
+            blocks and
+            any(b.block_type == BlockType.BUNDLE_AGE for b in blocks)
+        ), "There must be a 'Bundle Age' block if the creation time is 0"
+
         self.primary_block = primary_block
         self.payload_block = payload_block
         self.blocks = []
@@ -683,15 +706,9 @@ class Bundle(object, metaclass=BundleMeta):
                     )
                 # Bundle Age
                 elif block.block_type == BlockType.BUNDLE_AGE:
-                    creation_time, _ = self.primary_block.creation_time
-                    creation_time_dtn = int(
-                        round((creation_time - DTN_EPOCH).total_seconds())
+                    raise ValueError(
+                        "There must be only one 'Bundle Age' block"
                     )
-                    if creation_time_dtn == 0:
-                        raise ValueError(
-                            "There must be only one 'Bundle Age' block "
-                            "if the bundle creation time is 0"
-                        )
 
         if new_block.block_number is None:
             new_block.block_number = num + 1
@@ -759,7 +776,7 @@ def create_bundle7(source_eid, destination_eid, payload,
                    creation_timestamp=None, sequence_number=None,
                    lifetime=300, flags=BlockProcFlag.NONE,
                    fragment_offset=None, total_adu_length=None,
-                   hop_limit=30, hop_count=0, bundle_age=0,
+                   hop_limit=None, hop_count=0, bundle_age=None,
                    previous_node_eid=None,
                    crc_type_canonical=CRCType.CRC16):
     """All-in-one function to encode a payload from a source EID
@@ -799,7 +816,22 @@ def create_bundle7(source_eid, destination_eid, payload,
         crc_type_canonical (CRCType, optional): The kind of CRC used for the
             canonical blocks.
     """
-    bundle = Bundle(
+    blocks = []
+
+    if hop_limit is not None and hop_count is not None:
+        blocks.append(
+            HopCountBlock(hop_limit, hop_count, crc_type=crc_type_canonical)
+        )
+    if previous_node_eid is not None:
+        blocks.append(
+            PreviousNodeBlock(previous_node_eid, crc_type=crc_type_canonical)
+        )
+    if bundle_age is not None:
+        blocks.append(
+            BundleAgeBlock(bundle_age, crc_type=crc_type_canonical)
+        )
+
+    return Bundle(
         PrimaryBlock(
             bundle_proc_flags=flags,
             crc_type=crc_type_primary,
@@ -822,25 +854,8 @@ def create_bundle7(source_eid, destination_eid, payload,
             payload,
             crc_type=crc_type_canonical,
         ),
+        blocks,
     )
-
-    if previous_node_eid is not None:
-        bundle.add(PreviousNodeBlock(
-            previous_node_eid,
-            crc_type=crc_type_canonical,
-        ))
-
-    bundle.add(HopCountBlock(
-        hop_limit,
-        hop_count,
-        crc_type=crc_type_canonical,
-    ))
-    bundle.add(BundleAgeBlock(
-        bundle_age,
-        crc_type=crc_type_canonical,
-    ))
-
-    return bundle
 
 
 def serialize_bundle7(source_eid, destination_eid, payload,
@@ -848,7 +863,7 @@ def serialize_bundle7(source_eid, destination_eid, payload,
                       creation_timestamp=None, sequence_number=None,
                       lifetime=300, flags=BlockProcFlag.NONE,
                       fragment_offset=None, total_adu_length=None,
-                      hop_limit=30, hop_count=0, bundle_age=0,
+                      hop_limit=None, hop_count=0, bundle_age=None,
                       previous_node_eid=None,
                       crc_type_canonical=CRCType.CRC16):
     """All-in-one function to encode a payload from a source EID

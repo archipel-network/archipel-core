@@ -8,6 +8,7 @@
 #include "bundle7/parser.h"
 #include "bundle7/reports.h"
 #include "bundle7/hopcount.h"
+#include "bundle7/bundle_age.h"
 
 #include "ud3tn/bundle.h"
 #include "ud3tn/report_manager.h"
@@ -478,6 +479,28 @@ TEST(bundle7Parser, hop_count)
 }
 
 
+// 42000
+static const uint8_t cbor_bundle_age[] = { 0x19, 0xa4, 0x10 };
+
+TEST(bundle7Parser, bundle_age)
+{
+	uint64_t bundle_age;
+
+	// Try to parse empty buffer
+	TEST_ASSERT_FALSE(bundle_age_parse(&bundle_age, NULL, 0));
+
+	// Try to parse wrong CBOR structure
+	TEST_ASSERT_FALSE(bundle_age_parse(&bundle_age,
+		cbor_status_report, sizeof(cbor_status_report)));
+
+	// Parse valid CBOR structure
+	TEST_ASSERT_TRUE(bundle_age_parse(&bundle_age,
+		cbor_bundle_age, sizeof(cbor_bundle_age)));
+
+	TEST_ASSERT_EQUAL(42000, bundle_age);
+}
+
+
 TEST_GROUP_RUNNER(bundle7Parser)
 {
 	RUN_TEST_CASE(bundle7Parser, eid_parser);
@@ -487,4 +510,5 @@ TEST_GROUP_RUNNER(bundle7Parser)
 	RUN_TEST_CASE(bundle7Parser, invalid_crc_handling);
 	RUN_TEST_CASE(bundle7Parser, status_report_parser);
 	RUN_TEST_CASE(bundle7Parser, hop_count);
+	RUN_TEST_CASE(bundle7Parser, bundle_age);
 }
