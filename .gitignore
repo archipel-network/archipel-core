@@ -46,6 +46,7 @@ __pycache__
 *.plist
 *.envrc
 .directory
+/.checkpatch*
 
 # uD3TN Socket
 *.socket
