@@ -782,7 +782,7 @@ def create_bundle7(source_eid, destination_eid, payload,
                    creation_timestamp=None, sequence_number=None,
                    lifetime=300, flags=BlockProcFlag.NONE,
                    fragment_offset=None, total_adu_length=None,
-                   hop_limit=30, hop_count=0, bundle_age=0,
+                   hop_limit=None, hop_count=0, bundle_age=None,
                    previous_node_eid=None,
                    crc_type_canonical=CRCType.CRC16):
     """All-in-one function to encode a payload from a source EID
@@ -869,7 +869,7 @@ def serialize_bundle7(source_eid, destination_eid, payload,
                       creation_timestamp=None, sequence_number=None,
                       lifetime=300, flags=BlockProcFlag.NONE,
                       fragment_offset=None, total_adu_length=None,
-                      hop_limit=30, hop_count=0, bundle_age=0,
+                      hop_limit=None, hop_count=0, bundle_age=None,
                       previous_node_eid=None,
                       crc_type_canonical=CRCType.CRC16):
     """All-in-one function to encode a payload from a source EID
