@@ -8,6 +8,7 @@ enum management_command {
 	MGMT_CMD_SET_TIME,
 };
 
-int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue);
+int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
+			   const char *local_eid);
 
 #endif // MANAGEMENT_AGENT_H_

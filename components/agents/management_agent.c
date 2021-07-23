@@ -10,10 +10,23 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef CONFIG_AGENT_REMOTE_CONFIGURATION
+static const int ALLOW_REMOTE_CONFIGURATION = 1;
+#else // CONFIG_AGENT_REMOTE_CONFIGURATION
+static const int ALLOW_REMOTE_CONFIGURATION;
+#endif // CONFIG_AGENT_REMOTE_CONFIGURATION
 
 static void callback(struct bundle_adu data, void *param)
 {
 	(void)param;
+
+	if (!ALLOW_REMOTE_CONFIGURATION) {
+		if (strncmp((char *)param, data.source, strlen((char *)param)) != 0) {
+			LOGF("MgmgtAgent: Dropped config message from foreign endpoint",
+			     data.source);
+			return;
+		}
+	}
 
 	if (data.length < 1) {
 		LOG("MgmgtAgent: Received payload without a command.");
@@ -49,14 +62,15 @@ static void callback(struct bundle_adu data, void *param)
 	bundle_adu_free_members(data);
 }
 
-int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue)
+int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
+			   const char *local_eid)
 {
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
 		"management",
 		callback,
-		NULL,
+		(void *)local_eid,
 		false
 	);
 }
