@@ -10,11 +10,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef CONFIG_AGENT_REMOTE_CONFIGURATION
+#ifdef REMOTE_CONFIGURATION
 static const int ALLOW_REMOTE_CONFIGURATION = 1;
-#else // CONFIG_AGENT_REMOTE_CONFIGURATION
+#else // REMOTE_CONFIGURATION
 static const int ALLOW_REMOTE_CONFIGURATION;
-#endif // CONFIG_AGENT_REMOTE_CONFIGURATION
+#endif // REMOTE_CONFIGURATION
 
 static void callback(struct bundle_adu data, void *param)
 {
