@@ -12,14 +12,15 @@
 #include "util/sha2.h"
 #include "util/hmac_sha2.h"
 
-void hal_hash(uint8_t *message, uint32_t message_length, uint8_t hash[])
+void hal_hash(uint8_t *message, uint32_t message_length,
+	      uint8_t hash[UD3TN_HASH_LENGTH])
 {
 	sha256(message, message_length, hash);
 }
 
 
 void hal_hash_hmac(uint8_t *key, uint32_t key_length, uint8_t *message,
-		   uint32_t message_length, uint8_t hash[])
+		   uint32_t message_length, uint8_t hash[UD3TN_HASH_LENGTH])
 {
 	hmac_sha256(key, key_length, message, message_length,
 		hash, UD3TN_HASH_LENGTH);
