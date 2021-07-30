@@ -14,6 +14,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef REMOTE_CONFIGURATION
+static const int ALLOW_REMOTE_CONFIGURATION = 1;
+#else // REMOTE_CONFIGURATION
+static const int ALLOW_REMOTE_CONFIGURATION;
+#endif // REMOTE_CONFIGURATION
+
 static struct config_parser parser;
 
 static void router_command_send(struct router_command *cmd, void *param)

@@ -102,7 +102,8 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	config_agent_setup(bundle_agent_interface.bundle_signaling_queue,
 		bundle_agent_interface.router_signaling_queue,
 		bundle_agent_interface.local_eid);
-	management_agent_setup(bundle_agent_interface.bundle_signaling_queue);
+	management_agent_setup(bundle_agent_interface.bundle_signaling_queue,
+			       bundle_agent_interface.local_eid);
 
 	const struct application_agent_config *aa_cfg = application_agent_setup(
 		&bundle_agent_interface,
