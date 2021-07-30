@@ -33,7 +33,7 @@ TEST(bundle7Create, create_bundle)
 	struct bundle *b = bundle7_create_local(
 		payload, sizeof(test_payload),
 		"dtn:sourceeid", "dtn:desteid",
-		creation_timestamp_s, 42,
+		creation_timestamp_s, 1, 42,
 		BUNDLE_FLAG_REPORT_DELIVERY);
 
 	TEST_ASSERT_NOT_NULL(b);

@@ -246,7 +246,7 @@ struct bundle *bundle7_generate_status_report(
 
 	return bundle7_create_local(
 		compress, written, source, bundle->report_to,
-		hal_time_get_timestamp_s(),
+		hal_time_get_timestamp_s(), 1,
 		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 }
 

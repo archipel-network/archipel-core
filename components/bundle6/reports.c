@@ -36,7 +36,7 @@ static struct bundle *encapsulate_record(
 	struct bundle *result = bundle6_create_local(
 		payload, payload_len,
 		source_eid, dest_eid,
-		hal_time_get_timestamp_s(),
+		hal_time_get_timestamp_s(), 1,
 		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 
 	if (result == NULL) {
