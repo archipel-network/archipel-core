@@ -105,13 +105,15 @@ TEST(bundle7Fragmentation, fragment_bundle)
 	memcpy(block->data, payload, sizeof(payload));
 	bundle->payload_block = block;
 
-	TEST_ASSERT_EQUAL(45, bundle_get_first_fragment_min_size(bundle));
+	// NOTE: The calculation is pessimistic, assuming the biggest possible
+	// header size (fragment offset == ADU length), thus, 47 and not 45 b.
+	TEST_ASSERT_EQUAL(47, bundle_get_first_fragment_min_size(bundle));
 
 	// Split payload:
 	//
 	//     13 = 7 + 6
 	//
-	uint64_t first_fragment_size = 45 + 7;
+	uint64_t first_fragment_size = 47 + 7;
 
 	fragment = bundle7_fragment_bundle(bundle,
 		first_fragment_size);
