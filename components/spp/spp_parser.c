@@ -65,7 +65,7 @@ bool spp_parse_byte(struct spp_parser *parser,
 		parser->data_length -= parser->ctx->ancillary_data_len;
 
 		if (!parser->header.has_secondary_header) {
-			// TODO: init subparser
+			// TODO: init subparser if implemented here
 			parser->state = SPP_PARSER_STATE_DATA_SUBPARSER;
 			return false;
 		}
@@ -78,7 +78,7 @@ bool spp_parse_byte(struct spp_parser *parser,
 		}
 
 		if (parser->ctx->ancillary_data_len > 0) {
-			// TODO: init subparser
+			// TODO: init subparser if implemented here
 			parser->state = SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER;
 			break;
 		}
@@ -96,6 +96,7 @@ bool spp_parse_byte(struct spp_parser *parser,
 		}
 		case SPP_TC_PARSER_ERROR:
 		{
+			parser->base.status = PARSER_STATUS_ERROR;
 			return false;
 		}
 		case SPP_TC_PARSER_DONE:
@@ -108,7 +109,7 @@ bool spp_parse_byte(struct spp_parser *parser,
 					&parser->tc_parser);
 
 		if (parser->ctx->ancillary_data_len > 0) {
-			// TODO: init subparser
+			// TODO: init subparser if implemented here
 			parser->state = SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER;
 			break;
 		}
@@ -118,11 +119,13 @@ bool spp_parse_byte(struct spp_parser *parser,
 	}
 	case SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER:
 	{
+		// NOTE: Has to be implemented externally
 		assert(false);
 		break;
 	}
 	case SPP_PARSER_STATE_DATA_SUBPARSER:
 	{
+		// NOTE: Has to be implemented externally
 		assert(false);
 		break;
 	}

@@ -170,12 +170,19 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 
 	/* Current parser is input_parser */
-	if (config->spp_parser.state != SPP_PARSER_STATE_DATA_SUBPARSER)
+	if (config->spp_parser.state != SPP_PARSER_STATE_DATA_SUBPARSER) {
+		if (config->spp_parser.state ==
+				SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER) {
+			LOG("tcpspp: Ancillary data is not supported at the moment, resetting parsers.");
+			tcpspp_reset_parsers(link);
+			return 0;
+		}
 		return spp_parser_read(
 			&config->spp_parser,
 			buffer,
 			length
 		);
+	}
 
 	size_t result = 0;
 
