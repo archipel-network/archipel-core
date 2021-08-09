@@ -38,6 +38,9 @@ struct cla_link {
 	Task_t rx_task_handle;
 	struct rx_task_data rx_task_data;
 
+	// Timestamp of last received byte for implementing the read timeout
+	uint64_t last_rx_time_ms;
+
 	Task_t tx_task_handle;
 	// Queue handing over bundles to the TX task
 	QueueIdentifier_t tx_queue_handle;

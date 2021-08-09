@@ -8,6 +8,7 @@
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/bundle_storage_manager.h"
@@ -18,6 +19,11 @@
 #include <signal.h>
 #include <errno.h>
 
+#ifdef CLA_RX_READ_TIMEOUT
+static const unsigned long CLA_RX_READ_TIMEOUT_MS = CLA_RX_READ_TIMEOUT;
+#else // CLA_RX_READ_TIMEOUT
+static const unsigned long CLA_RX_READ_TIMEOUT_MS;
+#endif // CLA_RX_READ_TIMEOUT
 
 static void bundle_send(struct bundle *bundle, void *param)
 {
@@ -209,6 +215,29 @@ static uint8_t *bulk_read(struct cla_link *link)
 				return rx_data->input_buffer.end;
 			}
 
+			const uint64_t cur_time = hal_time_get_timestamp_ms();
+
+			if (CLA_RX_READ_TIMEOUT_MS) {
+				// Timeout check - if we waited for too long
+				// since the last bytes parsed, reset.
+				const uint64_t time_since_last_rx = (
+					cur_time - link->last_rx_time_ms
+				);
+
+				if (time_since_last_rx >
+						CLA_RX_READ_TIMEOUT_MS) {
+					LOGF("RX: Timeout after %llu ms in bulk read mode, reset.",
+					     time_since_last_rx);
+					link->config->vtable
+						->cla_rx_task_reset_parsers(
+							link
+						);
+					return rx_data->input_buffer.end;
+				}
+			}
+
+			link->last_rx_time_ms = cur_time;
+
 			ASSERT(read <= to_read);
 			to_read -= read;
 			pos += read;
@@ -275,6 +304,24 @@ static uint8_t *chunk_read(struct cla_link *link)
 	}
 
 	rx_data->input_buffer.end += read;
+
+	const uint64_t cur_time = hal_time_get_timestamp_ms();
+
+	// Timeout check - if we waited for too long since the last
+	// bytes parsed, reset, and parse this chunk as "something new".
+	if (CLA_RX_READ_TIMEOUT_MS) {
+		const uint64_t time_since_last_rx = (
+			cur_time - link->last_rx_time_ms
+		);
+
+		if (time_since_last_rx > CLA_RX_READ_TIMEOUT_MS) {
+			LOGF("RX: New data received after %llu seconds, start parsing.",
+			     time_since_last_rx);
+			link->config->vtable->cla_rx_task_reset_parsers(link);
+		}
+	}
+
+	link->last_rx_time_ms = cur_time;
 
 	// Parsing Step - read back buffer contents and return start pointer
 	uint8_t *stream = rx_data->input_buffer.start;
