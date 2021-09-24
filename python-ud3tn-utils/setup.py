@@ -7,7 +7,7 @@ with open('README.md', 'r') as file:
 
 setuptools.setup(
     name='ud3tn-utils',
-    version='0.9.0',
+    version='0.10.0',
     author='D3TN GmbH',
     author_email='contact@d3tn.com',
     description='μD3TN Utilities',
