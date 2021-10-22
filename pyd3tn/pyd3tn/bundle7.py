@@ -80,6 +80,7 @@ class BlockProcFlag(IntFlag):
 
 class RecordType(IntEnum):
     BUNDLE_STATUS_REPORT = 1
+    BIBE_PROTOCOL_DATA_UNIT = 3
 
 
 class ReasonCode(IntEnum):
@@ -561,6 +562,25 @@ class BundleStatusReport(AdministrativeRecord):
     def __repr__(self):
         return "<BundleStatusReport {!r}>".format(self.status_info)
 
+
+class BibeProtocolDataUnit(AdministrativeRecord):
+
+    def __init__(self, bundle, transmission_id=0, retransmission_time=0): 
+        """Initializes a new BIBE Protocol Data unit
+
+        Args:
+            bundle (Bundle): The bundle which will be encapsulated in the BPDU.
+            transmission_id (int): If custody is requested the current value of 
+            the local node's custodial transmission count, plus 1. Else 0. 
+            retransmission_time (DtnTime): If custody is requested the time by 
+            which custody disposition for this BPDU is expected. Else 0.
+        """
+        record_data = cbor.dumps([transmission_id, retransmission_time, bytes(bundle)])
+
+        super().__init__(
+            bundle,
+            record_type_code=RecordType.BIBE_PROTOCOL_DATA_UNIT,
+            record_data=record_data)
 
 # ----------------
 # Extension Blocks
