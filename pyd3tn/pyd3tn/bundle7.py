@@ -512,17 +512,6 @@ class CBORBlock(CanonicalBlock):
 class AdministrativeRecord(PayloadBlock):
 
     def __init__(self, bundle, record_type_code, record_data):
-        record_data.extend([
-            bundle.primary_block.source,
-            bundle.primary_block.creation_time
-        ])
-
-        if bundle.is_fragmented:
-            record_data.extend([
-                bundle.primary_block.fragment_offset,
-                bundle.primary_block.total_payload_length
-            ])
-
         super().__init__(data=cbor.dumps([
             record_type_code,
             record_data
@@ -549,7 +538,15 @@ class BundleStatusReport(AdministrativeRecord):
         record_data = [
             status_info,
             reason,
+            bundle.primary_block.source,
+            bundle.primary_block.creation_time,
         ]
+
+        if bundle.is_fragmented:
+            record_data.extend([
+                bundle.primary_block.fragment_offset,
+                bundle.primary_block.total_payload_length
+            ])
 
         super().__init__(
             bundle,
