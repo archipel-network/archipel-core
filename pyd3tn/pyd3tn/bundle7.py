@@ -575,7 +575,7 @@ class BibeProtocolDataUnit(AdministrativeRecord):
             retransmission_time (DtnTime): If custody is requested the time by 
             which custody disposition for this BPDU is expected. Else 0.
         """
-        record_data = cbor.dumps([transmission_id, retransmission_time, bytes(bundle)])
+        record_data = [transmission_id, retransmission_time, bytes(bundle)]
 
         super().__init__(
             bundle,
