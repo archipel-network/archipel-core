@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+# encoding: utf-8
+
+from pyd3tn.bundle7 import BibeProtocolDataUnit, BundleProcFlag, PayloadBlock, PrimaryBlock, Bundle
+from pyd3tn.mtcp import MTCPConnection
+
+BUNDLE_SIZE = 200
+PAYLOAD_DATA = b"\x42" * BUNDLE_SIZE
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-l", "--host",
+        default="127.0.0.1",
+        help="IP address to connect to (defaults to 127.0.0.1)",
+    )
+    parser.add_argument(
+        "-p", "--port",
+        type=int,
+        default=4222,
+        help="Port to connect to (defaults to 4222)",
+    )
+    parser.add_argument(
+        "--payload",
+        default=None,
+        help="the payload to be sent"
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int, default=3000,
+        help="TCP timeout in ms (default: 3000)"
+    )
+
+    args = parser.parse_args()
+
+    with MTCPConnection(args.host, args.port, timeout=args.timeout) as conn:
+        payload = args.payload or PAYLOAD_DATA
+        incoming_eid = "dtn://ud3tn.dtn/"
+        outgoing_eid = "dtn://sender.dtn"
+        inner_bundle = Bundle(
+            PrimaryBlock(
+                destination=incoming_eid,
+                source=outgoing_eid
+            ),
+            PayloadBlock(payload)
+        )
+        encapsulating_bundle = Bundle(
+            PrimaryBlock(
+                bundle_proc_flags=BundleProcFlag.ADMINISTRATIVE_RECORD,
+                destination=incoming_eid,
+                source=outgoing_eid
+            ),
+            BibeProtocolDataUnit(
+                bundle=inner_bundle, 
+                transmission_id=0, 
+                retransmission_time=0)
+        )
+        conn.send_bundle(bytes(encapsulating_bundle))
+
+
+if __name__ == "__main__":
+    main()
