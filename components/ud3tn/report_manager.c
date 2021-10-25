@@ -79,6 +79,7 @@ void free_administrative_record(struct bundle_administrative_record *record)
 	if (record != NULL) {
 		free(record->custody_signal);
 		free(record->status_report);
+		free(record->bpdu);
 		free(record->bundle_source_eid);
 		free(record);
 	}
