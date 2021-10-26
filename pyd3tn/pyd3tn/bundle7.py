@@ -582,6 +582,28 @@ class BibeProtocolDataUnit(AdministrativeRecord):
             record_type_code=RecordType.BIBE_PROTOCOL_DATA_UNIT,
             record_data=record_data)
 
+    @staticmethod
+    def parse_bibe_pdu(data):
+        cbor_data = cbor.loads(data)
+        # BIBE AR
+        assert len(cbor_data) == 2
+        bpdu = cbor_data[1]
+        # BIBE PDU
+        assert len(bpdu) == 3
+        transm_id = bpdu[0]
+        retransm_time = bpdu[1]
+        enc_bundle = bpdu[2]
+
+        # Return types:
+        # transmission_id:      int
+        # retransmission_time:  int
+        # encapsulated_bundle:  byte-string
+        return {
+            "transmission_id": transm_id, 
+            "retransmission_time": retransm_time, 
+            "encapsulated_bundle": enc_bundle
+            }
+
 # ----------------
 # Extension Blocks
 # ----------------
