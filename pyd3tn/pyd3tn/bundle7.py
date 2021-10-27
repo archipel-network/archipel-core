@@ -584,24 +584,17 @@ class BibeProtocolDataUnit(AdministrativeRecord):
 
     @staticmethod
     def parse_bibe_pdu(data):
-        cbor_data = cbor.loads(data)
-        # BIBE AR
-        assert len(cbor_data) == 2
-        bpdu = cbor_data[1]
-        # BIBE PDU
-        assert len(bpdu) == 3
-        transm_id = bpdu[0]
-        retransm_time = bpdu[1]
-        enc_bundle = bpdu[2]
+        # BIBE PDU has 3 fields
+        assert len(data) == 3
 
         # Return types:
         # transmission_id:      int
         # retransmission_time:  int
         # encapsulated_bundle:  byte-string
         return {
-            "transmission_id": transm_id, 
-            "retransmission_time": retransm_time, 
-            "encapsulated_bundle": enc_bundle
+            "transmission_id": data[0], 
+            "retransmission_time": data[1], 
+            "encapsulated_bundle": data[2]
             }
 
 # ----------------
@@ -796,6 +789,28 @@ class Bundle(object, metaclass=BundleMeta):
         blocks = [CanonicalBlock.from_cbor(e) for e in cbor_data[1:-1]]
         return Bundle(primary_block, payload_block, blocks)
 
+    @staticmethod
+    def parse_administrative_record(data):
+        """Function for parsing administrative records of different types
+
+        Args:
+            data (CBOR bytestring): The encoded bundle
+
+        Returns:
+           dict: If the type of the AR is known, a dict containing the fields
+           record_type and record_data is returned. Else the function returns an empty dict.
+        """
+        bundle = Bundle.parse(data)
+        record_data = cbor.loads(bundle.payload_block.data)
+        record_type = record_data[0]
+
+        if record_type == RecordType.BUNDLE_STATUS_REPORT:
+            pass
+        elif record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT:
+            bpdu = BibeProtocolDataUnit.parse_bibe_pdu(record_data[1])
+            return {"record_type": 3, "record_data": bpdu}
+        
+        return {}
 
 _th_local = threading.local()
 
