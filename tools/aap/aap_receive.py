@@ -5,7 +5,7 @@ import argparse
 import logging
 import sys
 
-from pyd3tn.bundle7 import BibeProtocolDataUnit, Bundle
+from pyd3tn.bundle7 import Bundle
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
 from helpers import add_common_parser_arguments, logging_level
 
@@ -20,30 +20,41 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
             return
         
         enc = False
+        err = False
 
-        # Simple check if an encapsulated bundle was sent:
+        # Simple check if an administrative record was sent:
         # If the payload of msg is not a string but a
         # bundle, decode() will throw a UnicodeDecodeError.
         # -> in this case bundle has to be parsed to access
-        # the BIBE AR, which in turn has to be parsed to 
+        # the AR, which in turn has to be parsed to 
         # access the payload. 
         try:
             payload = msg.payload.decode("utf-8")
         except UnicodeDecodeError:
-            outer_bundle = Bundle.parse(msg.payload)
-            bpdu = BibeProtocolDataUnit.parse_bibe_pdu(outer_bundle.payload_block.data)
-            payload = Bundle.parse(bpdu["encapsulated_bundle"]).payload_block.data.decode("utf-8")
-            enc = True
+            record = Bundle.parse_administrative_record(msg.payload)
+            if not record:
+                err = True
+            elif record["record_type"] == 3:
+                payload = Bundle.parse(
+                    record["record_data"]["encapsulated_bundle"]
+                    ).payload_block.data.decode("utf-8")
+                enc = True
+        
+        if not err:
+            enc = " encapsulated" if enc else ""
+            print("Received{} bundle from '{}': {}".format(
+                enc,
+                msg.eid,
+                payload,
+            ))
+            if verify_pl is not None and verify_pl != payload:
+                print("Unexpected payload != '{}'".format(verify_pl))
+                sys.exit(1)
+        else:
+            print("Received adminitstrative record of unknown type from '{}'!".format(
+                msg.eid
+            ))
 
-        enc = " encapsulated" if enc else ""
-        print("Received{} bundle from '{}': {}".format(
-            enc,
-            msg.eid,
-            payload,
-        ))
-        if verify_pl is not None and verify_pl != payload:
-            print("Unexpected payload != '{}'".format(verify_pl))
-            sys.exit(1)
         counter += 1
         if max_count and counter >= max_count:
             print("Expected amount of bundles received, terminating.")
