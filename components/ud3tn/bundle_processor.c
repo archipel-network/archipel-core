@@ -517,7 +517,7 @@ static void bundle_deliver_local(struct bundle *bundle)
 
 	if (!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) &&
 			get_agent_id(bundle->destination) == NULL) {
-		// If it is no admin. record and we have no agent to deliver#
+		// If it is no admin. record and we have no agent to deliver
 		// it to, drop it.
 		LOGF("BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping...",
 		     bundle->source, bundle->destination);
@@ -704,10 +704,32 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			adu.payload,
 			adu.length
 		);
-		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL)
+		LOGF("BundleProcessor: Received administrative record of type %u", record->type);
+		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL){
 			bundle_handle_custody_signal(record);
+			bundle_adu_free_members(adu);
+		}
+		else if (record != NULL && record->type == BUNDLE_AR_BPDU)
+		{
+			LOGF(
+				"BundleProcessor: Got BIBE bundle with transmission id: %u and retransmission time: %u.", 
+				record->bpdu->transmission_id, 
+				record->bpdu->retransmission_time
+				);
+
+			adu.length = adu.length + sizeof(record->bpdu);
+			adu.bibe_payload = record->bpdu;
+			record->bpdu = NULL;
+			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
+
+			const char *agent_id = get_agent_id(adu.destination);
+			ASSERT(agent_id != NULL);
+			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
+	     	agent_id, adu.length);
+			agent_forward(agent_id, adu);
+		}
+		
 		free_administrative_record(record);
-		bundle_adu_free_members(adu);
 		return;
 	}
 
