@@ -6,6 +6,7 @@
 
 #include "bundle6/create.h"
 #include "bundle7/create.h"
+#include "bundle7/parser.h"
 
 #include "cla/posix/cla_tcp_util.h"
 
@@ -329,6 +330,16 @@ static uint64_t allocate_sequence_number(
 	return 1;
 }
 
+static void store_bibe_bundle(struct bundle *bundle, bundleid_t *id){
+	if (bundle == NULL)
+	{
+		*id = BUNDLE_INVALID_ID;
+		bundle_free(bundle);
+	}
+	else
+		*id = bundle_storage_add(bundle);
+}
+
 static int16_t process_aap_message(
 	struct application_agent_comm_config *const config,
 	struct aap_message msg)
@@ -395,6 +406,44 @@ static int16_t process_aap_message(
 			response.bundle_id = bundle_id;
 		}
 
+		break;
+	case AAP_MESSAGE_SENDBIBE:
+		LOGF("AppAgent: Received bundle (l = %zu) for %s via AAP.",
+		     msg.payload_length, msg.eid);
+
+		if (!config->registered_agent_id) {
+			LOG("AppAgent: No agent ID registered, dropping!");
+			break;
+		}
+
+		struct bundle7_parser state;
+		bundleid_t bibe_bundle_id;
+
+		// The payload of the AAP Message is the bundle which should be registered
+		// at the bundle processor -> it needs to be parsed
+		bundle7_parser_init(&state, &store_bibe_bundle, &bibe_bundle_id);
+		bundle7_parser_read(&state, msg.payload, msg.payload_length);
+
+		if (bibe_bundle_id != BUNDLE_INVALID_ID)
+			bundle_processor_inform(
+				config->parent->bundle_agent_interface->bundle_signaling_queue,
+				bibe_bundle_id,
+				BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
+				BUNDLE_SR_REASON_NO_INFO
+		);
+		
+		// Bundle has been registered, so the payload can be freed.
+		msg.payload = NULL;
+
+		if (bibe_bundle_id == BUNDLE_INVALID_ID) {
+			LOG("AppAgent: Bundle creation failed!");
+			response.type = AAP_MESSAGE_NACK;
+		} else {
+			LOGF("AppAgent: Injected new bundle (#%llu).",
+			     (uint64_t)bibe_bundle_id);
+			response.type = AAP_MESSAGE_SENDCONFIRM;
+			response.bundle_id = bibe_bundle_id;
+		}
 		break;
 
 	case AAP_MESSAGE_CANCELBUNDLE:
@@ -479,7 +528,7 @@ static ssize_t receive_from_socket(
 static int send_bundle(const int socket_fd, struct bundle_adu data)
 {
 	const struct aap_message bundle_msg = {
-		.type = AAP_MESSAGE_RECVBUNDLE,
+		.type = data.proc_flags == BUNDLE_FLAG_ADMINISTRATIVE_RECORD ? AAP_MESSAGE_RECVBIBE : AAP_MESSAGE_RECVBUNDLE,
 		.eid = data.source,
 		.eid_length = strlen(data.source),
 		.payload = data.payload,
