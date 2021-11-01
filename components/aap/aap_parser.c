@@ -64,6 +64,8 @@ static size_t aap_parse_type(
 	case AAP_MESSAGE_REGISTER:
 	case AAP_MESSAGE_SENDBUNDLE:
 	case AAP_MESSAGE_RECVBUNDLE:
+	case AAP_MESSAGE_SENDBIBE:
+	case AAP_MESSAGE_RECVBIBE:
 	case AAP_MESSAGE_WELCOME:
 		parser->parse = aap_parse_eid_length;
 		break;
@@ -125,6 +127,8 @@ static size_t aap_parse_eid(
 			break;
 		case AAP_MESSAGE_SENDBUNDLE:
 		case AAP_MESSAGE_RECVBUNDLE:
+		case AAP_MESSAGE_SENDBIBE:
+		case AAP_MESSAGE_RECVBIBE:
 			parser->parse = aap_parse_payload_length;
 			break;
 		default:

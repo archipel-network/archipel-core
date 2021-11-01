@@ -28,6 +28,8 @@ size_t aap_get_serialized_size(const struct aap_message *msg)
 	if (msg->type == AAP_MESSAGE_REGISTER ||
 	    msg->type == AAP_MESSAGE_SENDBUNDLE ||
 	    msg->type == AAP_MESSAGE_RECVBUNDLE ||
+	    msg->type == AAP_MESSAGE_SENDBIBE ||
+	    msg->type == AAP_MESSAGE_RECVBIBE ||
 	    msg->type == AAP_MESSAGE_WELCOME) {
 		result += 2;
 		result += msg->eid_length;
@@ -35,7 +37,9 @@ size_t aap_get_serialized_size(const struct aap_message *msg)
 
 	// Payload
 	if (msg->type == AAP_MESSAGE_SENDBUNDLE ||
-	    msg->type == AAP_MESSAGE_RECVBUNDLE) {
+	    msg->type == AAP_MESSAGE_RECVBUNDLE ||
+	    msg->type == AAP_MESSAGE_SENDBIBE ||
+	    msg->type == AAP_MESSAGE_RECVBIBE) {
 		result += 8;
 		result += msg->payload_length;
 	}
@@ -62,6 +66,8 @@ void aap_serialize(const struct aap_message *msg,
 	if (msg->type == AAP_MESSAGE_REGISTER ||
 	    msg->type == AAP_MESSAGE_SENDBUNDLE ||
 	    msg->type == AAP_MESSAGE_RECVBUNDLE ||
+	    msg->type == AAP_MESSAGE_SENDBIBE ||
+	    msg->type == AAP_MESSAGE_RECVBIBE ||
 	    msg->type == AAP_MESSAGE_WELCOME) {
 		buffer[0] = 0xFF & (msg->eid_length >> 8);
 		buffer[1] = 0xFF & msg->eid_length;
@@ -72,7 +78,9 @@ void aap_serialize(const struct aap_message *msg,
 
 	// Payload
 	if (msg->type == AAP_MESSAGE_SENDBUNDLE ||
-	    msg->type == AAP_MESSAGE_RECVBUNDLE) {
+	    msg->type == AAP_MESSAGE_RECVBUNDLE ||
+	    msg->type == AAP_MESSAGE_SENDBIBE ||
+	    msg->type == AAP_MESSAGE_RECVBIBE) {
 		put_uint64(buffer, msg->payload_length);
 		write(param, buffer, 8);
 		if (msg->payload_length)

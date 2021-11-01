@@ -14,13 +14,15 @@
 bool aap_message_is_valid(const struct aap_message *const msg)
 {
 	if (msg->type < AAP_MESSAGE_ACK ||
-	    msg->type > AAP_MESSAGE_PING)
+	    msg->type > AAP_MESSAGE_RECVBIBE)
 		return false;
 
 	// EID
 	if (msg->type == AAP_MESSAGE_REGISTER ||
 	    msg->type == AAP_MESSAGE_SENDBUNDLE ||
 	    msg->type == AAP_MESSAGE_RECVBUNDLE ||
+	    msg->type == AAP_MESSAGE_SENDBIBE ||
+	    msg->type == AAP_MESSAGE_RECVBIBE ||
 	    msg->type == AAP_MESSAGE_WELCOME) {
 		if (msg->eid == NULL || msg->eid_length > UINT16_MAX ||
 		    strlen(msg->eid) != msg->eid_length)
@@ -32,7 +34,9 @@ bool aap_message_is_valid(const struct aap_message *const msg)
 
 	// Payload
 	if (msg->type == AAP_MESSAGE_SENDBUNDLE ||
-	    msg->type == AAP_MESSAGE_RECVBUNDLE) {
+	    msg->type == AAP_MESSAGE_RECVBUNDLE ||
+	    msg->type == AAP_MESSAGE_SENDBIBE ||
+	    msg->type == AAP_MESSAGE_RECVBIBE) {
 		if (msg->payload == NULL && msg->payload_length != 0)
 			return false;
 	} else {
