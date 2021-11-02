@@ -24,20 +24,14 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
         
         enc = False
         err = False
-
         if msg.msg_type == AAPMessageType.RECVBUNDLE:
             payload = msg.payload.decode("utf-8")
         elif msg.msg_type == AAPMessageType.RECVBIBE:
             payload = cbor.loads(msg.payload)
-            record = Bundle.parse_administrative_record(msg.payload)
-            if not record:
-                err = True
-            elif record["record_type"] == 3:
-                payload = Bundle.parse(
-                    record["record_data"]["encapsulated_bundle"]
-                    ).payload_block.data.decode("utf-8")
-                enc = True
-        
+            bundle = Bundle.parse(payload[2])
+            payload = bundle.payload_block.data.decode("utf-8")
+            enc = True
+
         if not err:
             enc = " encapsulated" if enc else ""
             print("Received{} bundle from '{}': {}".format(
