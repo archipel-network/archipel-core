@@ -255,7 +255,8 @@ struct bibe_protocol_data_unit {
 
 	uint64_t transmission_id;
 	uint64_t retransmission_time;
-	void *encapsulated_bundle;
+	uint8_t *encapsulated_bundle;
+	uint64_t payload_length; 
 
 	// BPv7-bis:
 	//     All other remaining fields are specified in the "generic"

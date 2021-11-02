@@ -653,6 +653,7 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	cbor_value_get_string_length(&report, &bundle_str_len);
 	//allocate memory for the encapsulated bundle
 	state->record->bpdu->encapsulated_bundle = malloc(bundle_str_len);
+	state->record->bpdu->payload_length = bundle_str_len;
 	// From the cbor docs:
 	//   "The next pointer, if not null, will be updated to point to the next item after 
 	//    this string. If value points to the last item, then next will be invalid."
