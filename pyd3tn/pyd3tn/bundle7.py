@@ -800,8 +800,7 @@ class Bundle(object, metaclass=BundleMeta):
            dict: If the type of the AR is known, a dict containing the fields
            record_type and record_data is returned. Else the function returns an empty dict.
         """
-        bundle = Bundle.parse(data)
-        record_data = cbor.loads(bundle.payload_block.data)
+        record_data = cbor.loads(data)
         record_type = record_data[0]
 
         if record_type == RecordType.BUNDLE_STATUS_REPORT:
