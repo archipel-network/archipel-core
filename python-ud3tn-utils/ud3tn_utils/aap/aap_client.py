@@ -154,7 +154,7 @@ class AAPClient():
             bundle_data: The string message to be utf-8 encoded and
                 encapsulated in a bundle.
         """
-        return self.send_bundle(dest_eid, bundle_data.encode("utf-8"))
+        return self.send_bundle(dest_eid, bundle_data.encode("utf-8"), False)
 
 
 class AAPUnixClient(AAPClient):

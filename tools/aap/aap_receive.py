@@ -5,9 +5,12 @@ import argparse
 import logging
 import sys
 
+import cbor  # type: ignore
+
 from pyd3tn.bundle7 import Bundle
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
 from helpers import add_common_parser_arguments, logging_level
+from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
 def run_aap_recv(aap_client, max_count=None, verify_pl=None):
@@ -22,15 +25,10 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
         enc = False
         err = False
 
-        # Simple check if an administrative record was sent:
-        # If the payload of msg is not a string but a
-        # bundle, decode() will throw a UnicodeDecodeError.
-        # -> in this case bundle has to be parsed to access
-        # the AR, which in turn has to be parsed to 
-        # access the payload. 
-        try:
+        if msg.msg_type == AAPMessageType.RECVBUNDLE:
             payload = msg.payload.decode("utf-8")
-        except UnicodeDecodeError:
+        elif msg.msg_type == AAPMessageType.RECVBIBE:
+            payload = cbor.loads(msg.payload)
             record = Bundle.parse_administrative_record(msg.payload)
             if not record:
                 err = True

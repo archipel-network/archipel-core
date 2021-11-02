@@ -86,23 +86,29 @@ if __name__ == "__main__":
                 aap_client.register(args.agentid)
                 aap_client.send_str(args.dest_eid, args.payload)
             else:
+                aap_client.register(args.agentid)
                 encapsulating_bundle = build_bibe_bundle(
                     aap_client,
                     args.dest_eid,
                     args.payload
                 )
-                aap_client.register(args.agentid)
-                aap_client.send_bundle(args.dest_eid, bytes(encapsulating_bundle))
+                aap_client.send_bundle(
+                    args.dest_eid,
+                    bytes(encapsulating_bundle),
+                    args.bibe)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             if not args.bibe:
                 aap_client.register(args.agentid)
                 aap_client.send_str(args.dest_eid, args.payload)
             else:
+                aap_client.register(args.agentid)
                 encapsulating_bundle = build_bibe_bundle(
                     aap_client,
                     args.dest_eid,
                     args.payload
                 )
-                aap_client.register(args.agentid)
-                aap_client.send_bundle(args.dest_eid, bytes(encapsulating_bundle))
+                aap_client.send_bundle(
+                    args.dest_eid,
+                    bytes(encapsulating_bundle),
+                    args.bibe)
