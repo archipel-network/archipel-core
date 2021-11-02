@@ -33,12 +33,14 @@ class AAPMessageType(enum.IntEnum):
     CANCELBUNDLE = 0x6
     WELCOME = 0x7
     PING = 0x8
+    SENDBIBE = 0x9
+    RECVBIBE = 0xA
 
 
 class AAPMessage:
     """An AAP message representation supporting parsing and serialization."""
     def __init__(self, msg_type, eid=None, payload=None, bundle_id=None):
-        if (msg_type < AAPMessageType.ACK or msg_type > AAPMessageType.PING):
+        if (msg_type < AAPMessageType.ACK or msg_type > AAPMessageType.RECVBIBE):
             raise ValueError("Invalid message type code")
         self.msg_type = msg_type
         self.eid = eid
@@ -53,13 +55,17 @@ class AAPMessage:
         if self.msg_type in (AAPMessageType.REGISTER,
                              AAPMessageType.SENDBUNDLE,
                              AAPMessageType.RECVBUNDLE,
+                             AAPMessageType.SENDBIBE,
+                             AAPMessageType.RECVBIBE,
                              AAPMessageType.WELCOME):
             msg.append(struct.pack("!H", len(self.eid)))
             msg.append(self.eid.encode("ascii"))
 
         # Payload
         if self.msg_type in (AAPMessageType.SENDBUNDLE,
-                             AAPMessageType.RECVBUNDLE):
+                             AAPMessageType.RECVBUNDLE,
+                             AAPMessageType.SENDBIBE,
+                             AAPMessageType.RECVBIBE):
             msg.append(struct.pack("!Q", len(self.payload)))
             msg.append(self.payload)
 
@@ -98,6 +104,8 @@ class AAPMessage:
         if msg_type in (AAPMessageType.REGISTER,
                         AAPMessageType.SENDBUNDLE,
                         AAPMessageType.RECVBUNDLE,
+                        AAPMessageType.SENDBIBE,
+                        AAPMessageType.RECVBIBE,
                         AAPMessageType.WELCOME):
             if len(data) - index < 2:
                 raise InsufficientAAPDataError(index + 2)
@@ -110,7 +118,9 @@ class AAPMessage:
 
         # Payload
         if msg_type in (AAPMessageType.SENDBUNDLE,
-                        AAPMessageType.RECVBUNDLE):
+                        AAPMessageType.RECVBUNDLE,
+                        AAPMessageType.SENDBIBE,
+                        AAPMessageType.RECVBIBE,):
             if len(data) - index < 8:
                 raise InsufficientAAPDataError(index + 8)
             payload_length, = struct.unpack("!Q", data[index:(index + 8)])

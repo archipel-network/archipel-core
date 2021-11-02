@@ -115,23 +115,36 @@ class AAPClient():
         self.socket.send(aap_msg.serialize())
         return self.receive()
 
-    def send_bundle(self, dest_eid, bundle_data):
+    def send_bundle(self, dest_eid, bundle_data, bibe=False):
         """Send the provided bundle to the AAP endpoint.
 
         Args:
             dest_eid: The destination EID.
             bundle_data: The binary payload data to be encapsulated in a
                 bundle.
+            bibe: Whether the AAPClient should send a SENDBIBE message (True)
+                or a SENDBUNDLE message (False). Defaults to False.
         """
-        logger.info(f"Sending SENDBUNDLE message to {dest_eid}")
-        msg_sendconfirm = self.send(AAPMessage(
-            AAPMessageType.SENDBUNDLE, dest_eid, bundle_data
-        ))
-        assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
-        logger.info(
-            f"SENDCONFIRM message received! ~ ID = {msg_sendconfirm.bundle_id}"
-        )
-        return msg_sendconfirm
+        if not bibe:
+            logger.info(f"Sending SENDBUNDLE message to {dest_eid}")
+            msg_sendconfirm = self.send(AAPMessage(
+                AAPMessageType.SENDBUNDLE, dest_eid, bundle_data
+            ))
+            assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
+            logger.info(
+                f"SENDCONFIRM message received! ~ ID = {msg_sendconfirm.bundle_id}"
+            )
+            return msg_sendconfirm
+        else:
+            logger.info(f"Sending SENDBIBE message to {dest_eid}")
+            msg_sendconfirm = self.send(AAPMessage(
+                AAPMessageType.SENDBIBE, dest_eid, bundle_data
+            ))
+            assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
+            logger.info(
+                f"SENDCONFIRM message received! ~ ID = {msg_sendconfirm.bundle_id}"
+            )
+            return msg_sendconfirm
 
     def send_str(self, dest_eid, bundle_data):
         """Send the provided bundle to the AAP endpoint.
