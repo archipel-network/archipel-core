@@ -215,7 +215,8 @@ static void agent_msg_recv(struct bundle_adu data, void *param)
 static struct bundle *create_bundle(const uint8_t bp_version,
 	const char *local_eid, char *sink_id, char *destination,
 	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
-	const uint64_t lifetime, void *payload, size_t payload_length)
+	const uint64_t lifetime, void *payload, size_t payload_length,
+	enum bundle_proc_flags flags)
 {
 	const size_t local_eid_length = strlen(local_eid);
 	const size_t sink_length = strlen(sink_id);
@@ -236,12 +237,12 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 		result = bundle6_create_local(
 			payload, payload_length, source_eid, destination,
 			creation_timestamp_s, sequence_number,
-			lifetime, 0);
+			lifetime, flags);
 	else
 		result = bundle7_create_local(
 			payload, payload_length, source_eid, destination,
 			creation_timestamp_s, sequence_number,
-			lifetime, 0);
+			lifetime, flags);
 
 	free(source_eid);
 
@@ -252,7 +253,8 @@ static bundleid_t create_forward_bundle(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const uint8_t bp_version, char *sink_id, char *destination,
 	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
-	const uint64_t lifetime, void *payload, size_t payload_length)
+	const uint64_t lifetime, void *payload, size_t payload_length,
+	enum bundle_proc_flags flags)
 {
 	struct bundle *bundle = create_bundle(
 		bp_version,
@@ -263,7 +265,8 @@ static bundleid_t create_forward_bundle(
 		sequence_number,
 		lifetime,
 		payload,
-		payload_length
+		payload_length,
+		flags
 	);
 
 	if (bundle == NULL)
@@ -334,7 +337,6 @@ static void store_bibe_bundle(struct bundle *bundle, bundleid_t *id){
 	if (bundle == NULL)
 	{
 		*id = BUNDLE_INVALID_ID;
-		bundle_free(bundle);
 	}
 	else
 		*id = bundle_storage_add(bundle);
@@ -391,7 +393,8 @@ static int16_t process_aap_message(
 			seqnum,
 			config->parent->lifetime,
 			msg.payload,
-			msg.payload_length
+			msg.payload_length,
+			0
 		);
 		// Pointer responsibility was taken by create_forward_bundle
 		msg.payload = NULL;
@@ -407,6 +410,7 @@ static int16_t process_aap_message(
 		}
 
 		break;
+
 	case AAP_MESSAGE_SENDBIBE:
 		LOGF("AppAgent: Received bundle (l = %zu) for %s via AAP.",
 		     msg.payload_length, msg.eid);
@@ -415,24 +419,25 @@ static int16_t process_aap_message(
 			LOG("AppAgent: No agent ID registered, dropping!");
 			break;
 		}
-
-		struct bundle7_parser state;
-		bundleid_t bibe_bundle_id;
-
-		// The payload of the AAP Message is the bundle which should be registered
-		// at the bundle processor -> it needs to be parsed
-		bundle7_parser_init(&state, &store_bibe_bundle, &bibe_bundle_id);
-		bundle7_parser_read(&state, msg.payload, msg.payload_length);
-
-		if (bibe_bundle_id != BUNDLE_INVALID_ID)
-			bundle_processor_inform(
-				config->parent->bundle_agent_interface->bundle_signaling_queue,
-				bibe_bundle_id,
-				BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
-				BUNDLE_SR_REASON_NO_INFO
-		);
 		
-		// Bundle has been registered, so the payload can be freed.
+		const uint64_t bibe_time = hal_time_get_timestamp_s();
+		const uint64_t bibe_seqnum = allocate_sequence_number(
+			config,
+			bibe_time
+		);
+		bundleid_t bibe_bundle_id = create_forward_bundle(
+			config->parent->bundle_agent_interface,
+			config->parent->bp_version,
+			config->registered_agent_id,
+			msg.eid,
+			bibe_time,
+			bibe_seqnum,
+			config->parent->lifetime,
+			msg.payload,
+			msg.payload_length,
+			BUNDLE_FLAG_ADMINISTRATIVE_RECORD
+		);
+		// Pointer responsibility was taken by create_forward_bundle
 		msg.payload = NULL;
 
 		if (bibe_bundle_id == BUNDLE_INVALID_ID) {
