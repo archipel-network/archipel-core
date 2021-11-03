@@ -18,6 +18,13 @@ struct agent_list {
 };
 
 /**
+ * @brief Initialize the agent manager for the given local EID.
+ *
+ * @not_thread_safe
+ */
+void agent_manager_init(const char *const ud3tn_local_eid);
+
+/**
  * @brief agent_forward Invoke the callback associated with the specified
  *	sink_identifier in the thread of the caller
  * @return int Return an error if the sink_identifier is unknown or the

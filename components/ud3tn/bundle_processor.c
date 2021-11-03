@@ -34,6 +34,8 @@ enum bundle_handling_result {
 
 static QueueIdentifier_t out_queue;
 static const char *local_eid;
+static char *local_eid_prefix;
+static bool local_eid_is_ipn;
 static bool status_reporting;
 
 static struct reassembly_list {
@@ -198,6 +200,18 @@ void bundle_processor_task(void * const param)
 
 	out_queue = p->router_signaling_queue;
 	local_eid = p->local_eid;
+	ASSERT(strlen(local_eid) > 3);
+	if (!memcmp(local_eid, "ipn", 3)) {
+		local_eid_is_ipn = true;
+		local_eid_prefix = strdup(local_eid);
+
+		char *const dot = strchr(local_eid_prefix, '.');
+
+		ASSERT(dot != NULL);
+		dot[0] = '\0'; // truncate string
+	} else {
+		local_eid_prefix = strdup(local_eid);
+	}
 	status_reporting = p->status_reporting;
 
 	custody_manager_init(p->local_eid);
@@ -294,7 +308,7 @@ static void bundle_dispatch(struct bundle *bundle)
 /* 5.3-1 */
 static bool bundle_endpoint_is_local(struct bundle *bundle)
 {
-	const size_t local_len = strlen(local_eid);
+	const size_t local_len = strlen(local_eid_prefix);
 	const size_t dest_len = strlen(bundle->destination);
 
 	/* Compare bundle destination EID _prefix_ with configured uD3TN EID */
@@ -303,7 +317,7 @@ static bool bundle_endpoint_is_local(struct bundle *bundle)
 		// least as long as the local EID.
 		dest_len >= local_len &&
 		// The prefix (the local EID) has to match the bundle dest-EID.
-		memcmp(local_eid, bundle->destination, local_len) == 0
+		memcmp(local_eid_prefix, bundle->destination, local_len) == 0
 	);
 }
 
@@ -1010,18 +1024,16 @@ static bool hop_count_validation(struct bundle *bundle)
  */
 static const char *get_agent_id(const char *dest_eid)
 {
-	const size_t local_len = strlen(local_eid);
+	const size_t local_len = strlen(local_eid_prefix);
 	const size_t dest_len = strlen(dest_eid);
 
-	// Local EID ends with '/' -> agent starts at dest_eid[local_len]
-	if (local_eid[local_len - 1] == '/') {
-		if (dest_len <= local_len || dest_eid[local_len - 1] != '/')
-			return NULL;
-		return &dest_eid[local_len];
-	}
-
-	// Local EID does not end with '/' -> agent starts after local_len
-	if (dest_len <= local_len + 1 || dest_eid[local_len] != '/')
+	// NOTE: Local EID never ends with '/' (see validate_local_eid)
+	// -> agent starts after local_len
+	if (dest_len <= local_len + 1)
+		return NULL;
+	if (local_eid_is_ipn && dest_eid[local_len] != '.')
+		return NULL;
+	else if (!local_eid_is_ipn && dest_eid[local_len] != '/')
 		return NULL;
 	return &dest_eid[local_len + 1];
 }

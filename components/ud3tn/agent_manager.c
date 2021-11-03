@@ -6,8 +6,11 @@
 
 #include "platform/hal_io.h"
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,12 +20,29 @@ static int agent_list_remove_entry(struct agent *obj);
 static struct agent_list **agent_search_ptr(const char *sink_identifier);
 
 static struct agent_list *agent_entry_node;
+static const char *local_eid;
+
+void agent_manager_init(const char *const ud3tn_local_eid)
+{
+	local_eid = ud3tn_local_eid;
+}
 
 int agent_register(const char *sink_identifier,
 		   void (*const callback)(struct bundle_adu data, void *param),
 		   void *param)
 {
 	struct agent *ag_ptr;
+
+	uint64_t service;
+	int len;
+
+	ASSERT(local_eid != NULL && strlen(local_eid) > 3);
+	if (memcmp(local_eid, "ipn", 3) == 0) {
+		if (sscanf(sink_identifier, "%"PRIu64"%n", &service, &len) != 1)
+			return -1;
+		if (strlen(sink_identifier) > (size_t)len)
+			return -1;
+	}
 
 	/* check if agent with that sink_id is already existing */
 	if (agent_search(sink_identifier) != NULL) {

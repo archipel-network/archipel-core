@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import logging
+import random
 import socket
 import uuid
 
@@ -67,6 +68,17 @@ class AAPClient():
         """Return the own EID."""
         return f"{self.node_eid}/{self.agent_id}"
 
+    def _generate_eid(self):
+        if not self.node_eid:
+            return None
+        if self.node_eid[0:3] == "dtn":
+            return str(uuid.uuid4())
+        elif self.node_eid[0:3] == "ipn":
+            return str(
+                random.randint(1, 9223372036854775807)
+            )  # INT64_MAX (signed int) for maximum compatibility
+        return None
+
     def register(self, agent_id=None):
         """Attempt to register the specified agent identifier.
 
@@ -74,7 +86,7 @@ class AAPClient():
             agent_id: The agent identifier to be registered. If None,
                 uuid.uuid4() is called to generate one.
         """
-        self.agent_id = agent_id or str(uuid.uuid4())
+        self.agent_id = agent_id or self._generate_eid()
         logger.info(f"Sending REGISTER message for '{agent_id}'...")
         msg_ack = self.send(
             AAPMessage(AAPMessageType.REGISTER, self.agent_id)

@@ -1,6 +1,7 @@
 # µD3TN Contacts Data Format
 
-Configuration can be performed via bundles to the `<uD3TN_EID>/config` endpoint.
+Configuration can be performed via bundles to the µD3TN config endpoint.
+If the `dtn` EID scheme is used, the config endpoint is `dtn://<ud3tn-node-name>/config` by default. If the `ipn` EID scheme is used, the config endpoint is `ipn:<ud3tn-node-number>.9000` by default.
 Using this mechanism, connected nodes as well as upcoming contacts to them can be configured.
 
 **Note:** By default, the configuration endpoint drops bundles received from external DTN nodes, i.e., configuration can only be performed from an application attached via AAP.

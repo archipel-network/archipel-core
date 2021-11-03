@@ -1,8 +1,8 @@
 #include "agents/management_agent.h"
 
-#include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_time.h"
@@ -72,11 +72,12 @@ int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 	);
 	ma_param->local_eid = local_eid;
 	ma_param->allow_remote_configuration = allow_remote_configuration;
+	int is_ipn = (memcmp(local_eid, "ipn", 3) == 0);
 
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		"management",
+		is_ipn ? AGENT_ID_MANAGEMENT_IPN : AGENT_ID_MANAGEMENT_DTN,
 		callback,
 		(void *)local_eid,
 		false

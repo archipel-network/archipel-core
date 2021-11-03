@@ -1,9 +1,9 @@
 #include "agents/config_agent.h"
 #include "agents/config_parser.h"
 
-#include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
@@ -62,6 +62,8 @@ int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 	QueueIdentifier_t router_signaling_queue, const char *local_eid,
 	bool allow_remote_configuration)
 {
+	int is_ipn = (memcmp(local_eid, "ipn", 3) == 0);
+
 	ASSERT(config_parser_init(&parser, &router_command_send,
 				  router_signaling_queue));
 
@@ -74,7 +76,7 @@ int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		"config",
+		is_ipn ? AGENT_ID_CONFIG_IPN : AGENT_ID_CONFIG_DTN,
 		callback,
 		ca_param,
 		false

@@ -67,6 +67,9 @@ The message is encoded as follows:
 
 The EID contained within this message is *not* the complete EID that the application will be associated to, but the agent identifier, i.e. only the last part of the EID. The first part of the EID (as communicated in the *WELCOME* message) is configured in µD3TN and cannot be altered.
 
+**Note:** In the case of a `dtn` scheme EID, the sub-EID comprises the `demux` part as specified in the [BPv7 document](https://datatracker.ietf.org/doc/html/draft-ietf-dtn-bpbis-31#section-4.2.5.1.1).
+In the case of an `ipn` scheme EID, the sub-EID is the service number in string format. See also the [BPv7 document](https://datatracker.ietf.org/doc/html/draft-ietf-dtn-bpbis-31#section-4.2.5.1.2).
+
 ### Bundle transmission request (SENDBUNDLE)
 
 The *SENDBUNDLE* message can only be sent by the client (the application). It contains the destination EID and the payload data as follows:
@@ -117,11 +120,13 @@ This message requests cancellation of a queued bundle. It can only be sent by th
 
 ### Connection establishment notice (WELCOME)
 
-This message is only sent by the server (µD3TN), once at the start of every connection. It communicates µD3TN's EID prefix, i.e. the first part of every EID that can be registered.
+This message is only sent by the server (µD3TN), once at the start of every connection. It communicates µD3TN's own EID without the agent ID. In the case of
+a `dtn` scheme EID, this comprises the first part of the EID before the slash.
+In the case of an `ipn` scheme EID, the service number is `0`.
 
 ```
 +--------+--------+--------+--------+--------+--------+--------+--------+
-|00010111| EID length (16) | µD3TN EID prefix (variable-length)    ...   |
+|00010111| EID length (16) | µD3TN EID (variable-length)          ...   |
 +--------+--------+--------+--------+--------+--------+--------+--------+
 ```
 
