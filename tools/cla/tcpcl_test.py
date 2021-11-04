@@ -15,8 +15,8 @@ from pyd3tn.tcpcl import (
 from pyd3tn.bundle6 import serialize_bundle6
 from pyd3tn.bundle7 import serialize_bundle7
 
-DEFAULT_OUTGOING_EID = "dtn:2"
-DEFAULT_INCOMING_EID = "dtn:1"
+DEFAULT_OUTGOING_EID = "dtn://2/"
+DEFAULT_INCOMING_EID = "dtn://1/"
 DEFAULT_OWN_CLA_ADDRESS = "tcpclv3:127.0.0.1:42421"
 # we have to listen on this port to properly test bundle transmission
 DEFAULT_CONTACT_CLA_ADDRESS = "tcpclv3:127.0.0.1:42420"
@@ -50,7 +50,7 @@ def run_simple_forwarding_test(serialize_bundle, concurrent=False):
         sock.sendall(serialize_tcpcl_single_bundle_segment(
             serialize_bundle(
                 DEFAULT_OUTGOING_EID,
-                header_decoded["eid"] + "/config",
+                header_decoded["eid"] + "config",
                 bytes(config_msg1),
             )
         ))
@@ -58,7 +58,7 @@ def run_simple_forwarding_test(serialize_bundle, concurrent=False):
         sock.sendall(serialize_tcpcl_single_bundle_segment(
             serialize_bundle(
                 DEFAULT_OUTGOING_EID,
-                header_decoded["eid"] + "/config",
+                header_decoded["eid"] + "config",
                 bytes(config_msg2),
             )
         ))

@@ -29,8 +29,8 @@ from .helpers import (
     send_delete_gs,
 )
 
-SENDING_GS_DEF = ("dtn://sender.dtn", "sender")
-RECEIVING_GS_DEF = ("dtn://receiver.dtn", "receiver")
+SENDING_GS_DEF = ("dtn://sender.dtn/", "sender")
+RECEIVING_GS_DEF = ("dtn://receiver.dtn/", "receiver")
 
 SENDING_CONTACT = (1, 1, 1000)
 RECEIVING_CONTACT = (3, 1, 1000)

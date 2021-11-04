@@ -10,7 +10,7 @@ from pyd3tn.bundle6 import serialize_bundle6
 from pyd3tn.mtcp import MTCPConnection
 
 
-SENDING_GS_DEF = ("dtn://sender.dtn", "sender")
+SENDING_GS_DEF = ("dtn://sender.dtn/", "sender")
 
 SENDING_CONTACT = (1, 1, 1000)
 RECEIVING_CONTACT = (3, 1, 1000)
@@ -82,7 +82,7 @@ def main():
 
     with MTCPConnection(args.host, args.port, timeout=args.timeout) as conn:
         outgoing_eid, outgoing_claaddr = SENDING_GS_DEF
-        incoming_eid = "dtn://receiver.dtn"
+        incoming_eid = "dtn://receiver.dtn/"
         incoming_claaddr_full = (
             args.type + ":" +
             str(args.rx_host) + ":" +
