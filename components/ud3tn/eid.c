@@ -38,13 +38,7 @@ enum ud3tn_result validate_eid(const char *const eid)
 		if (cur == &eid[6] || *cur != '/')
 			return UD3TN_FAIL;
 		// check demux
-		while (*cur) {
-			// VCHAR is in range %x21-7E -> RFC 5234)
-			if (*cur < 0x21 || *cur > 0x7E)
-				return UD3TN_FAIL;
-			cur++;
-		}
-		return UD3TN_OK;
+		return validate_dtn_eid_demux(cur);
 	case EID_SCHEME_IPN:
 		if (validate_ipn_eid(eid, NULL, NULL) == UD3TN_OK)
 			return UD3TN_OK;
@@ -55,6 +49,20 @@ enum ud3tn_result validate_eid(const char *const eid)
 
 	// unknown scheme
 	return UD3TN_FAIL;
+}
+
+enum ud3tn_result validate_dtn_eid_demux(const char *demux)
+{
+	if (!demux)
+		return UD3TN_FAIL;
+
+	while (*demux) {
+		// VCHAR is in range %x21-7E -> RFC 5234)
+		if (*demux < 0x21 || *demux > 0x7E)
+			return UD3TN_FAIL;
+		demux++;
+	}
+	return UD3TN_OK;
 }
 
 enum ud3tn_result validate_local_eid(const char *const eid)

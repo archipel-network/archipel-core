@@ -37,6 +37,8 @@ int agent_register(const char *sink_identifier,
 
 		if (end == NULL || *end != '\0')
 			return -1;
+	} else if (validate_dtn_eid_demux(sink_identifier) != UD3TN_OK) {
+		return -1;
 	}
 
 	/* check if agent with that sink_id is already existing */

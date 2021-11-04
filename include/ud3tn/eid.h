@@ -21,6 +21,15 @@ enum eid_scheme {
 enum ud3tn_result validate_eid(const char *eid);
 
 /**
+ * Validate the demux part of a dtn EID, i.e., the agent ID for us.
+ *
+ * @param demux demux string (null-terminated)
+ *
+ * @return UD3TN_OK if the demux string is valid.
+ */
+enum ud3tn_result validate_dtn_eid_demux(const char *demux);
+
+/**
  * Performs validation for the given EID string and checks if it can serve
  * as a local (node) ID.
  *

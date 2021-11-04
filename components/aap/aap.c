@@ -30,7 +30,7 @@ bool aap_message_is_valid(const struct aap_message *const msg)
 			return false;
 		// EID validity
 		// NOTE we cannot check the sub-EID for REGISTER as we do not
-		// know the EID scheme.
+		// know the EID scheme - has to be done, e.g., by agent mgr.
 		if (msg->type == AAP_MESSAGE_SENDBUNDLE ||
 		    msg->type == AAP_MESSAGE_RECVBUNDLE ||
 		    msg->type == AAP_MESSAGE_WELCOME) {
