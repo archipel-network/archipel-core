@@ -1,7 +1,6 @@
 #include "aap/aap.h"
 
 #include "ud3tn/bundle.h"
-#include "ud3tn/eid.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -28,15 +27,6 @@ bool aap_message_is_valid(const struct aap_message *const msg)
 		if (msg->eid == NULL || msg->eid_length > UINT16_MAX ||
 		    strlen(msg->eid) != msg->eid_length)
 			return false;
-		// EID validity
-		// NOTE we cannot check the sub-EID for REGISTER as we do not
-		// know the EID scheme - has to be done, e.g., by agent mgr.
-		if (msg->type == AAP_MESSAGE_SENDBUNDLE ||
-		    msg->type == AAP_MESSAGE_RECVBUNDLE ||
-		    msg->type == AAP_MESSAGE_WELCOME) {
-			if (validate_eid(msg->eid) == UD3TN_FAIL)
-				return false;
-		}
 	} else {
 		if (msg->eid != NULL)
 			return false;

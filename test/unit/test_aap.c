@@ -11,9 +11,6 @@
 #define DEFAULT_EID3 "ipn:42.0"
 #define DEFAULT_AGENT_ID "agent1"
 
-#define INVALID_EID1 "THISISANINVALIDEID"
-#define INVALID_EID2 "ipn:555"
-
 TEST_GROUP(aap);
 
 TEST_SETUP(aap)
@@ -86,20 +83,10 @@ TEST(aap, validate_message)
 		.eid_length = UINT16_MAX + 1,
 		.eid = "",
 	};
-	struct aap_message msg_invalid_eid1 = {
+	struct aap_message msg_invalid_eid = {
 		.type = AAP_MESSAGE_WELCOME,
 		.eid_length = strlen(DEFAULT_EID1) + 1,
 		.eid = DEFAULT_EID1"\0", // EID longer than strlen
-	};
-	struct aap_message msg_invalid_eid2 = {
-		.type = AAP_MESSAGE_WELCOME,
-		.eid_length = strlen(INVALID_EID1),
-		.eid = INVALID_EID1,
-	};
-	struct aap_message msg_invalid_eid3 = {
-		.type = AAP_MESSAGE_WELCOME,
-		.eid_length = strlen(INVALID_EID2),
-		.eid = INVALID_EID2,
 	};
 	struct aap_message msg_eid_null = {
 		.type = AAP_MESSAGE_REGISTER,
@@ -116,9 +103,7 @@ TEST(aap, validate_message)
 
 	TEST_ASSERT(!aap_message_is_valid(&msg_invalid_type));
 	TEST_ASSERT(!aap_message_is_valid(&msg_invalid_eid_length));
-	TEST_ASSERT(!aap_message_is_valid(&msg_invalid_eid1));
-	TEST_ASSERT(!aap_message_is_valid(&msg_invalid_eid2));
-	TEST_ASSERT(!aap_message_is_valid(&msg_invalid_eid3));
+	TEST_ASSERT(!aap_message_is_valid(&msg_invalid_eid));
 	TEST_ASSERT(!aap_message_is_valid(&msg_eid_null));
 	TEST_ASSERT(!aap_message_is_valid(&msg_payload_null));
 }
