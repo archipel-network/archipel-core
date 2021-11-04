@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+DEFAULT_CONFIG_AGENT_ID_DTN = "config"
+DEFAULT_CONFIG_AGENT_ID_IPN = "9000"
+
 
 def logging_level(verbosity):
     level = [
@@ -55,3 +58,12 @@ def add_socket_group_parser_arguments(parser):
         type=str,
         help="AAP TCP socket to connect to",
     )
+
+
+def get_config_eid(node_id):
+    if node_id[0:3] == "dtn":
+        return f"{node_id}{DEFAULT_CONFIG_AGENT_ID_DTN}"
+    elif node_id[0:3] == "ipn":
+        return ".".join((node_id.split(".")[0], DEFAULT_CONFIG_AGENT_ID_IPN))
+    else:
+        return None

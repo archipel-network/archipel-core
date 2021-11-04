@@ -13,6 +13,7 @@ from helpers import (
     add_socket_group_parser_arguments,
     add_verbosity_parser_argument,
     logging_level,
+    get_config_eid,
 )
 
 
@@ -83,9 +84,9 @@ if __name__ == "__main__":
         with AAPTCPClient(address=addr) as aap_client:
             aap_client.register()
             dest_eid = args.dest_eid or aap_client.node_eid
-            aap_client.send_bundle(f"{dest_eid}config", msg)
+            aap_client.send_bundle(get_config_eid(dest_eid), msg)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             aap_client.register()
             dest_eid = args.dest_eid or aap_client.node_eid
-            aap_client.send_bundle(f"{dest_eid}config", msg)
+            aap_client.send_bundle(get_config_eid(dest_eid), msg)
