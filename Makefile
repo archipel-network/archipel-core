@@ -128,7 +128,8 @@ virtualenv:
 	@echo "Install latest pip package ..."
 	@$(GET_PIP)
 	@echo "Install local dependencies to site-packages..."
-	@$(PIP) install -U -e ./pyd3tn ./python-ud3tn-utils
+	@$(PIP) install -e ./pyd3tn
+	@$(PIP) install -e ./python-ud3tn-utils
 	@echo "Install additional dependencies ..."
 	@$(PIP) install -U -r ./test/integration/requirements.txt
 	@$(PIP) install -U -r ./tools/analysis/requirements.txt
