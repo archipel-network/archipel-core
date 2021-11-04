@@ -3,7 +3,13 @@
 
 #include "unity_fixture.h"
 
+#include <stdlib.h>
 #include <string.h>
+
+#define TEST_ASSERT_EQUAL_ASTRING(a, b) do { \
+		TEST_ASSERT_EQUAL_STRING(a, b); \
+		free(b); \
+	} while (0)
 
 TEST_GROUP(eid);
 
@@ -124,6 +130,26 @@ TEST(eid, parse_ipn_ull)
 	TEST_ASSERT_NULL(parse_ipn_ull("", NULL));
 }
 
+TEST(eid, get_node_id)
+{
+	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/", get_node_id("dtn://ud3tn/a"));
+	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/", get_node_id("dtn://ud3tn/"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn://ud3tn"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn:///"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn:///A"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn://"));
+	TEST_ASSERT_EQUAL_ASTRING("dtn:none", get_node_id("dtn:none"));
+
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.0", get_node_id("ipn:1.0"));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.0", get_node_id("ipn:1.1"));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.0", get_node_id("ipn:1.42424242"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("ipn:1:33"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("ipn:1."));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("ipn:1"));
+
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("invalid:scheme"));
+}
+
 TEST_GROUP_RUNNER(eid)
 {
 	RUN_TEST_CASE(eid, validate_eid);
@@ -131,4 +157,5 @@ TEST_GROUP_RUNNER(eid)
 	RUN_TEST_CASE(eid, get_eid_scheme);
 	RUN_TEST_CASE(eid, validate_ipn_eid);
 	RUN_TEST_CASE(eid, parse_ipn_ull);
+	RUN_TEST_CASE(eid, get_node_id);
 }

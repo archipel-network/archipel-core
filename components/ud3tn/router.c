@@ -1,5 +1,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
+#include "ud3tn/eid.h"
 #include "ud3tn/node.h"
 #include "ud3tn/router.h"
 #include "ud3tn/routing_table.h"
@@ -67,29 +68,10 @@ enum ud3tn_result router_update_config(struct router_config conf)
 
 struct associated_contact_list *router_lookup_destination(char *const dest)
 {
-	const char *const DTN_SCHEME = "dtn://";
-	const size_t DTN_SCHEME_LENGTH = strlen(DTN_SCHEME);
+	char *const dest_node_eid = get_node_id(dest);
 
-	char *dest_node_eid = dest;
-	bool free_dest_node_eid = false;
-	char *const found = strstr(dest, DTN_SCHEME);
-
-	// We only support dtn://node_id/app_id decoding for dtn:// EIDs
-	if (found == dest) {
-		char *const node_id_end = strchr(
-			dest + DTN_SCHEME_LENGTH, '/'
-		);
-
-		if (node_id_end) {
-			const size_t node_id_len = node_id_end - dest;
-			char *const node_id = malloc(node_id_len + 1);
-
-			strncpy(node_id, dest, node_id_len);
-			node_id[node_id_len] = 0;
-			dest_node_eid = node_id;
-			free_dest_node_eid = true;
-		}
-	}
+	if (!dest_node_eid)
+		return NULL;
 
 	const struct node_table_entry *const e = routing_table_lookup_eid(
 		dest_node_eid
@@ -108,8 +90,7 @@ struct associated_contact_list *router_lookup_destination(char *const dest)
 		}
 	}
 
-	if (free_dest_node_eid)
-		free(dest_node_eid);
+	free(dest_node_eid);
 
 	return result;
 }

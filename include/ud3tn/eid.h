@@ -70,5 +70,15 @@ const char *parse_ipn_ull(const char *const cur, uint64_t *const out);
 enum ud3tn_result validate_ipn_eid(
 	const char *const eid,
 	uint64_t *const node_out, uint64_t *const service_out);
+/**
+ * Get the node ID for a given EID.
+ *
+ * @param eid EID string
+ *
+ * @return For ipn EIDs, this returns "ipn:N.0" whereas "N" is the node number.
+ *         For dtn EIDs, "dtn://node/" is returned, wheras "node" is the node
+ *         name. On error, NULL is returned.
+ */
+char *get_node_id(const char *const eid);
 
 #endif // EID_H_INCLUDED

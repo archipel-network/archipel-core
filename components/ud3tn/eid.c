@@ -1,3 +1,4 @@
+#include "ud3tn/common.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 
@@ -163,5 +164,39 @@ enum ud3tn_result validate_ipn_eid(
 		return UD3TN_FAIL;
 
 	return UD3TN_OK;
+}
 
+char *get_node_id(const char *const eid)
+{
+	if (validate_eid(eid) != UD3TN_OK)
+		return NULL;
+
+	char *delim, *result;
+
+	switch (get_eid_scheme(eid)) {
+	case EID_SCHEME_DTN:
+		// Special case, e.g., "dtn:none"
+		if (strlen(eid) < 7 || memcmp(eid, "dtn://", 6))
+			return strdup(eid);
+		delim = strchr((char *)&eid[6], '/');
+		ASSERT(delim);
+		// First-contained slash ends the EID (-> EID _is_ node ID)
+		if (delim - strlen(eid) + 1 == eid)
+			return strdup(eid);
+		result = strdup(eid);
+		result[delim - eid + 1] = '\0';
+		return result;
+	case EID_SCHEME_IPN:
+		result = strdup(eid);
+		delim = strchr(result, '.');
+		ASSERT(delim);
+		// No out-of-bounds access as validate_eid ensures the dot is
+		// always followed by at least one digit.
+		ASSERT(strlen(delim) >= 2);
+		delim[1] = '0';
+		delim[2] = '\0';
+		return result;
+	default:
+		return NULL;
+	}
 }
