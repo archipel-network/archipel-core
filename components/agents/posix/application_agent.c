@@ -229,14 +229,12 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 
 	memcpy(source_eid, local_eid, local_eid_length);
 	if (memcmp(source_eid, "ipn", 3) == 0) {
-		source_eid[local_eid_length] = '.';
 		char *const dot = strchr(source_eid, '.');
 
 		ASSERT(dot != NULL);
 		memcpy(&dot[1], sink_id, sink_length + 1);
 	} else {
-		source_eid[local_eid_length] = '/';
-		memcpy(&source_eid[local_eid_length + 1],
+		memcpy(&source_eid[local_eid_length],
 		       sink_id, sink_length + 1);
 	}
 

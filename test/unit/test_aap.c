@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DEFAULT_EID1 "dtn://ud3tn.dtn"
+#define DEFAULT_EID1 "dtn://ud3tn.dtn/"
 #define DEFAULT_EID2 "dtn://ud3tn.dtn/agent1"
 #define DEFAULT_EID3 "ipn:42.0"
 #define DEFAULT_AGENT_ID "agent1"

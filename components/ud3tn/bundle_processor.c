@@ -208,7 +208,7 @@ void bundle_processor_task(void * const param)
 		char *const dot = strchr(local_eid_prefix, '.');
 
 		ASSERT(dot != NULL);
-		dot[0] = '\0'; // truncate string
+		dot[1] = '\0'; // truncate string after dot
 	} else {
 		local_eid_prefix = strdup(local_eid);
 	}
@@ -1027,15 +1027,16 @@ static const char *get_agent_id(const char *dest_eid)
 	const size_t local_len = strlen(local_eid_prefix);
 	const size_t dest_len = strlen(dest_eid);
 
-	// NOTE: Local EID never ends with '/' (see validate_local_eid)
+	// NOTE: Local `dtn` EIDs always end with a '/' (see validate_local_eid)
+	// `ipn` EIDs always end with ".0", prefix ends with "."
 	// -> agent starts after local_len
-	if (dest_len <= local_len + 1)
+	if (dest_len <= local_len)
 		return NULL;
-	if (local_eid_is_ipn && dest_eid[local_len] != '.')
+	if (local_eid_is_ipn && dest_eid[local_len - 1] != '.')
 		return NULL;
-	else if (!local_eid_is_ipn && dest_eid[local_len] != '/')
+	else if (!local_eid_is_ipn && dest_eid[local_len - 1] != '/')
 		return NULL;
-	return &dest_eid[local_len + 1];
+	return &dest_eid[local_len];
 }
 
 // Checks whether we know the bundle. If not, adds it to the list.

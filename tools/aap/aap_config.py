@@ -83,9 +83,9 @@ if __name__ == "__main__":
         with AAPTCPClient(address=addr) as aap_client:
             aap_client.register()
             dest_eid = args.dest_eid or aap_client.node_eid
-            aap_client.send_bundle(f"{dest_eid}/config", msg)
+            aap_client.send_bundle(f"{dest_eid}config", msg)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             aap_client.register()
             dest_eid = args.dest_eid or aap_client.node_eid
-            aap_client.send_bundle(f"{dest_eid}/config", msg)
+            aap_client.send_bundle(f"{dest_eid}config", msg)

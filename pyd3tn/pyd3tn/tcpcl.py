@@ -80,7 +80,7 @@ class TCPCLConnection(object):
 
         from pyd3tn.tcpcl import TCPCLConnection
 
-        with TCPCLConnection('dtn://my-eid.dtn', '127.0.0.1', 4223) as conn:
+        with TCPCLConnection('dtn://my-eid.dtn/', '127.0.0.1', 4223) as conn:
             conn.send(bundle)
 
     Args:
@@ -273,7 +273,7 @@ class TCPCLServer(object):
         from pyd3tn.tcpcl import TCPCLServer
 
         async def listen():
-            async with TCPCLServer('dtn:me', '127.0.0.1', 42420) as server:
+            async with TCPCLServer('dtn://me/', '127.0.0.1', 42420) as server:
                 # do some other cool stuff here while the server is running in
                 # the background ... or just wait for the server to finish
                 await server.wait_closed()

@@ -66,7 +66,7 @@ class AAPClient():
     @property
     def eid(self):
         """Return the own EID."""
-        return f"{self.node_eid}/{self.agent_id}"
+        return f"{self.node_eid}{self.agent_id}"
 
     def _generate_eid(self):
         if not self.node_eid:

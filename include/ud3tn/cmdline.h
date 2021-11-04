@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 struct ud3tn_cmdline_options {
-	char *eid; // e.g.: dtn://ops-sat.dtn
+	char *eid; // e.g.: dtn://ud3tn.dtn/
 	char *cla_options; // e.g.: tcpspp:*,3333,false,1;tcpcl:*,4356
 	char *aap_socket; // e.g.: /tmp/ud3tn.socket
 	char *aap_node; // e.g.: 127.0.0.1

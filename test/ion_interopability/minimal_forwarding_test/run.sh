@@ -60,17 +60,17 @@ rm -f ion.log
 rm -f /tmp/*.log
 
 # Start first uD3TN instance (uD3TN1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "dtn://ud3tn1.dtn" > /tmp/ud3tn1.log 2>&1 &
+stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "dtn://ud3tn1.dtn/" > /tmp/ud3tn1.log 2>&1 &
 
 # Start second uD3TN instance (uD3TN2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn" > /tmp/ud3tn2.log 2>&1 &
+stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn/" > /tmp/ud3tn2.log 2>&1 &
 
 # Start ION instance
 ionstart -I test/ion_interopability/minimal_forwarding_test/ionstart.rc
 
 # Configure a contact to ION in uD3TN1 which allows to reach uD3TN2
 sleep 0.5
-python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "dtn://ud3tn2.dtn" ipn:1.0 tcpclv3:127.0.0.1:4556
+python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "dtn://ud3tn2.dtn/" ipn:1.0 tcpclv3:127.0.0.1:4556
 
 # Send a bundle to uD3TN1, addressed to uD3TN2
 PAYLOAD="THISISTHEBUNDLEPAYLOAD"

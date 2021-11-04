@@ -39,7 +39,7 @@ import of packages residing in `tools/` like the `pyd3tn` package, e.g.
 ```python
 from pyd3tn.bundle7 import serialize_bundle7
 
-serialize_bundle7("dtn:GS1", "dtn:GS2", b"Hello world!")
+serialize_bundle7("dtn://GS1/", "dtn://GS2/", b"Hello world!")
 ```
 
 ## Optional: direnv support

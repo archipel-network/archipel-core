@@ -121,7 +121,7 @@ This message requests cancellation of a queued bundle. It can only be sent by th
 ### Connection establishment notice (WELCOME)
 
 This message is only sent by the server (µD3TN), once at the start of every connection. It communicates µD3TN's own EID without the agent ID. In the case of
-a `dtn` scheme EID, this comprises the first part of the EID before the slash.
+a `dtn` scheme EID, this comprises the first part of the EID including the slash.
 In the case of an `ipn` scheme EID, the service number is `0`.
 
 ```

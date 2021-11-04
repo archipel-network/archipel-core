@@ -159,7 +159,7 @@ def test_send_receive_smtcp_bundle7():
 def test_send_receive_tcpcl_bundle6():
     perform_basic_test(
         TCPCLConnection(
-            "dtn://receiver.dtn",
+            "dtn://receiver.dtn/",
             UD3TN_HOST,
             TCPCL_PORT,
             timeout=TCP_TIMEOUT,
@@ -174,7 +174,7 @@ def test_send_receive_tcpcl_bundle6():
 def test_send_receive_tcpcl_bundle7():
     perform_basic_test(
         TCPCLConnection(
-            "dtn://receiver.dtn",
+            "dtn://receiver.dtn/",
             UD3TN_HOST,
             TCPCL_PORT,
             timeout=TCP_TIMEOUT,
