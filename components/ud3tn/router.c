@@ -68,14 +68,16 @@ enum ud3tn_result router_update_config(struct router_config conf)
 
 struct associated_contact_list *router_lookup_destination(char *const dest)
 {
-	char *const dest_node_eid = get_node_id(dest);
+	char *dest_node_eid = get_node_id(dest);
+	const struct node_table_entry *e = NULL;
 
-	if (!dest_node_eid)
-		return NULL;
+	if (dest_node_eid)
+		e = routing_table_lookup_eid(dest_node_eid);
 
-	const struct node_table_entry *const e = routing_table_lookup_eid(
-		dest_node_eid
-	);
+	// Fallback: perform a "dumb" string lookup
+	if (!dest_node_eid || !e)
+		e = routing_table_lookup_eid(dest);
+
 	uint16_t results = 0;
 	struct associated_contact_list *result = NULL;
 
