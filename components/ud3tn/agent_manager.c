@@ -1,16 +1,14 @@
 #include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle.h"
+#include "ud3tn/eid.h"
 
 #include "agents/config_agent.h"
 #include "agents/application_agent.h"
 
 #include "platform/hal_io.h"
 
-#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,14 +31,11 @@ int agent_register(const char *sink_identifier,
 {
 	struct agent *ag_ptr;
 
-	uint64_t service;
-	int len;
-
 	ASSERT(local_eid != NULL && strlen(local_eid) > 3);
-	if (memcmp(local_eid, "ipn", 3) == 0) {
-		if (sscanf(sink_identifier, "%"PRIu64"%n", &service, &len) != 1)
-			return -1;
-		if (strlen(sink_identifier) > (size_t)len)
+	if (get_eid_scheme(local_eid) == EID_SCHEME_IPN) {
+		const char *end = parse_ipn_ull(sink_identifier, NULL);
+
+		if (end == NULL || *end != '\0')
 			return -1;
 	}
 

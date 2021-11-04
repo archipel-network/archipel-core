@@ -1,9 +1,10 @@
 #include "ud3tn/agent_manager.h"
+#include "ud3tn/bundle_processor.h"
+#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/custody_manager.h"
-#include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/eid.h"
 #include "ud3tn/report_manager.h"
 #include "ud3tn/result.h"
 #include "ud3tn/router_task.h"
@@ -201,7 +202,7 @@ void bundle_processor_task(void * const param)
 	out_queue = p->router_signaling_queue;
 	local_eid = p->local_eid;
 	ASSERT(strlen(local_eid) > 3);
-	if (!memcmp(local_eid, "ipn", 3)) {
+	if (get_eid_scheme(local_eid) == EID_SCHEME_IPN) {
 		local_eid_is_ipn = true;
 		local_eid_prefix = strdup(local_eid);
 

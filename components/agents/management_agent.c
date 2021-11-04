@@ -3,6 +3,7 @@
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
+#include "ud3tn/eid.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_time.h"
@@ -72,7 +73,7 @@ int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 	);
 	ma_param->local_eid = local_eid;
 	ma_param->allow_remote_configuration = allow_remote_configuration;
-	int is_ipn = (memcmp(local_eid, "ipn", 3) == 0);
+	const int is_ipn = get_eid_scheme(local_eid) == EID_SCHEME_IPN;
 
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,

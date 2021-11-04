@@ -118,10 +118,17 @@ TEST(eid, validate_ipn_eid)
 	TEST_ASSERT_EQUAL_UINT64(0, service);
 }
 
+TEST(eid, parse_ipn_ull)
+{
+	TEST_ASSERT_NULL(parse_ipn_ull(NULL, NULL));
+	TEST_ASSERT_NULL(parse_ipn_ull("", NULL));
+}
+
 TEST_GROUP_RUNNER(eid)
 {
 	RUN_TEST_CASE(eid, validate_eid);
 	RUN_TEST_CASE(eid, validate_local_eid);
 	RUN_TEST_CASE(eid, get_eid_scheme);
 	RUN_TEST_CASE(eid, validate_ipn_eid);
+	RUN_TEST_CASE(eid, parse_ipn_ull);
 }

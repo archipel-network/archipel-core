@@ -228,7 +228,7 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 	}
 
 	memcpy(source_eid, local_eid, local_eid_length);
-	if (memcmp(source_eid, "ipn", 3) == 0) {
+	if (get_eid_scheme(source_eid) == EID_SCHEME_IPN) {
 		char *const dot = strchr(source_eid, '.');
 
 		ASSERT(dot != NULL);

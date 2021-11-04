@@ -99,10 +99,13 @@ enum eid_scheme get_eid_scheme(const char *const eid)
 	return EID_SCHEME_UNKNOWN;
 }
 
-static const char *validate_ipn_ull(const char *const cur, uint64_t *const out)
+const char *parse_ipn_ull(const char *const cur, uint64_t *const out)
 {
 	unsigned long long tmp;
 	const char *next, *next_strtoull;
+
+	if (!cur || *cur == '\0')
+		return NULL;
 
 	// Check that only digits are part of the substring
 	// Otherwise, strtoull may accept things like '-' and thousands
@@ -143,11 +146,11 @@ enum ud3tn_result validate_ipn_eid(
 
 	const char *cur;
 
-	cur = validate_ipn_ull(&eid[4], node_out);
+	cur = parse_ipn_ull(&eid[4], node_out);
 	if (!cur || *cur != '.')
 		return UD3TN_FAIL;
 
-	cur = validate_ipn_ull(cur + 1, service_out);
+	cur = parse_ipn_ull(cur + 1, service_out);
 	if (!cur || *cur != '\0')
 		return UD3TN_FAIL;
 

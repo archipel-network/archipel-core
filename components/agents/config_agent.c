@@ -4,6 +4,7 @@
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
+#include "ud3tn/eid.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
@@ -62,7 +63,7 @@ int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 	QueueIdentifier_t router_signaling_queue, const char *local_eid,
 	bool allow_remote_configuration)
 {
-	int is_ipn = (memcmp(local_eid, "ipn", 3) == 0);
+	const int is_ipn = get_eid_scheme(local_eid) == EID_SCHEME_IPN;
 
 	ASSERT(config_parser_init(&parser, &router_command_send,
 				  router_signaling_queue));

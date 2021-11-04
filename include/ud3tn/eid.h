@@ -40,6 +40,16 @@ enum ud3tn_result validate_local_eid(const char *eid);
 enum eid_scheme get_eid_scheme(const char *eid);
 
 /**
+ * Parse (and validate) the unsigned int64 contained in an ipn EID.
+ *
+ * @param cur String starting with the number to be parsed
+ * @param out An optional pointer to return the parsed number
+ *
+ * @return A pointer to the first character after the number or NULL on failure.
+ */
+const char *parse_ipn_ull(const char *const cur, uint64_t *const out);
+
+/**
  * Validate the given ipn-scheme EID.
  *
  * @param eid EID string
