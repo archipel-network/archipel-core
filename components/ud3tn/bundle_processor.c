@@ -503,7 +503,7 @@ static void bundle_deliver_local(struct bundle *bundle)
 
 	/* Check and record knowledge of bundle */
 	if (bundle_record_add_and_check_known(bundle)) {
-		LOGF("Bundle #%d was already delivered, dropping it",
+		LOGF("BundleProcessor: Bundle #%d was already delivered, dropping.",
 		     bundle->id);
 		// NOTE: We cannot have custody as the CM checks for duplicates
 		bundle_discard(bundle);
@@ -521,7 +521,7 @@ static void bundle_deliver_local(struct bundle *bundle)
 			get_agent_id(bundle->destination) == NULL) {
 		// If it is no admin. record and we have no agent to deliver#
 		// it to, drop it.
-		LOGF("BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping...",
+		LOGF("BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping.",
 		     bundle->source, bundle->destination);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEST_EID_UNINTELLIGIBLE);
 		return;
@@ -581,7 +581,7 @@ static void try_reassemble(struct reassembly_list **slot)
 
 	size_t pos_in_bundle = 0;
 
-	LOG("Attempting bundle reassembly!");
+	LOG("BundleProcessor: Attempting bundle reassembly!");
 
 	// Check if we can reassemble
 	for (eb = e->bundle_list; eb; eb = eb->next) {
@@ -594,7 +594,7 @@ static void try_reassemble(struct reassembly_list **slot)
 	}
 	if (!eb)
 		return;
-	LOG("Reassembling bundle!");
+	LOG("BundleProcessor: Reassembling bundle!");
 
 	// Reassemble by memcpy
 	b = e->bundle_list->bundle;
@@ -658,7 +658,7 @@ static void bundle_attempt_reassembly(struct bundle *bundle)
 	struct reassembly_list **r_list_e = &reassembly_list;
 
 	if (bundle_reassembled_is_known(bundle)) {
-		LOGF("Original bundle for #%d was already delivered, dropping",
+		LOGF("BundleProcessor: Original bundle for #%d was already delivered, dropping.",
 		     bundle->id);
 		// Already delivered the original bundle
 		bundle_rem_rc(
@@ -835,7 +835,7 @@ static void bundle_dangling(struct bundle *bundle)
 		bundle_delete(bundle, BUNDLE_SR_REASON_TRANSMISSION_CANCELED);
 	/* Send it to the router task again after evaluating policy. */
 	} else if (send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT) != UD3TN_OK) {
-		LOGF("Failed forwarding bundle #%d to router task, dropping.",
+		LOGF("BundleProcessor: Failed forwarding bundle #%d to router task, dropping.",
 		     bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 	}
@@ -867,7 +867,7 @@ static void send_status_report(
 		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 		bundle_storage_add(b);
 		if (bundle_forward(b, STATUS_REPORT_TIMEOUT) != UD3TN_OK)
-			LOGF("Failed sending status report for bundle #%d.",
+			LOGF("BundleProcessor: Failed sending status report for bundle #%d.",
 			     bundle->id);
 	}
 }
@@ -894,7 +894,7 @@ static void send_custody_signal(struct bundle *bundle,
 		bundle_storage_add(signals->data);
 		if (bundle_forward(signals->data, CUSTODY_SIGNAL_TIMEOUT)
 		    != UD3TN_OK)
-			LOGF("Failed sending custody signal for bundle #%d.",
+			LOGF("BundleProcessor: Failed sending custody signal for bundle #%d.",
 			     bundle->id);
 
 		/* Free current list entry (but not the bundle itself) */
