@@ -54,7 +54,10 @@ cmd_ar             = "$(AR)" rcs "$@" $(OBJECTS)
 
 quiet_cmd_link     = LINK    $@
 cmd_link           = "$(LD)" -o "$@" "-Wl,-Map=$@.map" \
-                     -Wl,--start-group $(OBJECTS) $(LIBS) $(LDFLAGS) -Wl,--end-group
+                     -Wl,--whole-archive -Wl,--start-group \
+                     $(OBJECTS) $(LIBS) \
+                     -Wl,--end-group -Wl,--no-whole-archive \
+                     $(LDFLAGS)
 
 quiet_cmd_mkdir    = MKDIR   $@
 cmd_mkdir          = mkdir -p "$@"
