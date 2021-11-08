@@ -2,6 +2,7 @@
 #include "bundle7/eid.h"
 
 #include "ud3tn/bundle.h"
+#include "ud3tn/eid.h"
 
 #include "cbor.h"
 
@@ -17,7 +18,7 @@
 // Endpoint Identifier (EID) Parser
 // --------------------------------
 
-static inline size_t decimal_digits(uint32_t number)
+static inline size_t decimal_digits(uint64_t number)
 {
 	size_t digits = 0;
 
@@ -293,10 +294,10 @@ CborError serialize_dtn(const char *eid, CborEncoder *encoder)
 CborError serialize_ipn(const char *eid, CborEncoder *encoder)
 {
 	CborEncoder inner, ssp;
-	uint32_t nodenum, servicenum;
+	uint64_t nodenum, servicenum;
 
 	// Parse node and service numbers
-	if (sscanf(eid,	"ipn:%"PRIu32".%"PRIu32, &nodenum, &servicenum) != 2)
+	if (validate_ipn_eid(eid, &nodenum, &servicenum) != UD3TN_OK)
 		return CborErrorIllegalType;
 
 	// EID container

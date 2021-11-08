@@ -423,7 +423,14 @@ TEST(bundle7Serializer, dtn_none)
 }
 
 
+// ipn:12.123
 static const uint8_t dtn_ipn[] = { 0x82, 0x02, 0x82, 0x0c, 0x18, 0x7b };
+// max. value for ipn: EID
+static const uint8_t dtn_ipn2[] = {
+	0x82, 0x02, 0x82,
+	0x1B, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0x1B, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+};
 
 TEST(bundle7Serializer, dtn_ipn)
 {
@@ -433,9 +440,31 @@ TEST(bundle7Serializer, dtn_ipn)
 	buffer = bundle7_eid_serialize_alloc("ipn:12.123", &length);
 	TEST_ASSERT_NOT_NULL(buffer);
 	TEST_ASSERT_EQUAL(sizeof(dtn_ipn), length);
-
-	TEST_ASSERT_EQUAL_INT8_ARRAY(dtn_ipn, buffer,
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(dtn_ipn, buffer,
 		sizeof(dtn_ipn));
+	free(buffer);
+
+	buffer = bundle7_eid_serialize_alloc(
+		"ipn:18446744073709551615.18446744073709551615",
+		&length
+	);
+	TEST_ASSERT_NOT_NULL(buffer);
+	TEST_ASSERT_EQUAL(sizeof(dtn_ipn2), length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(dtn_ipn2, buffer,
+		sizeof(dtn_ipn2));
+	free(buffer);
+
+	buffer = bundle7_eid_serialize_alloc(
+		"ipn:18446744073709551616.18446744073709551615",
+		&length
+	);
+	TEST_ASSERT_NULL(buffer);
+
+	buffer = bundle7_eid_serialize_alloc(
+		"ipn:18446744073709551615.18446744073709551616",
+		&length
+	);
+	TEST_ASSERT_NULL(buffer);
 }
 
 
