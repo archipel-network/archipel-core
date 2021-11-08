@@ -42,12 +42,16 @@ static void callback(struct bundle_adu data, void *param)
 	struct config_agent_params *const ca_param = param;
 
 	if (!ca_param->allow_remote_configuration) {
-		if (strncmp(ca_param->local_eid, data.source,
-		    strlen(ca_param->local_eid)) != 0) {
-			LOGF("ConfigAgent: Dropped config message from foreign endpoint",
+		char *const node_id = get_node_id(data.source);
+
+		if (!node_id || strncmp(ca_param->local_eid, node_id,
+					strlen(ca_param->local_eid)) != 0) {
+			LOGF("ConfigAgent: Dropped config message from foreign endpoint \"%s\"",
 			     data.source);
+			free(node_id);
 			return;
 		}
+		free(node_id);
 	}
 
 	config_parser_reset(&parser);

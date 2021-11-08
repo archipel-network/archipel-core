@@ -22,12 +22,16 @@ static void callback(struct bundle_adu data, void *param)
 	struct management_agent_params *const ma_param = param;
 
 	if (!ma_param->allow_remote_configuration) {
-		if (strncmp(ma_param->local_eid, data.source,
-		    strlen(ma_param->local_eid)) != 0) {
+		char *const node_id = get_node_id(data.source);
+
+		if (!node_id || strncmp(ma_param->local_eid, node_id,
+					strlen(ma_param->local_eid)) != 0) {
 			LOGF("MgmtAgent: Dropped config message from foreign endpoint",
 			     data.source);
+			free(node_id);
 			return;
 		}
+		free(node_id);
 	}
 
 	if (data.length < 1) {
