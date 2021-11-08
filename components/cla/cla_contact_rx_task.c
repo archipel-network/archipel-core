@@ -15,9 +15,11 @@
 #include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
+#include "ud3tn/eid.h"
 #include "ud3tn/task_tags.h"
 
 #include <signal.h>
+#include <stdlib.h>
 #include <errno.h>
 
 #ifdef CLA_RX_READ_TIMEOUT
@@ -33,9 +35,15 @@ static void bundle_send(struct bundle *bundle, void *param)
 
 	ASSERT(bundle != NULL);
 
-	if (strncmp(config->bundle_agent_interface->local_eid,
-		    bundle->source,
-		    strlen(config->bundle_agent_interface->local_eid)) == 0) {
+	char *const source_node_id = get_node_id(bundle->source);
+	const int cmp_result = strncmp(
+		config->bundle_agent_interface->local_eid,
+		source_node_id,
+		strlen(config->bundle_agent_interface->local_eid)
+	);
+
+	free(source_node_id);
+	if (cmp_result == 0) {
 		LOGF("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
 		     bundle->source);
 		bundle_free(bundle);
