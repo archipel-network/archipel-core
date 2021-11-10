@@ -46,3 +46,6 @@ __pycache__
 *.plist
 *.envrc
 .directory
+
+# uD3TN Socket
+*.socket
