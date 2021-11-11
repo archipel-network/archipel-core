@@ -3,6 +3,7 @@
 
 #include "platform/hal_types.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -15,6 +16,7 @@ struct config_agent_item {
 };
 
 int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
-	QueueIdentifier_t router_signaling_queue, const char *local_eid);
+	QueueIdentifier_t router_signaling_queue, const char *local_eid,
+	bool allow_remote_configuration);
 
 #endif /* CONFIGAGENT_H_INCLUDED */

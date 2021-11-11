@@ -4,7 +4,7 @@ Configuration can be performed via bundles to the `<uD3TN_EID>/config` endpoint.
 Using this mechanism, connected nodes as well as upcoming contacts to them can be configured.
 
 **Note:** By default, the configuration endpoint drops bundles received from external DTN nodes, i.e., configuration can only be performed from an application attached via AAP.
-To allow remote configuration, compile with `make REMOTE_CONFIGURATION=True`.
+To allow remote configuration, run ud3tn with `--allow-remote-config`. This feature is enabled by default on STM32.
 
 ## Description
 

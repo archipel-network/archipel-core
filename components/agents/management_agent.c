@@ -7,21 +7,22 @@
 #include "platform/hal_io.h"
 #include "platform/hal_time.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef REMOTE_CONFIGURATION
-static const int ALLOW_REMOTE_CONFIGURATION = 1;
-#else // REMOTE_CONFIGURATION
-static const int ALLOW_REMOTE_CONFIGURATION;
-#endif // REMOTE_CONFIGURATION
+struct management_agent_params {
+	const char *local_eid;
+	bool allow_remote_configuration;
+};
 
 static void callback(struct bundle_adu data, void *param)
 {
-	(void)param;
+	struct management_agent_params *const ma_param = param;
 
-	if (!ALLOW_REMOTE_CONFIGURATION) {
-		if (strncmp((char *)param, data.source, strlen((char *)param)) != 0) {
+	if (!ma_param->allow_remote_configuration) {
+		if (strncmp(ma_param->local_eid, data.source,
+		    strlen(ma_param->local_eid)) != 0) {
 			LOGF("MgmgtAgent: Dropped config message from foreign endpoint",
 			     data.source);
 			return;
@@ -63,8 +64,15 @@ static void callback(struct bundle_adu data, void *param)
 }
 
 int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
-			   const char *local_eid)
+			   const char *local_eid,
+			   bool allow_remote_configuration)
 {
+	struct management_agent_params *const ma_param = malloc(
+		sizeof(struct management_agent_params)
+	);
+	ma_param->local_eid = local_eid;
+	ma_param->allow_remote_configuration = allow_remote_configuration;
+
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
