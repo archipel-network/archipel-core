@@ -9,6 +9,9 @@
 #include <stdint.h>
 
 struct aap_parser {
+	
+	struct parser *basedata;
+	
 	/**
 	 * Provides the current parser status, set by the `parse` method.
 	 */
@@ -65,5 +68,13 @@ void aap_parser_reset(struct aap_parser *parser);
  * `aap_message_clear`.
  */
 struct aap_message aap_parser_extract_message(struct aap_parser *parser);
+
+/**
+ * Reads an AAP message step-by-step to conform to the chunk_read
+ * operation of the cla rx task.
+ */
+size_t aap_parser_read(struct aap_parser *const parser, const uint8_t *const buffer, const size_t length);
+
+enum ud3tn_result aap_parser_deinit(struct aap_parser *parser);
 
 #endif // AAP_PARSER_H_INCLUDED

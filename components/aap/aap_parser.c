@@ -4,6 +4,8 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
 
+#include "cbor.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -207,6 +209,7 @@ static size_t aap_parse_bundle_id(
 
 void aap_parser_init(struct aap_parser *parser)
 {
+	parser->basedata = malloc(sizeof(struct parser));
 	parser->max_payload_length = 0;
 	parser->parse = NULL;
 	memset(&parser->message, 0, sizeof(struct aap_message));
@@ -215,6 +218,8 @@ void aap_parser_init(struct aap_parser *parser)
 
 void aap_parser_reset(struct aap_parser *parser)
 {
+	parser->basedata->status = PARSER_STATUS_GOOD;
+	parser->basedata->flags = PARSER_FLAG_NONE;
 	parser->parse = &aap_parse_type;
 	parser->status = PARSER_STATUS_GOOD;
 	aap_message_clear(&parser->message);
@@ -229,4 +234,32 @@ struct aap_message aap_parser_extract_message(struct aap_parser *parser)
 	memset(&parser->message, 0, sizeof(struct aap_message));
 	aap_message_clear(&parser->message);
 	return message;
+}
+
+size_t aap_parser_read(
+	struct aap_parser *const parser, 
+	const uint8_t *const buffer, const size_t length)
+{
+	size_t delta = 0;
+	size_t consumed = 0;
+
+	while (parser->status == PARSER_STATUS_GOOD && consumed < length) {
+		delta = parser->parse(
+			parser,
+			buffer + consumed,
+			length - consumed
+		);
+		if (!delta)
+			break;
+		consumed += delta;
+	}
+
+	return consumed;
+}
+
+enum ud3tn_result aap_parser_deinit(struct aap_parser *parser){
+	free(parser->basedata);
+	aap_message_clear(&parser->message);
+
+	return UD3TN_OK;
 }
