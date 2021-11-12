@@ -19,13 +19,23 @@ def main():
     parser.add_argument(
         "-p", "--port",
         type=int,
-        default=4222,
-        help="Port to connect to (defaults to 4222)",
+        default=4224,
+        help="Port to connect to (defaults to 4224)",
     )
     parser.add_argument(
         "--payload",
         default=None,
         help="the payload to be sent"
+    )
+    parser.add_argument(
+        "--outer_destination",
+        default="dtn://ud3tn.dtn/bibe",
+        help="EID to which the outer bundle should be adressed (defaults to dtn://ud3tn.dtn/bibe)",
+    )
+    parser.add_argument(
+        "-d", "--inner_destination",
+        default="dtn://upper.dtn/bundlesink",
+        help="EID to which the inner bundle should be adressed (defaults to dtn://upper.dtn/bundlesink)",
     )
     parser.add_argument(
         "--timeout",
@@ -36,12 +46,13 @@ def main():
     args = parser.parse_args()
 
     with MTCPConnection(args.host, args.port, timeout=args.timeout) as conn:
-        payload = args.payload or PAYLOAD_DATA
-        incoming_eid = "dtn://ud3tn.dtn/"
+        payload = args.payload.encode() if args.payload else PAYLOAD_DATA
+        destination_eid = args.inner_destination
+        application_eid = args.outer_destination
         outgoing_eid = "dtn://sender.dtn"
         inner_bundle = Bundle(
             PrimaryBlock(
-                destination=incoming_eid,
+                destination=destination_eid,
                 source=outgoing_eid
             ),
             PayloadBlock(payload)
@@ -49,7 +60,7 @@ def main():
         encapsulating_bundle = Bundle(
             PrimaryBlock(
                 bundle_proc_flags=BundleProcFlag.ADMINISTRATIVE_RECORD,
-                destination=incoming_eid,
+                destination=application_eid,
                 source=outgoing_eid
             ),
             BibeProtocolDataUnit(
