@@ -1,3 +1,5 @@
+#include "aap/aap_parser.h"
+
 #include "cla/blackhole_parser.h"
 #include "cla/cla.h"
 #include "cla/cla_contact_rx_task.h"
@@ -73,6 +75,9 @@ enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
 				 &bundle_send, cla_config))
 		return UD3TN_FAIL;
 	rx_data->bundle7_parser.bundle_quota = BUNDLE_QUOTA;
+	aap_parser_init(&rx_data->aap_parser);
+	if(rx_data->aap_parser.basedata == NULL)
+		return UD3TN_FAIL;
 	if (!blackhole_parser_init(&rx_data->blackhole_parser))
 		return UD3TN_FAIL;
 
@@ -85,6 +90,7 @@ void rx_task_reset_parsers(struct rx_task_data *rx_data)
 
 	ASSERT(bundle6_parser_reset(&rx_data->bundle6_parser) == UD3TN_OK);
 	ASSERT(bundle7_parser_reset(&rx_data->bundle7_parser) == UD3TN_OK);
+	aap_parser_reset(&rx_data->aap_parser);
 	ASSERT(blackhole_parser_reset(&rx_data->blackhole_parser) == UD3TN_OK);
 }
 
@@ -94,6 +100,7 @@ void rx_task_data_deinit(struct rx_task_data *rx_data)
 
 	ASSERT(bundle6_parser_deinit(&rx_data->bundle6_parser) == UD3TN_OK);
 	ASSERT(bundle7_parser_deinit(&rx_data->bundle7_parser) == UD3TN_OK);
+	ASSERT(aap_parser_deinit(&rx_data->aap_parser) == UD3TN_OK);
 	ASSERT(blackhole_parser_deinit(&rx_data->blackhole_parser) == UD3TN_OK);
 }
 
@@ -104,25 +111,33 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 	/* Empty buffers cannot be parsed */
 	if (length == 0)
 		return 0;
-
-	switch (buffer[0]) {
-	/* Bundle Protocol v6 (RFC 5050) */
-	case 6:
-		/* rx_data->spp_parser->type = INPUT_TYPE_BUNDLE_V6; */
-		rx_data->payload_type = PAYLOAD_BUNDLE6;
-		rx_data->cur_parser = rx_data->bundle6_parser.basedata;
-		return bundle6_parser_read(&rx_data->bundle6_parser,
-				buffer, length);
-	/* CBOR indefinite array -> Bundle Protocol v7 */
-	case 0x9f:
-		/* rx_data->input_parser->type = INPUT_TYPE_BUNDLE_V7; */
-		rx_data->payload_type = PAYLOAD_BUNDLE7;
-		rx_data->cur_parser = rx_data->bundle7_parser.basedata;
-		return bundle7_parser_read(&rx_data->bundle7_parser,
-				buffer, length);
-	/* Unknown Bundle Protocol version, keep buffer */
-	default:
-		return 0;
+	if(((buffer[0] & 0xF0) >> 4) != 0x1){
+		/* Received message is a bundle */
+		switch (buffer[0]) {
+		/* Bundle Protocol v6 (RFC 5050) */
+		case 6:
+			/* rx_data->spp_parser->type = INPUT_TYPE_BUNDLE_V6; */
+			rx_data->payload_type = PAYLOAD_BUNDLE6;
+			rx_data->cur_parser = rx_data->bundle6_parser.basedata;
+			return bundle6_parser_read(&rx_data->bundle6_parser,
+					buffer, length);
+		/* CBOR indefinite array -> Bundle Protocol v7 */
+		case 0x9f:
+			/* rx_data->input_parser->type = INPUT_TYPE_BUNDLE_V7; */
+			rx_data->payload_type = PAYLOAD_BUNDLE7;
+			rx_data->cur_parser = rx_data->bundle7_parser.basedata;
+			return bundle7_parser_read(&rx_data->bundle7_parser,
+					buffer, length);
+		/* Unknown Bundle Protocol version, keep buffer */
+		default:
+			return 0;
+		}
+	}
+	else{
+		/* Received message is an AAP message */
+		rx_data->payload_type = PAYLOAD_AAP;
+		rx_data->cur_parser = rx_data->aap_parser.basedata;
+		return aap_parser_read(&rx_data->aap_parser, buffer, length);
 	}
 }
 
@@ -304,6 +319,7 @@ static uint8_t *chunk_read(struct cla_link *link)
 
 	/* We could not read from input, thus, reset all parsers. */
 	if (result != UD3TN_OK) {
+		LOG("Couldn't read from input!");
 		link->config->vtable->cla_rx_task_reset_parsers(link);
 		return rx_data->input_buffer.end;
 	}

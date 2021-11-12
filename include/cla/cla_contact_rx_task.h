@@ -1,6 +1,8 @@
 #ifndef CLA_CONTACT_RX_TASK_H_INCLUDED
 #define CLA_CONTACT_RX_TASK_H_INCLUDED
 
+#include "aap/aap_parser.h"
+
 #include "cla/blackhole_parser.h"
 
 #include "bundle6/parser.h"
@@ -12,6 +14,7 @@
 
 enum cla_payload_type {
 	PAYLOAD_UNKNOWN = 0,
+	PAYLOAD_AAP = 1,
 	PAYLOAD_BUNDLE6 = 6,
 	PAYLOAD_BUNDLE7 = 7,
 	PAYLOAD_IRRELEVANT = 127,
@@ -25,6 +28,7 @@ struct rx_task_data {
 	struct parser *cur_parser;
 	struct bundle6_parser bundle6_parser;
 	struct bundle7_parser bundle7_parser;
+	struct aap_parser aap_parser;
 	struct blackhole_parser blackhole_parser;
 
 	/**
