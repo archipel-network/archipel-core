@@ -26,6 +26,7 @@ TINYCBOR_SOURCES := \
 	cborparser.c \
 	cborparser_dup_string.c \
 	cborpretty.c \
+	cborpretty_stdio.c \
 	cbortojson.c
 
 $(eval $(call addComponentWithRules,external/tinycbor/src,$(TINYCBOR_SOURCES)))
