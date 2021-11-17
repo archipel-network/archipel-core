@@ -16,6 +16,12 @@
 #define QUOTE(s) #s
 #define STR(s) QUOTE(s)
 
+#ifdef REMOTE_CONFIGURATION
+static bool DEFAULT_ALLOW_REMOTE_CONFIGURATION = true;
+#else // REMOTE_CONFIGURATION
+static bool DEFAULT_ALLOW_REMOTE_CONFIGURATION;
+#endif // REMOTE_CONFIGURATION
+
 static struct ud3tn_cmdline_options global_cmd_opts;
 
 /**
@@ -51,6 +57,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->aap_service = NULL;
 	result->bundle_version = DEFAULT_BUNDLE_VERSION;
 	result->status_reporting = false;
+	result->allow_remote_configuration = DEFAULT_ALLOW_REMOTE_CONFIGURATION;
 	result->exit_immediately = false;
 	result->lifetime = DEFAULT_BUNDLE_LIFETIME;
 	// The following values cannot be 0
@@ -64,7 +71,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		goto finish;
 
 	shorten_long_cli_options(argc, argv);
-	while ((opt = getopt(argc, argv, ":a:b:c:e:l:m:p:s:rhu")) != -1) {
+	while ((opt = getopt(argc, argv, ":a:b:c:e:l:m:p:s:rRhu")) != -1) {
 		switch (opt) {
 		case 'a':
 			if (!optarg || strlen(optarg) < 1) {
@@ -123,6 +130,9 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			break;
 		case 'r':
 			result->status_reporting = true;
+			break;
+		case 'R':
+			result->allow_remote_configuration = true;
 			break;
 		case 's':
 			if (!optarg || strlen(optarg) < 1) {
@@ -207,6 +217,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--lifetime", "-l"},
 		{"--max-bundle-size", "-m"},
 		{"--status-reports", "-r"},
+		{"--allow-remote-config", "-R"},
 		{"--usage", "-u"},
 	};
 
@@ -229,6 +240,7 @@ static void print_usage_text(void)
 		"    [-b 6|7, --bp-version 6|7] [-c CLA_OPTIONS, --cla CLA_OPTIONS]\n"
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
+		"    [-R, --allow-remote-config]\n"
 		"    [-s PATH --aap-socket PATH] [-u, --usage]\n";
 
 	hal_io_message_printf(usage_text);
@@ -249,6 +261,7 @@ static void print_help_text(void)
 		"  -m, --max-bundle-size BYTES bundle fragmentation threshold\n"
 		"  -p, --aap-port PORT         port number of the application agent service\n"
 		"  -r, --status-reports        enable status reporting\n"
+		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
 		"  -u, --usage                 print usage summary and exit\n"
 		"\n"

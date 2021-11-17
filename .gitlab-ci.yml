@@ -103,8 +103,8 @@ integration-test-posix:
     when: always
     image: python:3.7
     script:
-        - make REMOTE_CONFIGURATION=True
-        - make run-posix &
+        - make
+        - build/posix/ud3tn --allow-remote-config &
         - make virtualenv
         - source .venv/bin/activate && pytest test/integration
 
@@ -113,7 +113,6 @@ integration-test-stm32:
     when: always
     tags: ["stm32", "shell"]
     script:
-        - export REMOTE_CONFIGURATION=True
         - bash .gitlab-ci-stm32.sh integrationtest
 
 aap-test:
@@ -143,8 +142,8 @@ mtcp-test:
     when: always
     image: python:3.7
     script:
-        - make REMOTE_CONFIGURATION=True
-        - make run-posix &
+        - make
+        - build/posix/ud3tn --allow-remote-config &
         - make virtualenv
         - source .venv/bin/activate && python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - source .venv/bin/activate && timeout 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD

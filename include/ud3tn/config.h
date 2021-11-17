@@ -43,6 +43,11 @@ static const int IS_DEBUG_BUILD;
  * BUNDLE_CRC_TYPE_32   = 2
  */
 #define DEFAULT_CRC_TYPE BUNDLE_CRC_TYPE_16
+/* On STM32 we have no chance to specify cmdline args and we have no AAP, */
+/* thus, remote configuration (via CLA) is enabled by default. */
+#ifdef PLATFORM_STM32
+#define REMOTE_CONFIGURATION
+#endif
 
 
 /*

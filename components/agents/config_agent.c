@@ -9,18 +9,18 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_types.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef REMOTE_CONFIGURATION
-static const int ALLOW_REMOTE_CONFIGURATION = 1;
-#else // REMOTE_CONFIGURATION
-static const int ALLOW_REMOTE_CONFIGURATION;
-#endif // REMOTE_CONFIGURATION
-
 static struct config_parser parser;
+
+struct config_agent_params {
+	const char *local_eid;
+	bool allow_remote_configuration;
+};
 
 static void router_command_send(struct router_command *cmd, void *param)
 {
@@ -38,8 +38,11 @@ static void router_command_send(struct router_command *cmd, void *param)
 
 static void callback(struct bundle_adu data, void *param)
 {
-	if (!ALLOW_REMOTE_CONFIGURATION) {
-		if (strncmp((char *)param, data.source, strlen((char *)param)) != 0) {
+	struct config_agent_params *const ca_param = param;
+
+	if (!ca_param->allow_remote_configuration) {
+		if (strncmp(ca_param->local_eid, data.source,
+		    strlen(ca_param->local_eid)) != 0) {
 			LOGF("ConfigAgent: Dropped config message from foreign endpoint",
 			     data.source);
 			return;
@@ -56,16 +59,24 @@ static void callback(struct bundle_adu data, void *param)
 }
 
 int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
-	QueueIdentifier_t router_signaling_queue, const char *local_eid)
+	QueueIdentifier_t router_signaling_queue, const char *local_eid,
+	bool allow_remote_configuration)
 {
 	ASSERT(config_parser_init(&parser, &router_command_send,
 				  router_signaling_queue));
+
+	struct config_agent_params *const ca_param = malloc(
+		sizeof(struct config_agent_params)
+	);
+	ca_param->local_eid = local_eid;
+	ca_param->allow_remote_configuration = allow_remote_configuration;
+
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
 		"config",
 		callback,
-		(void *)local_eid,
+		ca_param,
 		false
 	);
 }
