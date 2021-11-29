@@ -28,12 +28,12 @@ def main():
         help="the payload to be sent"
     )
     parser.add_argument(
-        "--outer_destination",
+        "-o","--outer",
         default="dtn://ud3tn.dtn/bibe",
         help="EID to which the outer bundle should be adressed (defaults to dtn://ud3tn.dtn/bibe)",
     )
     parser.add_argument(
-        "-d", "--inner_destination",
+        "-i", "--inner",
         default="dtn://upper.dtn/bundlesink",
         help="EID to which the inner bundle should be adressed (defaults to dtn://upper.dtn/bundlesink)",
     )
@@ -47,8 +47,8 @@ def main():
 
     with MTCPConnection(args.host, args.port, timeout=args.timeout) as conn:
         payload = args.payload.encode() if args.payload else PAYLOAD_DATA
-        destination_eid = args.inner_destination
-        application_eid = args.outer_destination
+        destination_eid = args.inner
+        application_eid = args.outer
         outgoing_eid = "dtn://sender.dtn"
         inner_bundle = Bundle(
             PrimaryBlock(
