@@ -623,7 +623,7 @@ static size_t tcpclv3_forward_to_specific_parser(struct cla_link *link,
  * TX
  */
 
-static void tcpclv3_begin_packet(struct cla_link *link, size_t length)
+static void tcpclv3_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 {
 	struct tcpclv3_contact_parameters *const param =
 		(struct tcpclv3_contact_parameters *)link;
