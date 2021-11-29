@@ -19,8 +19,8 @@ size_t aap_get_serialized_size(const struct aap_message *msg);
  * @param write A function to write out / send the serialized message.
  * @param param An arbitrary parameter passed to the write function as
  *              first argument.
- * @param serialize_pl Flag to enable / disable serialization of the 
- * 				message payload. 
+ * @param serialize_pl Flag to enable / disable serialization of the
+ *				message payload.
  */
 void aap_serialize(const struct aap_message *msg,
 	void (*write)(void *param, const void *data, const size_t length),
@@ -34,8 +34,8 @@ void aap_serialize(const struct aap_message *msg,
  *
  * @param buffer The destination buffer.
  * @param msg The message to be serialized.
- * @param serialize_pl Flag to enable / disable serialization of the 
- * 				message payload. 
+ * @param serialize_pl Flag to enable / disable serialization of the
+ *				message payload.
  */
 void aap_serialize_into(void *buffer, const struct aap_message *msg, const bool serialize_pl);
 

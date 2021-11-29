@@ -237,7 +237,7 @@ struct aap_message aap_parser_extract_message(struct aap_parser *parser)
 }
 
 size_t aap_parser_read(
-	struct aap_parser *const parser, 
+	struct aap_parser *const parser,
 	const uint8_t *const buffer, const size_t length)
 {
 	size_t delta = 0;
@@ -257,7 +257,8 @@ size_t aap_parser_read(
 	return consumed;
 }
 
-enum ud3tn_result aap_parser_deinit(struct aap_parser *parser){
+enum ud3tn_result aap_parser_deinit(struct aap_parser *parser)
+{
 	free(parser->basedata);
 	aap_message_clear(&parser->message);
 

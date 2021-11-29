@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct header{
+struct header {
 	size_t hdr_len;
 	uint8_t *data;
 };
@@ -21,7 +21,7 @@ size_t bibe_parser_parse(
 	);
 
 struct header bibe_encode_header(
-	char *dest_eid, 
+	char *dest_eid,
 	size_t payload_len
 	);
 

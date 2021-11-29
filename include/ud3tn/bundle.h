@@ -251,13 +251,13 @@ struct bibe_protocol_data_unit {
 	//
 	// Encapsulated Bundle
 	//
-	// A single BP bundle, termed the "encapsulated bundle". Represented here as a pointer to 
+	// A single BP bundle, termed the "encapsulated bundle". Represented here as a pointer to
 	// the location of the bundle byte string in memory.
 
 	uint64_t transmission_id;
 	uint64_t retransmission_time;
 	uint8_t *encapsulated_bundle;
-	uint64_t payload_length; 
+	uint64_t payload_length;
 
 	// BPv7-bis:
 	//     All other remaining fields are specified in the "generic"

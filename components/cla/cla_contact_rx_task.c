@@ -76,7 +76,7 @@ enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
 		return UD3TN_FAIL;
 	rx_data->bundle7_parser.bundle_quota = BUNDLE_QUOTA;
 	aap_parser_init(&rx_data->aap_parser);
-	if(rx_data->aap_parser.basedata == NULL)
+	if (rx_data->aap_parser.basedata == NULL)
 		return UD3TN_FAIL;
 	if (!blackhole_parser_init(&rx_data->blackhole_parser))
 		return UD3TN_FAIL;
@@ -111,7 +111,7 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 	/* Empty buffers cannot be parsed */
 	if (length == 0)
 		return 0;
-	if(((buffer[0] & 0xF0) >> 4) != 0x1){
+	if (((buffer[0] & 0xF0) >> 4) != 0x1) {
 		/* Received message is a bundle */
 		switch (buffer[0]) {
 		/* Bundle Protocol v6 (RFC 5050) */
@@ -132,8 +132,7 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 		default:
 			return 0;
 		}
-	}
-	else{
+	} else {
 		/* Received message is an AAP message */
 		rx_data->payload_type = PAYLOAD_AAP;
 		rx_data->cur_parser = rx_data->aap_parser.basedata;

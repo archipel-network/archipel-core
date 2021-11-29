@@ -9,9 +9,9 @@
 #include <stdint.h>
 
 struct aap_parser {
-	
+
 	struct parser *basedata;
-	
+
 	/**
 	 * Provides the current parser status, set by the `parse` method.
 	 */

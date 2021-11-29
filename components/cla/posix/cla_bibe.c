@@ -43,7 +43,7 @@ struct bibe_config {
 	struct htab param_htab;
 	Semaphore_t param_htab_sem;
 
-    const char *node;
+	const char *node;
 	const char *service;
 };
 
@@ -121,12 +121,13 @@ static void bibe_link_management_task(void *p)
 				.eid = "bibe",
 				.eid_length = 4,
 			};
-   		 	uint64_t *buffer = malloc(sizeof(struct aap_message));
-    		aap_serialize_into(buffer, &register_bibe, true);
+			uint64_t *buffer = malloc(sizeof(struct aap_message));
 
-    		tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
+			aap_serialize_into(buffer, &register_bibe, true);
+			tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
 		}
 	} while (param->in_contact);
+
 	LOGF("bibe: Terminating contact link manager for \"%s\"",
 	     param->cla_sock_addr);
 	hal_semaphore_take_blocking(param->config->param_htab_sem);
@@ -223,9 +224,10 @@ fail:
 static enum ud3tn_result bibe_launch(struct cla_config *const config)
 {
 	/* Since the BIBE CLA does not need a listener task, the bibe_launch
-	   function has pretty much no functionality.
-	   It could however be used to establish a "standard connection" 
-	   if there's a predefined partner node. */
+	 * function has pretty much no functionality.
+	 * It could however be used to establish a "standard connection"
+	 * if there's a predefined partner node.
+	 */
 	return UD3TN_OK;
 }
 
@@ -267,8 +269,8 @@ size_t bibe_forward_to_specific_parser(struct cla_link *link,
 	case PAYLOAD_AAP:
 		rx_data->cur_parser = rx_data->aap_parser.basedata;
 		result = aap_parser_read(
-			&rx_data->aap_parser, 
-			buffer, 
+			&rx_data->aap_parser,
+			buffer,
 			length
 		);
 		break;
@@ -277,25 +279,25 @@ size_t bibe_forward_to_specific_parser(struct cla_link *link,
 		return 0;
 	}
 
-	if(rx_data->aap_parser.status == PARSER_STATUS_DONE){
+	if (rx_data->aap_parser.status == PARSER_STATUS_DONE) {
 		struct aap_message msg = aap_parser_extract_message(&rx_data->aap_parser);
-		
+
 		/* The only relevant message type is RECVBIBE, as the CLA
-		   does not need to do anything with WELCOME or ACK messages. */
-		if(msg.type == AAP_MESSAGE_RECVBIBE){
+		 *  does not need to do anything with WELCOME or ACK messages.
+		 */
+		if (msg.type == AAP_MESSAGE_RECVBIBE) {
 			/* Parsing the BPDU */
 			struct bibe_protocol_data_unit bpdu;
 			size_t err = bibe_parser_parse(
-				msg.payload, 
-				msg.payload_length, 
+				msg.payload,
+				msg.payload_length,
 				&bpdu
 			);
-			if (err == 0 && bpdu.payload_length != 0)
-			{
+			if (err == 0 && bpdu.payload_length != 0) {
 				/* Parsing and forwarding the encapsulated bundle. */
-            	bundle7_parser_read(
-					&rx_data->bundle7_parser, 
-					bpdu.encapsulated_bundle, 
+				bundle7_parser_read(
+					&rx_data->bundle7_parser,
+					bpdu.encapsulated_bundle,
 					bpdu.payload_length
 				);
 			}
@@ -331,7 +333,8 @@ static struct cla_tx_queue bibe_get_tx_queue(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-	char *addr = strtok(strdup(cla_addr),"#");
+	char *addr = strtok(strdup(cla_addr), "#");
+
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
@@ -363,7 +366,8 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-	char *addr = strtok(strdup(cla_addr),"#");
+	char *addr = strtok(strdup(cla_addr), "#");
+
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
@@ -389,7 +393,8 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-	char *addr = strtok(strdup(cla_addr),"#");
+	char *addr = strtok(strdup(cla_addr), "#");
+
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
@@ -418,7 +423,7 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 {
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
-	
+
 	// Init strtok and get cla address
 	char *dest_eid = strtok(strdup(cla_addr), "#");
 	// Get eid
@@ -429,8 +434,8 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 		return;
 
 	struct header hdr;
-	hdr = bibe_encode_header(dest_eid, length);
 
+	hdr = bibe_encode_header(dest_eid, length);
 
 	if (tcp_send_all(tcp_link->connection_socket, hdr.data, hdr.hdr_len) == -1) {
 		LOG("bibe: Error during sending. Data discarded.");
@@ -500,9 +505,9 @@ static enum ud3tn_result bibe_init(
 	config->param_htab_sem = hal_semaphore_init_binary();
 	hal_semaphore_release(config->param_htab_sem);
 
-    config->node = node;
-    config->service = service;
-    
+	config->node = node;
+	config->service = service;
+
 	return UD3TN_OK;
 }
 

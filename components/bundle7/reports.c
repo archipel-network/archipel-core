@@ -614,7 +614,7 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 		return ERROR_UNEXPECTED;
 
 	// 3 items (transmission id, retransmission time, encapsulated bundle)
-    if (length != 3)
+	if (length != 3)
 		return ERROR_UNEXPECTED;
 
 	if (cbor_value_enter_container(it, &report))
@@ -629,7 +629,7 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 
 	// Transmission ID
 	// ---------------
-	if(!cbor_value_is_unsigned_integer(&report))
+	if (!cbor_value_is_unsigned_integer(&report))
 		return ERROR_UNEXPECTED;
 	cbor_value_get_uint64(&report, &transmission_id);
 	state->record->bpdu->transmission_id = transmission_id;
@@ -638,7 +638,7 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 
 	// Retransmission time
 	// -------------------
-	if(!cbor_value_is_unsigned_integer(&report))
+	if (!cbor_value_is_unsigned_integer(&report))
 		return ERROR_UNEXPECTED;
 	cbor_value_get_uint64(&report, &retransmission_time);
 	state->record->bpdu->retransmission_time = retransmission_time;
@@ -649,14 +649,15 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	// -------------------
 	if (!cbor_value_is_byte_string(&report))
 		return ERROR_UNEXPECTED;
-	
+
 	uint64_t bundle_str_len;
+
 	cbor_value_get_string_length(&report, &bundle_str_len);
 	//allocate memory for the encapsulated bundle
 	state->record->bpdu->encapsulated_bundle = malloc(bundle_str_len);
 	state->record->bpdu->payload_length = bundle_str_len;
 	// From the cbor docs:
-	//   "The next pointer, if not null, will be updated to point to the next item after 
+	//   "The next pointer, if not null, will be updated to point to the next item after
 	//    this string. If value points to the last item, then next will be invalid."
 	// Since we don't have a next element, we need to pass a null pointer to the function here.
 	cbor_value_copy_byte_string(
