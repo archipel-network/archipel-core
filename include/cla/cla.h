@@ -113,7 +113,7 @@ struct cla_vtable {
 
 	/* Initiates bundle transmission for a single bundle */
 	void (*cla_begin_packet)(struct cla_link *,
-				 size_t);
+				 size_t, char *);
 	/* Terminates bundle transmission for a single bundle */
 	void (*cla_end_packet)(struct cla_link *);
 	/* Sends part of the serialized bundle. Can be called multiple times. */

@@ -26,7 +26,7 @@ void bibe_reset_parsers(struct cla_link *link);
 size_t bibe_forward_to_specific_parser(struct cla_link *link,
 				       const uint8_t *buffer, size_t length);
 
-void bibe_begin_packet(struct cla_link *link, size_t length);
+void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr);
 
 void bibe_end_packet(struct cla_link *link);
 

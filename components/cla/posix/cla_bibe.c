@@ -34,6 +34,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct bibe_config {
 	struct cla_tcp_config base;
@@ -121,7 +122,7 @@ static void bibe_link_management_task(void *p)
 				.eid_length = 4,
 			};
    		 	uint64_t *buffer = malloc(sizeof(struct aap_message));
-    		aap_serialize_into(buffer, &register_bibe);
+    		aap_serialize_into(buffer, &register_bibe, true);
 
     		tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
 		}
@@ -330,11 +331,11 @@ static struct cla_tx_queue bibe_get_tx_queue(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-
+	char *addr = strtok(strdup(cla_addr),"#");
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
-		cla_addr
+		addr
 	);
 
 	if (param && param->connected) {
@@ -362,22 +363,22 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-
+	char *addr = strtok(strdup(cla_addr),"#");
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
-		cla_addr
+		addr
 	);
 
 	if (param) {
 		LOGF("bibe: Associating open connection with \"%s\" to new contact",
-		     cla_addr);
+		     addr);
 		param->in_contact = true;
 		hal_semaphore_release(bibe_config->param_htab_sem);
 		return UD3TN_OK;
 	}
 
-	launch_connection_management_task(bibe_config, -1, cla_addr);
+	launch_connection_management_task(bibe_config, -1, addr);
 	hal_semaphore_release(bibe_config->param_htab_sem);
 
 	return UD3TN_OK;
@@ -388,20 +389,20 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-
+	char *addr = strtok(strdup(cla_addr),"#");
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
-		cla_addr
+		addr
 	);
 
 	if (param && param->in_contact) {
 		LOGF("bibe: Marking open connection with \"%s\" as opportunistic",
-		     cla_addr);
+		     addr);
 		param->in_contact = false;
 		if (param->socket >= 0) {
 			LOGF("bibe: Terminating connection with \"%s\"",
-			     cla_addr);
+			     addr);
 			// Shutting down the socket to force the lower layers
 			// Application Agent to deregister the "bibe" sink.
 			shutdown(param->socket, SHUT_RDWR);
@@ -414,20 +415,24 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 	return UD3TN_OK;
 }
 
-void bibe_begin_packet(struct cla_link *link, size_t length)
+void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 {
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
+	
+	// Init strtok and get cla address
+	char *dest_eid = strtok(strdup(cla_addr), "#");
+	// Get eid
+	dest_eid = strtok(NULL, "#");
 
 	// A previous operation may have canceled the sending process.
 	if (!link->active)
 		return;
 
-	const size_t BUFFER_SIZE = 9; // max. for uint64_t
-	uint8_t buffer[BUFFER_SIZE];
+	struct header hdr;
+	hdr = bibe_encode_header(dest_eid, length);
 
-	const size_t hdr_len = 0; //bibe_encode_header(buffer, BUFFER_SIZE, length);
 
-	if (tcp_send_all(tcp_link->connection_socket, buffer, hdr_len) == -1) {
+	if (tcp_send_all(tcp_link->connection_socket, hdr.data, hdr.hdr_len) == -1) {
 		LOG("bibe: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
