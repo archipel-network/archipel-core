@@ -182,6 +182,7 @@ static void hand_over_contact_bundles(struct contact_info c)
 	LOGF("ContactManager: Queuing bundles for contact with \"%s\".", c.eid);
 
 	command.bundles = c.contact->contact_bundles;
+	command.cla_address = strdup(c.cla_addr);
 	c.contact->contact_bundles = NULL;
 	hal_queue_push_to_back(tx_queue.tx_queue_handle, &command);
 	hal_semaphore_release(tx_queue.tx_queue_sem); // taken by get_tx_queue
