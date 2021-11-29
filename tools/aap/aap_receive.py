@@ -16,12 +16,12 @@ from ud3tn_utils.aap.aap_message import AAPMessageType
 def run_aap_recv(aap_client, max_count=None, verify_pl=None):
     print("Waiting for bundles...")
     counter = 0
-    
+
     while True:
         msg = aap_client.receive()
         if not msg:
             return
-        
+
         enc = False
         err = False
         if msg.msg_type == AAPMessageType.RECVBUNDLE:
@@ -43,7 +43,8 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
                 print("Unexpected payload != '{}'".format(verify_pl))
                 sys.exit(1)
         else:
-            print("Received adminitstrative record of unknown type from '{}'!".format(
+            print("Received adminitstrative record of unknown type \
+            from '{}'!".format(
                 msg.eid
             ))
 

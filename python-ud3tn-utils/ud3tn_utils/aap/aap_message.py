@@ -40,7 +40,8 @@ class AAPMessageType(enum.IntEnum):
 class AAPMessage:
     """An AAP message representation supporting parsing and serialization."""
     def __init__(self, msg_type, eid=None, payload=None, bundle_id=None):
-        if (msg_type < AAPMessageType.ACK or msg_type > AAPMessageType.RECVBIBE):
+        if (msg_type < AAPMessageType.ACK or
+                msg_type > AAPMessageType.RECVBIBE):
             raise ValueError("Invalid message type code")
         self.msg_type = msg_type
         self.eid = eid

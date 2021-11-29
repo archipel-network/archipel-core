@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-from pyd3tn.bundle7 import BibeProtocolDataUnit, BundleProcFlag, PayloadBlock, PrimaryBlock, Bundle
+from pyd3tn.bundle7 import (
+    BibeProtocolDataUnit,
+    BundleProcFlag,
+    PayloadBlock,
+    PrimaryBlock,
+    Bundle
+)
 from pyd3tn.mtcp import MTCPConnection
 
 BUNDLE_SIZE = 200
 PAYLOAD_DATA = b"\x42" * BUNDLE_SIZE
+
 
 def main():
     import argparse
@@ -28,14 +35,16 @@ def main():
         help="the payload to be sent"
     )
     parser.add_argument(
-        "-o","--outer",
+        "-o", "--outer",
         default="dtn://ud3tn.dtn/bibe",
-        help="EID to which the outer bundle should be adressed (defaults to dtn://ud3tn.dtn/bibe)",
+        help="EID to which the outer bundle should be adressed \
+            (defaults to dtn://ud3tn.dtn/bibe)",
     )
     parser.add_argument(
         "-i", "--inner",
         default="dtn://upper.dtn/bundlesink",
-        help="EID to which the inner bundle should be adressed (defaults to dtn://upper.dtn/bundlesink)",
+        help="EID to which the inner bundle should be adressed \
+            (defaults to dtn://upper.dtn/bundlesink)",
     )
     parser.add_argument(
         "--timeout",
@@ -64,8 +73,8 @@ def main():
                 source=outgoing_eid
             ),
             BibeProtocolDataUnit(
-                bundle=inner_bundle, 
-                transmission_id=0, 
+                bundle=inner_bundle,
+                transmission_id=0,
                 retransmission_time=0)
         )
         conn.send_bundle(bytes(encapsulating_bundle))

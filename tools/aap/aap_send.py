@@ -10,13 +10,12 @@ from pyd3tn.bundle7 import (BibeProtocolDataUnit, Bundle, BundleProcFlag,
                             PayloadBlock, PrimaryBlock)
 
 
-
 def build_bibe_bundle(client, dest_eid, payload):
     """Encapsulates a regular bundle with the chosen payload
     in a BIBE Administrative Record, thus forming a BIBE Bundle.
 
     Args:
-        client (AAPUnixClient || AAPTCPClient): The AAP client used to send the bundle
+        client (AAPClient): The AAP client used to send the bundle
         dest_eid (str): EID of the bundles destination
         payload (str):  The payload of the encapsulated bundle
 
@@ -39,9 +38,8 @@ def build_bibe_bundle(client, dest_eid, payload):
         BibeProtocolDataUnit(
             bundle=inner_bundle,
             transmission_id=0,
-            retransmission_time=0
-       )
-    )
+            retransmission_time=0))
+
     return outer_bundle
 
 

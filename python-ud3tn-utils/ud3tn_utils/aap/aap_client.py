@@ -131,8 +131,9 @@ class AAPClient():
                 AAPMessageType.SENDBUNDLE, dest_eid, bundle_data
             ))
             assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
+            bundle_id = msg_sendconfirm.bundle_id
             logger.info(
-                f"SENDCONFIRM message received! ~ ID = {msg_sendconfirm.bundle_id}"
+                f"SENDCONFIRM message received! ~ ID = {bundle_id}"
             )
             return msg_sendconfirm
         else:
@@ -141,8 +142,9 @@ class AAPClient():
                 AAPMessageType.SENDBIBE, dest_eid, bundle_data
             ))
             assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
+            bundle_id = msg_sendconfirm.bundle_id
             logger.info(
-                f"SENDCONFIRM message received! ~ ID = {msg_sendconfirm.bundle_id}"
+                f"SENDCONFIRM message received! ~ ID = {bundle_id}"
             )
             return msg_sendconfirm
 
