@@ -6,6 +6,7 @@
 #include "platform/hal_time.h"
 
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 
 #include "cbor.h"
 
@@ -320,7 +321,7 @@ error_t administrative_record(struct record_parser *state, CborValue *it)
 	case BUNDLE_AR_STATUS_REPORT:
 		err = status_report(state, &nested);
 		break;
-	case BUNDLE_AR_BPDU:
+	case BIBE_AR_TYPE_CODE: /*BUNDLE_AR_BPDU:*/
 		err = bpdu(state, &nested);
 		break;
 	default:

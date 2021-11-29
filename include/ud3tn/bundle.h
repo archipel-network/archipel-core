@@ -183,6 +183,7 @@ enum bundle_administrative_record_type {
 	BUNDLE_AR_STATUS_REPORT  = 1,
 	BUNDLE_AR_CUSTODY_SIGNAL = 2,
 	BUNDLE_AR_BPDU = 3,
+	BUNDLE_AR_BPDU_COMPAT = 7,
 };
 
 enum bundle_administrative_record_flags {

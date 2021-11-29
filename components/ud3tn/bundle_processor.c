@@ -699,7 +699,6 @@ static void bundle_attempt_reassembly(struct bundle *bundle)
 static void bundle_deliver_adu(struct bundle_adu adu)
 {
 	struct bundle_administrative_record *record;
-
 	if (HAS_FLAG(adu.proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD)) {
 		record = parse_administrative_record(
 			adu.protocol_version,
@@ -711,7 +710,7 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			bundle_handle_custody_signal(record);
 			bundle_adu_free_members(adu);
 		}
-		else if (record != NULL && record->type == BUNDLE_AR_BPDU)
+		else if (record != NULL && record->type == BIBE_AR_TYPE_CODE)
 		{
 			LOGF(
 				"BundleProcessor: Got BIBE bundle with transmission id: %u and retransmission time: %u.", 
@@ -739,7 +738,7 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			adu.payload = buf;
 			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
 
-			const char *agent_id = get_agent_id(adu.destination);
+			const char *agent_id = "bibe"; //get_agent_id(adu.destination);
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
 	     	agent_id, adu.length);
