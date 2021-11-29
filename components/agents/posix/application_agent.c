@@ -190,7 +190,7 @@ static int send_message(const int socket_fd,
 		.errno_ = 0,
 	};
 
-	aap_serialize(msg, write_to_socket, &wsp);
+	aap_serialize(msg, write_to_socket, &wsp, true);
 	if (wsp.errno_)
 		LOGF("send(): %s", strerror(wsp.errno_));
 	return -wsp.errno_;
@@ -333,15 +333,6 @@ static uint64_t allocate_sequence_number(
 	return 1;
 }
 
-static void store_bibe_bundle(struct bundle *bundle, bundleid_t *id){
-	if (bundle == NULL)
-	{
-		*id = BUNDLE_INVALID_ID;
-	}
-	else
-		*id = bundle_storage_add(bundle);
-}
-
 static int16_t process_aap_message(
 	struct application_agent_comm_config *const config,
 	struct aap_message msg)
@@ -419,7 +410,7 @@ static int16_t process_aap_message(
 			LOG("AppAgent: No agent ID registered, dropping!");
 			break;
 		}
-		
+
 		const uint64_t bibe_time = hal_time_get_timestamp_s();
 		const uint64_t bibe_seqnum = allocate_sequence_number(
 			config,

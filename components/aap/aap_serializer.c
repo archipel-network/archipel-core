@@ -54,7 +54,7 @@ size_t aap_get_serialized_size(const struct aap_message *msg)
 
 void aap_serialize(const struct aap_message *msg,
 	void (*write)(void *param, const void *data, const size_t length),
-	void *param)
+	void *param, const bool serialize_pl)
 {
 	uint8_t buffer[8];
 
@@ -83,7 +83,7 @@ void aap_serialize(const struct aap_message *msg,
 	    msg->type == AAP_MESSAGE_RECVBIBE) {
 		put_uint64(buffer, msg->payload_length);
 		write(param, buffer, 8);
-		if (msg->payload_length)
+		if (msg->payload_length && serialize_pl)
 			write(param, msg->payload, msg->payload_length);
 	}
 
@@ -108,9 +108,9 @@ static void write_to_buffer(void *param, const void *data, const size_t length)
 	ctx->position += length;
 }
 
-void aap_serialize_into(void *buffer, const struct aap_message *msg)
+void aap_serialize_into(void *buffer, const struct aap_message *msg, const bool serialize_pl)
 {
 	struct write_context ctx = {.buffer = (uint8_t *)buffer, .position = 0};
 
-	return aap_serialize(msg, write_to_buffer, &ctx);
+	return aap_serialize(msg, write_to_buffer, &ctx, serialize_pl);
 }
