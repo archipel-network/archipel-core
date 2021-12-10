@@ -52,7 +52,7 @@ If the command ran successfully, the upper layer should log "bibe: Connected suc
 To accomplish this, the terminal window from the previous step can be reused. Simply run ``python tools/cla/bibe_over_mtcp_test.py --payload "Hello World!"``. If you did not use the EIDs from this example, use the --inner and --outer arguments to provide the EIDs of the upper and lower layer respectively. The script will then created a BIBE bundle adressed to --outer, containing an encapsulated bundle adressed to --inner.
 After a successful execution of the command you should see the message "Received bundle from 'dtn://sender.dtn': Hello World!" appear in the terminal running the bundlesink application on the upper layer, confirming sucessful transmission of the bundle from the lower to the upper layer.
 
-## Importan points regarding the implementation
+## Important points regarding the implementation
 - when configuring more complex scenarios than the one just presented the contact configuration command connecting the upper and the lower layer has to make use of the -r argument to make the upper layer retransmit the processed BIBE bundle back to the lower layer
   - Example using the scenario depicted in Fig. 1:
   - ``python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn --schedule 1 3600 100000 -r dtn://upper2.dtn dtn://lower.dtn bibe:localhost:4242``
