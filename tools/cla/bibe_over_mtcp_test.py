@@ -36,9 +36,9 @@ def main():
     )
     parser.add_argument(
         "-o", "--outer",
-        default="dtn://ud3tn.dtn/bibe",
+        default="dtn://lower.dtn/bibe",
         help="EID to which the outer bundle should be adressed \
-            (defaults to dtn://ud3tn.dtn/bibe)",
+            (defaults to dtn://lower.dtn/bibe)",
     )
     parser.add_argument(
         "-i", "--inner",
