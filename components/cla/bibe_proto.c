@@ -147,9 +147,8 @@ struct header bibe_encode_header(char *dest_eid, size_t payload_len)
 	// ar_bibe_bytes[5 to x] contains the length of the bundle byte string
 	// the encapsulated bundle itself will be sent via cla_bibe.c's send_packet_data
 
-	for (size_t i = 5; i < ar_size; i++) {
+	for (size_t i = 5; i < ar_size; i++)
 		ar_bibe_bytes[i] = temp_buffer[i-5];
-	}
 
 	/* Building and encoding the AAP message */
 	struct aap_message msg;
