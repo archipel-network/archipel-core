@@ -83,7 +83,7 @@ size_t bibe_parser_parse(const uint8_t *buffer,
 	if (!cbor_value_is_byte_string(&report))
 		return CborErrorIllegalType;
 
-	uint64_t bundle_str_len;
+	size_t bundle_str_len;
 
 	cbor_value_get_string_length(&report, &bundle_str_len);
 	//allocate memory for the encapsulated bundle
@@ -118,7 +118,7 @@ static void write_to_buffer(
 	memcpy(&buffer[position], data, length);
 }
 
-struct header bibe_encode_header(char *dest_eid, uint64_t payload_len)
+struct header bibe_encode_header(char *dest_eid, size_t payload_len)
 {
 
 	struct header hdr;
@@ -129,15 +129,15 @@ struct header bibe_encode_header(char *dest_eid, uint64_t payload_len)
 	CborEncoder encoder;
 
 	cbor_encoder_init(&encoder, temp_buffer, sizeof(uint64_t), 0);
-	cbor_encode_uint(&encoder, payload_len);
-	size_t ar_size = cbor_encoder_get_buffer_size(
+	cbor_encode_uint(&encoder, (uint64_t) payload_len);
+	const size_t ar_size = cbor_encoder_get_buffer_size(
 		&encoder,
 		temp_buffer
 		) + 5; // buffer size + 5 for the AR data
 	temp_buffer[0] |= 0x40; // see bundle7 serializer.c lines 235-239
 
 	/* Encoding the BPDU */
-	char ar_bibe_bytes[ar_size];
+	char *ar_bibe_bytes = malloc(ar_size);
 
 	ar_bibe_bytes[0] = 0x82;				// 82 (100|00010)	-> Array of length 2
 	ar_bibe_bytes[1] = BIBE_AR_TYPE_CODE;	// 03 || 07			-> Integer (record type)
@@ -148,19 +148,6 @@ struct header bibe_encode_header(char *dest_eid, uint64_t payload_len)
 	// the encapsulated bundle itself will be sent via cla_bibe.c's send_packet_data
 
 	for (size_t i = 5; i < ar_size; i++) {
-		/*
-		 *	ar_bibe_bytes:
-		 *		------------------------------------
-		 *		|0x82|0x03|0x83|0x00|0x00|    |    |
-		 *		------------------------------------
-		 *			                       ^     ^
-		 *	temp_buffer:                   │     │
-		 *		   ┌───────────────────────┘     │
-		 *		   |    ┌────────────────────────┘
-		 *		-----------
-		 *		|0x58|0xF4|   (length = 244)
-		 *		-----------
-		 */
 		ar_bibe_bytes[i] = temp_buffer[i-5];
 	}
 

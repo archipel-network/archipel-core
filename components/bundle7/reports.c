@@ -597,8 +597,8 @@ error_t status_info(struct record_parser *state, CborValue *it)
 	return ERROR_NONE;
 }
 
-// BIBE Protocol Data Unit
-// -----------------------
+/* BIBE Protocol Data Unit */
+/* ----------------------- */
 
 error_t bpdu(struct record_parser *state, CborValue *it)
 {
@@ -613,22 +613,22 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	if (cbor_value_get_array_length(it, &length) != CborNoError)
 		return ERROR_UNEXPECTED;
 
-	// 3 items (transmission id, retransmission time, encapsulated bundle)
+	/* 3 items (transmission id, retransmission time, encapsulated bundle) */
 	if (length != 3)
 		return ERROR_UNEXPECTED;
 
 	if (cbor_value_enter_container(it, &report))
 		return ERROR_CBOR;
 
-	// Allocate the bpdu
+	/* Allocate the bpdu */
 	state->record->bpdu = malloc(
 		sizeof(struct bibe_protocol_data_unit));
 
 	if (state->record->bpdu == NULL)
 		return ERROR_MEMORY;
 
-	// Transmission ID
-	// ---------------
+	/* Transmission ID */
+	/* --------------- */
 	if (!cbor_value_is_unsigned_integer(&report))
 		return ERROR_UNEXPECTED;
 	cbor_value_get_uint64(&report, &transmission_id);
@@ -636,8 +636,8 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	if (cbor_value_advance_fixed(&report))
 		return ERROR_CBOR;
 
-	// Retransmission time
-	// -------------------
+	/* Retransmission time */
+	/* ------------------- */
 	if (!cbor_value_is_unsigned_integer(&report))
 		return ERROR_UNEXPECTED;
 	cbor_value_get_uint64(&report, &retransmission_time);
@@ -645,21 +645,22 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	if (cbor_value_advance_fixed(&report))
 		return ERROR_CBOR;
 
-	// Encapsulated bundle
-	// -------------------
+	/* Encapsulated bundle */
+	/* ------------------- */
 	if (!cbor_value_is_byte_string(&report))
 		return ERROR_UNEXPECTED;
 
-	uint64_t bundle_str_len;
+	size_t bundle_str_len;
 
 	cbor_value_get_string_length(&report, &bundle_str_len);
-	//allocate memory for the encapsulated bundle
+	/* allocate memory for the encapsulated bundle */
 	state->record->bpdu->encapsulated_bundle = malloc(bundle_str_len);
 	state->record->bpdu->payload_length = bundle_str_len;
-	// From the cbor docs:
-	//   "The next pointer, if not null, will be updated to point to the next item after
-	//    this string. If value points to the last item, then next will be invalid."
-	// Since we don't have a next element, we need to pass a null pointer to the function here.
+	/* From the cbor docs:
+	 *   "The next pointer, if not null, will be updated to point to the next item after
+	 *    this string. If value points to the last item, then next will be invalid."
+	 * Since we don't have a next element, we need to pass a null pointer to the function here.
+	 */
 	cbor_value_copy_byte_string(
 		&report,
 		state->record->bpdu->encapsulated_bundle,
@@ -669,12 +670,19 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	if (cbor_value_advance(&report))
 		return ERROR_CBOR;
 
-	// Leave BPDU container
+	/* Leave BPDU container */
 	if (!cbor_value_at_end(&report))
 		return ERROR_UNEXPECTED;
 	if (cbor_value_leave_container(it, &report))
 		return ERROR_CBOR;
 
+	/* Initialize variables pertaining to bundle status reports,
+	 * so calling free on the AR works reliably.
+	 */
+	state->record->bundle_creation_timestamp_ms = 0;
+	state->record->bundle_sequence_number = 0;
+	state->record->bundle_source_eid = 0;
+	state->record->bundle_source_eid_length = 0;
 	return ERROR_NONE;
 }
 
