@@ -125,6 +125,7 @@ static void bibe_link_management_task(void *p)
 
 			aap_serialize_into(buffer, &register_bibe, true);
 			tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
+			free(buffer);
 		}
 	} while (param->in_contact);
 
@@ -441,6 +442,8 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 		LOG("bibe: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
+
+	free(hdr.data);
 }
 
 void bibe_end_packet(struct cla_link *link)

@@ -150,6 +150,8 @@ struct header bibe_encode_header(char *dest_eid, size_t payload_len)
 	for (size_t i = 5; i < ar_size; i++)
 		ar_bibe_bytes[i] = temp_buffer[i-5];
 
+	free(temp_buffer);
+
 	/* Building and encoding the AAP message */
 	struct aap_message msg;
 
