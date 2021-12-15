@@ -25,6 +25,7 @@ void testud3tn(void)
 	RUN_TEST_GROUP(aap);
 	RUN_TEST_GROUP(aap_parser);
 	RUN_TEST_GROUP(aap_serializer);
+	RUN_TEST_GROUP(bibe_header_encoder);
 #ifdef PLATFORM_POSIX
 	RUN_TEST_GROUP(simple_queue);
 #endif // PLATFORM_POSIX
