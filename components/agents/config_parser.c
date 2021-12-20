@@ -106,7 +106,8 @@ static bool read_cla_addr(
 		(byte >= 'a' && byte <= 'z') ||
 		(byte == ':') || (byte == '.') ||
 		(byte == '[') || (byte == ']') ||
-		(byte == '#') || (byte == '/')
+		(byte == '#') || (byte == '/') ||
+		(byte == '-')
 	) {
 		(*cla_addr_ptr)[parser->current_index++] = byte;
 		if (parser->current_index >= DEFAULT_CLA_ADDR_BUFFER_SIZE)

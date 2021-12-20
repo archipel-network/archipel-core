@@ -1,0 +1,54 @@
+## begin ionadmin
+# Initialization command
+1 1 ''
+
+# Start ION
+s
+
+# Add contacts
+a contact +1 +3600 1 1 100000
+
+# Assign ranges
+a range +1 +3600 1 1 1
+
+# Assign production/consumption rates
+m production 100000
+m consumption 100000
+## end ionadmin
+
+## begin ionsecadmin
+1
+## end ionsecadmin
+
+## begin bpadmin
+1
+w 1
+a scheme dtn 'dtn2fw' 'dtn2adminep'
+a endpoint dtn://ion.dtn q
+
+# Used protocols: bibe, tcp
+a protocol bibe
+a protocol tcp
+
+# Initializing bcla
+r 'bibeadmin test/ion_interopability/bibe_forwarding_test/bibe.rc'
+
+# Creating bibe induct
+a induct bibe * ''
+
+# Creating TCP induct for receiving encapsulating bundle from µD3TN instance #1
+a induct tcp 0.0.0.0:4556 tcpcli
+
+# Creating bibe outduct
+a outduct bibe dtn://upper2.dtn 'bibeclo dtn://lower2.dtn'
+
+# Creating TCP outduct for forwarding encapsulating bundle to µD3TN instace #2
+a outduct tcp 127.0.0.1:4554 tcpcli 
+
+# Adding egress plans 
+#a plan dtn://upper2.dtn* bibe/dtn://upper2.dtn
+#a plan dtn://lower2.dtn* tcp/127.0.0.1:4554
+
+r 'dtn2admin test/ion_interopability/bibe_forwarding_test/dtn.rc'
+s
+## end bpadmin

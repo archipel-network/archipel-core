@@ -1,0 +1,5 @@
+## begin dtn2admin
+# Adding egress plans 
+a plan upper2.dtn x bibe/dtn://upper2.dtn
+a plan lower2.dtn x tcp/127.0.0.1:4554
+## end dtn2admin
