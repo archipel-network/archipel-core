@@ -81,6 +81,7 @@ class BlockProcFlag(IntFlag):
 class RecordType(IntEnum):
     BUNDLE_STATUS_REPORT = 1
     BIBE_PROTOCOL_DATA_UNIT = 3
+    BIBE_PROTOCOL_DATA_UNIT_COMPAT = 7
 
 
 class ReasonCode(IntEnum):
@@ -565,7 +566,8 @@ class BundleStatusReport(AdministrativeRecord):
 
 class BibeProtocolDataUnit(AdministrativeRecord):
 
-    def __init__(self, bundle, transmission_id=0, retransmission_time=0):
+    def __init__(self, bundle, transmission_id=0,
+                 retransmission_time=0, compatibility=False):
         """Initializes a new BIBE Protocol Data unit
 
         Args:
@@ -574,12 +576,16 @@ class BibeProtocolDataUnit(AdministrativeRecord):
             the local node's custodial transmission count, plus 1. Else 0.
             retransmission_time (DtnTime): If custody is requested the time by
             which custody disposition for this BPDU is expected. Else 0.
+            compatibility (Bool): Flag for switching the administrative record
+            type code used to 7 for compatibility with older BIBE
+            implementations.
         """
         record_data = [transmission_id, retransmission_time, bytes(bundle)]
-
+        typecode = RecordType.BIBE_PROTOCOL_DATA_UNIT if not compatibility \
+            else RecordType.BIBE_PROTOCOL_DATA_UNIT_COMPAT
         super().__init__(
             bundle,
-            record_type_code=RecordType.BIBE_PROTOCOL_DATA_UNIT,
+            record_type_code=typecode,
             record_data=record_data)
 
     @staticmethod

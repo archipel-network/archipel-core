@@ -318,7 +318,6 @@ static uint8_t *chunk_read(struct cla_link *link)
 
 	/* We could not read from input, thus, reset all parsers. */
 	if (result != UD3TN_OK) {
-		LOG("Couldn't read from input!");
 		link->config->vtable->cla_rx_task_reset_parsers(link);
 		return rx_data->input_buffer.end;
 	}

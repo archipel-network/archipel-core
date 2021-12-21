@@ -38,7 +38,8 @@ def build_bibe_bundle(client, dest_eid, payload):
         BibeProtocolDataUnit(
             bundle=inner_bundle,
             transmission_id=0,
-            retransmission_time=0))
+            retransmission_time=0,
+            compatibility=False))
 
     return outer_bundle
 

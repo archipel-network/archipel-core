@@ -51,11 +51,18 @@ def main():
         type=int, default=3000,
         help="TCP timeout in ms (default: 3000)"
     )
+    parser.add_argument(
+        "--compatibility",
+        action='store_true',
+        help="If set switches BIBE administrative record type \
+            code to 7 for compatibility with older implementations."
+    )
 
     args = parser.parse_args()
 
     with MTCPConnection(args.host, args.port, timeout=args.timeout) as conn:
         payload = args.payload.encode() if args.payload else PAYLOAD_DATA
+        compat = args.compatibility
         destination_eid = args.inner
         application_eid = args.outer
         outgoing_eid = "dtn://sender.dtn"
@@ -75,7 +82,8 @@ def main():
             BibeProtocolDataUnit(
                 bundle=inner_bundle,
                 transmission_id=0,
-                retransmission_time=0)
+                retransmission_time=0,
+                compatibility=compat)
         )
         conn.send_bundle(bytes(encapsulating_bundle))
 
