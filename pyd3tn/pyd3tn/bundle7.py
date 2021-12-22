@@ -815,6 +815,9 @@ class Bundle(object, metaclass=BundleMeta):
         elif record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT:
             bpdu = BibeProtocolDataUnit.parse_bibe_pdu(record_data[1])
             return {"record_type": 3, "record_data": bpdu}
+        elif record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT_COMPAT:
+            bpdu = BibeProtocolDataUnit.parse_bibe_pdu(record_data[1])
+            return {"record_type": 7, "record_data": bpdu}
 
         return {}
 
