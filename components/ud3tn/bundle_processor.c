@@ -706,8 +706,8 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			adu.payload,
 			adu.length
 		);
-		LOGF("BundleProcessor: Received administrative record of type %u", record->type);
 		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL) {
+			LOGF("BundleProcessor: Received administrative record of type %u", record->type);
 			bundle_handle_custody_signal(record);
 			bundle_adu_free_members(adu);
 		} else if (record != NULL && record->type == BIBE_AR_TYPE_CODE) {
