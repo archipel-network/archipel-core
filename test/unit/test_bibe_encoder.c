@@ -36,7 +36,7 @@ TEST(bibe_header_encoder, get_encoded_size)
 
 TEST(bibe_header_encoder, encode_header)
 {
-	struct header hdr;
+	struct bibe_header hdr;
 
 	hdr = bibe_encode_header("dtn://ud3tn.dtn", 90);
 

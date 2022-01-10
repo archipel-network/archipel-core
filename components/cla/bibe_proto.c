@@ -118,10 +118,10 @@ static void write_to_buffer(
 	memcpy(&buffer[position], data, length);
 }
 
-struct header bibe_encode_header(char *dest_eid, size_t payload_len)
+struct bibe_header bibe_encode_header(char *dest_eid, size_t payload_len)
 {
 
-	struct header hdr;
+	struct bibe_header hdr;
 	size_t eid_len = strlen(dest_eid);
 
 	/* Encoding length of the bundle byte string */

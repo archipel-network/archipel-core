@@ -434,7 +434,7 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 	if (!link->active)
 		return;
 
-	struct header hdr;
+	struct bibe_header hdr;
 
 	hdr = bibe_encode_header(dest_eid, length);
 
