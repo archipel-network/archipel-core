@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#--------------------------------------------------------------------------------------#
+# This automated test checks whether µD3TN's BIBE functionality is working as expected #
+# by starting 4 µD3TN instances resembling 2 BIBE nodes and forwarding a BIBE bundle   #
+# using BIBE node 1 (lower1.dtn and upper1.dtn) to a bundlesink running on BIBE node 2 #
+# (lower2.dtn and upper2.dtn).                                                         #
+#--------------------------------------------------------------------------------------#
+
 set -o errexit
 
 # This assumes you are running the command from within the "ud3tn" directory.
