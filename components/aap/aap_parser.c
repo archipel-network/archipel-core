@@ -4,8 +4,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
 
-#include "cbor.h"
-
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
