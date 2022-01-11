@@ -403,7 +403,7 @@ static int16_t process_aap_message(
 		break;
 
 	case AAP_MESSAGE_SENDBIBE:
-		LOGF("AppAgent: Received bundle (l = %zu) for %s via AAP.",
+		LOGF("AppAgent: Received BIBE bundle (l = %zu) for %s via AAP.",
 		     msg.payload_length, msg.eid);
 
 		if (!config->registered_agent_id) {
@@ -432,10 +432,10 @@ static int16_t process_aap_message(
 		msg.payload = NULL;
 
 		if (bibe_bundle_id == BUNDLE_INVALID_ID) {
-			LOG("AppAgent: Bundle creation failed!");
+			LOG("AppAgent: BIBE bundle creation failed!");
 			response.type = AAP_MESSAGE_NACK;
 		} else {
-			LOGF("AppAgent: Injected new bundle (#%llu).",
+			LOGF("AppAgent: Injected new BIBE bundle (#%llu).",
 			     (uint64_t)bibe_bundle_id);
 			response.type = AAP_MESSAGE_SENDCONFIRM;
 			response.bundle_id = bibe_bundle_id;
