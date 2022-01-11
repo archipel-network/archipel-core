@@ -37,4 +37,7 @@ struct bundle_list *bundle7_generate_custody_signal(
 struct bundle_administrative_record *bundle7_parse_administrative_record(
 	const uint8_t *const data, const size_t length);
 
+
+void free_record_fields(struct bundle_administrative_record *record);
+
 #endif /* BUNDLE7_REPORTS_INCLUDED */

@@ -693,16 +693,13 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 void free_record_fields(struct bundle_administrative_record *record)
 {
 	/* Free status report */
-	if (record->status_report != NULL)
-	{
+	if (record->status_report != NULL) {
 		free(record->status_report);
 		record->status_report = NULL;
 	}
 	/* Free BPDU */
-	if (record->bpdu != NULL)
-	{
-		if (record->bpdu->encapsulated_bundle != NULL)
-		{
+	if (record->bpdu != NULL) {
+		if (record->bpdu->encapsulated_bundle != NULL) {
 			free(record->bpdu->encapsulated_bundle);
 			record->bpdu->encapsulated_bundle = NULL;
 		}
