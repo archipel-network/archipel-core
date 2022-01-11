@@ -180,10 +180,10 @@ struct bundle_unique_identifier {
 };
 
 enum bundle_administrative_record_type {
-	BUNDLE_AR_STATUS_REPORT  = 1,
-	BUNDLE_AR_CUSTODY_SIGNAL = 2,
-	BUNDLE_AR_BPDU = 3,
-	BUNDLE_AR_BPDU_COMPAT = 7,
+	BUNDLE_AR_STATUS_REPORT  = 1,	// administrative record is a status report
+	BUNDLE_AR_CUSTODY_SIGNAL = 2,	// administrative record is a custody signal
+	BUNDLE_AR_BPDU = 3,				// administrative record is a BPDU as defined in the most recent BIBE draft
+	BUNDLE_AR_BPDU_COMPAT = 7,		// administrative record is a BPDU as defined in the first BIBE draft
 };
 
 enum bundle_administrative_record_flags {
@@ -238,16 +238,16 @@ struct bibe_protocol_data_unit {
 	// Transmission ID
 	//
 	// The transmission ID for a BPDU for which custody transfer is NOT requested SHALL be
-    // zero. The transmission ID for a BPDU for which custody transfer IS
-    // requested SHALL be the current value of the local node's custodial
-    // transmission count, plus 1.
+	// zero. The transmission ID for a BPDU for which custody transfer IS
+	// requested SHALL be the current value of the local node's custodial
+	// transmission count, plus 1.
 	//
 	// Retransmission time (i.e. the time by which custody disposition for this BPDU is expected)
 	//
 	// Retransmission time for a BPDU for which custody transfer is NOT requested SHALL be
-    // zero. Retransmission time for a BPDU for which custody transfer IS
-    // requested SHALL take the form of a "DTN Time" as defined in the
-    // Bundle Protocol specification.
+	// zero. Retransmission time for a BPDU for which custody transfer IS
+	// requested SHALL take the form of a "DTN Time" as defined in the
+	// Bundle Protocol specification.
 	//
 	// Encapsulated Bundle
 	//
