@@ -158,11 +158,4 @@ enum failed_forwarding_policy {
 /* Maximum number of concurrent contacts that can be handled by CM */
 #define MAX_CONCURRENT_CONTACTS 10
 
-#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
-#define BIBE_AR_TYPE_CODE 7
-#else
-#define BIBE_AR_TYPE_CODE 3
-#endif
-
-
 #endif /* CONFIG_H_INCLUDED */

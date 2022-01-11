@@ -139,11 +139,17 @@ struct bibe_header bibe_encode_header(char *dest_eid, size_t payload_len)
 	/* Encoding the BPDU */
 	char *ar_bibe_bytes = malloc(ar_size);
 
-	ar_bibe_bytes[0] = 0x82;				// 82 (100|00010)	-> Array of length 2
-	ar_bibe_bytes[1] = BIBE_AR_TYPE_CODE;	// 03 || 07			-> Integer (record type)
-	ar_bibe_bytes[2] = 0x83;				// 83 (100|00011)	-> Array of length 3
-	ar_bibe_bytes[3] = 0x00;				// 00				-> Integer 0 (transm. ID)
-	ar_bibe_bytes[4] = 0x00;				// 00				-> Integer 0 (retr. time)
+	#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
+	uint8_t typecode = 7;
+	#else
+	uint8_t typecode = 3;
+	#endif
+
+	ar_bibe_bytes[0] = 0x82;		// 82 (100|00010)	-> Array of length 2
+	ar_bibe_bytes[1] = typecode;	// 03 || 07			-> Integer (record type)
+	ar_bibe_bytes[2] = 0x83;		// 83 (100|00011)	-> Array of length 3
+	ar_bibe_bytes[3] = 0x00;		// 00				-> Integer 0 (transm. ID)
+	ar_bibe_bytes[4] = 0x00;		// 00				-> Integer 0 (retr. time)
 	// ar_bibe_bytes[5 to x] contains the length of the bundle byte string
 	// the encapsulated bundle itself will be sent via cla_bibe.c's send_packet_data
 

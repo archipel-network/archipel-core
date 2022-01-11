@@ -710,7 +710,8 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			LOGF("BundleProcessor: Received administrative record of type %u", record->type);
 			bundle_handle_custody_signal(record);
 			bundle_adu_free_members(adu);
-		} else if (record != NULL && record->type == BIBE_AR_TYPE_CODE) {
+		} else if (record != NULL &&
+				  (record->type == BUNDLE_AR_BPDU || record->type == BUNDLE_AR_BPDU_COMPAT)) {
 			LOGF(
 				"BundleProcessor: Got BIBE bundle with transmission id: %u and retransmission time: %u.",
 				record->bpdu->transmission_id,

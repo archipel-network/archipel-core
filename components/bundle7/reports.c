@@ -321,7 +321,10 @@ error_t administrative_record(struct record_parser *state, CborValue *it)
 	case BUNDLE_AR_STATUS_REPORT:
 		err = status_report(state, &nested);
 		break;
-	case BIBE_AR_TYPE_CODE: /*BUNDLE_AR_BPDU:*/
+	case BUNDLE_AR_BPDU:
+	#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
+	case BUNDLE_AR_BPDU_COMPAT:
+	#endif // BIBE_CL_DRAFT_1_COMPATIBILITY
 		err = bpdu(state, &nested);
 		break;
 	default:
@@ -666,7 +669,7 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 		state->record->bpdu->encapsulated_bundle,
 		&bundle_str_len,
 		NULL
-		);
+	);
 	if (cbor_value_advance(&report))
 		return ERROR_CBOR;
 
@@ -684,6 +687,28 @@ error_t bpdu(struct record_parser *state, CborValue *it)
 	state->record->bundle_source_eid = 0;
 	state->record->bundle_source_eid_length = 0;
 	return ERROR_NONE;
+}
+
+
+void free_record_fields(struct bundle_administrative_record *record)
+{
+	/* Free status report */
+	if (record->status_report != NULL)
+	{
+		free(record->status_report);
+		record->status_report = NULL;
+	}
+	/* Free BPDU */
+	if (record->bpdu != NULL)
+	{
+		if (record->bpdu->encapsulated_bundle != NULL)
+		{
+			free(record->bpdu->encapsulated_bundle);
+			record->bpdu->encapsulated_bundle = NULL;
+		}
+		free(record->bpdu);
+		record->bpdu = NULL;
+	}
 }
 
 
@@ -707,6 +732,7 @@ struct bundle_administrative_record *bundle7_parse_administrative_record(
 	record->event_nanoseconds = 0;
 	record->custody_signal = NULL;
 	record->status_report = NULL;
+	record->bpdu = NULL;
 
 	struct record_parser state = {
 		.record = record,
@@ -721,6 +747,7 @@ struct bundle_administrative_record *bundle7_parse_administrative_record(
 		0, &parser, &it
 	);
 	if (err) {
+		free_record_fields(record);
 		free(record);
 		return NULL;
 	}
