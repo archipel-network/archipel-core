@@ -30,8 +30,14 @@ TEST_TEAR_DOWN(bibe_header_encoder)
 
 TEST(bibe_header_encoder, get_encoded_size)
 {
+	struct bibe_header hdr;
+
+	hdr = bibe_encode_header("dtn://ud3tn.dtn", 90);
+
 	TEST_ASSERT_EQUAL(EXPECTED_HEADER_LENGTH,
-				  bibe_encode_header("dtn://ud3tn.dtn", 90).hdr_len);
+				  hdr.hdr_len);
+
+	free(hdr.data);
 }
 
 TEST(bibe_header_encoder, encode_header)
@@ -45,6 +51,8 @@ TEST(bibe_header_encoder, encode_header)
 		hdr.data,
 		EXPECTED_HEADER_LENGTH
 	);
+
+	free(hdr.data);
 }
 
 TEST_GROUP_RUNNER(bibe_header_encoder)
