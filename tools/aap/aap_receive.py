@@ -43,7 +43,7 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
                 print("Unexpected payload != '{}'".format(verify_pl))
                 sys.exit(1)
         else:
-            print("Received adminitstrative record of unknown type \
+            print("Received administrative record of unknown type \
             from '{}'!".format(
                 msg.eid
             ))

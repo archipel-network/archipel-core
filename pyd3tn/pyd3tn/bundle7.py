@@ -568,17 +568,17 @@ class BibeProtocolDataUnit(AdministrativeRecord):
 
     def __init__(self, bundle, transmission_id=0,
                  retransmission_time=0, compatibility=False):
-        """Initializes a new BIBE Protocol Data unit
+        """Initializes a new BIBE Protocol Data Unit
 
         Args:
             bundle (Bundle): The bundle which will be encapsulated in the BPDU.
             transmission_id (int): If custody is requested the current value of
-            the local node's custodial transmission count, plus 1. Else 0.
+                the local node's custodial transmission count, plus 1. Else 0.
             retransmission_time (DtnTime): If custody is requested the time by
-            which custody disposition for this BPDU is expected. Else 0.
+                which custody disposition for this BPDU is expected. Else 0.
             compatibility (Bool): Flag for switching the administrative record
-            type code used to 7 for compatibility with older BIBE
-            implementations.
+                type code used to 7 for compatibility with older BIBE
+                implementations.
         """
         record_data = [transmission_id, retransmission_time, bytes(bundle)]
         typecode = RecordType.BIBE_PROTOCOL_DATA_UNIT if not compatibility \
@@ -601,7 +601,7 @@ class BibeProtocolDataUnit(AdministrativeRecord):
             "transmission_id": data[0],
             "retransmission_time": data[1],
             "encapsulated_bundle": data[2]
-            }
+        }
 
 # ----------------
 # Extension Blocks
@@ -812,12 +812,10 @@ class Bundle(object, metaclass=BundleMeta):
 
         if record_type == RecordType.BUNDLE_STATUS_REPORT:
             pass
-        elif record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT:
+        elif (record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT or
+              record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT_COMPAT):
             bpdu = BibeProtocolDataUnit.parse_bibe_pdu(record_data[1])
-            return {"record_type": 3, "record_data": bpdu}
-        elif record_type == RecordType.BIBE_PROTOCOL_DATA_UNIT_COMPAT:
-            bpdu = BibeProtocolDataUnit.parse_bibe_pdu(record_data[1])
-            return {"record_type": 7, "record_data": bpdu}
+            return {"record_type": record_type, "record_data": bpdu}
 
         return {}
 

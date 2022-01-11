@@ -121,7 +121,7 @@ class AAPMessage:
         if msg_type in (AAPMessageType.SENDBUNDLE,
                         AAPMessageType.RECVBUNDLE,
                         AAPMessageType.SENDBIBE,
-                        AAPMessageType.RECVBIBE,):
+                        AAPMessageType.RECVBIBE):
             if len(data) - index < 8:
                 raise InsufficientAAPDataError(index + 8)
             payload_length, = struct.unpack("!Q", data[index:(index + 8)])
