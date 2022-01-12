@@ -706,38 +706,25 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			adu.payload,
 			adu.length
 		);
+
 		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL) {
 			LOGF("BundleProcessor: Received administrative record of type %u", record->type);
 			bundle_handle_custody_signal(record);
 			bundle_adu_free_members(adu);
 		} else if (record != NULL &&
 				  (record->type == BUNDLE_AR_BPDU || record->type == BUNDLE_AR_BPDU_COMPAT)) {
-			LOGF(
-				"BundleProcessor: Got BIBE bundle with transmission id: %u and retransmission time: %u.",
-				record->bpdu->transmission_id,
-				record->bpdu->retransmission_time
-				);
+			LOG("BundleProcessor: Received BIBE bundle.");
 
-			CborEncoder encoder, array_encoder;
-			uint64_t size = sizeof(record->bpdu->transmission_id) +
-			sizeof(record->bpdu->retransmission_time) +
-			record->bpdu->payload_length;
-			uint8_t *buf = malloc(size);
+			uint8_t *buf = malloc(adu.length - 2);
 
-			// In order to transmit the contents of the bpdu
-			// they have to be encoded in a cbor array
-			cbor_encoder_init(&encoder, buf, size, 0);
-			cbor_encoder_create_array(&encoder, &array_encoder, 3);
-			cbor_encode_uint(&array_encoder, record->bpdu->transmission_id);
-			cbor_encode_uint(&array_encoder, record->bpdu->retransmission_time);
-			cbor_encode_byte_string(&array_encoder, record->bpdu->encapsulated_bundle, record->bpdu->payload_length);
-			cbor_encoder_close_container(&encoder, &array_encoder);
+			for (size_t i = 2; i < adu.length; i++)
+				buf[i-2] = adu.payload[i];
 
-			adu.length = adu.length + sizeof(record->bpdu);
+			adu.length = adu.length - 2;
 			adu.payload = buf;
 			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
 
-			const char *agent_id = "bibe"; //get_agent_id(adu.destination);
+			const char *agent_id = "bibe";
 
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
