@@ -139,7 +139,7 @@ This message can be sent by either the client (the application) or µD3TN and is
 
 ### BIBE Bundle transmission request (SENDBIBE)
 
-The *SENDBIBE* message can only be sent by the so called upper layer or a client (application). It contains the destination EID and the payload data as follows:
+The *SENDBIBE* message can only be sent by the so called upper layer or a client (application). It contains the destination EID and a BIBE Protocol Data Unit as payload data as follows:
 
 ```
 +--------+--------+--------+--------+--------+--------+--------+--------+
@@ -197,7 +197,7 @@ For long-lasting connections, it has to be ensured that the operating system doe
 
 ### BIBE Bundle transmission
 
-If the upper layer has successfully registered at the lower layer, BIBE Bundles can be sent. For this, the upper layer transmits the destination EID as well as the payload data (here the bundle that should be encapsulated) via a *SENDBIBE* message to the lower layer.
+If the upper layer has successfully registered at the lower layer, BIBE Bundles can be sent. For this, the upper layer transmits the destination EID as well as the payload data (here the BPDU containing the bundle that should be encapsulated) via a *SENDBIBE* message to the lower layer.
 If the lower layer could create and queue the bundle for transmission, it sends a *SENDCONFIRM* message back to the upper layer, containing the bundle identifier. If the bundle creation failed or no EID registration was performed beforehand, a *NACK* message is sent back to the upper layer.   
 For more information regarding the operation of BIBE, especially regarding the definitions of the upper and lower layer and the registration process, please have a look at the BIBE docs.
 
