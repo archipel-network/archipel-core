@@ -260,25 +260,13 @@ size_t bibe_forward_to_specific_parser(struct cla_link *link,
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 	size_t result = 0;
 
-	/* The BIBE CLA only cares about AAP messages. */
-	switch (rx_data->payload_type) {
-	case PAYLOAD_UNKNOWN:
-		result = select_bundle_parser_version(rx_data, buffer, length);
-		if (result == 0)
-			bibe_reset_parsers(link);
-		break;
-	case PAYLOAD_AAP:
-		rx_data->cur_parser = rx_data->aap_parser.basedata;
-		result = aap_parser_read(
-			&rx_data->aap_parser,
-			buffer,
-			length
-		);
-		break;
-	default:
-		bibe_reset_parsers(link);
-		return 0;
-	}
+	rx_data->cur_parser = rx_data->aap_parser.basedata;
+	result = aap_parser_read(
+		&rx_data->aap_parser,
+		buffer,
+		length
+	);
+
 
 	if (rx_data->aap_parser.status == PARSER_STATUS_DONE) {
 		struct aap_message msg = aap_parser_extract_message(&rx_data->aap_parser);

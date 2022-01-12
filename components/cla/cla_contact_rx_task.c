@@ -111,33 +111,27 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 	/* Empty buffers cannot be parsed */
 	if (length == 0)
 		return 0;
-	if (((buffer[0] & 0xF0) >> 4) != 0x1) {
-		/* Received message is a bundle */
-		switch (buffer[0]) {
-		/* Bundle Protocol v6 (RFC 5050) */
-		case 6:
-			/* rx_data->spp_parser->type = INPUT_TYPE_BUNDLE_V6; */
-			rx_data->payload_type = PAYLOAD_BUNDLE6;
-			rx_data->cur_parser = rx_data->bundle6_parser.basedata;
-			return bundle6_parser_read(&rx_data->bundle6_parser,
-					buffer, length);
-		/* CBOR indefinite array -> Bundle Protocol v7 */
-		case 0x9f:
-			/* rx_data->input_parser->type = INPUT_TYPE_BUNDLE_V7; */
-			rx_data->payload_type = PAYLOAD_BUNDLE7;
-			rx_data->cur_parser = rx_data->bundle7_parser.basedata;
-			return bundle7_parser_read(&rx_data->bundle7_parser,
-					buffer, length);
-		/* Unknown Bundle Protocol version, keep buffer */
-		default:
-			return 0;
-		}
-	} else {
-		/* Received message is an AAP message */
-		rx_data->payload_type = PAYLOAD_AAP;
-		rx_data->cur_parser = rx_data->aap_parser.basedata;
-		return aap_parser_read(&rx_data->aap_parser, buffer, length);
+
+	switch (buffer[0]) {
+	/* Bundle Protocol v6 (RFC 5050) */
+	case 6:
+		/* rx_data->spp_parser->type = INPUT_TYPE_BUNDLE_V6; */
+		rx_data->payload_type = PAYLOAD_BUNDLE6;
+		rx_data->cur_parser = rx_data->bundle6_parser.basedata;
+		return bundle6_parser_read(&rx_data->bundle6_parser,
+				buffer, length);
+	/* CBOR indefinite array -> Bundle Protocol v7 */
+	case 0x9f:
+		/* rx_data->input_parser->type = INPUT_TYPE_BUNDLE_V7; */
+		rx_data->payload_type = PAYLOAD_BUNDLE7;
+		rx_data->cur_parser = rx_data->bundle7_parser.basedata;
+		return bundle7_parser_read(&rx_data->bundle7_parser,
+				buffer, length);
+	/* Unknown Bundle Protocol version, keep buffer */
+	default:
+		return 0;
 	}
+
 }
 
 /**
