@@ -41,15 +41,10 @@ enum ud3tn_result validate_eid(const char *const eid)
 		// check demux
 		return validate_dtn_eid_demux(cur);
 	case EID_SCHEME_IPN:
-		if (validate_ipn_eid(eid, NULL, NULL) == UD3TN_OK)
-			return UD3TN_OK;
-		return UD3TN_FAIL;
+		return validate_ipn_eid(eid, NULL, NULL);
 	default:
 		return UD3TN_FAIL;
 	}
-
-	// unknown scheme
-	return UD3TN_FAIL;
 }
 
 enum ud3tn_result validate_dtn_eid_demux(const char *demux)

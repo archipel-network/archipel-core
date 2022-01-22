@@ -59,7 +59,7 @@ Default arguments and internal settings such as storage, routing, and connection
 
 ### Configure contacts with other µD3TN / BP nodes
 
-µD3TN performs its bundle forwarding decisions based on _contacts_, which are associated with a specific bundle _node_. Each instance accepts bundles addressed to `<µD3TN_EID>/config` (by default, only via AAP) and parses them according to the specification documented at [`doc/contacts_data_format.md`](doc/contacts_data_format.md). To sum it up, a contact can be used to configure:
+µD3TN performs its bundle forwarding decisions based on _contacts_, which are associated with a specific bundle _node_. Each instance accepts bundles addressed to `dtn://<ud3tn-node-name>/config` or `ipn:<ud3tn-node-number>.9000` (by default, only via AAP) and parses them according to the specification documented at [`doc/contacts_data_format.md`](doc/contacts_data_format.md). To sum it up, a contact can be used to configure:
 
 - start and end time (optional),
 - data rate (optional),
