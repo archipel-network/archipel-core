@@ -324,8 +324,9 @@ static struct bundle_processing_result process_bundle(struct bundle *bundle)
 	};
 
 	ASSERT(bundle != NULL);
+	uint64_t timestamp_s = hal_time_get_timestamp_s();
 
-	if (bundle_get_expiration_time_s(bundle) < hal_time_get_timestamp_s()) {
+	if (bundle_get_expiration_time_s(bundle, timestamp_s) < timestamp_s) {
 		// Bundle is already expired on arrival at the router...
 		result.status_or_fragments = BUNDLE_RESULT_EXPIRED;
 		return result;

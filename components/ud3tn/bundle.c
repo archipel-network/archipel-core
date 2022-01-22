@@ -12,9 +12,6 @@
 #include "bundle7/eid.h"
 #include "bundle7/serializer.h"
 
-#include "platform/hal_io.h"
-#include "platform/hal_time.h"
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -430,7 +427,8 @@ size_t bundle_get_last_fragment_min_size(struct bundle *bundle)
 	}
 }
 
-uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle)
+uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle,
+	const uint64_t current_time_s)
 {
 	if (bundle->creation_timestamp_ms != 0)
 		return (bundle->creation_timestamp_ms + bundle->lifetime_ms +
@@ -445,7 +443,7 @@ uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle)
 	    age_block->length))
 		return 0;
 
-	const uint64_t current_time_ms = hal_time_get_timestamp_ms();
+	const uint64_t current_time_ms = current_time_s * 1000;
 
 	// EXP_TIME = CUR_TIME + REMAINING_LIFETIME
 	// REMAINING_LIFETIME = TOTAL_LIFETIME - TOTAL_AGE

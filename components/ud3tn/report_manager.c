@@ -2,6 +2,8 @@
 #include "ud3tn/parser.h"
 #include "ud3tn/report_manager.h"
 
+#include "platform/hal_time.h"
+
 #include "bundle6/reports.h"
 #include "bundle7/reports.h"
 
@@ -20,14 +22,16 @@ struct bundle *generate_status_report(
 		return bundle6_generate_status_report(
 			bundle,
 			report,
-			local_eid
+			local_eid,
+			hal_time_get_timestamp_s()
 		);
 	// BPv7-bis
 	case 7:
 		return bundle7_generate_status_report(
 			bundle,
 			report,
-			local_eid
+			local_eid,
+			hal_time_get_timestamp_s()
 		);
 	default:
 		return NULL;
@@ -48,7 +52,8 @@ struct bundle_list *generate_custody_signal(
 		signal_bundle = bundle6_generate_custody_signal(
 				bundle,
 				signal,
-				local_eid
+				local_eid,
+				hal_time_get_timestamp_s()
 		);
 		return bundle_list_entry_create(signal_bundle);
 	default:

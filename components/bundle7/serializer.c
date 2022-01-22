@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "platform/hal_io.h"
 
 /* CBOR output buffer size. This buffer will be allocated during the
  * serialization process and released afterwards
