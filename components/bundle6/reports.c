@@ -2,8 +2,6 @@
 #include "bundle6/reports.h"
 #include "bundle6/sdnv.h"
 
-#include "platform/hal_time.h"
-
 #include "ud3tn/common.h"
 #include "ud3tn/parser.h"
 #include "ud3tn/report_manager.h"
@@ -20,12 +18,12 @@
 static struct bundle *encapsulate_record(
 	const struct bundle * const bundle,
 	const char *source_eid, const char *dest_eid,
-	uint8_t *payload, const int payload_len)
+	uint8_t *payload, const int payload_len, const uint64_t timestamp_s)
 {
 	// Lifetime
 	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time_s(bundle) -
-		(int64_t)hal_time_get_timestamp_s()
+		(int64_t)bundle_get_expiration_time_s(bundle, timestamp_s) -
+		timestamp_s
 	);
 
 	if (lifetime_seconds < 0) {
@@ -36,7 +34,7 @@ static struct bundle *encapsulate_record(
 	struct bundle *result = bundle6_create_local(
 		payload, payload_len,
 		source_eid, dest_eid,
-		hal_time_get_timestamp_s(), 1,
+		timestamp_s, 1,
 		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 
 	if (result == NULL) {
@@ -66,7 +64,8 @@ static struct bundle *encapsulate_record(
 static struct bundle *generate_record(
 		const struct bundle * const bundle, const char *source_eid,
 		const char *dest_eid, const bool is_custody_signal,
-		const uint8_t prefix_1, const uint8_t prefix_2)
+		const uint8_t prefix_1, const uint8_t prefix_2,
+		const uint64_t timestamp_s)
 {
 	uint8_t *buffer = (uint8_t *)malloc(ADMINISTRATVE_RECORD_MAX_SIZE);
 	uint8_t *cur = buffer;
@@ -90,7 +89,7 @@ static struct bundle *generate_record(
 		cur += sdnv_write_u32(cur, bundle->payload_block->length);
 	}
 	/* Use the current time as generation time, append bundle times */
-	millitime = hal_time_get_timestamp_ms();
+	millitime = timestamp_s * 1000;
 	/* Add a "DTN time": 1) TS, 2) Nanoseconds since start of cur. second */
 	cur += sdnv_write_u64(cur, (millitime / 1000));
 	cur += sdnv_write_u32(cur, (millitime % 1000) * 1000); /* "ns" */
@@ -111,7 +110,8 @@ static struct bundle *generate_record(
 		source_eid,
 		dest_eid,
 		buffer,
-		cur - buffer
+		cur - buffer,
+		timestamp_s
 	);
 	if (ret == NULL)
 		free(buffer);
@@ -122,7 +122,8 @@ static struct bundle *generate_record(
 struct bundle *bundle6_generate_status_report(
 	const struct bundle * const bundle,
 	const struct bundle_status_report *report,
-	const char *local_eid)
+	const char *local_eid,
+	const uint64_t timestamp_s)
 {
 	return generate_record(
 		bundle,
@@ -130,7 +131,8 @@ struct bundle *bundle6_generate_status_report(
 		bundle->report_to,
 		true,
 		(uint8_t)(report->status),
-		(uint8_t)(report->reason)
+		(uint8_t)(report->reason),
+		timestamp_s
 	);
 }
 
@@ -138,7 +140,8 @@ struct bundle *bundle6_generate_status_report(
 struct bundle *bundle6_generate_custody_signal(
 	const struct bundle * const bundle,
 	const struct bundle_custody_signal *signal,
-	const char *local_eid)
+	const char *local_eid,
+	const uint64_t timestamp_s)
 {
 	return generate_record(
 		bundle,
@@ -148,7 +151,8 @@ struct bundle *bundle6_generate_custody_signal(
 		((uint8_t)(signal->reason) & 0x7F)
 			| ((signal->type == BUNDLE_CS_TYPE_ACCEPTANCE)
 				? 0x80 : 0x00),
-		0
+		0,
+		timestamp_s
 	);
 }
 

@@ -3,8 +3,6 @@
 #include "bundle7/eid.h"
 #include "bundle7/create.h"
 
-#include "platform/hal_time.h"
-
 #include "ud3tn/common.h"
 
 #include "cbor.h"
@@ -155,7 +153,8 @@ static void serialize_status_info(
 struct bundle *bundle7_generate_status_report(
 	const struct bundle * const bundle,
 	const struct bundle_status_report *prototype,
-	const char *source)
+	const char *source,
+	const uint64_t timestamp_s)
 {
 	uint8_t *payload;
 	CborEncoder container, record, report, status_info;
@@ -235,8 +234,8 @@ struct bundle *bundle7_generate_status_report(
 
 	// Lifetime
 	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time_s(bundle) -
-		(int64_t)hal_time_get_timestamp_s()
+		(int64_t)bundle_get_expiration_time_s(bundle, timestamp_s) -
+		timestamp_s
 	);
 
 	if (lifetime_seconds < 0) {
@@ -246,7 +245,7 @@ struct bundle *bundle7_generate_status_report(
 
 	return bundle7_create_local(
 		compress, written, source, bundle->report_to,
-		hal_time_get_timestamp_s(), 1,
+		timestamp_s, 1,
 		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 }
 
@@ -254,7 +253,8 @@ struct bundle *bundle7_generate_status_report(
 struct bundle_list *bundle7_generate_custody_signal(
 	const struct bundle * const bundle,
 	const struct bundle_custody_signal *signal,
-	const char *source)
+	const char *source,
+	const uint64_t timestamp_s)
 {
 	(void)bundle;
 	(void)signal;

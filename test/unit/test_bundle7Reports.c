@@ -83,7 +83,7 @@ TEST(bundle7Reports, generate_status_reports)
 	};
 
 	struct bundle *record = bundle7_generate_status_report(bundle,
-		&report, "dtn:test");
+		&report, "dtn:test", 0);
 
 	TEST_ASSERT_NOT_NULL(record);
 

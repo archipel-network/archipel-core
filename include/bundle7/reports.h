@@ -14,7 +14,8 @@
 struct bundle *bundle7_generate_status_report(
 	const struct bundle * const bundle,
 	const struct bundle_status_report *report,
-	const char *source);
+	const char *source,
+	const uint64_t timestamp_s);
 
 
 /**
@@ -29,7 +30,8 @@ struct bundle *bundle7_generate_status_report(
 struct bundle_list *bundle7_generate_custody_signal(
 	const struct bundle * const bundle,
 	const struct bundle_custody_signal *signal,
-	const char *source);
+	const char *source,
+	const uint64_t timestamp_s);
 
 /**
  * Parses the payload block of the a BPv7-bis administrative record
