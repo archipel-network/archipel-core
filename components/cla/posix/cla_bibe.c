@@ -145,7 +145,7 @@ static void bibe_link_management_task(void *p)
 
 static void launch_connection_management_task(
 	struct bibe_config *const bibe_config,
-	const int sock, const char *cla_addr)
+	const char *cla_addr)
 {
 	ASSERT(cla_addr);
 	struct bibe_contact_parameters *contact_params =
@@ -159,24 +159,16 @@ static void launch_connection_management_task(
 	contact_params->config = bibe_config;
 	contact_params->connect_attempt = 0;
 
-	if (sock < 0) {
-		contact_params->cla_sock_addr = cla_get_connect_addr(
-			cla_addr,
-			"bibe"
-		);
-		contact_params->socket = -1;
-		contact_params->connected = false;
-		contact_params->in_contact = true;
-	} else {
-		ASSERT(sock != -1);
-		contact_params->cla_sock_addr = strdup(cla_addr);
-		contact_params->socket = sock;
-		contact_params->connected = true;
-		contact_params->in_contact = false;
-	}
+	contact_params->cla_sock_addr = cla_get_connect_addr(
+		cla_addr,
+		"bibe"
+	);
+	contact_params->socket = -1;
+	contact_params->connected = false;
+	contact_params->in_contact = true;
 
 	if (!contact_params->cla_sock_addr) {
-		LOG("bibe: Failed to copy CLA address!");
+		LOG("bibe: Failed to obtain CLA address!");
 		goto fail;
 	}
 
@@ -374,7 +366,7 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 		return UD3TN_OK;
 	}
 
-	launch_connection_management_task(bibe_config, -1, cla_addr);
+	launch_connection_management_task(bibe_config, cla_addr);
 	hal_semaphore_release(bibe_config->param_htab_sem);
 
 	return UD3TN_OK;
