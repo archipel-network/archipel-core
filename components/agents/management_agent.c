@@ -23,21 +23,21 @@ static void callback(struct bundle_adu data, void *param)
 	if (!ma_param->allow_remote_configuration) {
 		if (strncmp(ma_param->local_eid, data.source,
 		    strlen(ma_param->local_eid)) != 0) {
-			LOGF("MgmgtAgent: Dropped config message from foreign endpoint",
+			LOGF("MgmtAgent: Dropped config message from foreign endpoint",
 			     data.source);
 			return;
 		}
 	}
 
 	if (data.length < 1) {
-		LOG("MgmgtAgent: Received payload without a command.");
+		LOG("MgmtAgent: Received payload without a command.");
 		bundle_adu_free_members(data);
 		return;
 	}
 
 	switch ((enum management_command)data.payload[0]) {
 	default:
-		LOG("MgmgtAgent: Received invalid management command.");
+		LOG("MgmtAgent: Received invalid management command.");
 		break;
 	case MGMT_CMD_SET_TIME:
 		if (data.length == 9) {
@@ -53,9 +53,9 @@ static void callback(struct bundle_adu data, void *param)
 			);
 
 			hal_time_init(t);
-			LOGF("MgmgtAgent: Updated time to DTN ts: %llu", t);
+			LOGF("MgmtAgent: Updated time to DTN ts: %llu", t);
 		} else {
-			LOG("MgmgtAgent: Received invalid time command.");
+			LOG("MgmtAgent: Received invalid time command.");
 		}
 		break;
 	}

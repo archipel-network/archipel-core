@@ -191,7 +191,7 @@ static int send_message(const int socket_fd,
 
 	aap_serialize(msg, write_to_socket, &wsp);
 	if (wsp.errno_)
-		LOGF("send(): %s", strerror(wsp.errno_));
+		LOGF("AppAgent: send(): %s", strerror(wsp.errno_));
 	return -wsp.errno_;
 }
 
@@ -398,11 +398,11 @@ static int16_t process_aap_message(
 		break;
 
 	case AAP_MESSAGE_CANCELBUNDLE:
-		LOGF("Received bundle cancellation request for bundle #%llu.",
+		LOGF("AppAgent: Received bundle cancellation request for bundle #%llu.",
 		     (uint64_t)msg.bundle_id);
 
 		// TODO: Signal to Bundle Processor + implement handling of it
-		LOG("Bundle cancellation failed (NOT IMPLEMENTED)!");
+		LOG("AppAgent: Bundle cancellation failed (NOT IMPLEMENTED)!");
 
 		response.type = AAP_MESSAGE_NACK;
 		break;
@@ -448,7 +448,7 @@ static ssize_t receive_from_socket(
 	);
 	if (recv_result <= 0) {
 		if (recv_result < 0)
-			LOGF("recv(): %s", strerror(errno));
+			LOGF("AppAgent: recv(): %s", strerror(errno));
 		return -1;
 	}
 	bytes_available += recv_result;
@@ -529,7 +529,7 @@ static void application_agent_comm_task(void *const param)
 
 	for (;;) {
 		if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {
-			LOGF("poll(): %s", strerror(errno));
+			LOGF("AppAgent: poll(): %s", strerror(errno));
 			// Try again if interrupted by a signal, else fail.
 			if (errno == EINTR)
 				continue;
@@ -558,7 +558,7 @@ static void application_agent_comm_task(void *const param)
 			if (pipeq_read_all(config->bundle_pipe_fd[0],
 					   &data,
 					   sizeof(struct bundle_adu)) <= 0) {
-				LOGF("read(): %s", strerror(errno));
+				LOGF("AppAgent: read(): %s", strerror(errno));
 				break;
 			}
 			if (send_bundle(config->socket_fd, data) < 0)

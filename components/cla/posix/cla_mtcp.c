@@ -442,7 +442,7 @@ void mtcp_begin_packet(struct cla_link *link, size_t length)
 	const size_t hdr_len = mtcp_encode_header(buffer, BUFFER_SIZE, length);
 
 	if (tcp_send_all(tcp_link->connection_socket, buffer, hdr_len) == -1) {
-		LOG("mtcp: Error during sending. Data discarded.");
+		LOG("MTCP: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -463,7 +463,7 @@ void mtcp_send_packet_data(
 		return;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
-		LOG("mtcp: Error during sending. Data discarded.");
+		LOG("MTCP: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -522,21 +522,21 @@ struct cla_config *mtcp_create(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (option_count != 2) {
-		LOG("mtcp: Options format has to be: <IP>,<PORT>");
+		LOG("MTCP: Options format has to be: <IP>,<PORT>");
 		return NULL;
 	}
 
 	struct mtcp_config *config = malloc(sizeof(struct mtcp_config));
 
 	if (!config) {
-		LOG("mtcp: Memory allocation failed!");
+		LOG("MTCP: Memory allocation failed!");
 		return NULL;
 	}
 
 	if (mtcp_init(config, options[0], options[1],
 		      bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("mtcp: Initialization failed!");
+		LOG("MTCP: Initialization failed!");
 		return NULL;
 	}
 
