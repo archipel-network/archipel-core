@@ -84,6 +84,7 @@ size_t bibe_parser_parse(const uint8_t *buffer,
 		return CborErrorIllegalType;
 
 	size_t bundle_str_len;
+	enum CborError retval;
 
 	cbor_value_get_string_length(&report, &bundle_str_len);
 	//allocate memory for the encapsulated bundle
@@ -98,18 +99,24 @@ size_t bibe_parser_parse(const uint8_t *buffer,
 		bpdu->encapsulated_bundle,
 		&bundle_str_len,
 		NULL
-		);
-	if (cbor_value_advance(&report))
-		return CborErrorUnexpectedEOF;
+	);
+	if (cbor_value_advance(&report)) {
+		retval = CborErrorUnexpectedEOF;
+		goto fail;
+	}
 
 	// Leave BPDU container
-	if (!cbor_value_at_end(&report))
-		return CborErrorInternalError;
-	if (cbor_value_leave_container(&it, &report))
-		return CborErrorInternalError;
+	if (!cbor_value_at_end(&report) ||
+	    cbor_value_leave_container(&it, &report)) {
+		retval = CborErrorInternalError;
+		goto fail;
+	}
 
 	return 0;
 
+fail:
+	free(bpdu->encapsulated_bundle);
+	return retval;
 }
 
 static void write_to_buffer(
