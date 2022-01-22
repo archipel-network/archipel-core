@@ -1,9 +1,12 @@
 #ifndef CLA_bibe_H
 #define CLA_bibe_H
 
+#include "aap/aap_parser.h"
+
 #include "cla/cla.h"
 #include "cla/posix/cla_tcp_common.h"
 #include "cla/bibe_proto.h"
+
 #include "ud3tn/bundle_agent_interface.h"
 
 #include <stddef.h>
@@ -16,7 +19,7 @@ struct cla_config *bibe_create(
 
 struct bibe_link {
 	struct cla_tcp_link base;
-	struct parser bibe_parser;
+	struct aap_parser aap_parser;
 };
 
 size_t bibe_mbs_get(struct cla_config *const config);

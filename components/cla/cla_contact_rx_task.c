@@ -1,5 +1,3 @@
-#include "aap/aap_parser.h"
-
 #include "cla/blackhole_parser.h"
 #include "cla/cla.h"
 #include "cla/cla_contact_rx_task.h"
@@ -75,9 +73,6 @@ enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
 				 &bundle_send, cla_config))
 		return UD3TN_FAIL;
 	rx_data->bundle7_parser.bundle_quota = BUNDLE_QUOTA;
-	aap_parser_init(&rx_data->aap_parser);
-	if (rx_data->aap_parser.basedata == NULL)
-		return UD3TN_FAIL;
 	if (!blackhole_parser_init(&rx_data->blackhole_parser))
 		return UD3TN_FAIL;
 
@@ -90,7 +85,6 @@ void rx_task_reset_parsers(struct rx_task_data *rx_data)
 
 	ASSERT(bundle6_parser_reset(&rx_data->bundle6_parser) == UD3TN_OK);
 	ASSERT(bundle7_parser_reset(&rx_data->bundle7_parser) == UD3TN_OK);
-	aap_parser_reset(&rx_data->aap_parser);
 	ASSERT(blackhole_parser_reset(&rx_data->blackhole_parser) == UD3TN_OK);
 }
 
@@ -100,7 +94,6 @@ void rx_task_data_deinit(struct rx_task_data *rx_data)
 
 	ASSERT(bundle6_parser_deinit(&rx_data->bundle6_parser) == UD3TN_OK);
 	ASSERT(bundle7_parser_deinit(&rx_data->bundle7_parser) == UD3TN_OK);
-	ASSERT(aap_parser_deinit(&rx_data->aap_parser) == UD3TN_OK);
 	ASSERT(blackhole_parser_deinit(&rx_data->blackhole_parser) == UD3TN_OK);
 }
 
@@ -131,7 +124,6 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 	default:
 		return 0;
 	}
-
 }
 
 /**

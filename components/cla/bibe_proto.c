@@ -18,13 +18,6 @@
 #include <stdlib.h>
 
 
-void bibe_parser_reset(struct parser *const bibe_parser)
-{
-	bibe_parser->status = PARSER_STATUS_GOOD;
-	bibe_parser->next_bytes = 0;
-	bibe_parser->flags = PARSER_FLAG_NONE;
-}
-
 size_t bibe_parser_parse(const uint8_t *const buffer,
 			 const size_t length,
 			 struct bibe_protocol_data_unit *const bpdu)

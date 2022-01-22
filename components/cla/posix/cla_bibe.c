@@ -134,7 +134,7 @@ static void bibe_link_management_task(void *p)
 	hal_semaphore_take_blocking(param->config->param_htab_sem);
 	htab_remove(&param->config->param_htab, param->cla_sock_addr);
 	hal_semaphore_release(param->config->param_htab_sem);
-	bibe_parser_reset(&param->link.bibe_parser);
+	aap_parser_reset(&param->link.aap_parser);
 	free(param->cla_sock_addr);
 
 	Task_t management_task = param->management_task;
@@ -173,7 +173,7 @@ static void launch_connection_management_task(
 		goto fail;
 	}
 
-	bibe_parser_reset(&contact_params->link.bibe_parser);
+	aap_parser_init(&contact_params->link.aap_parser);
 
 	struct htab_entrylist *htab_entry = NULL;
 
@@ -242,8 +242,8 @@ void bibe_reset_parsers(struct cla_link *const link)
 
 	rx_task_reset_parsers(&link->rx_task_data);
 
-	bibe_parser_reset(&bibe_link->bibe_parser);
-	link->rx_task_data.cur_parser = &bibe_link->bibe_parser;
+	aap_parser_reset(&bibe_link->aap_parser);
+	link->rx_task_data.cur_parser = bibe_link->aap_parser.basedata;
 }
 
 
@@ -252,19 +252,20 @@ size_t bibe_forward_to_specific_parser(struct cla_link *const link,
 				       const size_t length)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
+	struct bibe_link *const bibe_link = (struct bibe_link *)link;
 	size_t result = 0;
 
-	rx_data->cur_parser = rx_data->aap_parser.basedata;
+	rx_data->cur_parser = bibe_link->aap_parser.basedata;
 	result = aap_parser_read(
-		&rx_data->aap_parser,
+		&bibe_link->aap_parser,
 		buffer,
 		length
 	);
 
 
-	if (rx_data->aap_parser.status == PARSER_STATUS_DONE) {
+	if (bibe_link->aap_parser.status == PARSER_STATUS_DONE) {
 		struct aap_message msg = aap_parser_extract_message(
-			&rx_data->aap_parser
+			&bibe_link->aap_parser
 		);
 
 		// The only relevant message type is RECVBIBE, as the CLA
