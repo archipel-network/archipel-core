@@ -37,6 +37,7 @@ void aap_serialize(const struct aap_message *msg,
  * @param serialize_pl Flag to enable / disable serialization of the
  *				message payload.
  */
-void aap_serialize_into(void *buffer, const struct aap_message *msg, const bool serialize_pl);
+void aap_serialize_into(void *buffer, const struct aap_message *msg,
+			const bool serialize_pl);
 
 #endif // AAP_SERIALIZER_H_INCLUDED

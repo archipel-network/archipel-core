@@ -108,7 +108,8 @@ static void write_to_buffer(void *param, const void *data, const size_t length)
 	ctx->position += length;
 }
 
-void aap_serialize_into(void *buffer, const struct aap_message *msg, const bool serialize_pl)
+void aap_serialize_into(void *buffer, const struct aap_message *msg,
+			const bool serialize_pl)
 {
 	struct write_context ctx = {.buffer = (uint8_t *)buffer, .position = 0};
 

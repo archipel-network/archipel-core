@@ -420,8 +420,8 @@ static int16_t process_aap_message(
 		size_t ar_size = msg.payload_length + 2;
 		uint8_t *ar_bytes = malloc(ar_size);
 
-		ar_bytes[0] = 0x82;		// 82 (100|00010)	-> Array of length 2
-		ar_bytes[1] = typecode;	// 03 || 07			-> Integer (record type)
+		ar_bytes[0] = 0x82;     // 82 (100|00010) -> Array of length 2
+		ar_bytes[1] = typecode; // 03 || 07 -> Integer (record type)
 
 		for (size_t i = 2; i < ar_size; i++)
 			ar_bytes[i] = msg.payload[i-2];
@@ -539,7 +539,11 @@ static ssize_t receive_from_socket(
 static int send_bundle(const int socket_fd, struct bundle_adu data)
 {
 	const struct aap_message bundle_msg = {
-		.type = data.proc_flags == BUNDLE_FLAG_ADMINISTRATIVE_RECORD ? AAP_MESSAGE_RECVBIBE : AAP_MESSAGE_RECVBUNDLE,
+		.type = (
+			data.proc_flags == BUNDLE_FLAG_ADMINISTRATIVE_RECORD
+			? AAP_MESSAGE_RECVBIBE
+			: AAP_MESSAGE_RECVBUNDLE
+		),
 		.eid = data.source,
 		.eid_length = strlen(data.source),
 		.payload = data.payload,
