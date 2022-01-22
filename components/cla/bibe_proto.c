@@ -176,5 +176,7 @@ struct bibe_header bibe_encode_header(char *dest_eid, size_t payload_len)
 	/* Appending the BPDU to the AAP message */
 	write_to_buffer(hdr.data, bibe_bytes, hdr.hdr_len-bpdu_size, bpdu_size);
 
+	free(bibe_bytes);
+
 	return hdr;
 }
