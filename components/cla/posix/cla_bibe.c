@@ -308,6 +308,11 @@ static struct bibe_contact_parameters *get_contact_parameters(
 	struct bibe_config *const bibe_config =
 		(struct bibe_config *)config;
 	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+	char *const eid_delimiter = strchr(cla_sock_addr, '#');
+
+	// If <connect-addr>#<lower-eid> is used (we find a '#' delimiter)
+	if (eid_delimiter)
+		eid_delimiter[0] = '\0'; // null-terminate after sock address
 
 	struct bibe_contact_parameters *param = htab_get(
 		&bibe_config->param_htab,
@@ -322,12 +327,11 @@ static struct cla_tx_queue bibe_get_tx_queue(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-	char *addr = strtok(strdup(cla_addr), "#");
 
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
-		addr
+		cla_addr
 	);
 
 	if (param && param->connected) {
@@ -355,23 +359,22 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-	char *addr = strtok(strdup(cla_addr), "#");
 
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
-		addr
+		cla_addr
 	);
 
 	if (param) {
 		LOGF("bibe: Associating open connection with \"%s\" to new contact",
-		     addr);
+		     cla_addr);
 		param->in_contact = true;
 		hal_semaphore_release(bibe_config->param_htab_sem);
 		return UD3TN_OK;
 	}
 
-	launch_connection_management_task(bibe_config, -1, addr);
+	launch_connection_management_task(bibe_config, -1, cla_addr);
 	hal_semaphore_release(bibe_config->param_htab_sem);
 
 	return UD3TN_OK;
@@ -382,21 +385,20 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
-	char *addr = strtok(strdup(cla_addr), "#");
 
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
 	struct bibe_contact_parameters *const param = get_contact_parameters(
 		config,
-		addr
+		cla_addr
 	);
 
 	if (param && param->in_contact) {
 		LOGF("bibe: Marking open connection with \"%s\" as opportunistic",
-		     addr);
+		     cla_addr);
 		param->in_contact = false;
 		if (param->socket >= 0) {
 			LOGF("bibe: Terminating connection with \"%s\"",
-			     addr);
+			     cla_addr);
 			// Shutting down the socket to force the lower layers
 			// Application Agent to deregister the "bibe" sink.
 			shutdown(param->socket, SHUT_RDWR);
