@@ -235,7 +235,7 @@ size_t bibe_mbs_get(struct cla_config *const config)
 	return SIZE_MAX;
 }
 
-void bibe_reset_parsers(struct cla_link *link)
+void bibe_reset_parsers(struct cla_link *const link)
 {
 	struct bibe_link *const bibe_link = (struct bibe_link *)link;
 
@@ -246,8 +246,9 @@ void bibe_reset_parsers(struct cla_link *link)
 }
 
 
-size_t bibe_forward_to_specific_parser(struct cla_link *link,
-				       const uint8_t *buffer, size_t length)
+size_t bibe_forward_to_specific_parser(struct cla_link *const link,
+				       const uint8_t *const buffer,
+				       const size_t length)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 	size_t result = 0;
@@ -295,7 +296,7 @@ size_t bibe_forward_to_specific_parser(struct cla_link *link,
  */
 
 static struct bibe_contact_parameters *get_contact_parameters(
-	struct cla_config *config, const char *cla_addr)
+	struct cla_config *const config, const char *const cla_addr)
 {
 	struct bibe_config *const bibe_config =
 		(struct bibe_config *)config;
@@ -315,7 +316,8 @@ static struct bibe_contact_parameters *get_contact_parameters(
 }
 
 static struct cla_tx_queue bibe_get_tx_queue(
-	struct cla_config *config, const char *eid, const char *cla_addr)
+	struct cla_config *const config, const char *const eid,
+	const char *const cla_addr)
 {
 	(void)eid;
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;

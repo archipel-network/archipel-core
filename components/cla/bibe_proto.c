@@ -18,16 +18,16 @@
 #include <stdlib.h>
 
 
-void bibe_parser_reset(struct parser *bibe_parser)
+void bibe_parser_reset(struct parser *const bibe_parser)
 {
 	bibe_parser->status = PARSER_STATUS_GOOD;
 	bibe_parser->next_bytes = 0;
 	bibe_parser->flags = PARSER_FLAG_NONE;
 }
 
-size_t bibe_parser_parse(const uint8_t *buffer,
-			 size_t length,
-			 struct bibe_protocol_data_unit *bpdu)
+size_t bibe_parser_parse(const uint8_t *const buffer,
+			 const size_t length,
+			 struct bibe_protocol_data_unit *const bpdu)
 {
 	CborParser parser;
 	CborError err;
@@ -125,7 +125,8 @@ static void write_to_buffer(
 	memcpy(&buffer[position], data, length);
 }
 
-struct bibe_header bibe_encode_header(char *dest_eid, size_t payload_len)
+struct bibe_header bibe_encode_header(char *const dest_eid,
+				      const size_t payload_len)
 {
 
 	struct bibe_header hdr;
