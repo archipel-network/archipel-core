@@ -148,6 +148,7 @@ static void launch_connection_management_task(
 	const char *cla_addr)
 {
 	ASSERT(cla_addr);
+
 	struct bibe_contact_parameters *contact_params =
 		malloc(sizeof(struct bibe_contact_parameters));
 
@@ -262,21 +263,24 @@ size_t bibe_forward_to_specific_parser(struct cla_link *const link,
 
 
 	if (rx_data->aap_parser.status == PARSER_STATUS_DONE) {
-		struct aap_message msg = aap_parser_extract_message(&rx_data->aap_parser);
+		struct aap_message msg = aap_parser_extract_message(
+			&rx_data->aap_parser
+		);
 
-		/* The only relevant message type is RECVBIBE, as the CLA
-		 *  does not need to do anything with WELCOME or ACK messages.
-		 */
+		// The only relevant message type is RECVBIBE, as the CLA
+		// does not need to do anything with WELCOME or ACK messages.
 		if (msg.type == AAP_MESSAGE_RECVBIBE) {
-			/* Parsing the BPDU */
+			// Parsing the BPDU
 			struct bibe_protocol_data_unit bpdu;
 			size_t err = bibe_parser_parse(
 				msg.payload,
 				msg.payload_length,
 				&bpdu
 			);
+
 			if (err == 0 && bpdu.payload_length != 0) {
-				/* Parsing and forwarding the encapsulated bundle. */
+				// Parsing and forwarding the encapsulated
+				// bundle
 				bundle7_parser_read(
 					&rx_data->bundle7_parser,
 					bpdu.encapsulated_bundle,
@@ -320,6 +324,7 @@ static struct cla_tx_queue bibe_get_tx_queue(
 	const char *const cla_addr)
 {
 	(void)eid;
+
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
 
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
@@ -352,6 +357,7 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	(void)eid;
+
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
 
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
@@ -378,6 +384,7 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
 	(void)eid;
+
 	struct bibe_config *const bibe_config = (struct bibe_config *)config;
 
 	hal_semaphore_take_blocking(bibe_config->param_htab_sem);
@@ -422,7 +429,8 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 
 	hdr = bibe_encode_header(dest_eid, length);
 
-	if (tcp_send_all(tcp_link->connection_socket, hdr.data, hdr.hdr_len) == -1) {
+	if (tcp_send_all(tcp_link->connection_socket,
+			 hdr.data, hdr.hdr_len) == -1) {
 		LOG("bibe: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
@@ -478,12 +486,12 @@ static enum ud3tn_result bibe_init(
 	const char *node, const char *service,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
-	/* Initialize base_config */
+	// Initialize base_config
 	if (cla_tcp_config_init(&config->base,
 				bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 
-	/* set base_config vtable */
+	// Set base_config vtable
 	config->base.base.vtable = &bibe_vtable;
 
 	htab_init(&config->param_htab, CLA_TCP_PARAM_HTAB_SLOT_COUNT,

@@ -87,7 +87,7 @@ size_t bibe_parser_parse(const uint8_t *const buffer,
 	enum CborError retval;
 
 	cbor_value_get_string_length(&report, &bundle_str_len);
-	//allocate memory for the encapsulated bundle
+	// Allocate memory for the encapsulated bundle
 	bpdu->encapsulated_bundle = malloc(bundle_str_len);
 	bpdu->payload_length = bundle_str_len;
 	// From the cbor docs:
@@ -128,7 +128,6 @@ static void write_to_buffer(
 struct bibe_header bibe_encode_header(char *const dest_eid,
 				      const size_t payload_len)
 {
-
 	struct bibe_header hdr;
 	size_t eid_len = strlen(dest_eid);
 
@@ -137,24 +136,24 @@ struct bibe_header bibe_encode_header(char *const dest_eid,
 	CborEncoder encoder;
 
 	cbor_encoder_init(&encoder, temp_buffer, sizeof(uint64_t), 0);
-	cbor_encode_uint(&encoder, (uint64_t) payload_len);
+	cbor_encode_uint(&encoder, (uint64_t)payload_len);
 	const size_t bpdu_size = cbor_encoder_get_buffer_size(
 		&encoder,
 		temp_buffer
-		) + 3; // buffer size + 3 for the BPDU data
+	) + 3; // buffer size + 3 for the BPDU data
 	temp_buffer[0] |= 0x40; // see bundle7 serializer.c lines 235-239
 
 	/* Encoding the BPDU */
 	char *bibe_bytes = malloc(bpdu_size);
 
-	bibe_bytes[0] = 0x83;	// 83 (100|00011)	-> Array of length 3
-	bibe_bytes[1] = 0x00;	// 00				-> Integer 0 (transm. ID)
-	bibe_bytes[2] = 0x00;	// 00				-> Integer 0 (retr. time)
+	bibe_bytes[0] = 0x83; // 83 (100|00011) -> Array of length 3
+	bibe_bytes[1] = 0x00; // 00             -> Integer 0 (transm. ID)
+	bibe_bytes[2] = 0x00; // 00             -> Integer 0 (retr. time)
 	// bibe_bytes[3 to x] contains the length of the bundle byte string
 	// the encapsulated bundle itself will be sent via cla_bibe.c's send_packet_data
 
 	for (size_t i = 3; i < bpdu_size; i++)
-		bibe_bytes[i] = temp_buffer[i-3];
+		bibe_bytes[i] = temp_buffer[i - 3];
 
 	free(temp_buffer);
 
@@ -175,7 +174,12 @@ struct bibe_header bibe_encode_header(char *const dest_eid,
 
 	aap_serialize_into(hdr.data, &msg, false);
 	/* Appending the BPDU to the AAP message */
-	write_to_buffer(hdr.data, bibe_bytes, hdr.hdr_len-bpdu_size, bpdu_size);
+	write_to_buffer(
+		hdr.data,
+		bibe_bytes,
+		hdr.hdr_len - bpdu_size,
+		bpdu_size
+	);
 
 	free(bibe_bytes);
 
