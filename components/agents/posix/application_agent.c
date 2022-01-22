@@ -362,12 +362,39 @@ static int16_t process_aap_message(
 		break;
 
 	case AAP_MESSAGE_SENDBUNDLE:
-		LOGF("AppAgent: Received bundle (l = %zu) for %s via AAP.",
+	case AAP_MESSAGE_SENDBIBE:
+		LOGF("AppAgent: Received %s (l = %zu) for %s via AAP.",
+		     msg.type == AAP_MESSAGE_SENDBIBE ? "BIBE BPDU" : "bundle",
 		     msg.payload_length, msg.eid);
 
 		if (!config->registered_agent_id) {
 			LOG("AppAgent: No agent ID registered, dropping!");
 			break;
+		}
+
+		if (msg.type == AAP_MESSAGE_SENDBIBE) {
+			LOG("AppAgent: ADU is a BPDU, prepending AR header!");
+
+			#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
+				uint8_t typecode = 7;
+			#else
+				uint8_t typecode = 3;
+			#endif
+
+			const size_t ar_size = msg.payload_length + 2;
+			uint8_t *const ar_bytes = malloc(ar_size);
+
+			memcpy(
+				ar_bytes + 2,
+				msg.payload,
+				msg.payload_length
+			);
+			ar_bytes[0] = 0x82;     // CBOR array of length 2
+			ar_bytes[1] = typecode; // Integer (record type)
+
+			free(msg.payload);
+			msg.payload = ar_bytes;
+			msg.payload_length = ar_size;
 		}
 
 		const uint64_t time = hal_time_get_timestamp_s();
@@ -385,7 +412,11 @@ static int16_t process_aap_message(
 			config->parent->lifetime,
 			msg.payload,
 			msg.payload_length,
-			0
+			(
+				msg.type == AAP_MESSAGE_SENDBIBE
+				? BUNDLE_FLAG_ADMINISTRATIVE_RECORD
+				: 0
+			)
 		);
 		// Pointer responsibility was taken by create_forward_bundle
 		msg.payload = NULL;
@@ -400,61 +431,6 @@ static int16_t process_aap_message(
 			response.bundle_id = bundle_id;
 		}
 
-		break;
-
-	case AAP_MESSAGE_SENDBIBE:
-		LOGF("AppAgent: Received BIBE bundle (l = %zu) for %s via AAP.",
-		     msg.payload_length, msg.eid);
-
-		if (!config->registered_agent_id) {
-			LOG("AppAgent: No agent ID registered, dropping!");
-			break;
-		}
-
-		#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
-			uint8_t typecode = 7;
-		#else
-			uint8_t typecode = 3;
-		#endif
-
-		size_t ar_size = msg.payload_length + 2;
-		uint8_t *ar_bytes = malloc(ar_size);
-
-		ar_bytes[0] = 0x82;     // 82 (100|00010) -> Array of length 2
-		ar_bytes[1] = typecode; // 03 || 07 -> Integer (record type)
-
-		for (size_t i = 2; i < ar_size; i++)
-			ar_bytes[i] = msg.payload[i-2];
-
-		const uint64_t bibe_time = hal_time_get_timestamp_s();
-		const uint64_t bibe_seqnum = allocate_sequence_number(
-			config,
-			bibe_time
-		);
-		bundleid_t bibe_bundle_id = create_forward_bundle(
-			config->parent->bundle_agent_interface,
-			config->parent->bp_version,
-			config->registered_agent_id,
-			msg.eid,
-			bibe_time,
-			bibe_seqnum,
-			config->parent->lifetime,
-			ar_bytes,
-			ar_size,
-			BUNDLE_FLAG_ADMINISTRATIVE_RECORD
-		);
-		free(msg.payload);
-		msg.payload = NULL;
-
-		if (bibe_bundle_id == BUNDLE_INVALID_ID) {
-			LOG("AppAgent: BIBE bundle creation failed!");
-			response.type = AAP_MESSAGE_NACK;
-		} else {
-			LOGF("AppAgent: Injected new BIBE bundle (#%llu).",
-			     (uint64_t)bibe_bundle_id);
-			response.type = AAP_MESSAGE_SENDCONFIRM;
-			response.bundle_id = bibe_bundle_id;
-		}
 		break;
 
 	case AAP_MESSAGE_CANCELBUNDLE:
