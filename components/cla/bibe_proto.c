@@ -118,11 +118,11 @@ static void write_to_buffer(
 	memcpy(&buffer[position], data, length);
 }
 
-struct bibe_header bibe_encode_header(char *const dest_eid,
+struct bibe_header bibe_encode_header(const char *const dest_eid,
 				      const size_t payload_len)
 {
 	struct bibe_header hdr;
-	size_t eid_len = strlen(dest_eid);
+	const size_t eid_len = strlen(dest_eid);
 
 	/* Encoding length of the bundle byte string */
 	uint8_t *temp_buffer = malloc(sizeof(uint64_t));
@@ -155,7 +155,8 @@ struct bibe_header bibe_encode_header(char *const dest_eid,
 
 	msg.type = AAP_MESSAGE_SENDBIBE;
 	msg.eid_length = eid_len;
-	msg.eid = dest_eid;
+	// Discard const, the used AAP functions do not modify the EID.
+	msg.eid = (char *)dest_eid;
 	msg.payload_length = payload_len + bpdu_size;
 	msg.payload = NULL;
 

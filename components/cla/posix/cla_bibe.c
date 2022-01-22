@@ -23,6 +23,7 @@
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
+#include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
 #include "ud3tn/task_tags.h"
@@ -333,8 +334,16 @@ static struct cla_tx_queue bibe_get_tx_queue(
 		config,
 		cla_addr
 	);
+	const char *dest_eid = strchr(cla_addr, '#');
+	const bool dest_eid_is_valid = (
+		dest_eid &&
+		dest_eid[0] != '\0' &&
+		validate_eid(&dest_eid[1]) == UD3TN_OK
+	);
 
-	if (param && param->connected) {
+	dest_eid = &dest_eid[1]; // EID starts _after_ the '#'
+
+	if (param && param->connected && dest_eid_is_valid) {
 		struct cla_link *const cla_link = &param->link.base.base;
 
 		hal_semaphore_take_blocking(cla_link->tx_queue_sem);
@@ -418,9 +427,11 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 
 	// Init strtok and get cla address
-	char *dest_eid = strtok(strdup(cla_addr), "#");
-	// Get eid
-	dest_eid = strtok(NULL, "#");
+	const char *dest_eid = strchr(cla_addr, '#');
+
+	ASSERT(dest_eid);
+	ASSERT(dest_eid[0] != '\0' && dest_eid[1] != '\0');
+	dest_eid = &dest_eid[1]; // EID starts _after_ the '#'
 
 	// A previous operation may have canceled the sending process.
 	if (!link->active)
