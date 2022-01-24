@@ -161,10 +161,14 @@ static void launch_connection_management_task(
 	contact_params->config = bibe_config;
 	contact_params->connect_attempt = 0;
 
-	contact_params->cla_sock_addr = cla_get_connect_addr(
-		cla_addr,
-		"bibe"
-	);
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+	char *const eid_delimiter = strchr(cla_sock_addr, '#');
+
+	// If <connect-addr>#<lower-eid> is used (we find a '#' delimiter)
+	if (eid_delimiter)
+		eid_delimiter[0] = '\0'; // null-terminate after sock address
+
+	contact_params->cla_sock_addr = cla_sock_addr;
 	contact_params->socket = -1;
 	contact_params->connected = false;
 	contact_params->in_contact = true;
