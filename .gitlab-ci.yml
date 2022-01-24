@@ -169,7 +169,7 @@ bibe-internal-forwarding-test:
         - bash test/functional/bibe_internal_forwarding_test/run.sh
 
 ion-bibe-interoperability-test:
-    stage: functional-test
+    stage: functional_test
     when: always
     script:
         - make clean
