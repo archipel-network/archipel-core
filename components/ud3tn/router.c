@@ -141,6 +141,11 @@ static inline struct max_fragment_size_result {
 		c_capacity = ROUTER_CONTACT_CAPACITY(c, priority);
 		if (c_capacity < min_capacity)
 			continue;
+		if (c_capacity >= INT32_MAX)
+			return (struct max_fragment_size_result){
+				INT32_MAX,
+				payload_size,
+			};
 
 		// A CLA may have a maximum bundle size, determine it
 		struct cla_config *const cla_config = cla_config_get(
@@ -383,7 +388,7 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		     MAX(first_frag_sz, last_frag_sz),
 		     bundle->payload_block->length);
 		goto finish;
-	} else if (mrfs.max_fragment_size != UINT32_MAX) {
+	} else if (mrfs.max_fragment_size != INT32_MAX) {
 		LOGF("Router: Determined max. frag size of %lu bytes for bundle of size %lu bytes (payload sz. = %lu)",
 		     mrfs.max_fragment_size, bundle_size,
 		     bundle->payload_block->length);
@@ -501,6 +506,9 @@ enum ud3tn_result router_add_bundle_to_contact(
 		cur_entry = &(*cur_entry)->next;
 	*cur_entry = new_entry;
 	contact->bundle_count++;
+	// This contact is of infinite capacity, just return "OK".
+	if (contact->remaining_capacity_p0 == INT32_MAX)
+		return UD3TN_OK;
 	contact->remaining_capacity_p0 -= rb->size;
 	if (rb->prio > BUNDLE_RPRIO_LOW) {
 		contact->remaining_capacity_p1 -= rb->size;
@@ -527,6 +535,9 @@ struct routed_bundle *router_remove_bundle_from_contact(
 			*cur_entry = (*cur_entry)->next;
 			free(tmp);
 			contact->bundle_count--;
+			// This contact is of infinite capacity, do nothing.
+			if (contact->remaining_capacity_p0 == INT32_MAX)
+				continue;
 			contact->remaining_capacity_p0 += rb->size;
 			if (rb->prio > BUNDLE_RPRIO_LOW) {
 				contact->remaining_capacity_p1 += rb->size;
