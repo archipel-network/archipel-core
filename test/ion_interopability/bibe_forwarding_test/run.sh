@@ -17,8 +17,8 @@ tar xvf "ion-open-source-4.1.0.tar.gz"
 cd "ion-open-source-4.1.0"
 ./configure
 make
-sudo make install
-sudo ldconfig
+make install
+ldconfig
 
 cd "$UD3TN_DIR"
 
