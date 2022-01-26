@@ -163,5 +163,4 @@ enum failed_forwarding_policy {
 /* Maximum number of concurrent contacts that can be handled by CM */
 #define MAX_CONCURRENT_CONTACTS 10
 
-
 #endif /* CONFIG_H_INCLUDED */

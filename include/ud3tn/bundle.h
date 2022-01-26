@@ -180,8 +180,10 @@ struct bundle_unique_identifier {
 };
 
 enum bundle_administrative_record_type {
-	BUNDLE_AR_STATUS_REPORT  = 1,
-	BUNDLE_AR_CUSTODY_SIGNAL = 2,
+	BUNDLE_AR_STATUS_REPORT  = 1,	// administrative record is a status report
+	BUNDLE_AR_CUSTODY_SIGNAL = 2,	// administrative record is a custody signal
+	BUNDLE_AR_BPDU = 3,				// administrative record is a BPDU as defined in the most recent BIBE draft
+	BUNDLE_AR_BPDU_COMPAT = 7,		// administrative record is a BPDU as defined in the first BIBE draft
 };
 
 enum bundle_administrative_record_flags {
@@ -232,6 +234,36 @@ struct bundle_status_report {
 	//     common for Bundle Status Reports and Custody Signals.
 };
 
+struct bibe_protocol_data_unit {
+	// Transmission ID
+	//
+	// The transmission ID for a BPDU for which custody transfer is NOT requested SHALL be
+	// zero. The transmission ID for a BPDU for which custody transfer IS
+	// requested SHALL be the current value of the local node's custodial
+	// transmission count, plus 1.
+	//
+	// Retransmission time (i.e. the time by which custody disposition for this BPDU is expected)
+	//
+	// Retransmission time for a BPDU for which custody transfer is NOT requested SHALL be
+	// zero. Retransmission time for a BPDU for which custody transfer IS
+	// requested SHALL take the form of a "DTN Time" as defined in the
+	// Bundle Protocol specification.
+	//
+	// Encapsulated Bundle
+	//
+	// A single BP bundle, termed the "encapsulated bundle". Represented here as a pointer to
+	// the location of the bundle byte string in memory.
+
+	uint64_t transmission_id;
+	uint64_t retransmission_time;
+	uint8_t *encapsulated_bundle;
+	uint64_t payload_length;
+
+	// BPv7-bis:
+	//     All other remaining fields are specified in the "generic"
+	//     "struct bundle_administrative_record".
+};
+
 enum bundle_custody_signal_reason {
 	BUNDLE_CS_REASON_NO_INFO                 = 0,
 	BUNDLE_CS_REASON_REDUNDANT_RECEPTION     = 3,
@@ -277,6 +309,7 @@ struct bundle_administrative_record {
 
 	struct bundle_status_report *status_report;
 	struct bundle_custody_signal *custody_signal;
+	struct bibe_protocol_data_unit *bpdu;
 
 	uint32_t fragment_offset;
 	uint32_t fragment_length;

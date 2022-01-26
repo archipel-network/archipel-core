@@ -22,13 +22,15 @@ The following type codes are possible:
 * `0x0` positive acknowledgment (ACK)
 * `0x1` negative acknowledgment (NACK)
 * `0x2` EID registration request (REGISTER)
-* `0x3` Bunde transmission request (SENDBUNDLE)
+* `0x3` Bundle transmission request (SENDBUNDLE)
 * `0x4` Bundle reception message (RECVBUNDLE)
 * `0x5` Bundle transmission confirmation (SENDCONFIRM)
 * `0x6` Bundle cancellation request (CANCELBUNDLE)
 * `0x7` Connection establishment notice (WELCOME)
 * `0x8` Connection liveliness check (PING)
-* `0x9`-`0xF` RESERVED (for future use)
+* `0x9` BIBE Bundle transmission request (SENDBIBE)
+* `0xA` BIBE Bundle reception message (RECVBIBE)
+* `0xB`-`0xF` RESERVED (for future use)
 
 Numbers contained in type-specific data fields are always represented in network byte order.
 
@@ -135,6 +137,34 @@ This message can be sent by either the client (the application) or µD3TN and is
 +--------+
 ```
 
+### BIBE Bundle transmission request (SENDBIBE)
+
+The *SENDBIBE* message can only be sent by the so called upper layer or a client (application). It contains the destination EID and a BIBE Protocol Data Unit as payload data as follows:
+
+```
++--------+--------+--------+--------+--------+--------+--------+--------+
+|00011001| EID length (16) | Destination EID (variable-length)    ...   |
++--------+--------+--------+--------+--------+--------+--------+--------+
+| Payload length (64)                                                   |
++--------+--------+--------+--------+--------+--------+--------+--------+
+| Payload data (variable-length)                                        |
++--------+--------+--------+--------+--------+--------+--------+--------+
+```
+
+### BIBE Bundle reception message (RECVBIBE)
+
+The *RECVBIBE* message can only be sent by the so called lower layer. It is encoded in a similiar manner as the *SENDBIBE* message but instead contains the bundle's source EID:
+
+```
++--------+--------+--------+--------+--------+--------+--------+--------+
+|00011010| EID length (16) | Source EID (variable-length)         ...   |
++--------+--------+--------+--------+--------+--------+--------+--------+
+| Payload length (64)                                                   |
++--------+--------+--------+--------+--------+--------+--------+--------+
+| Payload data (variable-length)                                        |
++--------+--------+--------+--------+--------+--------+--------+--------+
+```
+
 ## Protocol Operation
 
 ### Connection establishment
@@ -164,3 +194,16 @@ While a bundle is queued for transmission inside µD3TN, the planned transmissio
 ### Connection check
 
 For long-lasting connections, it has to be ensured that the operating system does not assume the connection to be dead and closes it automatically. For that purpose, the client or µD3TN can (e.g. periodically) send a *PING* message which is answered by the receiving side with an *ACK* message.
+
+### BIBE Bundle transmission
+
+If the upper layer has successfully registered at the lower layer, BIBE Bundles can be sent. For this, the upper layer transmits the destination EID as well as the payload data (here the BPDU containing the bundle that should be encapsulated) via a *SENDBIBE* message to the lower layer.
+If the lower layer could create and queue the bundle for transmission, it sends a *SENDCONFIRM* message back to the upper layer, containing the bundle identifier. If the bundle creation failed or no EID registration was performed beforehand, a *NACK* message is sent back to the upper layer.   
+For more information regarding the operation of BIBE, especially regarding the definitions of the upper and lower layer and the registration process, please have a look at the BIBE docs.
+
+### BIBE Bundle reception
+
+If the upper layer has successfully registered at the lower layer and a BIBE bundle addressed to the lower layer is received, the lower layer will issue a *RECVBIBE* message to the upper layer. This message contains the source EID and a payload, which is the BIBE Protocol Data Unit of the received BIBE Bundle.
+
+### Backward compatibility
+The addition of the SENDBIBE and RECVBIBE message types did not warrant an increase of the version number, as no substantial changes to the way AAP works have been introduced. It also did not introduce behavior that would break backward compatibility to µD3TN implementations without support for SEND-/RECVBIBE messages, as these messages will simply be discarded upon reception. In a network featuring both µD3TN implementations with and without BIBE support, one should thus be cautious when using Bundle-in-Bundle Encapsulation, as BIBE Bundles may get dropped by older µD3TN instances.

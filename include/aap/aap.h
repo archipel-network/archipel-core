@@ -46,6 +46,14 @@ enum aap_message_type {
 	 */
 	AAP_MESSAGE_PING = 0x8,
 	/**
+	 * BIBE transmission request (from application)
+	 */
+	AAP_MESSAGE_SENDBIBE = 0x9,
+	/**
+	 * BIBE reception message (to application)
+	 */
+	AAP_MESSAGE_RECVBIBE = 0xA,
+	/**
 	 * Not part of the on-wire format:
 	 * This code explicitly marks an in-memory AAP message invalid.
 	 */

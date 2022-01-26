@@ -17,6 +17,8 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_task.h"
 
+#include "cbor.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -519,7 +521,7 @@ static void bundle_deliver_local(struct bundle *bundle)
 
 	if (!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) &&
 			get_agent_id(bundle->destination) == NULL) {
-		// If it is no admin. record and we have no agent to deliver#
+		// If it is no admin. record and we have no agent to deliver
 		// it to, drop it.
 		LOGF("BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping.",
 		     bundle->source, bundle->destination);
@@ -706,10 +708,33 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			adu.payload,
 			adu.length
 		);
-		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL)
+
+		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL) {
+			LOGF("BundleProcessor: Received administrative record of type %u", record->type);
 			bundle_handle_custody_signal(record);
+			bundle_adu_free_members(adu);
+		} else if (record != NULL &&
+				  (record->type == BUNDLE_AR_BPDU || record->type == BUNDLE_AR_BPDU_COMPAT)) {
+			LOG("BundleProcessor: Received BIBE bundle.");
+
+			uint8_t *buf = malloc(adu.length - 2);
+
+			for (size_t i = 2; i < adu.length; i++)
+				buf[i-2] = adu.payload[i];
+
+			adu.length = adu.length - 2;
+			adu.payload = buf;
+			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
+
+			const char *agent_id = "bibe";
+
+			ASSERT(agent_id != NULL);
+			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
+			agent_id, adu.length);
+			agent_forward(agent_id, adu);
+		}
+
 		free_administrative_record(record);
-		bundle_adu_free_members(adu);
 		return;
 	}
 

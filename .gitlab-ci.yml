@@ -161,6 +161,19 @@ fragment-reassembly-test:
         - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
         - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
 
+bibe-internal-forwarding-test:
+    stage: functional_test
+    when: always
+    script:
+        - bash test/functional/bibe_internal_forwarding_test/run.sh
+
+ion-bibe-interoperability-test:
+    stage: functional_test
+    when: always
+    script:
+        - make clean
+        - bash test/ion_interopability/bibe_forwarding_test/run.sh
+
 stylecheck:
     stage: code_quality_test
     when: always

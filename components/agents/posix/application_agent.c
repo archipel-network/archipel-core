@@ -6,6 +6,7 @@
 
 #include "bundle6/create.h"
 #include "bundle7/create.h"
+#include "bundle7/parser.h"
 
 #include "cla/posix/cla_tcp_util.h"
 
@@ -189,7 +190,7 @@ static int send_message(const int socket_fd,
 		.errno_ = 0,
 	};
 
-	aap_serialize(msg, write_to_socket, &wsp);
+	aap_serialize(msg, write_to_socket, &wsp, true);
 	if (wsp.errno_)
 		LOGF("AppAgent: send(): %s", strerror(wsp.errno_));
 	return -wsp.errno_;
@@ -214,7 +215,8 @@ static void agent_msg_recv(struct bundle_adu data, void *param)
 static struct bundle *create_bundle(const uint8_t bp_version,
 	const char *local_eid, char *sink_id, char *destination,
 	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
-	const uint64_t lifetime, void *payload, size_t payload_length)
+	const uint64_t lifetime, void *payload, size_t payload_length,
+	enum bundle_proc_flags flags)
 {
 	const size_t local_eid_length = strlen(local_eid);
 	const size_t sink_length = strlen(sink_id);
@@ -235,12 +237,12 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 		result = bundle6_create_local(
 			payload, payload_length, source_eid, destination,
 			creation_timestamp_s, sequence_number,
-			lifetime, 0);
+			lifetime, flags);
 	else
 		result = bundle7_create_local(
 			payload, payload_length, source_eid, destination,
 			creation_timestamp_s, sequence_number,
-			lifetime, 0);
+			lifetime, flags);
 
 	free(source_eid);
 
@@ -251,7 +253,8 @@ static bundleid_t create_forward_bundle(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const uint8_t bp_version, char *sink_id, char *destination,
 	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
-	const uint64_t lifetime, void *payload, size_t payload_length)
+	const uint64_t lifetime, void *payload, size_t payload_length,
+	enum bundle_proc_flags flags)
 {
 	struct bundle *bundle = create_bundle(
 		bp_version,
@@ -262,7 +265,8 @@ static bundleid_t create_forward_bundle(
 		sequence_number,
 		lifetime,
 		payload,
-		payload_length
+		payload_length,
+		flags
 	);
 
 	if (bundle == NULL)
@@ -358,12 +362,39 @@ static int16_t process_aap_message(
 		break;
 
 	case AAP_MESSAGE_SENDBUNDLE:
-		LOGF("AppAgent: Received bundle (l = %zu) for %s via AAP.",
+	case AAP_MESSAGE_SENDBIBE:
+		LOGF("AppAgent: Received %s (l = %zu) for %s via AAP.",
+		     msg.type == AAP_MESSAGE_SENDBIBE ? "BIBE BPDU" : "bundle",
 		     msg.payload_length, msg.eid);
 
 		if (!config->registered_agent_id) {
 			LOG("AppAgent: No agent ID registered, dropping!");
 			break;
+		}
+
+		if (msg.type == AAP_MESSAGE_SENDBIBE) {
+			LOG("AppAgent: ADU is a BPDU, prepending AR header!");
+
+			#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
+				uint8_t typecode = 7;
+			#else
+				uint8_t typecode = 3;
+			#endif
+
+			const size_t ar_size = msg.payload_length + 2;
+			uint8_t *const ar_bytes = malloc(ar_size);
+
+			memcpy(
+				ar_bytes + 2,
+				msg.payload,
+				msg.payload_length
+			);
+			ar_bytes[0] = 0x82;     // CBOR array of length 2
+			ar_bytes[1] = typecode; // Integer (record type)
+
+			free(msg.payload);
+			msg.payload = ar_bytes;
+			msg.payload_length = ar_size;
 		}
 
 		const uint64_t time = hal_time_get_timestamp_s();
@@ -380,7 +411,12 @@ static int16_t process_aap_message(
 			seqnum,
 			config->parent->lifetime,
 			msg.payload,
-			msg.payload_length
+			msg.payload_length,
+			(
+				msg.type == AAP_MESSAGE_SENDBIBE
+				? BUNDLE_FLAG_ADMINISTRATIVE_RECORD
+				: 0
+			)
 		);
 		// Pointer responsibility was taken by create_forward_bundle
 		msg.payload = NULL;
@@ -479,7 +515,11 @@ static ssize_t receive_from_socket(
 static int send_bundle(const int socket_fd, struct bundle_adu data)
 {
 	const struct aap_message bundle_msg = {
-		.type = AAP_MESSAGE_RECVBUNDLE,
+		.type = (
+			data.proc_flags == BUNDLE_FLAG_ADMINISTRATIVE_RECORD
+			? AAP_MESSAGE_RECVBIBE
+			: AAP_MESSAGE_RECVBUNDLE
+		),
 		.eid = data.source,
 		.eid_length = strlen(data.source),
 		.payload = data.payload,

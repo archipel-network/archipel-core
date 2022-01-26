@@ -428,7 +428,7 @@ static enum ud3tn_result mtcp_end_scheduled_contact(
 	return UD3TN_OK;
 }
 
-void mtcp_begin_packet(struct cla_link *link, size_t length)
+void mtcp_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 {
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 

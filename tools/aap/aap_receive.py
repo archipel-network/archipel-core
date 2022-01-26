@@ -5,25 +5,49 @@ import argparse
 import logging
 import sys
 
+import cbor  # type: ignore
+
+from pyd3tn.bundle7 import Bundle
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
 from helpers import add_common_parser_arguments, logging_level
+from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
 def run_aap_recv(aap_client, max_count=None, verify_pl=None):
     print("Waiting for bundles...")
     counter = 0
+
     while True:
         msg = aap_client.receive()
         if not msg:
             return
-        payload = msg.payload.decode("utf-8")
-        print("Received bundle from '{}': {}".format(
-            msg.eid,
-            payload,
-        ))
-        if verify_pl is not None and verify_pl != payload:
-            print("Unexpected payload != '{}'".format(verify_pl))
-            sys.exit(1)
+
+        enc = False
+        err = False
+        if msg.msg_type == AAPMessageType.RECVBUNDLE:
+            payload = msg.payload.decode("utf-8")
+        elif msg.msg_type == AAPMessageType.RECVBIBE:
+            payload = cbor.loads(msg.payload)
+            bundle = Bundle.parse(payload[2])
+            payload = bundle.payload_block.data.decode("utf-8")
+            enc = True
+
+        if not err:
+            enc = " encapsulated" if enc else ""
+            print("Received{} bundle from '{}': {}".format(
+                enc,
+                msg.eid,
+                payload,
+            ))
+            if verify_pl is not None and verify_pl != payload:
+                print("Unexpected payload != '{}'".format(verify_pl))
+                sys.exit(1)
+        else:
+            print("Received administrative record of unknown type \
+            from '{}'!".format(
+                msg.eid
+            ))
+
         counter += 1
         if max_count and counter >= max_count:
             print("Expected amount of bundles received, terminating.")

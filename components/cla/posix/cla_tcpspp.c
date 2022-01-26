@@ -289,7 +289,7 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
  * TX
  */
 
-static void tcpspp_begin_packet(struct cla_link *link, size_t length)
+static void tcpspp_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 {
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 	struct tcpspp_config *const tcpspp_config_ =

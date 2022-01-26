@@ -110,7 +110,7 @@ TEST(aap_serializer, serialize_into)
 	uint8_t buffer[MSG_MAX_LENGTH];
 
 	for (size_t c = 0; c < ARRAY_SIZE(valid_messages); c++) {
-		aap_serialize_into(buffer, &valid_messages[c]);
+		aap_serialize_into(buffer, &valid_messages[c], true);
 		TEST_ASSERT_EQUAL_MEMORY(
 			valid_message_bytes[c],
 			buffer,

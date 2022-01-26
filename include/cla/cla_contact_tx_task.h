@@ -17,6 +17,7 @@ enum cla_contact_tx_task_command_type {
 struct cla_contact_tx_task_command {
 	enum cla_contact_tx_task_command_type type;
 	struct routed_bundle_list *bundles;
+	char *cla_address;
 };
 
 enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link);

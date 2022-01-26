@@ -89,7 +89,8 @@ static void cla_contact_tx_task(void *param)
 				);
 				link->config->vtable->cla_begin_packet(
 					link,
-					bundle_get_serialized_size(b)
+					bundle_get_serialized_size(b),
+					cmd.cla_address
 				);
 				s = bundle_serialize(
 					b,
@@ -120,6 +121,7 @@ static void cla_contact_tx_task(void *param)
 			/* Free only the RB list, the RB is reported */
 			free(cur);
 		}
+		free(cmd.cla_address);
 	}
 
 	// Lock the queue before we start to free it
@@ -140,6 +142,7 @@ static void cla_contact_tx_task(void *param)
 				/* Free only the RB list, the RB is reported */
 				free(cur);
 			}
+			free(cmd.cla_address);
 		}
 	}
 

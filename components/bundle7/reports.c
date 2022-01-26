@@ -4,6 +4,7 @@
 #include "bundle7/create.h"
 
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 
 #include "cbor.h"
 
@@ -290,6 +291,8 @@ static error_t parse_last_fields(struct record_parser *, CborValue *);
 static error_t status_report(struct record_parser *, CborValue *);
 static error_t status_info(struct record_parser *, CborValue *);
 
+// Bundle-in-Bundle Encapsulation Protocol Data Unit
+static error_t bpdu(struct record_parser *, CborValue *);
 
 error_t administrative_record(struct record_parser *state, CborValue *it)
 {
@@ -317,6 +320,14 @@ error_t administrative_record(struct record_parser *state, CborValue *it)
 	switch (state->record->type) {
 	case BUNDLE_AR_STATUS_REPORT:
 		err = status_report(state, &nested);
+		break;
+	case BUNDLE_AR_BPDU:
+	#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
+	case BUNDLE_AR_BPDU_COMPAT:
+	#endif // BIBE_CL_DRAFT_1_COMPATIBILITY
+		// Validating the BPDU without actually
+		// parsing anything.
+		err = bpdu(state, &nested);
 		break;
 	default:
 		return ERROR_UNKNOWN_RECORD_TYPE;
@@ -591,6 +602,84 @@ error_t status_info(struct record_parser *state, CborValue *it)
 	return ERROR_NONE;
 }
 
+/* BIBE Protocol Data Unit */
+/* ----------------------- */
+
+error_t bpdu(struct record_parser *state, CborValue *it)
+{
+	CborValue report;
+	size_t length;
+
+	if (!cbor_value_is_array(it) || !cbor_value_is_length_known(it))
+		return ERROR_UNEXPECTED;
+
+	if (cbor_value_get_array_length(it, &length) != CborNoError)
+		return ERROR_UNEXPECTED;
+
+	/* 3 items (transmission id, retransmission time, encapsulated bundle) */
+	if (length != 3)
+		return ERROR_UNEXPECTED;
+
+	if (cbor_value_enter_container(it, &report))
+		return ERROR_CBOR;
+
+	/* Transmission ID */
+	/* --------------- */
+	if (!cbor_value_is_unsigned_integer(&report))
+		return ERROR_UNEXPECTED;
+	if (cbor_value_advance_fixed(&report))
+		return ERROR_CBOR;
+
+	/* Retransmission time */
+	/* ------------------- */
+	if (!cbor_value_is_unsigned_integer(&report))
+		return ERROR_UNEXPECTED;
+	if (cbor_value_advance_fixed(&report))
+		return ERROR_CBOR;
+
+	/* Encapsulated bundle */
+	/* ------------------- */
+	if (!cbor_value_is_byte_string(&report))
+		return ERROR_UNEXPECTED;
+	if (cbor_value_advance(&report))
+		return ERROR_CBOR;
+
+	/* Leave BPDU container */
+	if (!cbor_value_at_end(&report))
+		return ERROR_UNEXPECTED;
+	if (cbor_value_leave_container(it, &report))
+		return ERROR_CBOR;
+
+	/* Initialize variables pertaining to bundle status reports,
+	 * so calling free on the AR works reliably.
+	 */
+	state->record->bundle_creation_timestamp_ms = 0;
+	state->record->bundle_sequence_number = 0;
+	state->record->bundle_source_eid = 0;
+	state->record->bundle_source_eid_length = 0;
+	return ERROR_NONE;
+}
+
+
+void free_record_fields(struct bundle_administrative_record *record)
+{
+	/* Free status report */
+	if (record->status_report != NULL) {
+		free(record->status_report);
+		record->status_report = NULL;
+	}
+	/* Free BPDU */
+	if (record->bpdu != NULL) {
+		if (record->bpdu->encapsulated_bundle != NULL) {
+			free(record->bpdu->encapsulated_bundle);
+			record->bpdu->encapsulated_bundle = NULL;
+		}
+		free(record->bpdu);
+		record->bpdu = NULL;
+	}
+}
+
+
 struct bundle_administrative_record *bundle7_parse_administrative_record(
 	const uint8_t *const data, const size_t length)
 {
@@ -611,6 +700,7 @@ struct bundle_administrative_record *bundle7_parse_administrative_record(
 	record->event_nanoseconds = 0;
 	record->custody_signal = NULL;
 	record->status_report = NULL;
+	record->bpdu = NULL;
 
 	struct record_parser state = {
 		.record = record,
@@ -625,11 +715,13 @@ struct bundle_administrative_record *bundle7_parse_administrative_record(
 		0, &parser, &it
 	);
 	if (err) {
+		free_record_fields(record);
 		free(record);
 		return NULL;
 	}
 
 	if (administrative_record(&state, &it)) {
+		free_record_fields(record);
 		free(record);
 		return NULL;
 	}

@@ -246,7 +246,7 @@ static inline void VCP_Transmit_Bytes(QueueIdentifier_t tx_queue,
 	}
 }
 
-static void usbotg_begin_packet(struct cla_link *link, size_t length)
+static void usbotg_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 {
 	struct usbotg_config *const usbotg_config =
 		(struct usbotg_config *)link->config;
