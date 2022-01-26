@@ -13,8 +13,6 @@ A general introduction of µD3TN is available at its project web site at https:/
   - TCPCLv3 ([RFC 7242](https://datatracker.ietf.org/doc/html/rfc7242)),
   - CCSDS Space Packet Protocol ([SPP](https://public.ccsds.org/Pubs/133x0b2e1.pdf)).
 
-See [`LICENSE.txt`](LICENSE.txt) and [`LICENSE-3RD-PARTY.txt`](LICENSE-3RD-PARTY.txt) for legal information.
-
 ## Pre-compiled binaries
 
 We provide docker images at `registry.gitlab.com/d3tn/ud3tn-docker-images/ud3tn`. Refer to https://gitlab.com/d3tn/ud3tn-docker-images/ for more information.
@@ -151,6 +149,14 @@ Contributions in any form (e.g., bug reports, feature, or merge requests) are ve
 ```
 
 The entry point is implemented in [`components/daemon/main.c`](components/daemon/main.c).
+
+## License
+
+This work, encompassing all files except the ones located in `external/`, is dual-licensed under BSD 3-Clause and Apache 2.0. You can choose between one of these licenses if you use this work.
+
+The external libraries shipped with µD3TN are subject to other licenses, see [`LICENSE-3RD-PARTY.txt`](external/LICENSE-3RD-PARTY.txt) for the corresponding legal information.
+
+`SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0`
 
 ## Ecosystem
 
