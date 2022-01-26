@@ -129,13 +129,13 @@ ion-bpv6-interoperability-test:
     stage: functional_test
     when: always
     script:
-        - bash test/ion_interopability/minimal_forwarding_test/run.sh 6
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 6
 
 ion-bpv7-interoperability-test:
     stage: functional_test
     when: always
     script:
-        - bash test/ion_interopability/minimal_forwarding_test/run.sh 7
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7
 
 mtcp-test:
     stage: functional_test
@@ -172,7 +172,7 @@ ion-bibe-interoperability-test:
     when: always
     script:
         - make clean
-        - bash test/ion_interopability/bibe_forwarding_test/run.sh
+        - bash test/ion_interoperability/bibe_forwarding_test/run.sh
 
 stylecheck:
     stage: code_quality_test

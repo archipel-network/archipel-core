@@ -163,4 +163,4 @@ The entry point is implemented in [`components/daemon/main.c`](components/daemon
 ## See also
 
 - [RFC 4838](https://datatracker.ietf.org/doc/html/rfc4838) for a general introduction about DTN networks.
-- [ION](https://sourceforge.net/projects/ion-dtn/): NASA's bundle protocol implementation that has been successfully demonstrated to be interopable with µD3TN.
+- [ION](https://sourceforge.net/projects/ion-dtn/): NASA's bundle protocol implementation that has been successfully demonstrated to be interoperable with µD3TN.
