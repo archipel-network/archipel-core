@@ -33,29 +33,29 @@ trap exit_handler EXIT
 rm -f /tmp/*.log
 
 # Start first uD3TN instance (lower1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e "dtn://lower1.dtn" -c "mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
+stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e "dtn://lower1.dtn/" -c "mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
 sleep 1
 # Start second uD3TN instance (upper1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e "dtn://upper1.dtn" -c "bibe:," > /tmp/upper1.log 2>&1 &
+stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e "dtn://upper1.dtn/" -c "bibe:," > /tmp/upper1.log 2>&1 &
 sleep 1
 # Start third uD3TN instance (lower2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e "dtn://lower2.dtn" -c "mtcp:127.0.0.1,4225" > /tmp/lower2.log 2>&1 &
+stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e "dtn://lower2.dtn/" -c "mtcp:127.0.0.1,4225" > /tmp/lower2.log 2>&1 &
 sleep 1
 # Start fourth uD3TN instance (upper2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e "dtn://upper2.dtn" -c "bibe:," > /tmp/upper2.log 2>&1 &
+stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e "dtn://upper2.dtn/" -c "bibe:," > /tmp/upper2.log 2>&1 &
 
 # Configure contacts
 sleep 3
-python "$UD3TN_DIR/tools/aap/aap_config.py" --tcp localhost 4243 --dest_eid dtn://upper1.dtn --schedule 1 3600 100000 --reaches "dtn://upper2.dtn" dtn://lower1.dtn bibe:localhost:4242#dtn://lower2.dtn
+python "$UD3TN_DIR/tools/aap/aap_config.py" --tcp localhost 4243 --dest_eid dtn://upper1.dtn/ --schedule 1 3600 100000 --reaches "dtn://upper2.dtn/" dtn://lower1.dtn/ bibe:localhost:4242#dtn://lower2.dtn/
 sleep 2
-python "$UD3TN_DIR/tools/aap/aap_config.py" --tcp localhost 4242 --dest_eid dtn://lower1.dtn --schedule 1 3600 100000 --reaches "dtn://upper2.dtn" dtn://lower2.dtn mtcp:127.0.0.1:4225
+python "$UD3TN_DIR/tools/aap/aap_config.py" --tcp localhost 4242 --dest_eid dtn://lower1.dtn/ --schedule 1 3600 100000 --reaches "dtn://upper2.dtn/" dtn://lower2.dtn/ mtcp:127.0.0.1:4225
 sleep 2
-python "$UD3TN_DIR/tools/aap/aap_config.py" --tcp localhost 4245 --dest_eid dtn://upper2.dtn --schedule 1 3600 100000 --reaches "dtn://upper2.dtn" dtn://lower2.dtn bibe:localhost:4244#dtn://upper2.dtn
+python "$UD3TN_DIR/tools/aap/aap_config.py" --tcp localhost 4245 --dest_eid dtn://upper2.dtn/ --schedule 1 3600 100000 --reaches "dtn://upper2.dtn/" dtn://lower2.dtn/ bibe:localhost:4244#dtn://upper2.dtn/
 sleep 3
 
 # Send a BIBE bundle to upper2
 PAYLOAD="THISISTHEBUNDLEPAYLOAD"
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --tcp localhost 4245 -a bundlesink --count 1 --verify-pl "$PAYLOAD" &
 sleep 1
-python "$UD3TN_DIR/tools/cla/bibe_over_mtcp_test.py" -l localhost -p 4224 --payload "$PAYLOAD" -i "dtn://upper2.dtn/bundlesink" -o "dtn://lower1.dtn" &
+python "$UD3TN_DIR/tools/cla/bibe_over_mtcp_test.py" -l localhost -p 4224 --payload "$PAYLOAD" -i "dtn://upper2.dtn/bundlesink" -o "dtn://lower1.dtn/" &
 sleep 1
