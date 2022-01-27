@@ -37,25 +37,21 @@ static void bundle_send(struct bundle *bundle, void *param)
 
 	char *const source_node_id = get_node_id(bundle->source);
 
-	if (!source_node_id) {
-		LOGF("CLA: Dropping bundle from \"%s\" (invalid source EID)",
-		     bundle->source);
-		bundle_free(bundle);
-		return;
-	}
+	if (source_node_id) {
+		const int cmp_result = strncmp(
+			config->bundle_agent_interface->local_eid,
+			source_node_id,
+			strlen(config->bundle_agent_interface->local_eid)
+		);
 
-	const int cmp_result = strncmp(
-		config->bundle_agent_interface->local_eid,
-		source_node_id,
-		strlen(config->bundle_agent_interface->local_eid)
-	);
+		free(source_node_id);
 
-	free(source_node_id);
-	if (cmp_result == 0) {
-		LOGF("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
-		     bundle->source);
-		bundle_free(bundle);
-		return;
+		if (cmp_result == 0) {
+			LOGF("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
+			bundle->source);
+			bundle_free(bundle);
+			return;
+		}
 	}
 
 	new_id = bundle_storage_add(bundle);
