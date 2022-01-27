@@ -34,6 +34,15 @@ exit_handler() {
     echo ">>> ION LOGFILE"
     cat "ion.log" || true
     echo
+    echo ">>> LOWER1 LOGFILE"
+    cat "/tmp/lower1.log" || true
+    echo
+    echo ">>> LOWER2 LOGFILE"
+    cat "/tmp/lower2.log" || true
+    echo
+    echo ">>> UPPER1 LOGFILE"
+    cat "/tmp/upper1.log" || true
+    echo
     echo ">>> UPPER2 LOGFILE"
     cat "/tmp/upper2.log" || true
     echo

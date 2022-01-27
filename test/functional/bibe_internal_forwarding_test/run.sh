@@ -23,9 +23,18 @@ exit_handler() {
     echo "Terminating uD3TN..."
     kill -KILL $(ps ax | grep ud3tn | grep -v grep | tr -s ' ' | sed 's/^ *//g' | cut -d ' ' -f 1) &> /dev/null || true
     sleep 1
+    echo ">>> LOWER1 LOGFILE"
+    cat "/tmp/lower1.log" || true
+    echo
+    echo ">>> LOWER2 LOGFILE"
+    cat "/tmp/lower2.log" || true
+    echo
+    echo ">>> UPPER1 LOGFILE"
+    cat "/tmp/upper1.log" || true
+    echo
     echo ">>> UPPER2 LOGFILE"
     cat "/tmp/upper2.log" || true
-    
+    echo
 }
 
 trap exit_handler EXIT
