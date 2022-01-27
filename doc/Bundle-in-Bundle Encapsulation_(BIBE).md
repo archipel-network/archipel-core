@@ -32,11 +32,11 @@ To test the capabilities of µD3TN's BIBE implementation, a simple scenario leve
 
 ### Step 1: Configuring the µD3TN instances
 The setup uses two µD3TN instances running on the same machine to simulate a lower layer and an upper layer. To start, open a terminal window and run
-``build/posix/ud3tn -a localhost -p 4242 -e "dtn://lower.dtn"``.
-The command will start a local µD3TN instance using the EID `dtn://lower.dtn`, listening for AAP messages on `localhost:4242`. Due to not specifying which CLA to load, this instance will load all CLAs, thus making it the lower layer accepting outside connections.
+``build/posix/ud3tn -a localhost -p 4242 -e "dtn://lower.dtn/"``.
+The command will start a local µD3TN instance using the EID `dtn://lower.dtn/`, listening for AAP messages on `localhost:4242`. Due to not specifying which CLA to load, this instance will load all CLAs, thus making it the lower layer accepting outside connections.
 
-After starting the first instance, open a new terminal window and run ``build/posix/ud3tn -a localhost -p 4243 -c "bibe:," -e "dtn://upper.dtn"``.
-This will start up the second instance using the EID `dtn://upper.dtn`, with the application agent listening on `localhost:4243`. It furthermore instructs µD3TN to only load the BIBE CLA, thus making it impossible to accept bundles using any other CLA.
+After starting the first instance, open a new terminal window and run ``build/posix/ud3tn -a localhost -p 4243 -c "bibe:," -e "dtn://upper.dtn/"``.
+This will start up the second instance using the EID `dtn://upper.dtn/`, with the application agent listening on `localhost:4243`. It furthermore instructs µD3TN to only load the BIBE CLA, thus making it impossible to accept bundles using any other CLA.
 
 ### Step 2: Starting a bundle sink on the upper layer
 To receive messages on the upper layer, an application, more specifically a bundle sink is needed. To register an application with the upper layer's application agent, use the provided aap_receive Python script located in the tools/aap/ directory.
@@ -45,14 +45,14 @@ Start the listening application by opening a third terminal window and running `
 
 ### Step 3: Connecting the µD3TN instances
 After completing the previous step, the two instances running on the system are fully functional, but not able to communicate with each other. To remedy this, a contact needs to be configured between the µD3TN instances.
-To configure the contact between the upper and lower layers, open a fourth terminal window and run ``source .venv/bin/activate``  as well as ``python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn --schedule 1 3600 100000 dtn://lower.dtn bibe:localhost:4242``.
-This specifies that aap_config.py shall connect via AAP to localhost on TCP port 4243 and issue a contact configuration command to the µD3TN daemon with Node ID `dtn://upper.dtn`. The arguments `--schedule` provides are the starting time of the contact, the duration of the contact in seconds as well as the estimated bitrate. Lastly the partner instance and the CLA to be used need to be specified.
+To configure the contact between the upper and lower layers, open a fourth terminal window and run ``source .venv/bin/activate``  as well as ``python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn/ --schedule 1 3600 100000 dtn://lower.dtn/ bibe:localhost:4242``.
+This specifies that aap_config.py shall connect via AAP to localhost on TCP port 4243 and issue a contact configuration command to the µD3TN daemon with Node ID `dtn://upper.dtn/`. The arguments `--schedule` provides are the starting time of the contact, the duration of the contact in seconds as well as the estimated bitrate. Lastly the partner instance and the CLA to be used need to be specified.
 You can also ``python tools/aap/aap_config.py -h`` for more information on the command line arguments of the script.
 If the command ran successfully, the upper layer should log "bibe: Connected successfully to `localhost:4242`", whereas the lower layer should acknowledge the registration of the sink "bibe".
 
 ### Step 4: Sending a BIBE bundle to the lower layer
 To accomplish this, the terminal window from the previous step can be reused. Simply run ``python tools/cla/bibe_over_mtcp_test.py --payload "Hello World!"``. If you did not use the EIDs from this example, use the `--inner` and `--outer` arguments to provide the EIDs of the upper and lower layer respectively. The script will then create a BIBE bundle addressed to `--outer`, containing an encapsulated bundle addressed to `--inner`.
-After successful execution of the command you should see the message "Received bundle from `dtn://sender.dtn`: Hello World!" appear in the terminal running the bundlesink application on the upper layer, confirming successful transmission of the bundle from the lower to the upper layer.
+After successful execution of the command you should see the message "Received bundle from `dtn://sender.dtn/`: Hello World!" appear in the terminal running the bundlesink application on the upper layer, confirming successful transmission of the bundle from the lower to the upper layer.
 
 ## Important points regarding the implementation
 There are some other important points regarding µD3TN's BIBE implementation.
@@ -61,15 +61,15 @@ There are some other important points regarding µD3TN's BIBE implementation.
 When configuring more complex scenarios than the one just presented, the contact configuration command connecting the upper and the lower layer has to make use of the -r argument to make the upper layer retransmit the processed BIBE bundle back to the lower layer.    
     
 *Example using the scenario depicted in Fig. 1:*
-  - ``python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn --schedule 1 3600 100000 -r dtn://upper2.dtn dtn://lower.dtn bibe:localhost:4242#dtn://lower2.dtn``
+  - `python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn/ --schedule 1 3600 100000 -r dtn://upper2.dtn/ dtn://lower.dtn/ bibe:localhost:4242#dtn://lower2.dtn/`
     
-In this case -r (or --reaches) tells the upper layer, that `dtn://upper2.dtn` can be reached by forwarding a bundle to `dtn://lower.dtn`. If the -r argument is not provided, the upper layer will not know how to route the bundle and discard it!
+In this case -r (or --reaches) tells the upper layer, that `dtn://upper2.dtn/` can be reached by forwarding a bundle to `dtn://lower.dtn/`. If the -r argument is not provided, the upper layer will not know how to route the bundle and discard it!
       
 Furthermore, when forwarding BIBE bundles, the upper layer of every BIBE node generates an AAP SENDBIBE message, which needs a destination EID. This destination EID has to be the EID of the next hop for the **encapsulating** bundle, as the lower layer creates a bundle addressed to this EID, which will then contain the encapsulated bundle. Currently, there is no way to determine this next hop in µD3TN, which means it has to be passed as part of the CLA address when configuring contacts
     
 *Example:*
-  - `python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn --schedule 1 3600 100000 dtn://lower.dtn bibe:localhost:4242#dtn://lower2.dtn` 
-  - the part `#dtn://lower2.dtn` is the EID of the next hop from `dtn://lower.dtn` in Figure 1.
+  - `python tools/aap/aap_config.py --tcp localhost 4243 --dest_eid dtn://upper.dtn/ --schedule 1 3600 100000 dtn://lower.dtn/ bibe:localhost:4242#dtn://lower2.dtn/`
+  - the part `#dtn://lower2.dtn/` is the EID of the next hop from `dtn://lower.dtn/` in Figure 1.
 
 ### Custody transfer
 Custody transfer is not yet implemented, so transmission id and retransmission time of BPDUs will always be 0.
