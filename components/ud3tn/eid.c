@@ -20,8 +20,8 @@ enum ud3tn_result validate_eid(const char *const eid)
 	switch (get_eid_scheme(eid)) {
 	case EID_SCHEME_DTN:
 		len = strlen(eid);
-		// minimum is dtn:none or dtn://?/ with C being a char
-		if (len < 8)
+		// minimum is dtn:none or dtn://C with C being a char
+		if (len < 7)
 			return UD3TN_FAIL;
 		else if (len == 8 && memcmp(eid, "dtn:none", 8) == 0)
 			return UD3TN_OK;
@@ -35,8 +35,14 @@ enum ud3tn_result validate_eid(const char *const eid)
 				break;
 			cur++;
 		}
-		// fail if node-name is zero-length or not followed by '/'
-		if (cur == &eid[6] || *cur != '/')
+		// fail if node-name is zero-length
+		if (cur == &eid[6])
+			return UD3TN_FAIL;
+		// note that we allow dtn EID with and without trailing slash
+		if (*cur == '\0')
+			return UD3TN_OK;
+		// fail if node-name is terminated by something other than '/'
+		if (*cur != '/')
 			return UD3TN_FAIL;
 		// check demux
 		return validate_dtn_eid_demux(cur);
@@ -167,16 +173,27 @@ char *get_node_id(const char *const eid)
 		return NULL;
 
 	char *delim, *result;
+	size_t eid_len;
 
 	switch (get_eid_scheme(eid)) {
 	case EID_SCHEME_DTN:
+		eid_len = strlen(eid);
 		// Special case, e.g., "dtn:none"
-		if (strlen(eid) < 7 || memcmp(eid, "dtn://", 6))
+		if (eid_len < 7 || memcmp(eid, "dtn://", 6))
 			return strdup(eid);
 		delim = strchr((char *)&eid[6], '/');
-		ASSERT(delim);
+		// There is no slash (-> EID _is_ node ID)
+		if (!delim) {
+			// ...but terminate it with a slash to be consistent!
+			char *const terminated_eid = malloc(eid_len + 2);
+
+			memcpy(terminated_eid, eid, eid_len);
+			terminated_eid[eid_len] = '/';
+			terminated_eid[eid_len + 1] = '\0';
+			return terminated_eid;
+		}
 		// First-contained slash ends the EID (-> EID _is_ node ID)
-		if (delim - strlen(eid) + 1 == eid)
+		if (delim - eid_len + 1 == eid)
 			return strdup(eid);
 		result = strdup(eid);
 		result[delim - eid + 1] = '\0';
