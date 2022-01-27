@@ -36,6 +36,14 @@ static void bundle_send(struct bundle *bundle, void *param)
 	ASSERT(bundle != NULL);
 
 	char *const source_node_id = get_node_id(bundle->source);
+
+	if (!source_node_id) {
+		LOGF("CLA: Dropping bundle from \"%s\" (invalid source EID)",
+		     bundle->source);
+		bundle_free(bundle);
+		return;
+	}
+
 	const int cmp_result = strncmp(
 		config->bundle_agent_interface->local_eid,
 		source_node_id,
