@@ -35,6 +35,8 @@ The `RELIABILITY` value is optional and shall be an integer number between 100 a
 
 The `START_DTN_TIME` and `END_DTN_TIME` shall be integer DTN timestamps in seconds. The `DATA_RATE` shall be an integer number representing the expected transmission rate in bytes per second. The `REACHABLE_EID_LIST` uses the same format as the one for the node and is appended only for the specific contact.
 
+Please note that although the numbers are parsed as unsigned 64-bit integers, internal processing currently assumes `INT32_MAX - 1` (bytes) to be the maximum valid capacity (volume) of a contact, given by the product of contact duration and data rate. If the calculated capacity value is larger, the contact is assumed to have "infinite capacity", meaning that an arbitrary number of bundles of arbitrary size can be scheduled for it.
+
 ## Examples
 
 The following lines show examples for configuration data sent to µD3TN.
