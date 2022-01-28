@@ -96,7 +96,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			result->cla_options = strdup(optarg);
 			break;
 		case 'e':
-			if (!optarg || validate_eid(optarg) != UD3TN_OK ||
+			if (!optarg || validate_local_eid(optarg) != UD3TN_OK ||
 					strcmp("dtn:none", optarg) == 0) {
 				LOG("Invalid EID provided!");
 				return NULL;

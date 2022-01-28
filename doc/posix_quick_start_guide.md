@@ -69,26 +69,26 @@ In this scenario we want to spin up two µD3TN instances representing two nodes,
 ## Start µD3TN instances
 
 We will use two µD3TN instances with two different identifiers for the node (Node IDs; note that a Node ID is also a valid DTN endpoint identifier / EID):
-- Instance `A` with Node ID `dtn://a.dtn`, with MTCP listening on TCP port `4224` and application agent listening on port `4242`
-- Instance `B` with Node ID `dtn://b.dtn`, with MTCP listening on TCP port `4225` and application agent listening on port `4243`
+- Instance `A` with Node ID `dtn://a.dtn/`, with MTCP listening on TCP port `4224` and application agent listening on port `4242`
+- Instance `B` with Node ID `dtn://b.dtn/`, with MTCP listening on TCP port `4225` and application agent listening on port `4243`
 
 ### Step 1 {-}
 
 Open a new shell in the µD3TN base directory and launch instance `A` as follows:
 
 ```
-build/posix/ud3tn --eid dtn://a.dtn --bp-version 7 --aap-port 4242 \
+build/posix/ud3tn --eid dtn://a.dtn/ --bp-version 7 --aap-port 4242 \
     --cla "mtcp:*,4224"
 ```
 
-This will tell µD3TN to run with Node ID `dtn://a.dtn`, generate bundles using version `7` (BPbis / BPv7), use TCP and port `4242` for [AAP](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/ud3tn_aap.md) and listen on TCP port `4224` with the MTCP CLA.
+This will tell µD3TN to run with Node ID `dtn://a.dtn/`, generate bundles using version `7` (BPbis / BPv7), use TCP and port `4242` for [AAP](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/ud3tn_aap.md) and listen on TCP port `4224` with the MTCP CLA.
 
 ### Step 2 {-}
 
 Open _another_ shell and launch instance `B` as follows:
 
 ```
-build/posix/ud3tn --eid dtn://b.dtn --bp-version 7 --aap-port 4243 \
+build/posix/ud3tn --eid dtn://b.dtn/ --bp-version 7 --aap-port 4243 \
     --cla "mtcp:*,4225"
 ```
 
@@ -111,12 +111,12 @@ Make sure you have activated the Python virtual environment or made available th
 Open a third shell and configure a contact from `A` to `B`:
 
 ```
-python tools/aap/aap_config.py --tcp localhost 4242 --dest_eid dtn://a.dtn \
+python tools/aap/aap_config.py --tcp localhost 4242 --dest_eid dtn://a.dtn/ \
     --schedule 1 3600 100000 \
-    dtn://b.dtn mtcp:localhost:4225
+    dtn://b.dtn/ mtcp:localhost:4225
 ```
 
-This specifies that `aap_config.py` shall connect via AAP to `localhost` on TCP port `4242` and issue a configuration command to the µD3TN daemon with Node ID `dtn://a.dtn`.
+This specifies that `aap_config.py` shall connect via AAP to `localhost` on TCP port `4242` and issue a configuration command to the µD3TN daemon with Node ID `dtn://a.dtn/`.
 
 The contact is defined by the `--schedule` argument: It starts `1` second from now (the time the command has been invoked), runs for `3600` seconds, and has an expected transmission rate of `100000` bytes per second.
 

@@ -23,9 +23,9 @@ from .helpers import (
 
 CLA_ADDR = {
     TEST_SCRIPT_EID: "tcpspp:manager.dtn",
-    "dtn:1": "tcpspp:1.dtn",
-    "dtn:2": "tcpspp:2.dtn",
-    "dtn:3": "tcpspp:3.dtn",
+    "dtn://1/": "tcpspp:1.dtn",
+    "dtn://2/": "tcpspp:2.dtn",
+    "dtn://3/": "tcpspp:3.dtn",
 }
 
 BUNDLE_SIZE = 2000
@@ -34,47 +34,47 @@ BUNDLE_SIZE = 2000
 # bundle: from/to, fragmented?
 CONTACT_LIST = [
     (
-        "dtn:1", 1, 1, 9600,
-        ["dtn:3"] * 4,
+        "dtn://1/", 1, 1, 9600,
+        ["dtn://3/"] * 4,
         [],
     ),
     (
-        "dtn:2", 3, 1, 9600,
-        ["dtn:3"] * 3,
+        "dtn://2/", 3, 1, 9600,
+        ["dtn://3/"] * 3,
         [],
     ),
     (
-        "dtn:3", 5, 1, 9600,
-        ["dtn:1", "dtn:1", "dtn:2"],
-        [("dtn:1", False)] * 4 + [("dtn:2", True)],
+        "dtn://3/", 5, 1, 9600,
+        ["dtn://1/", "dtn://1/", "dtn://2/"],
+        [("dtn://1/", False)] * 4 + [("dtn://2/", True)],
     ),
     (
-        "dtn:1", 7, 1, 9600,
-        ["dtn:3"],
-        [("dtn:3", False)] * 2,
+        "dtn://1/", 7, 1, 9600,
+        ["dtn://3/"],
+        [("dtn://3/", False)] * 2,
     ),
     (
-        "dtn:2", 9, 1, 9600,
+        "dtn://2/", 9, 1, 9600,
         [],
-        [("dtn:3", False)],
+        [("dtn://3/", False)],
     ),
     (
-        "dtn:3", 11, 1, 9600,
-        ["dtn:1"] * 3 + ["dtn:2"],
-        [("dtn:2", True), ("dtn:1", False)] + [("dtn:2", False)] * 2,
+        "dtn://3/", 11, 1, 9600,
+        ["dtn://1/"] * 3 + ["dtn://2/"],
+        [("dtn://2/", True), ("dtn://1/", False)] + [("dtn://2/", False)] * 2,
     ),
     (
-        "dtn:1", 13, 1, 9600,
+        "dtn://1/", 13, 1, 9600,
         [],
-        [("dtn:3", False)] * 3,
+        [("dtn://3/", False)] * 3,
     ),
     (
-        "dtn:2", 15, 1, 9600,
+        "dtn://2/", 15, 1, 9600,
         [],
-        [("dtn:3", False)],
+        [("dtn://3/", False)],
     ),
     (
-        "dtn:3", 17, 1, 9600,
+        "dtn://3/", 17, 1, 9600,
         [],
         [],
     ),
@@ -142,7 +142,7 @@ def perform_routing_test(connection_obj, serialize_func, validate_func,
                          is_frag_func):
     # estimate target pl size by subtracting estimated header size
     pl_size = BUNDLE_SIZE - (
-        len(serialize_func("dtn:1", "dtn:2", b"\x42" * BUNDLE_SIZE)) -
+        len(serialize_func("dtn://1/", "dtn://2/", b"\x42" * BUNDLE_SIZE)) -
         BUNDLE_SIZE
     )
     with connection_obj as conn:
@@ -176,7 +176,8 @@ def perform_routing_test(connection_obj, serialize_func, validate_func,
                 next_time - time.time()
             ))
             time.sleep(next_time - time.time())
-            send_delete_gs(conn, serialize_func, ("dtn:1", "dtn:2", "dtn:3"))
+            send_delete_gs(conn, serialize_func,
+                           ("dtn://1/", "dtn://2/", "dtn://3/"))
 
 
 def bundle7_is_fragment(bdl):

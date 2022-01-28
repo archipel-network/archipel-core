@@ -19,7 +19,7 @@ static const int IS_DEBUG_BUILD;
  */
 
 /* Default local EID */
-#define DEFAULT_EID "dtn://ud3tn.dtn"
+#define DEFAULT_EID "dtn://ud3tn.dtn/"
 
 /* Default options string provided to the CLA subsystem */
 #ifdef PLATFORM_STM32
@@ -80,6 +80,12 @@ enum failed_forwarding_policy {
 /* If a custody signal is pending, but the router is blocked => drop */
 /* Set this to 0 for an infinite delay - which implies a possible deadlock! */
 #define CUSTODY_SIGNAL_TIMEOUT 1000
+/* Agent ID for the config agent */
+#define AGENT_ID_CONFIG_DTN "config"
+#define AGENT_ID_CONFIG_IPN "9000"
+/* Agent ID for the management agent */
+#define AGENT_ID_MANAGEMENT_DTN "management"
+#define AGENT_ID_MANAGEMENT_IPN "9001"
 
 
 

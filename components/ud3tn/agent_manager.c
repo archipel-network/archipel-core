@@ -1,5 +1,6 @@
 #include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle.h"
+#include "ud3tn/eid.h"
 
 #include "agents/config_agent.h"
 #include "agents/application_agent.h"
@@ -17,12 +18,28 @@ static int agent_list_remove_entry(struct agent *obj);
 static struct agent_list **agent_search_ptr(const char *sink_identifier);
 
 static struct agent_list *agent_entry_node;
+static const char *local_eid;
+
+void agent_manager_init(const char *const ud3tn_local_eid)
+{
+	local_eid = ud3tn_local_eid;
+}
 
 int agent_register(const char *sink_identifier,
 		   void (*const callback)(struct bundle_adu data, void *param),
 		   void *param)
 {
 	struct agent *ag_ptr;
+
+	ASSERT(local_eid != NULL && strlen(local_eid) > 3);
+	if (get_eid_scheme(local_eid) == EID_SCHEME_IPN) {
+		const char *end = parse_ipn_ull(sink_identifier, NULL);
+
+		if (end == NULL || *end != '\0')
+			return -1;
+	} else if (validate_dtn_eid_demux(sink_identifier) != UD3TN_OK) {
+		return -1;
+	}
 
 	/* check if agent with that sink_id is already existing */
 	if (agent_search(sink_identifier) != NULL) {

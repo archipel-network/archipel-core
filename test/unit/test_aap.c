@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define DEFAULT_EID1 "dtn://ud3tn.dtn/"
+#define DEFAULT_EID2 "dtn://ud3tn.dtn/agent1"
+#define DEFAULT_EID3 "ipn:42.0"
+#define DEFAULT_AGENT_ID "agent1"
+
 TEST_GROUP(aap);
 
 TEST_SETUP(aap)
@@ -26,20 +31,20 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_register = {
 		.type = AAP_MESSAGE_REGISTER,
-		.eid_length = 5,
-		.eid = "UD3TN",
+		.eid_length = strlen(DEFAULT_AGENT_ID),
+		.eid = DEFAULT_AGENT_ID,
 	};
 	struct aap_message msg_sendbundle = {
 		.type = AAP_MESSAGE_SENDBUNDLE,
-		.eid_length = 5,
-		.eid = "UD3TN",
+		.eid_length = strlen(DEFAULT_EID1),
+		.eid = DEFAULT_EID1,
 		.payload_length = 3,
 		.payload = (uint8_t *)"PL",
 	};
 	struct aap_message msg_recvbundle = {
 		.type = AAP_MESSAGE_RECVBUNDLE,
-		.eid_length = 5,
-		.eid = "UD3TN",
+		.eid_length = strlen(DEFAULT_EID2),
+		.eid = DEFAULT_EID2,
 		.payload_length = 0,
 		.payload = NULL, // empty payload
 	};
@@ -53,8 +58,8 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_welcome = {
 		.type = AAP_MESSAGE_WELCOME,
-		.eid_length = 5,
-		.eid = "UD3TN",
+		.eid_length = strlen(DEFAULT_EID3),
+		.eid = DEFAULT_EID3,
 	};
 	struct aap_message msg_ping = {
 		.type = AAP_MESSAGE_PING
@@ -80,18 +85,18 @@ TEST(aap, validate_message)
 	};
 	struct aap_message msg_invalid_eid = {
 		.type = AAP_MESSAGE_WELCOME,
-		.eid_length = 6,
-		.eid = "UD3TN\0", // EID longer than strlen
+		.eid_length = strlen(DEFAULT_EID1) + 1,
+		.eid = DEFAULT_EID1"\0", // EID longer than strlen
 	};
 	struct aap_message msg_eid_null = {
 		.type = AAP_MESSAGE_REGISTER,
-		.eid_length = 5,
+		.eid_length = strlen(DEFAULT_EID1),
 		.eid = NULL,
 	};
 	struct aap_message msg_payload_null = {
 		.type = AAP_MESSAGE_SENDBUNDLE,
-		.eid_length = 5,
-		.eid = "UD3TN",
+		.eid_length = strlen(DEFAULT_EID1),
+		.eid = DEFAULT_EID1,
 		.payload_length = 5,
 		.payload = NULL,
 	};

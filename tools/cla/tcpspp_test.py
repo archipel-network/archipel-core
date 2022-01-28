@@ -9,8 +9,8 @@ from pyd3tn.bundle6 import serialize_bundle6
 from pyd3tn.spp import SPPPacket, SPPPacketHeader, SPPTimecode
 
 
-DEFAULT_OUTGOING_EID = "dtn:2"
-DEFAULT_INCOMING_EID = "dtn:1"
+DEFAULT_OUTGOING_EID = "dtn://2/"
+DEFAULT_INCOMING_EID = "dtn://1/"
 
 
 def hexify(data):

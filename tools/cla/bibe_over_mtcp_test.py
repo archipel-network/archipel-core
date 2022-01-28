@@ -65,7 +65,7 @@ def main():
         compat = args.compatibility
         destination_eid = args.inner
         application_eid = args.outer
-        outgoing_eid = "dtn://sender.dtn"
+        outgoing_eid = "dtn://sender.dtn/"
         inner_bundle = Bundle(
             PrimaryBlock(
                 destination=destination_eid,

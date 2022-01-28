@@ -18,13 +18,13 @@
 
 #include "platform/posix/pipe_queue_util.h"
 
-#include "ud3tn/agent_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/bundle_storage_manager.h"
+#include "ud3tn/eid.h"
 #include "ud3tn/task_tags.h"
 
 #include <stddef.h>
@@ -228,8 +228,15 @@ static struct bundle *create_bundle(const uint8_t bp_version,
 	}
 
 	memcpy(source_eid, local_eid, local_eid_length);
-	source_eid[local_eid_length] = '/';
-	memcpy(&source_eid[local_eid_length + 1], sink_id, sink_length + 1);
+	if (get_eid_scheme(source_eid) == EID_SCHEME_IPN) {
+		char *const dot = strchr(source_eid, '.');
+
+		ASSERT(dot != NULL);
+		memcpy(&dot[1], sink_id, sink_length + 1);
+	} else {
+		memcpy(&source_eid[local_eid_length],
+		       sink_id, sink_length + 1);
+	}
 
 	struct bundle *result;
 

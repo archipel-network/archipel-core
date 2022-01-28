@@ -1,8 +1,9 @@
 #include "agents/management_agent.h"
 
-#include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
+#include "ud3tn/eid.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_time.h"
@@ -21,12 +22,16 @@ static void callback(struct bundle_adu data, void *param)
 	struct management_agent_params *const ma_param = param;
 
 	if (!ma_param->allow_remote_configuration) {
-		if (strncmp(ma_param->local_eid, data.source,
-		    strlen(ma_param->local_eid)) != 0) {
+		char *const node_id = get_node_id(data.source);
+
+		if (!node_id || strncmp(ma_param->local_eid, node_id,
+					strlen(ma_param->local_eid)) != 0) {
 			LOGF("MgmtAgent: Dropped config message from foreign endpoint",
 			     data.source);
+			free(node_id);
 			return;
 		}
+		free(node_id);
 	}
 
 	if (data.length < 1) {
@@ -72,11 +77,12 @@ int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 	);
 	ma_param->local_eid = local_eid;
 	ma_param->allow_remote_configuration = allow_remote_configuration;
+	const int is_ipn = get_eid_scheme(local_eid) == EID_SCHEME_IPN;
 
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		"management",
+		is_ipn ? AGENT_ID_MANAGEMENT_IPN : AGENT_ID_MANAGEMENT_DTN,
 		callback,
 		(void *)local_eid,
 		false

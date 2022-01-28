@@ -1,3 +1,4 @@
+#include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/cmdline.h"
@@ -99,6 +100,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 			DEFAULT_TASK_STACK_SIZE,
 			(void *)BUNDLE_PROCESSOR_TASK_TAG);
 
+	agent_manager_init(bundle_agent_interface.local_eid);
 	config_agent_setup(bundle_agent_interface.bundle_signaling_queue,
 		bundle_agent_interface.router_signaling_queue,
 		bundle_agent_interface.local_eid,

@@ -6,7 +6,7 @@ import asyncio
 from pyd3tn.tcpcl import TCPCLServer, logger
 
 
-DEFAULT_INCOMING_EID = "dtn:1"
+DEFAULT_INCOMING_EID = "dtn://1/"
 BIND_TO = ("127.0.0.1", 42420)
 
 

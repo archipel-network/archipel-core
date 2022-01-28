@@ -16,11 +16,11 @@ TCPCL_PORT = 4556
 SMTCP_PORT = 4222
 # MTCP_PORT = 4224
 
-UD3TN_EID = "dtn://ud3tn.dtn"
-UD3TN_CONFIG_EP = UD3TN_EID + "/config"
-UD3TN_MANAGEMENT_EP = UD3TN_EID + "/management"
+UD3TN_EID = "dtn://ud3tn.dtn/"
+UD3TN_CONFIG_EP = UD3TN_EID + "config"
+UD3TN_MANAGEMENT_EP = UD3TN_EID + "management"
 
-TEST_SCRIPT_EID = "dtn://manager.dtn"
+TEST_SCRIPT_EID = "dtn://manager.dtn/"
 
 SPP_USE_CRC = os.environ.get("TCPSPP_CRC_ENABLED", "1") == "1"
 TCP_TIMEOUT = 1.
