@@ -187,6 +187,9 @@ char *get_node_id(const char *const eid)
 			// ...but terminate it with a slash to be consistent!
 			char *const terminated_eid = malloc(eid_len + 2);
 
+			if (terminated_eid == NULL)
+				return NULL;
+
 			memcpy(terminated_eid, eid, eid_len);
 			terminated_eid[eid_len] = '/';
 			terminated_eid[eid_len + 1] = '\0';
