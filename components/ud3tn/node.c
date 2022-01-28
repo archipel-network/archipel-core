@@ -459,13 +459,17 @@ void recalculate_contact_capacity(struct contact *contact)
 
 	ASSERT(contact != NULL);
 	duration = contact->to - contact->from;
-	// NOTE: We don't support contacts longer than 4 M. s
-	if (duration > UINT32_MAX)
-		duration = UINT32_MAX;
 	new_capacity = duration * contact->bitrate;
-	// NOTE: We don't support transferring > 2.147 GB during a contact
-	if (new_capacity > INT32_MAX)
-		new_capacity = INT32_MAX;
+	// If the calculation overflows or the capacity is > INT32_MAX,
+	// we assume an "infinite" contact capacity.
+	if ((duration != 0 && new_capacity / duration != contact->bitrate) ||
+	    new_capacity >= INT32_MAX) {
+		contact->total_capacity = INT32_MAX;
+		contact->remaining_capacity_p0 = INT32_MAX;
+		contact->remaining_capacity_p1 = INT32_MAX;
+		contact->remaining_capacity_p2 = INT32_MAX;
+		return;
+	}
 	capacity_difference = new_capacity - (int32_t)contact->total_capacity;
 	contact->total_capacity = (uint32_t)new_capacity;
 	contact->remaining_capacity_p0 += capacity_difference;
@@ -486,12 +490,11 @@ int32_t contact_get_cur_remaining_capacity(
 		return 0;
 	if (time <= contact->from)
 		return CONTACT_CAPACITY(contact, prio);
+	if (contact->total_capacity >= INT32_MAX)
+		return INT32_MAX;
 	cap_left = contact->total_capacity
 		* (uint64_t)(contact->to - time)
 		/ (uint64_t)(contact->to - contact->from);
-	// NOTE: We don't support transferring > 2.147 GB during a contact
-	if (cap_left > INT32_MAX)
-		cap_left = INT32_MAX;
 	cap_result = cap_left;
 	return MIN(cap_result, CONTACT_CAPACITY(contact, prio));
 }
