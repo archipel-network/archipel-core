@@ -24,7 +24,7 @@ m consumption 100000
 1
 w 1
 a scheme dtn 'dtn2fw' 'dtn2adminep'
-a endpoint dtn://ion.dtn/ q
+a endpoint dtn://ion.dtn q
 
 # Used protocols: bibe, tcp
 a protocol bibe
@@ -40,7 +40,7 @@ a induct bibe * ''
 a induct tcp 0.0.0.0:4556 tcpcli
 
 # Creating bibe outduct
-a outduct bibe dtn://upper2.dtn/ 'bibeclo dtn://lower2.dtn/'
+a outduct bibe dtn://upper2.dtn 'bibeclo dtn://lower2.dtn'
 
 # Creating TCP outduct for forwarding encapsulating bundle to µD3TN instace #2
 a outduct tcp 127.0.0.1:4554 tcpcli 
