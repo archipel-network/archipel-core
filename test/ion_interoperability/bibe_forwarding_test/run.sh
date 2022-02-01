@@ -66,7 +66,7 @@ stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e dtn://lower2.d
 stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e dtn://upper2.dtn/ -c "bibe:," > /tmp/upper2.log 2>&1 &
 
 # Start ION instance
-ionstart -I test/ion_interopability/bibe_forwarding_test/ionstart.rc
+ionstart -I test/ion_interoperability/bibe_forwarding_test/ionstart.rc
 
 # Configure contacts
 sleep 3.5

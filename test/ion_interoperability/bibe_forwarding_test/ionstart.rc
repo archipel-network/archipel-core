@@ -31,7 +31,7 @@ a protocol bibe
 a protocol tcp
 
 # Initializing bcla
-r 'bibeadmin test/ion_interopability/bibe_forwarding_test/bibe.rc'
+r 'bibeadmin test/ion_interoperability/bibe_forwarding_test/bibe.rc'
 
 # Creating bibe induct
 a induct bibe * ''
@@ -46,6 +46,6 @@ a outduct bibe dtn://upper2.dtn 'bibeclo dtn://lower2.dtn'
 a outduct tcp 127.0.0.1:4554 tcpcli 
 
 # Adding egress plans 
-r 'dtn2admin test/ion_interopability/bibe_forwarding_test/dtn.rc'
+r 'dtn2admin test/ion_interoperability/bibe_forwarding_test/dtn.rc'
 s
 ## end bpadmin

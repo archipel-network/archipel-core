@@ -66,7 +66,7 @@ stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv
 stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn/" > /tmp/ud3tn2.log 2>&1 &
 
 # Start ION instance
-ionstart -I test/ion_interopability/minimal_forwarding_test/ionstart.rc
+ionstart -I test/ion_interoperability/minimal_forwarding_test/ionstart.rc
 
 # Configure a contact to ION in uD3TN1 which allows to reach uD3TN2
 sleep 0.5
