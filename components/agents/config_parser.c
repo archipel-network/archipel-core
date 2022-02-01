@@ -2,6 +2,7 @@
 
 #include "platform/hal_io.h"
 
+#include "ud3tn/eid.h"
 #include "ud3tn/node.h"
 
 #include <stdbool.h>
@@ -82,6 +83,17 @@ static bool read_eid(
 static void end_read_eid(struct config_parser *parser, char **eid_ptr)
 {
 	(*eid_ptr)[parser->current_index] = '\0';
+
+	// Our current router implementation searches for the EID returned by
+	// get_node_id(destination). This might differ, e.g., by a slash added
+	// at the end of a `dtn` scheme EID. Thus, we want to ensure that this
+	// value is added to the routing table if we can determine it.
+	char *const node_id = get_node_id(*eid_ptr);
+
+	if (node_id) {
+		free(*eid_ptr);
+		*eid_ptr = node_id;
+	}
 }
 
 static void begin_read_cla_addr(struct config_parser *parser)
