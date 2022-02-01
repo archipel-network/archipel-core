@@ -35,6 +35,7 @@ TEST(eid, validate_eid)
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid("dtn://ud3tn.dtn/"));
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid("dtn://ud3tn.dtn"));
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid("dtn://ud3tn.dtn/agent1"));
+	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid("dtn://ud3tn.dtn/~mc1"));
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid("dtn://U/"));
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid("dtn://U"));
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid(
@@ -72,6 +73,8 @@ TEST(eid, validate_local_eid)
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_local_eid("dtn:none"));
 	TEST_ASSERT_EQUAL(UD3TN_OK, validate_local_eid("dtn://ud3tn.dtn/"));
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_local_eid("dtn://ud3tn.dtn"));
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_local_eid("dtn://ud3tn.dtn/a"));
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_local_eid("dtn://ud3tn.dtn/~a"));
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_local_eid(
 		"dtn://ud3tn.dtn/agent1"
 	));
@@ -89,6 +92,9 @@ TEST(eid, get_eid_scheme)
 {
 	TEST_ASSERT_EQUAL(EID_SCHEME_DTN, get_eid_scheme("dtn:none"));
 	TEST_ASSERT_EQUAL(EID_SCHEME_DTN, get_eid_scheme("dtn://ud3tn.dtn/"));
+	TEST_ASSERT_EQUAL(EID_SCHEME_DTN, get_eid_scheme("dtn://ud3tn.dtn"));
+	TEST_ASSERT_EQUAL(EID_SCHEME_DTN, get_eid_scheme("dtn://ud3tn.dtn/a"));
+	TEST_ASSERT_EQUAL(EID_SCHEME_DTN, get_eid_scheme("dtn://ud3tn.dtn/~a"));
 
 	TEST_ASSERT_EQUAL(EID_SCHEME_IPN, get_eid_scheme("ipn:1.0"));
 	TEST_ASSERT_EQUAL(EID_SCHEME_IPN, get_eid_scheme("ipn:1"));
@@ -136,6 +142,7 @@ TEST(eid, get_node_id)
 	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/", get_node_id("dtn://ud3tn/a"));
 	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/", get_node_id("dtn://ud3tn/"));
 	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/", get_node_id("dtn://ud3tn"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn://ud3tn/~a"));
 	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn:///"));
 	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn:///A"));
 	TEST_ASSERT_EQUAL_ASTRING(NULL, get_node_id("dtn://"));
