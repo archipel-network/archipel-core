@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "spp/spp.h"
 #include "spp/spp_timecodes.h"
 

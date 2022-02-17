@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef BUNDLE6_PARSER_H_INCLUDED
 #define BUNDLE6_PARSER_H_INCLUDED
 

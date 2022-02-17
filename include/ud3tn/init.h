@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef INIT_H_INCLUDED
 #define INIT_H_INCLUDED
 

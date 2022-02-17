@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifdef PLATFORM_POSIX
 
 #include "platform/posix/simple_queue.h"

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 """Generic CRC implementation with many pre-defined CRC models.
 
 This module is the adopted Python implementation of the JavaScript CRC

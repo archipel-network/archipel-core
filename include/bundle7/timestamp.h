@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef BUNDLE7_TIMESTAMP_H_INCLUDED
 #define BUNDLE7_TIMESTAMP_H_INCLUDED
 

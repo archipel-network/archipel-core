@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "bundle7/bundle_age.h"
 
 #include "cbor.h"

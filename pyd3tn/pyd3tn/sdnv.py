@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 """Self-Delimiting Numeric Values (RFC 6256)"""
 
 

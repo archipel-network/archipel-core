@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef CONTACTMANAGER_H_INCLUDED
 #define CONTACTMANAGER_H_INCLUDED
 
