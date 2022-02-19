@@ -198,6 +198,9 @@ char *get_node_id(const char *const eid)
 		// First-contained slash ends the EID (-> EID _is_ node ID)
 		if (delim - eid_len + 1 == eid)
 			return strdup(eid);
+		// Demux starts with tilde (-> non-singleton EID -> no node ID)
+		if (delim[1] == '~')
+			return NULL;
 		result = strdup(eid);
 		result[delim - eid + 1] = '\0';
 		return result;
