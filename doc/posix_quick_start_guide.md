@@ -111,7 +111,7 @@ Make sure you have activated the Python virtual environment or made available th
 Open a third shell and configure a contact from `A` to `B`:
 
 ```
-python tools/aap/aap_config.py --tcp localhost 4242 --dest_eid dtn://a.dtn/ \
+python tools/aap/aap_config.py --tcp localhost 4242 \
     --schedule 1 3600 100000 \
     dtn://b.dtn/ mtcp:localhost:4225
 ```
