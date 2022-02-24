@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "agents/management_agent.h"
 
 #include "ud3tn/bundle_processor.h"

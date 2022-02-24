@@ -9,9 +9,6 @@ distribution are reproduced below with their applicable files.
                         BSD 3-Clause License
 
         applies to the following files, grouped by copyright holder:
-        - Copyright (c) 2016, Robert Wiewel
-          - components/platform/posix/simple_queue.c
-          - include/platform/posix/simple_queue.h
         - Copyright (c) 2009 - 2014 ARM LIMITED
           - external/platform/stm32/include/core_cm4.h
           - external/platform/stm32/include/core_cmFunc.h

@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 
 #--------------------------------------------------------------------------------------#
 # This automated test checks whether µD3TN's BIBE functionality is working as expected #

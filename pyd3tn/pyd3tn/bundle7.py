@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 """BPbis bundle Generator
 
 A simple Python package for generating and serialize BPbis bundles into CBOR.

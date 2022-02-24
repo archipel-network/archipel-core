@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef CLA_bibe_H
 #define CLA_bibe_H
 

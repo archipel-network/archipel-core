@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef BUNDLE_AGENT_INTERFACE_H
 #define BUNDLE_AGENT_INTERFACE_H
 

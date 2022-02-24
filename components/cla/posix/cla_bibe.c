@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "aap/aap.h"
 #include "aap/aap_parser.h"
 #include "aap/aap_serializer.h"

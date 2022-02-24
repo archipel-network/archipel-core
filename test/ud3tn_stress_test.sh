@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 
 # This script runs a simple bundle load test. Two uD3TN instances are set up
 # in two different network namespaces that are coupled using a veth pair.

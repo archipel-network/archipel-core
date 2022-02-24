@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 # encoding: utf-8
 
 from pyd3tn.bundle7 import (

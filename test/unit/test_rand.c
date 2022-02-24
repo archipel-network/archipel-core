@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "platform/hal_random.h"
 
 #include "unity_fixture.h"

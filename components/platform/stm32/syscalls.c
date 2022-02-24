@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 // Implementation of Newlib syscalls.
 // See: https://sourceware.org/newlib/libc.html#Stubs
 

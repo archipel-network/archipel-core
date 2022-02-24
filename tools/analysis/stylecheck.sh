@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 
 CHECKPATCH_FLAGS="--no-tree --terse --show-types --ignore AVOID_EXTERNS \
 --ignore COMPLEX_MACRO --ignore NEW_TYPEDEFS --ignore FUNCTION_ARGUMENTS \

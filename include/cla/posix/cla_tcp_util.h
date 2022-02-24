@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef CLA_TCP_UTIL_H_INCLUDED
 #define CLA_TCP_UTIL_H_INCLUDED
 

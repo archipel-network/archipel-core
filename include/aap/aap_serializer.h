@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifndef AAP_SERIALIZER_H_INCLUDED
 #define AAP_SERIALIZER_H_INCLUDED
 

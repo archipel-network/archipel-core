@@ -1,0 +1,9 @@
+Copyright (C) 2022 µD3TN team and D3TN GmbH (contact: contact@d3tn.com).
+
+This work, encompassing all files except the ones located in `external/`,
+is dual-licensed under BSD 3-Clause and Apache 2.0 (see LICENSE,
+LICENSE.Apache-2.0, and LICENSE.BSD-3-Clause). You can choose between
+one of these licenses if you use this work.
+
+The external libraries shipped with µD3TN are subject to other licenses,
+see external/LICENSE-3RD-PARTY.txt for the corresponding legal information.
