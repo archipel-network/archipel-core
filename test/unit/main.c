@@ -22,20 +22,6 @@ void test_task(void *args)
 	LOG("Starting testsuite...");
 	hal_io_message_printf("\n");
 
-#ifdef PLATFORM_STM32
-	int8_t led;
-
-	hal_platform_led_set(1);
-	for (led = 0; led < 5; led++) {
-		hal_platform_led_set(led);
-		vTaskDelay(100 / portTICK_PERIOD_MS);
-	}
-	for (led = 4; led >= 0; led--) {
-		hal_platform_led_set(led);
-		vTaskDelay(100 / portTICK_PERIOD_MS);
-	}
-#endif
-
 	/* Disable the logger spamming out output */
 	/* Start Unity */
 	test_errors = UnityMain(1, argv, testud3tn);
@@ -56,14 +42,7 @@ int main(void)
 
 	init(1, argv);
 
-#ifdef PLATFORM_STM32
-
-	hal_task_create(test_task, "test_task", 0, NULL, 1024, NULL);
-
-#else
-
 	hal_task_create(test_task, "test_task", 0, NULL, 0, NULL);
 
-#endif
 	return start_os();
 }

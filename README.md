@@ -1,6 +1,7 @@
 ## About
 
-µD3TN (pronounced "Micro-Dee-Tee-En") is a free, lean, and space-tested DTN protocol implementation running on POSIX (plus Linux ;-)) as well as STM32 microcontrollers with FreeRTOS.
+µD3TN (pronounced "Micro-Dee-Tee-En") is a free, lean, and space-tested DTN protocol implementation running on POSIX (plus Linux ;-)).
+Though µD3TN is easily portable to further platforms, we currently support only POSIX-compliant systems (former versions also included support for STM32/FreeRTOS platforms).
 
 ![](doc/overview.svg)
 
@@ -99,36 +100,10 @@ Use the `--recursive` option if you `git clone` the project or run
 
 3. Run `make run-posix` to build and execute µD3TN on your local machine.
 
-#### STM32
-
-Only the STM32F4 embedded system is supported currently.
-However, porting µD3TN to other Cortex-M3/M4 based SoCs should be trivial.
-
-1. Connect the embedded system via STLink-enabled USB.
-
-2. Install or unpack the following dependencies:
-   - `gcc-arm-none-eabi` toolchain including `newlib`,
-   - [`stlink-tools`](https://github.com/stlink-org/stlink#installation),
-   - Open On-Chip Debugger [`openocd`](http://openocd.org/),
-   - `ncat`, which is typically available bundled in the `nmap` package,
-   - a version of [FreeRTOS](https://www.freertos.org/) (µD3TN is currently
-     tested with [version 9](https://github.com/FreeRTOS/FreeRTOS/releases/tag/V9.0.0)).
-
-3. Configure the local build toolchain in `config.mk`:
-   - Copy `config.mk.example` to `config.mk`.
-   - Set `TOOLCHAIN_STM32` to the prefix for your *arm-none-eabi* toolchain.
-     If installed with the distribution's package manager, this is commonly
-    `/usr/bin/arm-none-eabi-`.
-   - Set `FREERTOS_PATH` to the path to your unpacked FreeRTOS source.
-
-4. Run `openocd` in a terminal. The configuration file [`openocd.cfg`](openocd.cfg) is loaded automatically.
-
-5. Run `make flash-stm32-openocd` to build the project and to flash `ud3tn.bin`
-   to the board attached via USB.
 
 ### Test
 
-The µD3TN development is accompanied by extensive testing. For this purpose, you should install `gdb` and a recent version of Python 3 (>= 3.6). Our test suite covering static analysis, unit, and integration tests is documented in [`doc/testing.md`](doc/testing.md), which also provides more STM32 debugging instructions.
+The µD3TN development is accompanied by extensive testing. For this purpose, you should install `gdb` and a recent version of Python 3 (>= 3.6). Our test suite covering static analysis, unit, and integration tests is documented in [`doc/testing.md`](doc/testing.md).
 
 ### Contribute
 

@@ -24,35 +24,6 @@ run-posix: posix
 run-unittest-posix: unittest-posix
 	build/posix/testud3tn
 
-.PHONY: flash-stm32-stlink
-flash-stm32-stlink: stm32
-	$(ST_FLASH_PREFIX)st-flash --reset write build/stm32/ud3tn.bin 0x08000000
-
-.PHONY: flash-unittest-stm32-stlink
-flash-unittest-stm32-stlink: unittest-stm32
-	$(ST_FLASH_PREFIX)st-flash --reset write build/stm32/testud3tn.bin 0x08000000
-
-.PHONY: flash-stm32-openocd
-flash-stm32-openocd: stm32
-	echo "reset init;" "flash write_image erase build/stm32/ud3tn.bin 0x08000000;" \
-		"reset;" "exit;" | ncat localhost 4444 | tail -n +2 > /dev/null;
-
-.PHONY: flash-unittest-stm32-openocd
-flash-unittest-stm32-openocd: unittest-stm32
-	echo "reset init;" "flash write_image erase build/stm32/testud3tn.bin 0x08000000;" \
-		"reset;" "exit;" | ncat localhost 4444 | tail -n +2 > /dev/null;
-
-.PHONY: flash-stm32-openocd-oneshot
-flash-stm32-openocd-oneshot: stm32
-	$(OOCD_PREFIX)openocd -c "script openocd.cfg" -c "reset init" \
-			      -c "flash write_image erase build/stm32/ud3tn.bin 0x08000000" \
-			      -c "reset" -c "shutdown"
-
-.PHONY: flash-unittest-stm32-openocd-oneshot
-flash-unittest-stm32-openocd-oneshot: unittest-stm32
-	$(OOCD_PREFIX)openocd -c "script openocd.cfg" -c "reset init" \
-			      -c "flash write_image erase build/stm32/testud3tn.bin 0x08000000" \
-			      -c "reset" -c "shutdown"
 
 ###############################################################################
 # Tools
@@ -62,28 +33,6 @@ flash-unittest-stm32-openocd-oneshot: unittest-stm32
 gdb-posix: posix
 	$(TOOLCHAIN_POSIX)gdb build/posix/ud3tn
 
-.PHONY: gdb-stm32
-gdb-stm32: stm32
-	$(TOOLCHAIN_STM32)gdb --eval-command="target remote :4443" \
-		build/stm32/ud3tn
-
-.PHONY: gdb-unittest-stm32
-gdb-unittest-stm32: unittest-stm32
-	$(TOOLCHAIN_STM32)gdb --eval-command="target remote :4443" \
-		build/stm32/testud3tn
-
-.PHONY: openocd
-openocd:
-	openocd
-
-.PHONY: stutil
-stutil:
-	$$(dirname $(ST_FLASH))/st-util -p 4443
-
-.PHONY: connect
-connect:
-	python3 ./tools/cla/stm32_mtcp_proxy.py \
-		--device /dev/serial/by-id/*STM32_Virtual*
 
 ###############################################################################
 # Tests
@@ -104,10 +53,6 @@ integration-test-tcpcl:
 .PHONY: integration-test-mtcp
 integration-test-mtcp:
 	CLA=mtcp pytest test/integration
-
-.PHONY: integration-test-stm32
-integration-test-stm32:
-	CLA=usbotg pytest test/integration
 
 
 # Directory for the virtual Python envionment
@@ -133,7 +78,6 @@ virtualenv:
 	@echo "Install additional dependencies ..."
 	@$(PIP) install -U -r ./test/integration/requirements.txt
 	@$(PIP) install -U -r ./tools/analysis/requirements.txt
-	@$(PIP) install -U -r ./tools/cla/requirements.txt
 	@echo
 	@echo "=> To activate the virtualenv, source $(VENV)/bin/activate"
 	@echo "   or use environment-setup tools like"
@@ -146,7 +90,6 @@ update-virtualenv:
 	$(PIP) install -U setuptools pip wheel
 	$(PIP) install -U -r ./test/integration/requirements.txt
 	$(PIP) install -U -r ./tools/analysis/requirements.txt
-	$(PIP) install -U -r ./tools/cla/requirements.txt
 
 ###############################################################################
 # Code Quality Tests (and Release Tool)
@@ -155,22 +98,6 @@ update-virtualenv:
 .PHONY: check-style
 check-style:
 	bash ./tools/analysis/stylecheck.sh
-
-.PHONY: clang-check-stm32
-clang-check-stm32: ccmds-stm32
-	bash ./tools/analysis/clang-check.sh check \
-		"stm32" \
-		"components/agents/stm32" \
-		"components/cla/stm32" \
-		"components/platform/stm32"
-
-.PHONY: clang-tidy-stm32
-clang-tidy-stm32: ccmds-stm32
-	bash ./tools/analysis/clang-check.sh tidy \
-		"stm32" \
-		"components/agents/stm32" \
-		"components/cla/stm32" \
-		"components/platform/stm32"
 
 .PHONY: clang-check-posix
 clang-check-posix: ccmds-posix
@@ -227,7 +154,7 @@ endif
 # uD3TN-Builds
 ###############################################################################
 
-.PHONY: posix stm32
+.PHONY: posix
 
 ifndef PLATFORM
 
@@ -240,17 +167,8 @@ posix-lib:
 unittest-posix:
 	@$(MAKE) PLATFORM=posix unittest-posix
 
-stm32:
-	@$(MAKE) PLATFORM=stm32 stm32
-
-unittest-stm32:
-	@$(MAKE) PLATFORM=stm32 unittest-stm32
-
 ccmds-posix:
 	@$(MAKE) PLATFORM=posix build/posix/compile_commands.json
-
-ccmds-stm32:
-	@$(MAKE) PLATFORM=stm32 build/stm32/compile_commands.json
 
 else # ifndef PLATFORM
 
@@ -260,8 +178,5 @@ include mk/build.mk
 posix: build/posix/ud3tn
 posix-lib: build/posix/libud3tn.so
 unittest-posix: build/posix/testud3tn
-
-stm32: build/stm32/ud3tn.bin
-unittest-stm32: build/stm32/testud3tn.bin
 
 endif # ifndef PLATFORM

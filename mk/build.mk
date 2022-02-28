@@ -36,27 +36,6 @@ $(eval $(call addComponentWithRules,external/unity/extras/fixture/src))
 
 $(eval $(call addComponentWithRules,external/util/src))
 
-ifeq ($(PLATFORM),stm32)
-
-EXTERNAL_INCLUDES += -I$(FREERTOS_PREFIX)/FreeRTOS/Source/include \
-                     -I$(FREERTOS_PREFIX)/FreeRTOS/Source/portable/GCC/ARM_CM4F
-
-$(eval $(call addComponentWithRules,$(FREERTOS_PREFIX)/FreeRTOS/Source,list.c queue.c tasks.c))
-$(eval $(call addComponentWithRules,$(FREERTOS_PREFIX)/FreeRTOS/Source/portable/MemMang,heap_3.c))
-
-# Clang has to use soft floats
-ifneq ($(TOOLCHAIN),clang)
-  $(eval $(call addComponentWithRules,$(FREERTOS_PREFIX)/FreeRTOS/Source/portable/GCC/ARM_CM4F,port.c))
-else
-  $(eval $(call addComponentWithRules,$(FREERTOS_PREFIX)/FreeRTOS/Source/portable/GCC/ARM_CM3,port.c))
-endif
-
-$(eval $(call addComponentWithRules,external/platform/stm32/hwf4))
-$(eval $(call addComponentWithRules,external/platform/stm32/stm32f4xx))
-$(eval $(call addComponentWithRules,external/platform/stm32/usb_vcp))
-
-endif
-
 # LIB
 
 $(eval $(call generateComponentRules,components/daemon))

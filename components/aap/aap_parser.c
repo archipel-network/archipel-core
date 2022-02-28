@@ -150,7 +150,7 @@ static size_t aap_parse_payload_length(
 
 	const uint64_t payload_length = read_uint64(buffer);
 
-	// On some platforms (e.g. STM32), size_t is smaller than uint64_t.
+	// On some platforms, size_t may be smaller than uint64_t.
 	if (payload_length > (uint64_t)SIZE_MAX) {
 		parser->status = PARSER_STATUS_ERROR;
 		return 8;
