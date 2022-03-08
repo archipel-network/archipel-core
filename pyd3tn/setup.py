@@ -8,7 +8,7 @@ with open('README.md', 'r') as file:
 
 setuptools.setup(
     name='pyD3TN',
-    version='0.10.0',
+    version='0.11.0',
     author='D3TN GmbH',
     author_email='contact@d3tn.com',
     description='Collection of DTN protocol implementations',
