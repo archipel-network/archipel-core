@@ -40,8 +40,6 @@ static const int IS_DEBUG_BUILD;
  * BUNDLE_CRC_TYPE_32   = 2
  */
 #define DEFAULT_CRC_TYPE BUNDLE_CRC_TYPE_16
-/* Remote configuration (via CLA) is enabled by default. */
-#define REMOTE_CONFIGURATION
 
 
 /*

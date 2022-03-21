@@ -17,12 +17,6 @@
 #define QUOTE(s) #s
 #define STR(s) QUOTE(s)
 
-#ifdef REMOTE_CONFIGURATION
-static bool DEFAULT_ALLOW_REMOTE_CONFIGURATION = true;
-#else // REMOTE_CONFIGURATION
-static bool DEFAULT_ALLOW_REMOTE_CONFIGURATION;
-#endif // REMOTE_CONFIGURATION
-
 static struct ud3tn_cmdline_options global_cmd_opts;
 
 /**
@@ -58,7 +52,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->aap_service = NULL;
 	result->bundle_version = DEFAULT_BUNDLE_VERSION;
 	result->status_reporting = false;
-	result->allow_remote_configuration = DEFAULT_ALLOW_REMOTE_CONFIGURATION;
+	result->allow_remote_configuration = false;
 	result->exit_immediately = false;
 	result->lifetime = DEFAULT_BUNDLE_LIFETIME;
 	// The following values cannot be 0
