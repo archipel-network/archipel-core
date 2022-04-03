@@ -25,7 +25,6 @@ TEST_SCRIPT_EID = "dtn://manager.dtn/"
 
 SPP_USE_CRC = os.environ.get("TCPSPP_CRC_ENABLED", "1") == "1"
 TCP_TIMEOUT = 1.
-STM32_TIMEOUT = 2.
 
 
 def validate_bundle7(bindata, expected_payload=None):

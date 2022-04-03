@@ -47,7 +47,7 @@ def main():
     )
     parser.add_argument(
         "-t", "--type",
-        choices=["smtcp", "mtcp", "usbotg"],
+        choices=["smtcp", "mtcp"],
         default="smtcp",
         help="the CLA name and behavior to be used",
     )

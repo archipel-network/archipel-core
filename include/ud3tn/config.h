@@ -23,11 +23,7 @@ static const int IS_DEBUG_BUILD;
 #define DEFAULT_EID "dtn://ud3tn.dtn/"
 
 /* Default options string provided to the CLA subsystem */
-#ifdef PLATFORM_STM32
-#define DEFAULT_CLA_OPTIONS "usbotg:"
-#else // PLATFORM_STM32
 #define DEFAULT_CLA_OPTIONS "tcpclv3:*,4556;tcpspp:*,4223,false,1;smtcp:*,4222,false;mtcp:*,4224"
-#endif // PLATFORM_STM32
 
 /* Default TCP IP/port used for the application agent interface */
 #define DEFAULT_AAP_NODE "0.0.0.0"
@@ -44,11 +40,6 @@ static const int IS_DEBUG_BUILD;
  * BUNDLE_CRC_TYPE_32   = 2
  */
 #define DEFAULT_CRC_TYPE BUNDLE_CRC_TYPE_16
-/* On STM32 we have no chance to specify cmdline args and we have no AAP, */
-/* thus, remote configuration (via CLA) is enabled by default. */
-#ifdef PLATFORM_STM32
-#define REMOTE_CONFIGURATION
-#endif
 
 
 /*
@@ -95,11 +86,7 @@ enum failed_forwarding_policy {
  * processing
  */
 /* Bundles requiring more space will be dropped immediately */
-#ifdef PLATFORM_STM32
-#define BUNDLE_QUOTA 24576
-#else
 #define BUNDLE_QUOTA 1073741824
-#endif
 
 /* The maximum count of bundles for which we have custody at a time */
 #define CUSTODY_MAX_BUNDLE_COUNT 16

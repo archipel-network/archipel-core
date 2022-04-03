@@ -25,11 +25,7 @@ TEST(malloc, alloc_huge)
 	TEST_ASSERT_NOT_NULL(mem);
 	free(mem);
 	mem = malloc(65537);
-#ifdef PLATFORM_STM32
-	TEST_ASSERT_NULL(mem);
-#else
 	TEST_ASSERT_NOT_NULL(mem);
-#endif
 	free(mem);
 }
 

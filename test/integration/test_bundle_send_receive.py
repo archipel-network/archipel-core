@@ -24,7 +24,6 @@ from .helpers import (
     SMTCP_PORT,
     SPP_USE_CRC,
     TCP_TIMEOUT,
-    STM32_TIMEOUT,
     validate_bundle6,
     validate_bundle7,
     send_delete_gs,
@@ -42,7 +41,6 @@ PAYLOAD_DATA = b"\x42" * BUNDLE_SIZE
 def _wait_for_even_timestamp():
     # Wait until TARGET_OFFSET before the next second starts (for syncing time
     # using second granularity)
-    # A high offset is required for STM32 which can be quite slow sometimes...
     TARGET_OFFSET = 0.9
     cur_time = time.time()
     next_second = math.ceil(cur_time)
@@ -183,26 +181,4 @@ def test_send_receive_tcpcl_bundle7():
         serialize_bundle7,
         validate_bundle7,
         "tcpclv3",
-    )
-
-
-@pytest.mark.skipif("usbotg" not in TESTED_CLAS, reason="not selected")
-def test_send_receive_usbotg_bundle6():
-    perform_basic_test(
-        MTCPConnection(UD3TN_HOST, SMTCP_PORT, timeout=STM32_TIMEOUT),
-        serialize_bundle6,
-        validate_bundle6,
-        "usbotg",
-        sync_time=True,
-    )
-
-
-@pytest.mark.skipif("usbotg" not in TESTED_CLAS, reason="not selected")
-def test_send_receive_usbotg_bundle7():
-    perform_basic_test(
-        MTCPConnection(UD3TN_HOST, SMTCP_PORT, timeout=STM32_TIMEOUT),
-        serialize_bundle7,
-        validate_bundle7,
-        "usbotg",
-        sync_time=True,
     )

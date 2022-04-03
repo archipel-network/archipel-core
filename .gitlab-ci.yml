@@ -23,26 +23,6 @@ build-posix-release:
     script:
         - make -j4 type=release optimize=yes werror=yes verbose=yes
 
-build-stm32-debug:
-    stage: builds
-    when: always
-    script:
-        - apt-get update
-        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip -y
-        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
-        - unzip -d freertos freertos.zip
-        - make stm32 werror=yes verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0
-
-build-stm32-release:
-    stage: builds
-    when: always
-    script:
-        - apt-get update
-        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip -y
-        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
-        - unzip -d freertos freertos.zip
-        - make stm32 -j4 type=release optimize=yes werror=yes verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0
-
 build-clang-posix-debug:
     stage: builds
     when: always
@@ -59,26 +39,6 @@ build-clang-posix-release:
         - apt-get install clang -y
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
-build-clang-stm32-debug:
-    stage: builds
-    when: always
-    script:
-        - apt-get update
-        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip clang -y
-        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
-        - unzip -d freertos freertos.zip
-        - make stm32 verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0 TOOLCHAIN=clang CLANG_SYSROOT=/usr/lib/arm-none-eabi/
-
-build-clang-stm32-release:
-    stage: builds
-    when: always
-    script:
-        - apt-get update
-        - apt-get install gcc-arm-none-eabi libnewlib-arm-none-eabi unzip clang -y
-        - wget -O freertos.zip https://downloads.sourceforge.net/project/freertos/FreeRTOS/V9.0.0/FreeRTOSv9.0.0.zip
-        - unzip -d freertos freertos.zip
-        - make stm32 type=release optimize=yes verbose=yes FREERTOS_PREFIX=freertos/FreeRTOSv9.0.0 TOOLCHAIN=clang CLANG_SYSROOT=/usr/lib/arm-none-eabi/
-
 unit-test-posix-debug:
     stage: unit_test
     when: always
@@ -91,13 +51,6 @@ unit-test-posix-release:
     script:
         - timeout 60 make type=release run-unittest-posix
 
-unit-test-stm32:
-    stage: unit_test
-    when: always
-    tags: ["stm32", "shell"]
-    script:
-        - bash .gitlab-ci-stm32.sh unittest
-
 integration-test-posix:
     stage: functional_test
     when: always
@@ -107,13 +60,6 @@ integration-test-posix:
         - build/posix/ud3tn --allow-remote-config &
         - make virtualenv
         - source .venv/bin/activate && pytest test/integration
-
-integration-test-stm32:
-    stage: functional_test
-    when: always
-    tags: ["stm32", "shell"]
-    script:
-        - bash .gitlab-ci-stm32.sh integrationtest
 
 aap-test:
     stage: functional_test
