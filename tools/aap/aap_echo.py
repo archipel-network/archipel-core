@@ -19,7 +19,7 @@ from ud3tn_utils.aap.aap_message import AAPMessageType
 def run_echo(aap_client):
 
     print(
-        f"Registred EID {aap_client.eid}"
+        f"Registered EID {aap_client.eid}"
         f"\nWaiting for bundles..."
     )
 
@@ -30,7 +30,7 @@ def run_echo(aap_client):
             msg = aap_client.receive()
         except KeyboardInterrupt:
 
-            print("Quiting")
+            print("Quitting")
             return
 
         if not msg:
@@ -44,21 +44,16 @@ def run_echo(aap_client):
                 f"-> Received bundle of length {len(msg.payload)} byte"
                 f" from {msg.eid} "
             )
-
-            try:
-                aap_client.socket.send(
-                    AAPMessage(
-                        AAPMessageType.SENDBUNDLE,
-                        msg.eid,
-                        msg.payload
-                    ).serialize()
-                )
-                print(
-                    f"-> Have sent a bundle back to {msg.eid}"
-                )
-            except InterruptedError:
-                print("An interruption error occured!")
-                return
+            aap_client.socket.send(
+                AAPMessage(
+                    AAPMessageType.SENDBUNDLE,
+                    msg.eid,
+                    msg.payload
+                ).serialize()
+            )
+            print(
+                f"-> Have sent a bundle back to {msg.eid}"
+            )
 
 
 if __name__ == "__main__":
