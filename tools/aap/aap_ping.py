@@ -10,6 +10,7 @@ between.
 
 import argparse
 import logging
+import sys
 import time
 import threading
 
@@ -92,7 +93,9 @@ def run_aap_ping(aap_client, destination, interval):
 
         # AAPClient.receive will return None, e.g., if uD3TN disconnects.
         if not msg:
-            return
+            print("Lost connection, quitting")
+            stop_event.set()
+            sys.exit(1)
 
         if msg.msg_type != AAPMessageType.RECVBUNDLE:
             # Nothing we want, continue loop.
