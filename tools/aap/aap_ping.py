@@ -10,6 +10,8 @@ between.
 
 import argparse
 import logging
+import os
+import signal
 import sys
 import time
 import threading
@@ -19,11 +21,10 @@ from helpers import add_common_parser_arguments, logging_level
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
-def _send_pings(aap_client, destination, interval, stop_event):
+def _send_pings(aap_client, destination, interval, count, stop_event):
 
     counter = 0
-    while True:  # we could use itertools.count here but this looks simpler
-
+    while counter < count or not count:
         # Send a bundle containing the current count & timestamp as a string.
         # Why the timestamp? -> To easily calculate how long it took to come
         # back! Otherwise, we would need some tricks for making the other
@@ -50,6 +51,18 @@ def _send_pings(aap_client, destination, interval, stop_event):
 
         counter += 1
 
+    # If we come here, termination has been requested after sending a
+    # specified number of bundles and this was reached. We wait at maximum
+    # for the interval to pass _again_ but do not send an additional bundle
+    # during that period. Note that the receiver might trigger the stop event
+    # if the last bundle has been received already.
+    if stop_event.wait(timeout=interval):
+        # We were requested to stop -> no need to signal the main thread
+        return
+
+    # Terminate the main thread via KeyboardInterrupt
+    os.kill(os.getpid(), signal.SIGINT)
+
 
 def _try_receive_ping(aap_client):
     # Wait for the next AAP message to be received
@@ -64,7 +77,7 @@ def _try_receive_ping(aap_client):
 
     if msg.msg_type != AAPMessageType.RECVBUNDLE:
         # Nothing we want, continue loop.
-        return False
+        return False, None
 
     if msg.payload[0:4] != b"PING":
         # Just show we got something we do not want
@@ -72,14 +85,14 @@ def _try_receive_ping(aap_client):
             f"-> Received bundle of length {len(msg.payload)} byte "
             f"from {msg.eid} that does not seem to be a PING bundle!"
         )
-        return False
+        return False, None
 
     # Try to decode the payload of the message
     try:
         _, counter_str, time_str = msg.payload.decode("utf-8").split(":")
     except UnicodeError:  # if str.decode fails
         print(f"-> Could not decode PING bundle from {msg.eid}")
-        return False
+        return False, None
 
     # Try to get the numbers back
     try:
@@ -87,16 +100,16 @@ def _try_receive_ping(aap_client):
         time_at_src = float(time_str)
     except ValueError:  # int(...) or  float(...) failed
         print(f"-> Could not read values in PING bundle from {msg.eid}")
-        return False
+        return False, None
 
     # Calculate the Round Trip Time (duration from sending to receiving)
     rtt = recv_time - time_at_src
     print(f"Received PING from {msg.eid}: seq={counter_at_src}, rtt={rtt}")
 
-    return True
+    return True, counter_at_src
 
 
-def run_aap_ping(aap_client, destination, interval):
+def run_aap_ping(aap_client, destination, interval, count):
 
     start_time = time.time()  # remember to calculate how many bdl. we expected
 
@@ -111,23 +124,30 @@ def run_aap_ping(aap_client, destination, interval):
     stop_event = threading.Event()  # for clean termination
     send_worker = threading.Thread(
         target=_send_pings,
-        args=(aap_client, destination, interval, stop_event),
+        args=(aap_client, destination, interval, count, stop_event),
     )
     send_worker.start()
 
     receive_counter = 0
     try:
         while True:
-            if _try_receive_ping(aap_client):
+            success, seqno = _try_receive_ping(aap_client)
+            if success:
                 receive_counter += 1
-    except KeyboardInterrupt:  # Ctrl+C was pressed
+                # If we got the last bundle, terminate immediately
+                if count and seqno == count - 1:
+                    raise KeyboardInterrupt
+    except KeyboardInterrupt:  # Ctrl+C was pressed or the sender signaled us
         # Calculate and print some statistics
         duration = time.time() - start_time
-        expected_bundles = int(duration / interval) + 1
+        expected_bundles = min(int(duration / interval) + 1, count)
         print(
-            f"\nPing ran for {duration}, received {receive_counter} of "
+            f"Ping ran for {duration}, received {receive_counter} of "
             f"{expected_bundles} sent"
         )
+        if receive_counter < expected_bundles:
+            # Indicate that we did not receive everything
+            sys.exit(1)
     finally:  # Note that _try_receive_ping might raise SystemExit
         # Tell the sending thread to terminate
         stop_event.set()
@@ -151,7 +171,19 @@ if __name__ == "__main__":
         "-i", "--interval",
         type=float,
         default=1.0,
-        help="interval, in seconds, to wait between sending bundles",
+        help=(
+            "interval, in seconds, to wait between sending bundles "
+            "(default: 1 second)"
+        ),
+    )
+    parser.add_argument(
+        "-c", "--count",
+        type=int,
+        default=0,
+        help=(
+            "stop after sending the specified number of bundles "
+            "(default: 0 = infinite)"
+        ),
     )
 
     args = parser.parse_args()
@@ -163,8 +195,10 @@ if __name__ == "__main__":
         addr = (args.tcp[0], int(args.tcp[1]))
         with AAPTCPClient(address=addr) as aap_client:
             aap_client.register(args.agentid)
-            run_aap_ping(aap_client, args.destination, args.interval)
+            run_aap_ping(aap_client, args.destination, args.interval,
+                         args.count)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             aap_client.register(args.agentid)
-            run_aap_ping(aap_client, args.destination, args.interval)
+            run_aap_ping(aap_client, args.destination, args.interval,
+                         args.count)
