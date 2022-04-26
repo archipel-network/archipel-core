@@ -140,7 +140,9 @@ def run_aap_ping(aap_client, destination, interval, count):
     except KeyboardInterrupt:  # Ctrl+C was pressed or the sender signaled us
         # Calculate and print some statistics
         duration = time.time() - start_time
-        expected_bundles = min(int(duration / interval) + 1, count)
+        expected_bundles = int(duration / interval) + 1
+        if count:
+            expected_bundles = min(expected_bundles, count)
         print(
             f"Ping ran for {duration}, received {receive_counter} of "
             f"{expected_bundles} sent"
