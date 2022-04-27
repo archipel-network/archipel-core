@@ -248,8 +248,11 @@ static void tcpclv3_link_management_task(void *p)
 
 	for (;;) {
 		if (param->state == TCPCLV3_CONNECTING) {
-			if (param->opportunistic || !param->cla_addr)
+			if (param->opportunistic || !param->cla_addr ||
+			    param->cla_addr[0] == '\0') {
+				LOG("TCPCLv3: No CLA address present, not initiating connection attempt");
 				break;
+			}
 			param->socket = cla_tcp_connect_to_cla_addr(
 				param->cla_addr,
 				"4556"
@@ -274,8 +277,11 @@ static void tcpclv3_link_management_task(void *p)
 			ASSERT(param->socket > 0);
 			if (cla_tcpclv3_perform_handshake(param) == UD3TN_OK)
 				handle_established_connection(param);
-			if (param->opportunistic || !param->cla_addr)
+			if (param->opportunistic || !param->cla_addr ||
+			    param->cla_addr[0] == '\0') {
+				LOG("TCPCLv3: No CLA address present, not initiating reconnection attempt");
 				break;
+			}
 			param->state = TCPCLV3_CONNECTING;
 			param->connect_attempt = 0;
 		} else {

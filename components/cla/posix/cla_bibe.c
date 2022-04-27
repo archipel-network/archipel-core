@@ -97,6 +97,10 @@ static void bibe_link_management_task(void *p)
 			param->connect_attempt = 0;
 			param->socket = -1;
 		} else {
+			if (param->cla_sock_addr[0] == '\0') {
+				LOG("bibe: Empty CLA address, cannot initiate connection");
+				break;
+			}
 			ASSERT(param->socket < 0);
 			param->socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr,
