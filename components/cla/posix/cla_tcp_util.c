@@ -119,6 +119,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 		if (sock == -1) {
 			error_code = errno;
+			LOGF("TCP: socket(): %s", strerror(error_code));
 			continue;
 		}
 
@@ -126,6 +127,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
+			LOGF("TCP: setsockopt(SO_REUSEADDR, 1): %s",
+			     strerror(error_code));
 			close(sock);
 			continue;
 		}
@@ -134,6 +137,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
+			LOGF("TCP: setsockopt(SO_REUSEPORT, 1): %s",
+			     strerror(error_code));
 			close(sock);
 			continue;
 		}
@@ -145,6 +150,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
 			    &disable, sizeof(int)) < 0) {
 				error_code = errno;
+				LOGF("TCP: setsockopt(IPV6_V6ONLY, 0): %s",
+				     strerror(error_code));
 				close(sock);
 				continue;
 			}
@@ -154,17 +161,21 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
+			LOGF("TCP: setsockopt(TCP_NODELAY, 1): %s",
+			     strerror(error_code));
 			close(sock);
 			continue;
 		}
 
 		if (client && connect(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
+			LOGF("TCP: connect(): %s", strerror(error_code));
 			close(sock);
 			continue;
 		} else if (!client &&
 			   bind(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
+			LOGF("TCP: bind(): %s", strerror(error_code));
 			close(sock);
 			continue;
 		}
