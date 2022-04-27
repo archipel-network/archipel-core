@@ -206,6 +206,7 @@ int cla_tcp_connect_to_cla_addr(const char *const cla_addr,
 		service = strrchr(addr, ']');
 		if (!service || service[1] != ':' || service[2] == 0) {
 			if (!default_service) {
+				LOG("TCP: Service field empty and no default service/port specified, cannot connect");
 				free(addr);
 				return -1;
 			}
@@ -222,6 +223,7 @@ int cla_tcp_connect_to_cla_addr(const char *const cla_addr,
 		service = strrchr(addr, ':');
 		if (!service || service[1] == 0) {
 			if (!default_service) {
+				LOG("TCP: Service field empty and no default service/port specified, cannot connect");
 				free(addr);
 				return -1;
 			}
