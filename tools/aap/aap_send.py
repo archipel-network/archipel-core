@@ -80,8 +80,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging_level(args.verbosity))
 
     if args.tcp:
-        addr = (args.tcp[0], int(args.tcp[1]))
-        with AAPTCPClient(address=addr) as aap_client:
+        with AAPTCPClient(address=args.tcp) as aap_client:
             if not args.bibe:
                 aap_client.register(args.agentid)
                 aap_client.send_str(args.dest_eid, args.payload)

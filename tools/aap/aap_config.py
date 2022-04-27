@@ -81,8 +81,7 @@ if __name__ == "__main__":
     print(msg)
 
     if args.tcp:
-        addr = (args.tcp[0], int(args.tcp[1]))
-        with AAPTCPClient(address=addr) as aap_client:
+        with AAPTCPClient(address=args.tcp) as aap_client:
             aap_client.register()
             dest_eid = args.dest_eid or aap_client.node_eid
             aap_client.send_bundle(get_config_eid(dest_eid), msg)
