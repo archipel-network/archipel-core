@@ -72,6 +72,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 		      const bool client, char **const addr_return)
 {
 	const int enable = 1;
+	const int disable = 0;
 
 	const char *node_param = node;
 
@@ -88,9 +89,15 @@ int create_tcp_socket(const char *const node, const char *const service,
 	int error_code = 0;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC; // support IPv4 + v6
+	hints.ai_family = AF_INET6; // support IPv4 + v6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	hints.ai_flags |= AI_PASSIVE; // support NULL as host name -> any if
+	// Note it is important to not specify AI_ADDRCONFIG as we might run on
+	// IPv4-only systems where no IPv6 addresses are present and, thus,
+	// this would exclude the v6-mapped v4 address that we are trying to
+	// use exclusively here.
+	hints.ai_flags = AI_V4MAPPED; // enable IPv4 support via mapped addr
+	if (!client)
+		hints.ai_flags |= AI_PASSIVE; // node == NULL -> any interface
 
 	status = getaddrinfo(node_param, service, &hints, &result);
 	if (status != 0) {
@@ -133,6 +140,17 @@ int create_tcp_socket(const char *const node, const char *const service,
 			continue;
 		}
 #endif // SO_REUSEPORT
+
+		if (e->ai_family == AF_INET6) {
+			// Some systems may want to only listen for IPv6
+			// connections by default.
+			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
+			    &disable, sizeof(int)) < 0) {
+				error_code = errno;
+				close(sock);
+				continue;
+			}
+		}
 
 		// Disable the nagle algorithm to prevent delays in responses.
 		if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
