@@ -79,6 +79,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 	ASSERT(node_param != NULL);
 	ASSERT(service != NULL);
 	// We support specifying "*" as node name to bind to all interfaces.
+	// Note that by default this only uses IPv4. To support IPv4 and v6
+	// at the same time, "::" should be specified instead.
 	if (strcmp(node_param, "*") == 0)
 		node_param = NULL;
 
@@ -89,12 +91,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 	int error_code = 0;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_INET6; // support IPv4 + v6
+	hints.ai_family = AF_UNSPEC; // support IPv4 + v6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	// Note it is important to not specify AI_ADDRCONFIG as we might run on
-	// IPv4-only systems where no IPv6 addresses are present and, thus,
-	// this would exclude the v6-mapped v4 address that we are trying to
-	// use exclusively here.
 	hints.ai_flags = AI_V4MAPPED; // enable IPv4 support via mapped addr
 	if (!client)
 		hints.ai_flags |= AI_PASSIVE; // node == NULL -> any interface
