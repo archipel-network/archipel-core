@@ -107,6 +107,26 @@ fragment-reassembly-test:
         - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
         - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
 
+ipv6-compatibility-test:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - make
+        - make virtualenv
+        # IPv6 and IPv4
+        - build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 &
+        # IPv4-only
+        - build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 &
+        # Check v6 via AAP to ud3tn1 and via MTCP to ud3tn2
+        - source .venv/bin/activate && python tools/aap/aap_config.py --tcp '::1' 4242 --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn/ 'mtcp:[::1]:4223'
+        # Check v4 via AAP to ud3tn1
+        - source .venv/bin/activate && python tools/aap/aap_send.py --tcp 127.0.0.1 4242 dtn://ud3tn2.dtn/sink PAYLOAD
+        # Check v4 reception of the correct bundle at ud3tn2
+        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --tcp 127.0.0.1 4243 --agentid sink --count 1 --verify-pl PAYLOAD
+        # Check that v6 does _not_ work on ud3tn2
+        - "source .venv/bin/activate && if timeout 1 python tools/aap/aap_test.py --tcp '::1' 4243; then echo 'Error: Should not be able to connect via IPv6 here.'; false; else true; fi"
+
 bibe-internal-forwarding-test:
     stage: functional_test
     when: always
