@@ -998,11 +998,9 @@ static bool hop_count_validation(struct bundle *bundle)
 		return true;
 	}
 
-	/* Hop count exeeded, delete bundle */
-	if (hop_count.count >= hop_count.limit) {
-		bundle_delete(bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
+	/* Hop count exceeded */
+	if (hop_count.count >= hop_count.limit)
 		return false;
-	}
 
 	/* Increment Hop Count */
 	hop_count.count++;
