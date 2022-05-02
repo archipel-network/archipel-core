@@ -449,7 +449,7 @@ static void bundle_receive(struct bundle *bundle)
 	const uint64_t timestamp_s = hal_time_get_timestamp_s();
 
 	if (bundle_get_expiration_time_s(bundle, timestamp_s) < timestamp_s) {
-		bundle_delete(bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
+		bundle_expired(bundle);
 		return;
 	}
 
