@@ -11,7 +11,7 @@ import argparse
 from datetime import datetime
 
 from ud3tn_utils.aap import AAPTCPClient, AAPUnixClient
-from ud3tn_utils.config import ConfigMessage, make_contact
+from ud3tn_utils.config import ConfigMessage, unix2dtn, Contact
 
 from helpers import get_config_eid
 
@@ -48,29 +48,37 @@ def get_nodes_data(nodesData):
     return nodes
 
 
-def parse_contact_time_span(start_time: str, end_time: str):
-    """Parse contact time span dependent on time input format
+def create_contact(start, end, bitrate):
+    """Creates a `Contact` tuple fo the ConfigMessage converts
+    absolute or relative times into DTN timestamps
 
     Args:
-        start_time (str): Start time of the contact
-        end_time (str): End time of the contact
-    Returns: list [[t1, t2]]: Relative start and end times in seconds from now
+        start (str): Start point of the contact
+        end (str): End point of the contact
+        bitrate (str): Bitrate of the contact
+    Returns:
+        Contact: tuple with DTN timestamps
     """
-    if start_time[0] == "+":
-        return [[int(start_time), int(end_time)]]
+    if start.startswith("+"):
+        start_time = unix2dtn(datetime.timestamp(datetime.now()) + int(start))
+        end_time = unix2dtn(datetime.timestamp(datetime.now()) + int(end))
+        return Contact(
+            start=int(round(start_time)),
+            end=int(round(end_time)),
+            bitrate=int(bitrate),
+        )
     else:
-        start_time = datetime.strptime(start_time, "%Y/%m/%d-%H:%M:%S")
-        end_time = datetime.strptime(end_time, "%Y/%m/%d-%H:%M:%S")
+        start_time = datetime.strptime(start, "%Y/%m/%d-%H:%M:%S")
+        end_time = datetime.strptime(end, "%Y/%m/%d-%H:%M:%S")
 
-        if ((start_time - datetime.now()).total_seconds() < 0 or
-           (end_time - datetime.now()).total_seconds() < 0):
-            print("Warning! The scheduled time for contact is passed!")
+        if (start_time < datetime.now() or end_time < datetime.now()):
+            print("Warning! The planned time for the contact has passed.")
 
-        # here it transforms the absolute time into relative time to exact time
-        # on device by subtracting the actual time on device from the absolute
-        # start time and from end time accordingly
-        return [[(start_time - datetime.now()).total_seconds(),
-                (end_time - datetime.now()).total_seconds()]]
+        return Contact(
+            start=int(round(unix2dtn(datetime.timestamp(start_time)))),
+            end=int(round(unix2dtn(datetime.timestamp(end_time)))),
+            bitrate=int(bitrate),
+        )
 
 
 # Converts node's name into uD3TN format
@@ -100,19 +108,12 @@ def configure_nodes(contactPlan, nodes: dict):
                 raise Exception(f"Configuration of the nodes: {planLine[4]}",
                                 f" or {planLine[5]} was not given")
 
-            schedule = parse_contact_time_span(planLine[2], planLine[3])
-
-            # adding data rate to schedule
-            schedule[0].append(int(planLine[6]))
-
-            # config message with node's eid and its cla address as parameters
             msg = bytes(ConfigMessage(
                 to_dtn(planLine[5]),
                 nodes[planLine[5]][0],
-                contacts=[
-                    make_contact(*contact)
-                    for contact in schedule
-                ],
+                contacts=[create_contact(planLine[2],
+                                         planLine[3],
+                                         planLine[6])],
             ))
 
             print(
