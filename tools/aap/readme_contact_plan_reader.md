@@ -15,17 +15,16 @@ The **add contact** command schedules a period of data transmission from `sender
 `a contact <start_time> <end_time> <sender_node> <receiver_node> <transmit_rate>`
 
 *Examples:*
-- `a contact 2022/05/04-15:02:15 2022/05/04-16:00:15 b c 10000` 
-- `a contact +1 +3600 a b 10000`
+- `a contact 2022/05/04-15:02:15 2022/05/04-16:00:15 1 2 10000` 
+- `a contact +1 +3600 1 3 10000`
 
 ### **Remarks!**
 
-All other lines are considered for comments and ignored.
-Lines that contain only one word make program crash.\
+Comments begin with `#` and are ignored.\
+The nodes are represented as numbers in the `ipn` EID scheme form for ION.\
 Time can be represented in two formats:
 - Absolute time is written in form `yyyy/mm/dd−hh:mm:ss` 
 - Relative time (a number of seconds following the current reference time) `+ss`
-
 
 # Nodes configuration file
 
@@ -39,8 +38,8 @@ Each line of the file has the following format:\
 
 *Examples :*
 ```
-a mtcp:localhost:4224 tcp localhost 4242
-b mtcp:localhost:4225 socket socketfile
+1 mtcp:localhost:4224 tcp localhost 4242
+2 mtcp:localhost:4225 socket socketfile
 ```
 
 # Starting a program
@@ -57,13 +56,13 @@ In this scenario we want to connect 3 uD3TN nodes with each other.
 ## Step 1 -Starting the uD3TN instances
 
 Open a new shell in the uD3TN base directory and launch instance A as follows:\
-`build/posix/ud3tn --eid dtn://a.dtn/ --bp-version 7 --aap-port 4242 --cla "mtcp:*,4224"`
+`build/posix/ud3tn --eid ipn:1.0 --bp-version 7 --aap-port 4242 --cla "mtcp:*,4224"`
 
 Open another shell and launch the second instance B as follows:\
-`build/posix/ud3tn --eid dtn://b.dtn/ --bp-version 7 --aap-port 4243 --cla "mtcp:*,4225"`
+`build/posix/ud3tn --eid ipn:2.0 --bp-version 7 --aap-port 4243 --cla "mtcp:*,4225"`
 
 Now open yet another shell and launch the third instance C as follows:\
-`build/posix/ud3tn --eid dtn://c.dtn/ --bp-version 7 --aap-port 4244 --cla "mtcp:*,4226"` 
+`build/posix/ud3tn --eid ipn:3.0 --bp-version 7 --aap-port 4244 --cla "mtcp:*,4226"` 
 
 Now, all three µD3TN instances are up and running so we can continue with the next step!
 
@@ -71,9 +70,9 @@ Now, all three µD3TN instances are up and running so we can continue with the n
 
 Now we will create a `nodes_config.txt` file and copy the following code there:
 ```
-a mtcp:localhost:4224 tcp localhost 4242
-b mtcp:localhost:4225 tcp localhost 4243
-c mtcp:localhost:4226 tcp localhost 4244
+1 mtcp:localhost:4224 tcp localhost 4242
+2 mtcp:localhost:4225 tcp localhost 4243
+3 mtcp:localhost:4226 tcp localhost 4244
 ```
 
 From now on this file will contain the information about nodes needed for configuration.
@@ -82,14 +81,14 @@ From now on this file will contain the information about nodes needed for config
 
 Now we will create a `contact_plan.txt` file and copy the following text there:
 ```
-a contact +1 +3600 a b 100000
-a contact +5 +3600 b a 100000
-a contact +10 +3600 a c 10000
-a contact +10 +3600 c a 10000
-a contact +15 +3600 c b 10000
-a contact +1 +3600 b c 10000
+a contact +1 +3600 1 2 100000
+a contact +5 +3600 2 1 100000
+a contact +10 +3600 1 3 10000
+a contact +10 +3600 3 1 10000
+a contact +15 +3600 3 2 10000
+a contact +1 +3600 2 3 10000
 ```
-Since we have two neceserry files, we may proceed and put them in uD3TN base directory.
+Since we have two necessary files, we may proceed and put them in uD3TN base directory.
 
 ## Step 4 -Configure nodes
 

@@ -9,6 +9,7 @@ and configures the uD3TN nodes.
 
 import argparse
 from datetime import datetime
+import sys
 
 from ud3tn_utils.aap import AAPTCPClient, AAPUnixClient
 from ud3tn_utils.config import ConfigMessage, unix2dtn, Contact
@@ -35,7 +36,7 @@ def get_nodes_data(nodesData):
 
     for line in nodesData:
         # skipping empty lines
-        if(len(line) > 1):
+        if len(line) > 1:
             nodeInfo = line.split()
         else:
             continue
@@ -49,7 +50,7 @@ def get_nodes_data(nodesData):
 
 
 def create_contact(start, end, bitrate):
-    """Creates a `Contact` tuple fo the ConfigMessage converts
+    """Creates a `Contact` tuple for the ConfigMessage converts
     absolute or relative times into DTN timestamps
 
     Args:
@@ -71,7 +72,7 @@ def create_contact(start, end, bitrate):
         start_time = datetime.strptime(start, "%Y/%m/%d-%H:%M:%S")
         end_time = datetime.strptime(end, "%Y/%m/%d-%H:%M:%S")
 
-        if (start_time < datetime.now() or end_time < datetime.now()):
+        if start_time < datetime.now() or end_time < datetime.now():
             print("Warning! The planned time for the contact has passed.")
 
         return Contact(
@@ -81,9 +82,9 @@ def create_contact(start, end, bitrate):
         )
 
 
-# Converts node's name into uD3TN format
-def to_dtn(nodeName: str):
-    return "dtn://" + str(nodeName) + ".dtn/"
+# Converts node's name into ipn EID scheme format
+def to_ipn(nodeNumber: str):
+    return "ipn:" + str(nodeNumber) + ".0"
 
 
 def configure_nodes(contactPlan, nodes: dict):
@@ -100,16 +101,20 @@ def configure_nodes(contactPlan, nodes: dict):
     for i, line in enumerate(contactPlan):
 
         # processing only a contact command
-        if (line.startswith("a contact")):
+        if line.startswith("a contact"):
             planLine = line.split()
+            if len(planLine) < 7:
+                print(f"Error in contact plan on line {i + 1}:",
+                      "Too few fields provided!")
+                sys.exit(1)
 
             # exception when the nodes were not written in configuration file
-            if (planLine[4] not in nodes or planLine[5] not in nodes):
+            if planLine[4] not in nodes or planLine[5] not in nodes:
                 raise Exception(f"Configuration of the nodes: {planLine[4]}",
                                 f" or {planLine[5]} was not given")
 
             msg = bytes(ConfigMessage(
-                to_dtn(planLine[5]),
+                to_ipn(planLine[5]),
                 nodes[planLine[5]][0],
                 contacts=[create_contact(planLine[2],
                                          planLine[3],
@@ -127,13 +132,13 @@ def configure_nodes(contactPlan, nodes: dict):
                 addr = nodes[planLine[4]][1]
                 with AAPTCPClient(address=addr) as aap_client:
                     aap_client.register()
-                    dest_eid = to_dtn(planLine[4]) or aap_client.node_eid
+                    dest_eid = to_ipn(planLine[4]) or aap_client.node_eid
                     aap_client.send_bundle(get_config_eid(dest_eid), msg)
             else:
                 addr = nodes[planLine[4]][1]
                 with AAPUnixClient(address=addr) as aap_client:
                     aap_client.register()
-                    dest_eid = to_dtn(planLine[4]) or aap_client.node_eid
+                    dest_eid = to_ipn(planLine[4]) or aap_client.node_eid
                     aap_client.send_bundle(get_config_eid(dest_eid), msg)
 
         else:
