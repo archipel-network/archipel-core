@@ -70,6 +70,8 @@ aap-test:
         - make virtualenv
         - build/posix/ud3tn &
         - source .venv/bin/activate && python tools/aap/aap_test.py
+        - build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 &
+        - source .venv/bin/activate && python tools/aap/aap_test.py --tcp '::1' 4242
 
 ion-bpv6-interoperability-test:
     stage: functional_test
