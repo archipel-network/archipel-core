@@ -40,6 +40,11 @@ def get_nodes_data(nodesData):
             nodeInfo = line.split()
         else:
             continue
+        if (int(nodeInfo[0]) < 1 or int(nodeInfo[0]) > 2 ** 64 - 1):
+            raise Exception(
+                "The given node number doesn't match the " +
+                "required format. Should be: unsigned 64bit number; " +
+                f"Was: {nodeInfo[0]}")
 
         if nodeInfo[2] == "tcp":
             nodes[nodeInfo[0]] = (nodeInfo[1], (nodeInfo[3], int(nodeInfo[4])))
