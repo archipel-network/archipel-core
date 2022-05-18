@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 # encoding: utf-8
 
+import abc
 import logging
 import random
 import socket
@@ -13,7 +14,7 @@ from .aap_message import AAPMessage, AAPMessageType, InsufficientAAPDataError
 logger = logging.getLogger(__name__)
 
 
-class AAPClient():
+class AAPClient(abc.ABC):
     """A context manager class for connecting to the AAP socket of a uD3TN
     instance.
 
@@ -23,17 +24,17 @@ class AAPClient():
             `socket.connect()`
     """
 
-    def __init__(self, socket, address):
-        self.socket = socket
+    def __init__(self, address):
+        self.socket = None
         self.address = address
         self.node_eid = None
         self.agent_id = None
 
+    @abc.abstractmethod
     def connect(self):
         """Establish a socket connection to a uD3TN instance and return the
         received welcome message.
         """
-        self.socket.connect(self.address)
         logger.info("Connected to uD3TN, awaiting WELCOME message...")
         return self._welcome()
 
@@ -182,10 +183,12 @@ class AAPUnixClient(AAPClient):
     """
 
     def __init__(self, address='ud3tn.socket'):
-        super().__init__(
-            socket=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM),
-            address=address,
-        )
+        super().__init__(address=address)
+
+    def connect(self):
+        self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.socket.connect(self.address)
+        return super().connect()
 
 
 class AAPTCPClient(AAPClient):
@@ -197,8 +200,27 @@ class AAPTCPClient(AAPClient):
             when calling `socket.connect()`
     """
 
-    def __init__(self, address=('localhost', 4242)):
-        super().__init__(
-            socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-            address=address,
-        )
+    def __init__(self, address=('localhost', '4242')):
+        super().__init__(address=address)
+
+    def connect(self):
+        host, service = self.address
+        addrinfo = socket.getaddrinfo(host, service,
+                                      socket.AF_UNSPEC, socket.SOCK_STREAM)
+        for af, socktype, proto, canonname, sa in addrinfo:
+            try:
+                s = socket.socket(af, socktype, proto)
+            except OSError:
+                s = None
+                continue
+            try:
+                s.connect(sa)
+            except OSError:
+                s.close()
+                s = None
+                continue
+            break
+        if s is None:
+            raise RuntimeError(f"cannot connect to {host}:{service}")
+        self.socket = s
+        return super().connect()

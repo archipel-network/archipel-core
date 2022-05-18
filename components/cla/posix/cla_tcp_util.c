@@ -72,12 +72,15 @@ int create_tcp_socket(const char *const node, const char *const service,
 		      const bool client, char **const addr_return)
 {
 	const int enable = 1;
+	const int disable = 0;
 
 	const char *node_param = node;
 
 	ASSERT(node_param != NULL);
 	ASSERT(service != NULL);
 	// We support specifying "*" as node name to bind to all interfaces.
+	// Note that by default this only uses IPv4. To support IPv4 and v6
+	// at the same time, "::" should be specified instead.
 	if (strcmp(node_param, "*") == 0)
 		node_param = NULL;
 
@@ -90,7 +93,9 @@ int create_tcp_socket(const char *const node, const char *const service,
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC; // support IPv4 + v6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	hints.ai_flags |= AI_PASSIVE; // support NULL as host name -> any if
+	hints.ai_flags = AI_V4MAPPED; // enable IPv4 support via mapped addr
+	if (!client)
+		hints.ai_flags |= AI_PASSIVE; // node == NULL -> any interface
 
 	status = getaddrinfo(node_param, service, &hints, &result);
 	if (status != 0) {
@@ -114,6 +119,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 		if (sock == -1) {
 			error_code = errno;
+			LOGF("TCP: socket(): %s", strerror(error_code));
 			continue;
 		}
 
@@ -121,6 +127,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
+			LOGF("TCP: setsockopt(SO_REUSEADDR, 1): %s",
+			     strerror(error_code));
 			close(sock);
 			continue;
 		}
@@ -129,26 +137,45 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
+			LOGF("TCP: setsockopt(SO_REUSEPORT, 1): %s",
+			     strerror(error_code));
 			close(sock);
 			continue;
 		}
 #endif // SO_REUSEPORT
 
+		if (e->ai_family == AF_INET6) {
+			// Some systems may want to only listen for IPv6
+			// connections by default.
+			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
+			    &disable, sizeof(int)) < 0) {
+				error_code = errno;
+				LOGF("TCP: setsockopt(IPV6_V6ONLY, 0): %s",
+				     strerror(error_code));
+				close(sock);
+				continue;
+			}
+		}
+
 		// Disable the nagle algorithm to prevent delays in responses.
 		if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
+			LOGF("TCP: setsockopt(TCP_NODELAY, 1): %s",
+			     strerror(error_code));
 			close(sock);
 			continue;
 		}
 
 		if (client && connect(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
+			LOGF("TCP: connect(): %s", strerror(error_code));
 			close(sock);
 			continue;
 		} else if (!client &&
 			   bind(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
+			LOGF("TCP: bind(): %s", strerror(error_code));
 			close(sock);
 			continue;
 		}
