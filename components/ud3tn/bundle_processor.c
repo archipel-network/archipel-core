@@ -335,6 +335,7 @@ static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 	/* 4.3.4. Hop Count (BPv7-bis) */
 	/* TODO: Is this the correct point to perform the hop-count check? */
 	if (!hop_count_validation(bundle)) {
+		LOGF("BundleProcessor: Deleting bundle #%d: Hop Limit Exceeded", bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
 		return UD3TN_FAIL;
 	}
@@ -345,6 +346,7 @@ static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 	/* 5.4-2 */
 	if (send_bundle(bundle->id, timeout) != UD3TN_OK) {
 		/* Could not store bundle in queue -> delete it. */
+		LOGF("BundleProcessor: Deleting bundle #%d: Cannot store in queue", bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return UD3TN_FAIL;
 	}
@@ -419,12 +421,16 @@ static void bundle_forwarding_failed(
 				cs_reason);
 		}
 	}
+	LOGF("BundleProcessor: Deleting bundle #%d: Forwarding Failed",
+	     bundle->id);
 	bundle_delete(bundle, reason);
 }
 
 /* 5.5 */
 static void bundle_expired(struct bundle *bundle)
 {
+	LOGF("BundleProcessor: Deleting bundle #%d: Lifetime Expired",
+	     bundle->id);
 	bundle_delete(bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
 }
 
@@ -449,7 +455,7 @@ static void bundle_receive(struct bundle *bundle)
 	const uint64_t timestamp_s = hal_time_get_timestamp_s();
 
 	if (bundle_get_expiration_time_s(bundle, timestamp_s) < timestamp_s) {
-		bundle_delete(bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
+		bundle_expired(bundle);
 		return;
 	}
 
@@ -465,6 +471,8 @@ static void bundle_receive(struct bundle *bundle)
 					BUNDLE_V6_BLOCK_FLAG_FWD_UNPROC;
 				break;
 			case BUNDLE_HRESULT_DELETED:
+				LOGF("BundleProcessor: Deleting bundle #%d: Block Unintelligible",
+				     bundle->id);
 				bundle_delete(bundle,
 					BUNDLE_SR_REASON_BLOCK_UNINTELLIGIBLE);
 				return;
@@ -493,6 +501,8 @@ static void bundle_receive(struct bundle *bundle)
 			/* to check if we want to reject custody before */
 			/* dispatching the bundle. */
 			/* In that case, the bundle would be deleted. */
+			LOGF("BundleProcessor: Deleting bundle #%d: Cannot accept custody.",
+			     bundle->id);
 			send_custody_signal(bundle, BUNDLE_CS_TYPE_REFUSAL,
 				BUNDLE_CS_REASON_DEPLETED_STORAGE);
 			bundle_delete(bundle,
@@ -589,6 +599,8 @@ static void add_to_reassembly_bundle_list(struct reassembly_list *item,
 		sizeof(struct reassembly_bundle_list)
 	);
 	if (!new_entry) {
+		LOGF("BundleProcessor: Deleting bundle #%d: Cannot store in reassembly list.",
+		     bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return;
 	}
@@ -710,6 +722,8 @@ static void bundle_attempt_reassembly(struct bundle *bundle)
 	);
 
 	if (!new_list) {
+		LOGF("BundleProcessor: Deleting bundle #%d: Cannot create reassembly list.",
+		     bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return;
 	}
@@ -879,6 +893,8 @@ static void bundle_dangling(struct bundle *bundle)
 		break;
 	}
 	if (!resched) {
+		LOGF("BundleProcessor: Deleting bundle #%d: Forwarding failed and policy indicates to drop it.",
+		     bundle->id);
 		bundle_delete(bundle, BUNDLE_SR_REASON_TRANSMISSION_CANCELED);
 	/* Send it to the router task again after evaluating policy. */
 	} else if (send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT) != UD3TN_OK) {
@@ -998,11 +1014,9 @@ static bool hop_count_validation(struct bundle *bundle)
 		return true;
 	}
 
-	/* Hop count exeeded, delete bundle */
-	if (hop_count.count >= hop_count.limit) {
-		bundle_delete(bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
+	/* Hop count exceeded */
+	if (hop_count.count >= hop_count.limit)
 		return false;
-	}
 
 	/* Increment Hop Count */
 	hop_count.count++;
