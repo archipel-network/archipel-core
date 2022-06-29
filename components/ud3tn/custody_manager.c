@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/bundle.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/custody_manager.h"
@@ -143,10 +142,8 @@ void custody_manager_release(struct bundle *bundle)
 	}
 	accepted_bundle_count--;
 	bundle->ret_constraints &= ~BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED;
-	if (bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE) {
-		bundle_storage_delete(bundle->id);
+	if (bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE)
 		bundle_drop(bundle);
-	}
 }
 
 void custody_manager_init(const char *local_eid)

@@ -10,10 +10,6 @@
 #include <stdint.h>   // uint*_t
 
 
-#define BUNDLE_INVALID_ID 0
-
-typedef uint16_t bundleid_t;
-
 struct endpoint_list {
 	char *eid;
 	struct endpoint_list *next;
@@ -136,8 +132,6 @@ struct bundle_block_list {
 };
 
 struct bundle {
-	bundleid_t id;
-
 	uint8_t protocol_version;
 
 	enum bundle_proc_flags proc_flags;

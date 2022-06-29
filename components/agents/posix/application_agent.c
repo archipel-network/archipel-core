@@ -24,7 +24,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/task_tags.h"
 
@@ -328,7 +327,7 @@ static int16_t process_aap_message(
 			config,
 			time
 		);
-		bundleid_t bundle_id = agent_create_forward_bundle(
+		struct bundle *bundle = agent_create_forward_bundle(
 			config->parent->bundle_agent_interface,
 			config->parent->bp_version,
 			config->registered_agent_id,
@@ -347,14 +346,13 @@ static int16_t process_aap_message(
 		// Pointer responsibility was taken by create_forward_bundle
 		msg.payload = NULL;
 
-		if (bundle_id == BUNDLE_INVALID_ID) {
+		if (!bundle) {
 			LOG("AppAgent: Bundle creation failed!");
 			response.type = AAP_MESSAGE_NACK;
 		} else {
-			LOGF("AppAgent: Injected new bundle (#%llu).",
-			     (uint64_t)bundle_id);
+			LOGF("AppAgent: Injected new bundle %p.", bundle);
 			response.type = AAP_MESSAGE_SENDCONFIRM;
-			response.bundle_id = bundle_id;
+			response.bundle_id = (uint64_t)bundle;
 		}
 
 		break;

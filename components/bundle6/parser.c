@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "bundle6/parser.h"
 
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/config.h"
 #include "ud3tn/common.h"
 
@@ -47,8 +46,8 @@ enum ud3tn_result bundle6_parser_reset(struct bundle6_parser *state)
 	state->primary_bytes_remaining = 0;
 	state->cur_bytes_remaining = 0;
 	state->current_index = 0;
-	state->current_size = bundle_storage_get_usage()
-		+ sizeof(struct bundle);
+	// FIXME: BUNDLE_QUOTA now only accounts for the incoming bundle size.
+	state->current_size = sizeof(struct bundle);
 	state->last_block = 0;
 
 	if (state->bundle != NULL)

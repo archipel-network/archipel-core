@@ -21,8 +21,6 @@ struct bundle *bundlefragmenter_create_new_fragment(
 	if (fragment == NULL)
 		return NULL;
 	bundle_copy_headers(fragment, prototype);
-	/* Reset the ID */
-	fragment->id = BUNDLE_INVALID_ID;
 	/* Set total ADU length if not already fragmented */
 	if (!bundle_is_fragmented(prototype))
 		fragment->total_adu_length = prototype->payload_block->length;

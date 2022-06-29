@@ -2,7 +2,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_fragmenter.h"
 #include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/contact_manager.h"
@@ -36,7 +35,7 @@ static bool process_router_command(
 
 struct bundle_processing_result {
 	int32_t status_or_fragments;
-	bundleid_t fragment_ids[ROUTER_MAX_FRAGMENTS];
+	struct bundle *fragments[ROUTER_MAX_FRAGMENTS];
 };
 
 #define BUNDLE_RESULT_NO_ROUTE 0
@@ -131,8 +130,7 @@ static bool process_signal(
 	Semaphore_t ro_sem)
 {
 	bool success = true;
-	bundleid_t b_id;
-	struct bundle *b;
+	struct bundle *b = signal.data;
 	struct routed_bundle *rb;
 	struct contact *contact;
 	struct router_command *command;
@@ -163,8 +161,6 @@ static bool process_signal(
 		hal_semaphore_release(ro_sem); /* Allow optimizer to run */
 		break;
 	case ROUTER_SIGNAL_ROUTE_BUNDLE:
-		b_id = (bundleid_t)(uintptr_t)signal.data;
-		b = bundle_storage_get(b_id);
 		hal_semaphore_take_blocking(cm_semaphore);
 		/*
 		 * TODO: Check bundle expiration time
@@ -177,12 +173,18 @@ static bool process_signal(
 
 		if (b != NULL)
 			proc_result = process_bundle(b);
-		b = NULL; /* b may be invalid or free'd now */
+
+		// b should not be used anymore, may be dropped due to
+		// fragmentation.
+		struct bundle *const b_old_ptr = b;
+
+		b = NULL;
+
 		hal_semaphore_release(cm_semaphore);
 		if (IS_DEBUG_BUILD)
 			LOGF(
-				"RouterTask: Bundle #%d [ %s ] [ frag = %d ]",
-				b_id,
+				"RouterTask: Bundle %p [ %s ] [ frag = %d ]",
+				b_old_ptr,
 				(proc_result.status_or_fragments < 1)
 					? "ERR" : "OK",
 				proc_result.status_or_fragments
@@ -195,7 +197,7 @@ static bool process_signal(
 
 			bundle_processor_inform(
 				bp_signaling_queue,
-				b_id,
+				b_old_ptr,  // safe to use -- not fragmented
 				signal,
 				reason
 			);
@@ -205,7 +207,7 @@ static bool process_signal(
 			     i < proc_result.status_or_fragments; i++) {
 				bundle_processor_inform(
 					bp_signaling_queue,
-					proc_result.fragment_ids[i],
+					proc_result.fragments[i],
 					BP_SIGNAL_BUNDLE_ROUTED,
 					BUNDLE_SR_REASON_NO_INFO
 				);
@@ -228,9 +230,8 @@ static bool process_signal(
 	case ROUTER_SIGNAL_TRANSMISSION_FAILURE:
 		rb = (struct routed_bundle *)signal.data;
 		if (rb->serialized == rb->contact_count) {
-			b_id = rb->id;
 			bundle_processor_inform(
-				bp_signaling_queue, b_id,
+				bp_signaling_queue, rb->bundle_ptr,
 				(rb->serialized == rb->transmitted)
 					? BP_SIGNAL_TRANSMISSION_SUCCESS
 					: BP_SIGNAL_TRANSMISSION_FAILURE,
@@ -245,17 +246,16 @@ static bool process_signal(
 		/* Should probably never occur... */
 		/* If optimization failed to schedule a preempted bundle */
 		rb = (struct routed_bundle *)signal.data;
-		b_id = rb->id;
 		bundle_processor_inform(
-			bp_signaling_queue, b_id,
+			bp_signaling_queue, rb->bundle_ptr,
 			BP_SIGNAL_TRANSMISSION_FAILURE,
 			BUNDLE_SR_REASON_NO_INFO
 		);
+		LOGF("RouterTask: Preemption routing failed for bundle %p!",
+		     rb->bundle_ptr);
 		free(rb->destination);
 		free(rb->contacts);
 		free(rb);
-		LOGF("RouterTask: Preemption routing failed for bundle #%d!",
-		     b_id);
 		break;
 	case ROUTER_SIGNAL_WITHDRAW_NODE:
 		node = (struct node *)signal.data;
@@ -336,13 +336,13 @@ static struct bundle_processing_result process_bundle(struct bundle *bundle)
 	route = router_get_first_route(bundle);
 	/* TODO: Add to list if no route but own OR priority > X */
 	if (route.fragments == 1) {
-		result.fragment_ids[0] = bundle->id;
+		result.fragments[0] = bundle;
 		if (router_add_bundle_to_route(&route.fragment_results[0],
 					       bundle))
 			result.status_or_fragments = 1;
 		else
 			result.status_or_fragments = BUNDLE_RESULT_NO_MEMORY;
-	} else if (!bundle_must_not_fragment(bundle)) {
+	} else if (route.fragments && !bundle_must_not_fragment(bundle)) {
 		// Only fragment if it is allowed -- if not, there is no route.
 		result = apply_fragmentation(bundle, route);
 	}
@@ -396,30 +396,28 @@ static struct bundle_processing_result apply_fragmentation(
 
 	/* Add to route */
 	for (f = 0; f < fragments; f++) {
-		bundle_storage_add(frags[f]);
 		if (!router_add_bundle_to_route(
 			&route.fragment_results[f], frags[f])
 		) {
+			LOGF("RouterTask: Scheduling bundle %p failed, dropping all fragments.",
+			     bundle);
+			// Remove from all previously-scheduled routes
 			for (g = 0; g < f; g++)
 				router_remove_bundle_from_route(
 					&route.fragment_results[g],
-					frags[g]->id, 1);
-			for (g = 0; g < fragments; g++) {
-				/* FIXME: Routed bundles not unrouted */
-				if (g <= f)
-					bundle_storage_delete(frags[g]->id);
+					frags[g], 1);
+			// Drop _all_ fragments
+			for (g = 0; g < fragments; g++)
 				bundle_free(frags[g]);
-			}
 			return result;
 		}
 	}
 
 	/* Success - remove bundle */
-	bundle_storage_delete(bundle->id);
 	bundle_free(bundle);
 
 	for (f = 0; f < fragments; f++)
-		result.fragment_ids[f] = frags[f]->id;
+		result.fragments[f] = frags[f];
 	result.status_or_fragments = fragments;
 	return result;
 }

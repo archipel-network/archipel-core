@@ -236,7 +236,8 @@ static void try_optimize_decision_preempt(
 	if (preempted == NULL) /* If buffer failed to initialize */
 		return;
 	for (i = 0; i < rb->contact_count; i++)
-		router_remove_bundle_from_contact(rb->contacts[i], rb->id);
+		router_remove_bundle_from_contact(rb->contacts[i],
+						  rb->bundle_ptr);
 	dest_contacts = router_lookup_destination(rb->destination);
 	if (dest_contacts == NULL)
 		goto finalize;
@@ -393,7 +394,7 @@ static uint8_t re_route_preempted_fragments(
 		for (j = 0; j < preempted[i]->contact_count; j++)
 			router_remove_bundle_from_contact(
 				preempted[i]->contacts[j],
-				preempted[i]->id);
+				preempted[i]->bundle_ptr);
 		free(preempted[i]->contacts);
 		preempted[i]->contacts = NULL;
 		if (router_update_routed_bundle(&froutes[i], preempted[i])

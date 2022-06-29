@@ -347,8 +347,8 @@ struct router_result router_get_first_route(struct bundle *bundle)
 	res.fragments = 0;
 	res.probability = 0.0f;
 	if (contacts == NULL) {
-		LOGF("Router: Could not determine a node over which the destination \"%s\" is reachable",
-		     bundle->destination);
+		LOGF("Router: Could not determine a node over which the destination \"%s\" for bundle %p is reachable",
+		     bundle->destination, bundle);
 		return res;
 	}
 
@@ -369,14 +369,14 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		);
 
 	if (mrfs.max_fragment_size == 0) {
-		LOGF("Router: Contact payload capacity (%lu bytes) too low for bundle of size %lu bytes (min. frag. sz. = %lu, payload sz. = %lu)",
-		     mrfs.payload_capacity, bundle_size,
+		LOGF("Router: Contact payload capacity (%lu bytes) too low for bundle %p of size %lu bytes (min. frag. sz. = %lu, payload sz. = %lu)",
+		     mrfs.payload_capacity, bundle, bundle_size,
 		     MAX(first_frag_sz, last_frag_sz),
 		     bundle->payload_block->length);
 		goto finish;
 	} else if (mrfs.max_fragment_size != INT32_MAX) {
-		LOGF("Router: Determined max. frag size of %lu bytes for bundle of size %lu bytes (payload sz. = %lu)",
-		     mrfs.max_fragment_size, bundle_size,
+		LOGF("Router: Determined max. frag size of %lu bytes for bundle %p of size %lu bytes (payload sz. = %lu)",
+		     mrfs.max_fragment_size, bundle, bundle_size,
 		     bundle->payload_block->length);
 	} else {
 		LOGF("Router: Determined infinite max. frag size for bundle of size %lu bytes (payload sz. = %lu)",
@@ -393,8 +393,8 @@ struct router_result router_get_first_route(struct bundle *bundle)
 			mrfs.max_fragment_size, first_frag_sz, last_frag_sz);
 
 	if (!res.fragments)
-		LOGF("Router: No feasible route found for bundle to \"%s\" with size of %lu bytes",
-		     bundle->destination, bundle_size);
+		LOGF("Router: No feasible route found for bundle %p to \"%s\" with size of %lu bytes",
+		     bundle, bundle->destination, bundle_size);
 
 finish:
 	list_free(contacts);
@@ -508,7 +508,7 @@ enum ud3tn_result router_add_bundle_to_contact(
 }
 
 struct routed_bundle *router_remove_bundle_from_contact(
-	struct contact *contact, bundleid_t id)
+	struct contact *contact, struct bundle *bundle)
 {
 	struct routed_bundle *rb;
 	struct routed_bundle_list **cur_entry, *tmp;
@@ -518,7 +518,7 @@ struct routed_bundle *router_remove_bundle_from_contact(
 	/* Find rb */
 	while (*cur_entry != NULL) {
 		ASSERT((*cur_entry)->data != NULL);
-		if ((*cur_entry)->data->id == id) {
+		if ((*cur_entry)->data->bundle_ptr == bundle) {
 			rb = (*cur_entry)->data;
 			tmp = *cur_entry;
 			*cur_entry = (*cur_entry)->next;
@@ -551,7 +551,7 @@ uint8_t router_add_bundle_to_route(struct fragment_route *r, struct bundle *b)
 	rb = malloc(sizeof(struct routed_bundle));
 	if (rb == NULL)
 		return 0;
-	rb->id = b->id;
+	rb->bundle_ptr = b;
 	rb->prio = bundle_get_routing_priority(b);
 	rb->size = bundle_get_serialized_size(b);
 	rb->exp_time = bundle_get_expiration_time_s(b, hal_time_get_timestamp_s());
@@ -601,7 +601,7 @@ uint8_t router_update_routed_bundle(
 }
 
 void router_remove_bundle_from_route(
-	struct fragment_route *r, bundleid_t id, uint8_t free_rb)
+	struct fragment_route *r, struct bundle *bundle, uint8_t free_rb)
 {
 	uint8_t c;
 	struct routed_bundle *rb = NULL, *tmp;
@@ -609,7 +609,7 @@ void router_remove_bundle_from_route(
 	ASSERT(r != NULL);
 	for (c = 0; c < r->contact_count; c++) {
 		tmp = router_remove_bundle_from_contact(
-			r->contacts[c], id);
+			r->contacts[c], bundle);
 		if (tmp != NULL)
 			rb = tmp;
 	}

@@ -23,7 +23,6 @@ static inline void bundle_reset_internal(struct bundle *bundle)
 {
 	if (bundle == NULL)
 		return;
-	bundle->id = BUNDLE_INVALID_ID;
 	bundle->protocol_version = 0x06;
 	bundle->proc_flags = BUNDLE_FLAG_NONE;
 	bundle->ret_constraints = BUNDLE_RET_CONSTRAINT_NONE;

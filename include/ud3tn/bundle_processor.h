@@ -22,7 +22,7 @@ enum bundle_processor_signal_type {
 struct bundle_processor_signal {
 	enum bundle_processor_signal_type type;
 	enum bundle_status_report_reason reason;
-	bundleid_t bundle;
+	struct bundle *bundle;
 	void *extra;
 };
 
@@ -34,7 +34,8 @@ struct bundle_processor_task_parameters {
 };
 
 void bundle_processor_inform(
-	QueueIdentifier_t bundle_processor_signaling_queue, bundleid_t bundle,
+	QueueIdentifier_t bundle_processor_signaling_queue,
+	struct bundle *bundle,
 	enum bundle_processor_signal_type type,
 	enum bundle_status_report_reason reason);
 

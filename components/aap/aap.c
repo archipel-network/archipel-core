@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "aap/aap.h"
 
-#include "ud3tn/bundle.h"
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -48,7 +46,7 @@ bool aap_message_is_valid(const struct aap_message *const msg)
 	// Bundle ID
 	if (msg->type == AAP_MESSAGE_SENDCONFIRM ||
 	    msg->type == AAP_MESSAGE_CANCELBUNDLE) {
-		if (msg->bundle_id == BUNDLE_INVALID_ID)
+		if (msg->bundle_id == 0)
 			return false;
 	}
 

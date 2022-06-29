@@ -14,7 +14,7 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 	const uint64_t lifetime, void *payload, size_t payload_length,
 	enum bundle_proc_flags flags);
 
-bundleid_t agent_create_forward_bundle(
+struct bundle *agent_create_forward_bundle(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const uint8_t bp_version, char *sink_id, char *destination,
 	const uint64_t creation_timestamp_s, const uint64_t sequence_number,

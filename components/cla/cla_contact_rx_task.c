@@ -13,7 +13,6 @@
 #include "platform/hal_time.h"
 
 #include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/eid.h"
@@ -32,7 +31,6 @@ static const unsigned long CLA_RX_READ_TIMEOUT_MS;
 static void bundle_send(struct bundle *bundle, void *param)
 {
 	struct cla_config *const config = param;
-	bundleid_t new_id;
 
 	ASSERT(bundle != NULL);
 
@@ -55,21 +53,15 @@ static void bundle_send(struct bundle *bundle, void *param)
 		}
 	}
 
-	new_id = bundle_storage_add(bundle);
-	if (new_id != BUNDLE_INVALID_ID) {
-		LOGF("CLA: Received new bundle #%d from \"%s\" to \"%s\" via CLA %s",
-		     new_id, bundle->source, bundle->destination,
-		     config->vtable->cla_name_get());
-		bundle_processor_inform(
-			config->bundle_agent_interface->bundle_signaling_queue,
-			new_id,
-			BP_SIGNAL_BUNDLE_INCOMING,
-			BUNDLE_SR_REASON_NO_INFO
-		);
-	} else {
-		LOGF("CLA: Dropping bundle from \"%s\" (OOM?)", bundle->source);
-		bundle_free(bundle);
-	}
+	LOGF("CLA: Received new bundle %p from \"%s\" to \"%s\" via CLA %s",
+	     bundle, bundle->source, bundle->destination,
+	     config->vtable->cla_name_get());
+	bundle_processor_inform(
+		config->bundle_agent_interface->bundle_signaling_queue,
+		bundle,
+		BP_SIGNAL_BUNDLE_INCOMING,
+		BUNDLE_SR_REASON_NO_INFO
+	);
 }
 
 enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
