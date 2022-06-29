@@ -18,10 +18,6 @@ struct router_config {
 	float min_node_confidence_deterministic;
 	float node_trustworthiness_weight;
 	float node_reliability_weight;
-	uint32_t opt_min_time;
-	uint8_t opt_max_bundles;
-	uint8_t opt_max_pre_bundles;
-	uint8_t opt_max_pre_bundles_contact;
 	uint8_t router_min_contacts_htab;
 	uint8_t router_min_contacts_nbf;
 	float router_nbf_base_reliability;

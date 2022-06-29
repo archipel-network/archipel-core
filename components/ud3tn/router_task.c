@@ -7,7 +7,6 @@
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/router.h"
-#include "ud3tn/router_optimizer.h"
 #include "ud3tn/router_task.h"
 #include "ud3tn/routing_table.h"
 #include "ud3tn/task_tags.h"
@@ -26,8 +25,7 @@ static bool process_signal(
 	QueueIdentifier_t bp_signaling_queue,
 	QueueIdentifier_t router_signaling_queue,
 	Semaphore_t cm_semaphore,
-	QueueIdentifier_t cm_queue,
-	Semaphore_t ro_sem);
+	QueueIdentifier_t cm_queue);
 
 static bool process_router_command(
 	struct router_command *router_cmd,
@@ -50,7 +48,6 @@ void router_task(void *rt_parameters)
 {
 	struct router_task_parameters *parameters;
 	struct contact_manager_params cm_param;
-	Semaphore_t ro_sem;
 	struct router_signal signal;
 
 	ASSERT(rt_parameters != NULL);
@@ -63,11 +60,6 @@ void router_task(void *rt_parameters)
 		parameters->router_signaling_queue,
 		routing_table_get_raw_contact_list_ptr());
 	ASSERT(cm_param.control_queue != NULL);
-	/* Start optimizer */
-	ro_sem = router_start_optimizer_task(
-		parameters->router_signaling_queue, cm_param.semaphore,
-		routing_table_get_raw_contact_list_ptr());
-	ASSERT(ro_sem != NULL);
 
 	for (;;) {
 		if (hal_queue_receive(
@@ -77,8 +69,7 @@ void router_task(void *rt_parameters)
 			process_signal(signal,
 				parameters->bundle_processor_signaling_queue,
 				parameters->router_signaling_queue,
-				cm_param.semaphore, cm_param.control_queue,
-			  ro_sem);
+				cm_param.semaphore, cm_param.control_queue);
 		}
 	}
 }
@@ -126,8 +117,7 @@ static bool process_signal(
 	QueueIdentifier_t bp_signaling_queue,
 	QueueIdentifier_t router_signaling_queue,
 	Semaphore_t cm_semaphore,
-	QueueIdentifier_t cm_queue,
-	Semaphore_t ro_sem)
+	QueueIdentifier_t cm_queue)
 {
 	bool success = true;
 	struct bundle *b = signal.data;
@@ -158,7 +148,6 @@ static bool process_signal(
 			     command->type);
 		}
 		free(command);
-		hal_semaphore_release(ro_sem); /* Allow optimizer to run */
 		break;
 	case ROUTER_SIGNAL_ROUTE_BUNDLE:
 		hal_semaphore_take_blocking(cm_semaphore);
@@ -217,7 +206,6 @@ static bool process_signal(
 				CM_SIGNAL_PROCESS_CURRENT_BUNDLES
 			);
 		}
-		hal_semaphore_release(ro_sem); /* Allow optimizer to run */
 		break;
 	case ROUTER_SIGNAL_CONTACT_OVER:
 		contact = (struct contact *)signal.data;
@@ -241,21 +229,6 @@ static bool process_signal(
 			free(rb->contacts);
 			free(rb);
 		}
-		break;
-	case ROUTER_SIGNAL_OPTIMIZATION_DROP:
-		/* Should probably never occur... */
-		/* If optimization failed to schedule a preempted bundle */
-		rb = (struct routed_bundle *)signal.data;
-		bundle_processor_inform(
-			bp_signaling_queue, rb->bundle_ptr,
-			BP_SIGNAL_TRANSMISSION_FAILURE,
-			BUNDLE_SR_REASON_NO_INFO
-		);
-		LOGF("RouterTask: Preemption routing failed for bundle %p!",
-		     rb->bundle_ptr);
-		free(rb->destination);
-		free(rb->contacts);
-		free(rb);
 		break;
 	case ROUTER_SIGNAL_WITHDRAW_NODE:
 		node = (struct node *)signal.data;

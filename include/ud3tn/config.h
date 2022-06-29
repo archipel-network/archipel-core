@@ -136,12 +136,6 @@ enum failed_forwarding_policy {
 #define MIN_NODE_CONFIDENCE_DETERMINISTIC 0.90f
 #define NODE_TRUSTWORTHINESS_WEIGHT 0.0f
 #define NODE_RELIABILITY_WEIGHT 1.0f
-/* The minimum available time for an optimization to be triggered */
-#define OPTIMIZATION_MIN_TIME 2
-#define OPTIMIZATION_MAX_BUNDLES 3
-#define OPTIMIZATION_MAX_PRE_BUNDLES 9
-#define OPTIMIZATION_MAX_PRE_BUNDLES_CONTACT 3
-#define ROUTER_OPTIMIZER_DELAY 50
 /* Number of slots in the node hash table */
 #define NODE_HTAB_SLOT_COUNT 128
 /* Below this, NBFs will be consulted */

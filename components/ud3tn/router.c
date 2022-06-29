@@ -22,15 +22,9 @@ static struct router_config RC = {
 	.min_node_confidence_deterministic = MIN_NODE_CONFIDENCE_DETERMINISTIC,
 	.node_trustworthiness_weight = NODE_TRUSTWORTHINESS_WEIGHT,
 	.node_reliability_weight = NODE_RELIABILITY_WEIGHT,
-	.opt_min_time = OPTIMIZATION_MIN_TIME,
-	.opt_max_bundles = OPTIMIZATION_MAX_BUNDLES,
-	.opt_max_pre_bundles = OPTIMIZATION_MAX_PRE_BUNDLES,
-	.opt_max_pre_bundles_contact = OPTIMIZATION_MAX_PRE_BUNDLES_CONTACT,
 	.router_min_contacts_htab = ROUTER_MIN_CONTACTS_HTAB,
 	.router_def_base_reliability = ROUTER_DEF_BASE_RELIABILITY
 };
-
-void router_optimizer_update_config_int(struct router_config conf);
 
 struct router_config router_get_config(void)
 {
@@ -55,15 +49,12 @@ enum ud3tn_result router_update_config(struct router_config conf)
 		|| conf.min_node_confidence_deterministic
 			< conf.min_probability
 		|| w > 1.0001f || w < 0.9999f
-		|| conf.opt_max_bundles < 1
-		|| conf.opt_max_pre_bundles_contact > conf.opt_max_pre_bundles
 		|| conf.router_def_base_reliability > 1.0f
 		|| conf.router_def_base_reliability <= 0
 	) {
 		return UD3TN_FAIL;
 	}
 	RC = conf;
-	router_optimizer_update_config_int(conf);
 	return UD3TN_OK;
 }
 
