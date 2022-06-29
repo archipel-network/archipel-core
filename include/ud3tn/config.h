@@ -58,11 +58,10 @@ static const int IS_DEBUG_BUILD;
 /* Contact dropping / failed forwarding policy */
 enum failed_forwarding_policy {
 	POLICY_DROP,
-	POLICY_DROP_IF_NO_CUSTODY,
 	POLICY_TRY_RE_SCHEDULE
 };
 /* Policy for re-scheduling bundles on dropped contacts, etc. */
-#define FAILED_FORWARD_POLICY POLICY_DROP_IF_NO_CUSTODY
+#define FAILED_FORWARD_POLICY POLICY_DROP
 /* If policy decides to re-schedule, but processing times out => drop */
 /* Set this to 0 for an infinite delay - which implies a possible deadlock! */
 #define FAILED_FORWARD_TIMEOUT 1000
