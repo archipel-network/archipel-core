@@ -276,6 +276,12 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 {
 	// RX task will delete itself
 	link->active = false;
+	// Notify dispatcher that the connection was lost
+	struct router_signal rt_signal = {
+		.type = ROUTER_SIGNAL_LINK_DOWN,
+		.data = NULL,
+	};
+	hal_queue_push_to_back(link->config->bundle_agent_interface->router_signaling_queue, &rt_signal);
 	// TX task will delete its queue and itself
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);
 	// The termination of the tasks means cla_link_wait_cleanup returns
