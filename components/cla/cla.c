@@ -140,19 +140,24 @@ cleanup:
 
 enum ud3tn_result cla_config_init(
 	struct cla_config *config,
+	const char *const cla_type,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	config->vtable = NULL;
+	config->cla_type = cla_type;
 	config->bundle_agent_interface = bundle_agent_interface;
 
 	return UD3TN_OK;
 }
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
-				struct cla_config *config)
+				struct cla_config *config,
+				char *const cla_addr)
 {
 	link->config = config;
 	link->active = true;
+
+	link->cla_addr = cla_addr ? strdup(cla_addr) : NULL;
 
 	link->rx_task_handle = NULL;
 	link->tx_task_handle = NULL;
@@ -210,7 +215,7 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	// Notify the router task of the newly established connection...
 	struct router_signal rt_signal = {
 		.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-		.data = NULL,
+		.data = cla_addr ? strdup(cla_addr) : NULL,
 	};
 	const struct bundle_agent_interface *const bundle_agent_interface =
 		config->bundle_agent_interface;
@@ -259,6 +264,8 @@ void cla_link_wait_cleanup(struct cla_link *link)
 
 	link->config->vtable->cla_rx_task_reset_parsers(link);
 	rx_task_data_deinit(&link->rx_task_data);
+
+	free(link->cla_addr);
 }
 
 char *cla_get_connect_addr(const char *cla_addr, const char *cla_name)
@@ -279,7 +286,7 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 	// Notify dispatcher that the connection was lost
 	struct router_signal rt_signal = {
 		.type = ROUTER_SIGNAL_LINK_DOWN,
-		.data = NULL,
+		.data = link->cla_addr ? strdup(link->cla_addr) : NULL,
 	};
 	hal_queue_push_to_back(link->config->bundle_agent_interface->router_signaling_queue, &rt_signal);
 	// TX task will delete its queue and itself

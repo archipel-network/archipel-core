@@ -229,7 +229,7 @@ static enum ud3tn_result handle_established_connection(
 	hal_semaphore_release(tcpclv3_config->param_htab_sem);
 
 	if (cla_tcp_link_init(&param->link, param->socket,
-			      &tcpclv3_config->base)
+			      &tcpclv3_config->base, param->cla_addr)
 			!= UD3TN_OK) {
 		LOG("TCPCLv3: Error initializing CLA link!");
 		param->state = TCPCLV3_CONNECTING;
@@ -719,7 +719,7 @@ static enum ud3tn_result tcpclv3_init(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
-	if (cla_tcp_config_init(&config->base,
+	if (cla_tcp_config_init(&config->base, "tcpclv3",
 				bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 

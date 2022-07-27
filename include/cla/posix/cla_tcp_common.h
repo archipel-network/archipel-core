@@ -60,16 +60,17 @@ struct cla_tcp_single_config {
  */
 
 enum ud3tn_result cla_tcp_config_init(
-	struct cla_tcp_config *config,
+	struct cla_tcp_config *config, const char *const cla_type,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_tcp_single_config_init(
-	struct cla_tcp_single_config *config,
+	struct cla_tcp_single_config *config, const char *const cla_type,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
-	struct cla_tcp_config *config);
+	struct cla_tcp_config *config,
+	char *const cla_addr);
 
 enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 				 const char *node, const char *service,

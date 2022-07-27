@@ -96,7 +96,7 @@ static enum ud3tn_result smtcp_init(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
-	if (cla_tcp_single_config_init(config, bundle_agent_interface)
+	if (cla_tcp_single_config_init(config, "smtcp", bundle_agent_interface)
 			!= UD3TN_OK)
 		return UD3TN_FAIL;
 

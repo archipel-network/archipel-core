@@ -63,7 +63,7 @@ static enum ud3tn_result handle_established_connection(
 	struct mtcp_config *const mtcp_config = param->config;
 
 	if (cla_tcp_link_init(&param->link.base, param->socket,
-			      &mtcp_config->base)
+			      &mtcp_config->base, param->cla_sock_addr)
 			!= UD3TN_OK) {
 		LOG("MTCP: Error initializing CLA link!");
 		return UD3TN_FAIL;
@@ -504,7 +504,7 @@ static enum ud3tn_result mtcp_init(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
-	if (cla_tcp_config_init(&config->base,
+	if (cla_tcp_config_init(&config->base, "mtcp",
 				bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 
