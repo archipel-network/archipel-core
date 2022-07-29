@@ -60,11 +60,11 @@ struct cla_tcp_single_config {
  */
 
 enum ud3tn_result cla_tcp_config_init(
-	struct cla_tcp_config *config, const char *const cla_type,
+	struct cla_tcp_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_tcp_single_config_init(
-	struct cla_tcp_single_config *config, const char *const cla_type,
+	struct cla_tcp_single_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_tcp_link_init(

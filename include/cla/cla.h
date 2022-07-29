@@ -21,9 +21,6 @@
 struct cla_config {
 	const struct cla_vtable *vtable;
 
-	// Type of the CLA
-	const char *cla_type;
-
 	const struct bundle_agent_interface *bundle_agent_interface;
 };
 
@@ -76,7 +73,6 @@ struct cla_config *cla_config_get(const char *cla_addr);
 
 enum ud3tn_result cla_config_init(
 	struct cla_config *config,
-	const char *const cla_type,
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
@@ -88,6 +84,9 @@ void cla_link_wait_cleanup(struct cla_link *link);
 char *cla_get_connect_addr(const char *cla_addr, const char *cla_name);
 
 void cla_generic_disconnect_handler(struct cla_link *link);
+
+// Constructs the CLA address (`<cla>:<addr>`) from the connected link address.
+char *cla_get_cla_addr_from_link(const struct cla_link *link);
 
 /*
  * Virtual Functions

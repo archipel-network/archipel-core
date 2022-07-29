@@ -28,11 +28,10 @@
 #include <errno.h>
 
 enum ud3tn_result cla_tcp_config_init(
-	struct cla_tcp_config *config, const char *const cla_type,
+	struct cla_tcp_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
-	if (cla_config_init(&config->base, cla_type, bundle_agent_interface)
-			!= UD3TN_OK)
+	if (cla_config_init(&config->base, bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 
 	config->listen_task = NULL;
@@ -42,10 +41,10 @@ enum ud3tn_result cla_tcp_config_init(
 }
 
 enum ud3tn_result cla_tcp_single_config_init(
-	struct cla_tcp_single_config *config, const char *const cla_type,
+	struct cla_tcp_single_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
-	if (cla_tcp_config_init(&config->base, cla_type,
+	if (cla_tcp_config_init(&config->base,
 				bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 

@@ -140,11 +140,9 @@ cleanup:
 
 enum ud3tn_result cla_config_init(
 	struct cla_config *config,
-	const char *const cla_type,
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	config->vtable = NULL;
-	config->cla_type = cla_type;
 	config->bundle_agent_interface = bundle_agent_interface;
 
 	return UD3TN_OK;
@@ -215,7 +213,7 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	// Notify the router task of the newly established connection...
 	struct router_signal rt_signal = {
 		.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-		.data = cla_addr ? strdup(cla_addr) : NULL,
+		.data = cla_get_cla_addr_from_link(link),
 	};
 	const struct bundle_agent_interface *const bundle_agent_interface =
 		config->bundle_agent_interface;
@@ -286,12 +284,37 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 	// Notify dispatcher that the connection was lost
 	struct router_signal rt_signal = {
 		.type = ROUTER_SIGNAL_LINK_DOWN,
-		.data = link->cla_addr ? strdup(link->cla_addr) : NULL,
+		.data = cla_get_cla_addr_from_link(link),
 	};
 	hal_queue_push_to_back(link->config->bundle_agent_interface->router_signaling_queue, &rt_signal);
 	// TX task will delete its queue and itself
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);
 	// The termination of the tasks means cla_link_wait_cleanup returns
+}
+
+char *cla_get_cla_addr_from_link(const struct cla_link *const link)
+{
+	const char *const cla_name = link->config->vtable->cla_name_get();
+
+	ASSERT(cla_name != NULL);
+
+	const size_t cla_name_len = strlen(cla_name);
+
+	const char *const addr = link->cla_addr;
+	const size_t addr_len = addr ? strlen(addr) : 0;
+
+	// <cla_name>:<addr>\0
+	const size_t result_len = cla_name_len + 1 + addr_len + 1;
+	char *const result = malloc(result_len);
+
+	strncpy(result, cla_name, result_len);
+	result[cla_name_len] = ':';
+	if (addr)
+		strncpy(result + cla_name_len + 1, addr,
+			result_len - 1 - cla_name_len);
+	result[result_len - 1] = '\0';
+
+	return result;
 }
 
 // CLA Instance Management

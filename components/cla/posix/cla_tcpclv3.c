@@ -719,7 +719,7 @@ static enum ud3tn_result tcpclv3_init(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	/* Initialize base_config */
-	if (cla_tcp_config_init(&config->base, "tcpclv3",
+	if (cla_tcp_config_init(&config->base,
 				bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 
