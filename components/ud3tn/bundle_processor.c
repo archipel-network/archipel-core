@@ -762,7 +762,7 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			adu.payload = buf;
 			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
 
-			const char *agent_id = "bibe";
+			const char *agent_id = get_eid_scheme(local_eid) == EID_SCHEME_DTN ? "bibe" : "2925";
 
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",

@@ -58,6 +58,7 @@ struct bibe_contact_parameters {
 	Task_t management_task;
 
 	char *cla_sock_addr;
+	const char *partner_eid;
 
 	bool in_contact;
 	bool connected;
@@ -65,7 +66,6 @@ struct bibe_contact_parameters {
 
 	int socket;
 };
-
 
 static enum ud3tn_result handle_established_connection(
 	struct bibe_contact_parameters *const param)
@@ -122,9 +122,10 @@ static void bibe_link_management_task(void *p)
 			LOGF("bibe: Connected successfully to \"%s\"",
 			     param->cla_sock_addr);
 			param->connected = true;
+
 			const struct aap_message register_bibe = {
 				.type = AAP_MESSAGE_REGISTER,
-				.eid = "bibe",
+				.eid = get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN ? "2925" : "bibe",
 				.eid_length = 4,
 			};
 			uint64_t *buffer = malloc(sizeof(struct aap_message));
@@ -151,7 +152,7 @@ static void bibe_link_management_task(void *p)
 
 static void launch_connection_management_task(
 	struct bibe_config *const bibe_config,
-	const char *cla_addr)
+	const char *cla_addr, const char *eid)
 {
 	ASSERT(cla_addr);
 
@@ -174,6 +175,7 @@ static void launch_connection_management_task(
 		eid_delimiter[0] = '\0'; // null-terminate after sock address
 
 	contact_params->cla_sock_addr = cla_sock_addr;
+	contact_params->partner_eid = eid;
 	contact_params->socket = -1;
 	contact_params->connected = false;
 	contact_params->in_contact = true;
@@ -393,7 +395,7 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 		return UD3TN_OK;
 	}
 
-	launch_connection_management_task(bibe_config, cla_addr);
+	launch_connection_management_task(bibe_config, cla_addr, eid);
 	hal_semaphore_release(bibe_config->param_htab_sem);
 
 	return UD3TN_OK;
