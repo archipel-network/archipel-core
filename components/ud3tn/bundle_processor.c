@@ -751,8 +751,6 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			bundle_adu_free_members(adu);
 		} else if (record != NULL &&
 				  (record->type == BUNDLE_AR_BPDU || record->type == BUNDLE_AR_BPDU_COMPAT)) {
-			LOG("BundleProcessor: Received BIBE bundle.");
-
 			uint8_t *buf = malloc(adu.length - 2);
 
 			for (size_t i = 2; i < adu.length; i++)
@@ -765,7 +763,7 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			const char *agent_id = get_eid_scheme(local_eid) == EID_SCHEME_DTN ? "bibe" : "2925";
 
 			ASSERT(agent_id != NULL);
-			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
+			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
 			agent_id, adu.length);
 			agent_forward(agent_id, adu);
 		}
