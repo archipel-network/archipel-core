@@ -11,6 +11,7 @@
 
 #include "agents/application_agent.h"
 #include "agents/config_agent.h"
+#include "agents/echo_agent.h"
 #include "agents/management_agent.h"
 
 #include "cla/cla.h"
@@ -109,6 +110,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	management_agent_setup(bundle_agent_interface.bundle_signaling_queue,
 			       bundle_agent_interface.local_eid,
 			       opt->allow_remote_configuration);
+	echo_agent_setup(&bundle_agent_interface, opt->lifetime);
 	if (opt->allow_remote_configuration)
 		LOG("!! WARNING !! Remote configuration capability ENABLED!");
 
