@@ -78,6 +78,9 @@ enum failed_forwarding_policy {
 /* Agent ID for the management agent */
 #define AGENT_ID_MANAGEMENT_DTN "management"
 #define AGENT_ID_MANAGEMENT_IPN "9001"
+/* Agent ID for the echo agent */
+#define AGENT_ID_ECHO_DTN "echo"
+#define AGENT_ID_ECHO_IPN "9002"
 
 
 

@@ -11,6 +11,7 @@
 
 #include "agents/application_agent.h"
 #include "agents/config_agent.h"
+#include "agents/echo_agent.h"
 #include "agents/management_agent.h"
 
 #include "cla/cla.h"
@@ -51,7 +52,11 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 		if (opt->mbs <= SIZE_MAX)
 			rc.global_mbs = (size_t)opt->mbs;
-		router_update_config(rc);
+
+		if (router_update_config(rc) != UD3TN_OK) {
+			LOG("INIT: Configuring the router failed!");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	bundle_agent_interface.local_eid = opt->eid;
@@ -87,28 +92,68 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_processor_task_params->status_reporting =
 			opt->status_reporting;
 
-	hal_task_create(router_task,
-			"router_t",
-			ROUTER_TASK_PRIORITY,
-			router_task_params,
-			DEFAULT_TASK_STACK_SIZE,
-			(void *)ROUTER_TASK_TAG);
+	Task_t task_result;
 
-	hal_task_create(bundle_processor_task,
-			"bundl_proc_t",
-			BUNDLE_PROCESSOR_TASK_PRIORITY,
-			bundle_processor_task_params,
-			DEFAULT_TASK_STACK_SIZE,
-			(void *)BUNDLE_PROCESSOR_TASK_TAG);
+	task_result = hal_task_create(
+		router_task,
+		"router_t",
+		ROUTER_TASK_PRIORITY,
+		router_task_params,
+		DEFAULT_TASK_STACK_SIZE,
+		(void *)ROUTER_TASK_TAG
+	);
+	if (!task_result) {
+		LOG("INIT: Router task could not be started!");
+		exit(EXIT_FAILURE);
+	}
+
+	task_result = hal_task_create(
+		bundle_processor_task,
+		"bundl_proc_t",
+		BUNDLE_PROCESSOR_TASK_PRIORITY,
+		bundle_processor_task_params,
+		DEFAULT_TASK_STACK_SIZE,
+		(void *)BUNDLE_PROCESSOR_TASK_TAG
+	);
+	if (!task_result) {
+		LOG("INIT: Bundle processor task could not be started!");
+		exit(EXIT_FAILURE);
+	}
 
 	agent_manager_init(bundle_agent_interface.local_eid);
-	config_agent_setup(bundle_agent_interface.bundle_signaling_queue,
+
+	int result;
+
+	result = config_agent_setup(
+		bundle_agent_interface.bundle_signaling_queue,
 		bundle_agent_interface.router_signaling_queue,
 		bundle_agent_interface.local_eid,
-		opt->allow_remote_configuration);
-	management_agent_setup(bundle_agent_interface.bundle_signaling_queue,
-			       bundle_agent_interface.local_eid,
-			       opt->allow_remote_configuration);
+		opt->allow_remote_configuration
+	);
+	if (result) {
+		LOG("INIT: Config agent could not be initialized!");
+		exit(EXIT_FAILURE);
+	}
+
+	result = management_agent_setup(
+		bundle_agent_interface.bundle_signaling_queue,
+		bundle_agent_interface.local_eid,
+		opt->allow_remote_configuration
+	);
+	if (result) {
+		LOG("INIT: Management agent could not be initialized!");
+		exit(EXIT_FAILURE);
+	}
+
+	result = echo_agent_setup(
+		&bundle_agent_interface,
+		opt->lifetime
+	);
+	if (result) {
+		LOG("INIT: Echo agent could not be initialized!");
+		exit(EXIT_FAILURE);
+	}
+
 	if (opt->allow_remote_configuration)
 		LOG("!! WARNING !! Remote configuration capability ENABLED!");
 
