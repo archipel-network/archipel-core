@@ -13,6 +13,7 @@
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 #include "platform/hal_types.h"
 
 #include "platform/posix/pipe_queue_util.h"
