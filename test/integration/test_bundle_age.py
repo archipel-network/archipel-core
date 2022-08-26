@@ -78,7 +78,7 @@ def test_bundle_age():
                 lambda b: b.block_type == BlockType.BUNDLE_AGE, bundle.blocks
             ))
             bundle_age = loads(age_block.data)
-            assert(bundle_age >= 42000 and bundle_age <= (42000 + duration_ms))
+            assert bundle_age >= 42000 and bundle_age <= (42000 + duration_ms)
             time.sleep(RECEIVING_CONTACT[1])
         finally:
             send_delete_gs(
