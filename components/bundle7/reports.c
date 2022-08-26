@@ -318,6 +318,10 @@ error_t administrative_record(struct record_parser *state, CborValue *it)
 	if (cbor_value_advance_fixed(&nested))
 		return ERROR_CBOR;
 
+	state->record->start_of_record_ptr = cbor_value_get_next_byte(
+		&nested
+	);
+
 	switch (state->record->type) {
 	case BUNDLE_AR_STATUS_REPORT:
 		err = status_report(state, &nested);
@@ -697,6 +701,7 @@ struct bundle_administrative_record *bundle7_parse_administrative_record(
 		return NULL;
 
 	record->flags = 0;
+	record->start_of_record_ptr = NULL;
 	record->event_timestamp   = 0;
 	record->event_nanoseconds = 0;
 	record->custody_signal = NULL;

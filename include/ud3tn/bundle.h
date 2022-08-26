@@ -308,6 +308,9 @@ struct bundle_administrative_record {
 	enum bundle_administrative_record_type type;
 	enum bundle_administrative_record_flags flags;
 
+	// A pointer to the first parsed byte that is record-specific.
+	const uint8_t *start_of_record_ptr;
+
 	struct bundle_status_report *status_report;
 	struct bundle_custody_signal *custody_signal;
 	struct bibe_protocol_data_unit *bpdu;

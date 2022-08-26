@@ -751,21 +751,28 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			bundle_adu_free_members(adu);
 		} else if (record != NULL &&
 				  (record->type == BUNDLE_AR_BPDU || record->type == BUNDLE_AR_BPDU_COMPAT)) {
-			LOG("BundleProcessor: Received BIBE bundle.");
+			ASSERT(record->start_of_record_ptr != NULL);
+			ASSERT(record->start_of_record_ptr <
+			       adu.payload + adu.length);
+			const size_t bytes_to_skip = (
+				record->start_of_record_ptr -
+				adu.payload
+			);
 
-			uint8_t *buf = malloc(adu.length - 2);
-
-			for (size_t i = 2; i < adu.length; i++)
-				buf[i-2] = adu.payload[i];
-
-			adu.length = adu.length - 2;
-			adu.payload = buf;
+			// Remove the record-specific bytes from the ADU so
+			// only the BPDU remains.
+			adu.length = adu.length - bytes_to_skip;
+			memmove(
+				adu.payload,
+				adu.payload + bytes_to_skip,
+				adu.length
+			);
 			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
 
-			const char *agent_id = "bibe";
+			const char *agent_id = get_eid_scheme(local_eid) == EID_SCHEME_DTN ? "bibe" : "2925";
 
 			ASSERT(agent_id != NULL);
-			LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
+			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
 			agent_id, adu.length);
 			agent_forward(agent_id, adu);
 		}

@@ -368,6 +368,7 @@ struct bundle_administrative_record *bundle6_parse_administrative_record(
 	if (record_parser_init(&parser) != UD3TN_OK)
 		return NULL;
 	cur_byte = data;
+	parser.record->start_of_record_ptr = data + 1;
 	while (parser.status == PARSER_STATUS_GOOD && i < length) {
 		record_parser_read_byte(&parser, *cur_byte);
 		i++;
