@@ -85,7 +85,7 @@ int management_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
 		is_ipn ? AGENT_ID_MANAGEMENT_IPN : AGENT_ID_MANAGEMENT_DTN,
 		callback,
-		(void *)local_eid,
+		ma_param,
 		false
 	);
 }
