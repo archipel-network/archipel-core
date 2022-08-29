@@ -53,6 +53,13 @@ TEST(bundle7Parser, eid_parser)
 	char *eid;
 	const uint8_t sat_1[] = { 0x82, 0x01, 0x64, 0x53, 0x41, 0x54, 0x31 };
 	const uint8_t ipn[] = { 0x82, 0x02, 0x82, 0x18, 0x2a, 0x18, 0x48 };
+	const uint8_t ipn2[] = { 0x82, 0x02, 0x82, 0x18, 0x2a, 0x00 };
+	const uint8_t ipn3[] = { 0x82, 0x02, 0x82, 0x00, 0x00};
+	const uint8_t ipn4[] = {
+		0x82, 0x02, 0x82,
+		0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	};
 	const uint8_t none[] = { 0x82, 0x01, 0x00 };
 
 	eid = bundle7_eid_parse(sat_1, sizeof(sat_1));
@@ -62,6 +69,21 @@ TEST(bundle7Parser, eid_parser)
 	eid = bundle7_eid_parse(ipn, sizeof(ipn));
 	TEST_ASSERT_NOT_NULL(eid);
 	TEST_ASSERT_EQUAL_STRING("ipn:42.72", eid);
+
+	eid = bundle7_eid_parse(ipn2, sizeof(ipn2));
+	TEST_ASSERT_NOT_NULL(eid);
+	TEST_ASSERT_EQUAL_STRING("ipn:42.0", eid);
+
+	eid = bundle7_eid_parse(ipn3, sizeof(ipn3));
+	TEST_ASSERT_NOT_NULL(eid);
+	TEST_ASSERT_EQUAL_STRING("ipn:0.0", eid);
+
+	eid = bundle7_eid_parse(ipn4, sizeof(ipn4));
+	TEST_ASSERT_NOT_NULL(eid);
+	TEST_ASSERT_EQUAL_STRING(
+		"ipn:18446744073709551615.18446744073709551615",
+		eid
+	);
 
 	eid = bundle7_eid_parse(none, sizeof(none));
 	TEST_ASSERT_NOT_NULL(eid);
