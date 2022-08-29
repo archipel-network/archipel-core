@@ -23,6 +23,8 @@ static inline size_t decimal_digits(uint64_t number)
 {
 	size_t digits = 0;
 
+	if (number == 0)
+		return 1;
 	while (number != 0) {
 		digits++;
 		number /= 10;
@@ -216,6 +218,8 @@ CborError eid_parse_ipn(CborValue *it, char **eid)
 			+ 1
 			+ decimal_digits(servicenum)
 			+ 1;
+	// "ipn:18446744073709551615.18446744073709551615\0"
+	ASSERT(length <= 20 + 20 + 6);
 
 	// Allocate string memory
 	*eid = malloc(length);
@@ -224,7 +228,10 @@ CborError eid_parse_ipn(CborValue *it, char **eid)
 
 	// We use snprintf() because sprintf() would use a different
 	// malloc() memory allocator then the bundle7 library.
-	snprintf(*eid, length, "ipn:%"PRIu64".%"PRIu64, nodenum, servicenum);
+	ASSERT(
+		snprintf(*eid, length, "ipn:%"PRIu64".%"PRIu64,
+			 nodenum, servicenum) + 1 == (ssize_t)length
+	);
 
 	return CborNoError;
 }
