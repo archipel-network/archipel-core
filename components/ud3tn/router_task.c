@@ -125,6 +125,7 @@ static bool process_signal(
 	struct contact *contact;
 	struct router_command *command;
 	struct node *node;
+	struct bundle_tx_result *tx_result;
 
 	switch (signal.type) {
 	case ROUTER_SIGNAL_PROCESS_COMMAND:
@@ -209,7 +210,10 @@ static bool process_signal(
 		break;
 	case ROUTER_SIGNAL_TRANSMISSION_SUCCESS:
 	case ROUTER_SIGNAL_TRANSMISSION_FAILURE:
-		rb = (struct routed_bundle *)signal.data;
+		tx_result = signal.data;
+		rb = tx_result->bundle;
+		free(tx_result->peer_cla_addr);
+		free(tx_result);
 		if (rb->serialized == rb->contact_count) {
 			bundle_processor_inform(
 				bp_signaling_queue, rb->bundle_ptr,
