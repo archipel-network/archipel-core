@@ -10,6 +10,25 @@ TEST_GROUP(spp_parser);
 static struct spp_context_t *ctx;
 static struct spp_parser parser_instance;
 
+static size_t parse(const uint8_t *buffer, size_t length)
+{
+	size_t parsed = 0;
+	size_t result;
+
+	while (parser_instance.base.status == PARSER_STATUS_GOOD &&
+	       parser_instance.state != SPP_PARSER_STATE_DATA_SUBPARSER) {
+		result = spp_parser_read(
+			&parser_instance,
+			&buffer[parsed],
+			length - parsed
+		);
+		if (!result)
+			return parsed;
+		parsed += result;
+	}
+	return parsed;
+}
+
 TEST_SETUP(spp_parser)
 {
 	ctx = spp_new_context();
@@ -31,10 +50,7 @@ TEST(spp_parser, parse_header)
 		0x23, 0x42
 	};
 
-	const size_t read = spp_parser_read(
-				&parser_instance,
-				&packet[0],
-			ARRAY_SIZE(packet));
+	const size_t read = parse(&packet[0], ARRAY_SIZE(packet));
 
 	TEST_ASSERT_EQUAL(6, read);
 
@@ -60,9 +76,7 @@ TEST(spp_parser, parse_header_bytewise)
 	};
 
 	for (unsigned int i = 0; i < 6; ++i) {
-		const size_t read = spp_parser_read(
-					&parser_instance,
-					&packet[i], 1);
+		const size_t read = parse(&packet[i], 1);
 
 		TEST_ASSERT_EQUAL(1, read);
 	}
@@ -99,10 +113,7 @@ TEST(spp_parser, parse_header_with_timestamp)
 
 	TEST_ASSERT_TRUE(spp_configure_timecode(ctx, &timecode));
 
-	const size_t read = spp_parser_read(
-				&parser_instance,
-				&packet[0],
-			ARRAY_SIZE(packet));
+	const size_t read = parse(&packet[0], ARRAY_SIZE(packet));
 
 	TEST_ASSERT_EQUAL(14, read);
 
