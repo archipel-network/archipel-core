@@ -29,7 +29,7 @@ static inline void report_bundle(QueueIdentifier_t signaling_queue,
 
 	//info->bundle = cur->data->bundle_ptr;
 	info->bundle = bundle;
-	info->peer_cla_addr = strdup(cla_addr);
+	info->peer_cla_addr = cla_addr;
 
 	struct router_signal signal = {
 		.type = type,
@@ -119,14 +119,14 @@ static void cla_contact_tx_task(void *param)
 				report_bundle(
 					router_signaling_queue,
 					cur->data,
-					link->cla_addr,
+					cla_get_cla_addr_from_link(link),
 					ROUTER_SIGNAL_TRANSMISSION_SUCCESS
 				);
 			} else {
 				report_bundle(
 					router_signaling_queue,
 					cur->data,
-					link->cla_addr,
+					cla_get_cla_addr_from_link(link),
 					ROUTER_SIGNAL_TRANSMISSION_FAILURE
 				);
 			}
@@ -149,7 +149,7 @@ static void cla_contact_tx_task(void *param)
 				report_bundle(
 					router_signaling_queue,
 					cur->data,
-					link->cla_addr,
+					cla_get_cla_addr_from_link(link),
 					ROUTER_SIGNAL_TRANSMISSION_FAILURE
 				);
 				/* Free only the RB list, the RB is reported */
