@@ -418,13 +418,16 @@ static enum ud3tn_result mtcp_end_scheduled_contact(
 	);
 
 	if (param && param->in_contact) {
-		LOGF("MTCP: Marking open connection with \"%s\" as opportunistic",
-		     cla_addr);
+		struct cla_link *const link = &param->link.base.base;
+
 		param->in_contact = false;
 		if (CLA_MTCP_CLOSE_AFTER_CONTACT && param->socket >= 0) {
 			LOGF("MTCP: Terminating connection with \"%s\"",
 			     cla_addr);
-			close(param->socket);
+			link->config->vtable->cla_disconnect_handler(link);
+		} else {
+			LOGF("MTCP: Marking open connection with \"%s\" as opportunistic",
+			     cla_addr);
 		}
 	}
 
