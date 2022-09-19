@@ -68,7 +68,11 @@ class AAPClient(abc.ABC):
     @property
     def eid(self):
         """Return the own EID."""
-        return f"{self.node_eid}{self.agent_id}"
+        if self.node_eid[0:3] == "ipn":
+            prefix, _ = self.node_eid.split(".")
+            return f"{prefix}.{self.agent_id}"
+        else:
+            return f"{self.node_eid}{self.agent_id}"
 
     def _generate_eid(self):
         if not self.node_eid:
