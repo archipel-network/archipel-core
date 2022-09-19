@@ -15,6 +15,7 @@
 
 #include "platform/hal_config.h"
 #include "platform/hal_io.h"
+#include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
@@ -24,6 +25,7 @@
 #include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
+#include "ud3tn/router_task.h"
 #include "ud3tn/simplehtab.h"
 #include "ud3tn/task_tags.h"
 
@@ -516,6 +518,21 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 		     eid);
 		param->opportunistic = false;
 		param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
+
+		// Even if it is no _new_ connection, we notify the router task
+		struct router_signal rt_signal = {
+			.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
+			.data = cla_get_cla_addr_from_link(
+				&param->link.base
+			),
+		};
+		const struct bundle_agent_interface *bundle_agent_interface =
+			config->bundle_agent_interface;
+		hal_queue_push_to_back(
+			bundle_agent_interface->router_signaling_queue,
+			&rt_signal
+		);
+
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 		return UD3TN_OK;
 	}
