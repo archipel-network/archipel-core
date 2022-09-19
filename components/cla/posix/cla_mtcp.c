@@ -51,6 +51,7 @@ struct mtcp_contact_parameters {
 
 	char *cla_sock_addr;
 
+	bool is_outgoing;
 	bool in_contact;
 	bool connected;
 	int connect_attempt;
@@ -65,7 +66,8 @@ static enum ud3tn_result handle_established_connection(
 	struct mtcp_config *const mtcp_config = param->config;
 
 	if (cla_tcp_link_init(&param->link.base, param->socket,
-			      &mtcp_config->base, param->cla_sock_addr)
+			      &mtcp_config->base, param->cla_sock_addr,
+			      !param->is_outgoing, param->is_outgoing)
 			!= UD3TN_OK) {
 		LOG("MTCP: Error initializing CLA link!");
 		return UD3TN_FAIL;
@@ -154,12 +156,13 @@ static void launch_connection_management_task(
 		contact_params->socket = -1;
 		contact_params->connected = false;
 		contact_params->in_contact = true;
+		contact_params->is_outgoing = true;
 	} else {
-		ASSERT(sock != -1);
 		contact_params->cla_sock_addr = strdup(cla_addr);
 		contact_params->socket = sock;
 		contact_params->connected = true;
 		contact_params->in_contact = false;
+		contact_params->is_outgoing = false;
 	}
 
 	if (!contact_params->cla_sock_addr) {

@@ -21,6 +21,7 @@
 
 #include <unistd.h>
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,7 +151,8 @@ enum ud3tn_result cla_config_init(
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
 				struct cla_config *config,
-				char *const cla_addr)
+				char *const cla_addr,
+				const bool is_rx, const bool is_tx)
 {
 	link->config = config;
 	link->active = true;
@@ -200,25 +202,31 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	}
 	hal_semaphore_release(link->tx_queue_sem);
 
-	if (cla_launch_contact_rx_task(link) != UD3TN_OK) {
-		LOG("CLA: Failed to start RX task!");
-		goto fail_rx_task;
+	if (is_rx) {
+		if (cla_launch_contact_rx_task(link) != UD3TN_OK) {
+			LOG("CLA: Failed to start RX task!");
+			goto fail_rx_task;
+		}
 	}
 
-	if (cla_launch_contact_tx_task(link) != UD3TN_OK) {
-		LOG("CLA: Failed to start TX task!");
-		goto fail_tx_task;
-	}
+	if (is_tx) {
+		if (cla_launch_contact_tx_task(link) != UD3TN_OK) {
+			LOG("CLA: Failed to start TX task!");
+			goto fail_tx_task;
+		}
 
-	// Notify the router task of the newly established connection...
-	struct router_signal rt_signal = {
-		.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-		.data = cla_get_cla_addr_from_link(link),
-	};
-	const struct bundle_agent_interface *const bundle_agent_interface =
-		config->bundle_agent_interface;
-	hal_queue_push_to_back(bundle_agent_interface->router_signaling_queue,
-			       &rt_signal);
+		// Notify the router task of the newly established connection...
+		struct router_signal rt_signal = {
+			.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
+			.data = cla_get_cla_addr_from_link(link),
+		};
+		const struct bundle_agent_interface *bundle_agent_interface =
+			config->bundle_agent_interface;
+		hal_queue_push_to_back(
+			bundle_agent_interface->router_signaling_queue,
+			&rt_signal
+		);
+	}
 
 	return UD3TN_OK;
 
