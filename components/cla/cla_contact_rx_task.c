@@ -139,6 +139,49 @@ size_t select_bundle_parser_version(struct rx_task_data *rx_data,
 	}
 }
 
+
+/**
+ * Read contents currently within the receive buffer.
+ */
+static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
+{
+	struct rx_task_data *const rx_data = &link->rx_task_data;
+
+	while (stream < rx_data->input_buffer.end) {
+		size_t parsed = link->config->vtable
+			->cla_rx_task_forward_to_specific_parser(
+				link,
+				stream,
+				rx_data->input_buffer.end - stream
+			);
+
+		/* Advance stream pointer. */
+		stream += parsed;
+
+		if (rx_data->cur_parser->status != PARSER_STATUS_GOOD) {
+			if (rx_data->cur_parser->status == PARSER_STATUS_ERROR)
+				LOG("RX: Parser failed, reset.");
+			link->config->vtable->cla_rx_task_reset_parsers(
+				link
+			);
+		} else if (HAS_FLAG(rx_data->cur_parser->flags,
+				    PARSER_FLAG_BULK_READ)) {
+			/* Bulk read requested - not handled by us. */
+			break;
+		} else if (parsed == 0) {
+			/*
+			 * No bytes were parsed -- meaning that there is not
+			 * enough data in the buffer. Stop parsing and wait
+			 * for the buffer to be filled with sufficient data in
+			 * next read iteration.
+			 */
+			break;
+		}
+	}
+
+	return stream;
+}
+
 /**
  * If a "bulk read" operation is requested, this gets handled by the input
  * processor directly. A preallocated byte buffer and the requested length have
@@ -285,6 +328,10 @@ static uint8_t *bulk_read(struct cla_link *link)
 		link->config->vtable->cla_rx_task_reset_parsers(link);
 	}
 
+	// Feed parser with the remainder
+	if (parsed < rx_data->input_buffer.end)
+		return buffer_read(link, parsed);
+
 	return parsed;
 }
 
@@ -344,39 +391,7 @@ static uint8_t *chunk_read(struct cla_link *link)
 	// Parsing Step - read back buffer contents and return start pointer
 	uint8_t *stream = rx_data->input_buffer.start;
 
-	while (stream < rx_data->input_buffer.end) {
-		size_t parsed = link->config->vtable
-			->cla_rx_task_forward_to_specific_parser(
-				link,
-				stream,
-				rx_data->input_buffer.end - stream
-			);
-
-		/* Advance stream pointer. */
-		stream += parsed;
-
-		if (rx_data->cur_parser->status != PARSER_STATUS_GOOD) {
-			if (rx_data->cur_parser->status == PARSER_STATUS_ERROR)
-				LOG("RX: Parser failed, reset.");
-			link->config->vtable->cla_rx_task_reset_parsers(
-				link
-			);
-		} else if (HAS_FLAG(rx_data->cur_parser->flags,
-				    PARSER_FLAG_BULK_READ)) {
-			/* Bulk read requested - not handled by us. */
-			break;
-		} else if (parsed == 0) {
-			/*
-			 * No bytes were parsed -- meaning that there is not
-			 * enough data in the buffer. Stop parsing and wait
-			 * for the buffer to be filled with sufficient data in
-			 * next read iteration.
-			 */
-			break;
-		}
-	}
-
-	return stream;
+	return buffer_read(link, stream);
 }
 
 static void cla_contact_rx_task(void *const param)
