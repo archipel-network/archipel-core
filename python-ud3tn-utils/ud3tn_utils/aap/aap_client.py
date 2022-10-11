@@ -77,8 +77,8 @@ class AAPClient(abc.ABC):
             return str(uuid.uuid4())
         elif self.node_eid[0:3] == "ipn":
             return str(
-                random.randint(1, 9223372036854775807)
-            )  # INT64_MAX (signed int) for maximum compatibility
+                random.randint(1, 4294967295)
+            )  # UINT32_MAX for maximum compatibility
         return None
 
     def register(self, agent_id=None):
