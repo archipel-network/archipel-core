@@ -4,7 +4,7 @@
 
 #include "ud3tn/parser.h"
 #include "ud3tn/result.h"
-#include "ud3tn/router_task.h"
+#include "ud3tn/router.h"
 
 #include <stdint.h>
 

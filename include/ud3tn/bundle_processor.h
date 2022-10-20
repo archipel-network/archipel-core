@@ -2,27 +2,45 @@
 #ifndef BUNDLEPROCESSOR_H_INCLUDED
 #define BUNDLEPROCESSOR_H_INCLUDED
 
+#include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle.h"
+#include "ud3tn/node.h"
 
 #include "platform/hal_types.h"
 
+// Interface to the bundle agent, provided to other agents and the CLA.
+struct bundle_agent_interface {
+	char *local_eid;
+	QueueIdentifier_t bundle_signaling_queue;
+};
+
 enum bundle_processor_signal_type {
 	BP_SIGNAL_BUNDLE_INCOMING,
-	BP_SIGNAL_FORWARDING_CONTRAINDICATED,
-	BP_SIGNAL_BUNDLE_EXPIRED,
-	BP_SIGNAL_RESCHEDULE_BUNDLE,
 	BP_SIGNAL_TRANSMISSION_SUCCESS,
 	BP_SIGNAL_TRANSMISSION_FAILURE,
 	BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
 	BP_SIGNAL_AGENT_REGISTER,
-	BP_SIGNAL_AGENT_DEREGISTER
+	BP_SIGNAL_AGENT_DEREGISTER,
+	BP_SIGNAL_NEW_LINK_ESTABLISHED,
+	BP_SIGNAL_LINK_DOWN,
+	BP_SIGNAL_PROCESS_ROUTER_COMMAND,
+	BP_SIGNAL_CONTACT_OVER,
+};
+
+// for performing (de)register operations
+struct agent_manager_parameters {
+	QueueIdentifier_t feedback_queue;
+	struct agent agent;
 };
 
 struct bundle_processor_signal {
 	enum bundle_processor_signal_type type;
 	enum bundle_status_report_reason reason;
 	struct bundle *bundle;
-	void *extra;
+	char *peer_cla_addr;
+	struct agent_manager_parameters *agent_manager_params;
+	struct contact *contact;
+	struct router_command *router_cmd;
 };
 
 struct bundle_processor_task_parameters {
@@ -36,8 +54,10 @@ void bundle_processor_inform(
 	QueueIdentifier_t bundle_processor_signaling_queue,
 	struct bundle *bundle,
 	enum bundle_processor_signal_type type,
-	enum bundle_status_report_reason reason);
-
+	char *peer_cla_addr,
+	struct agent_manager_parameters *agent_manager_params,
+	struct contact *contact,
+	struct router_command *router_cmd);
 
 /**
  * @brief Instruct the BP to interact with the agent manager state

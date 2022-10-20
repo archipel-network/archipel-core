@@ -18,7 +18,6 @@
 #include "ud3tn/config.h"
 #include "ud3tn/init.h"
 #include "ud3tn/result.h"
-#include "ud3tn/router_task.h"
 
 #include <unistd.h>
 
@@ -216,16 +215,17 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 			goto fail_tx_task;
 		}
 
-		// Notify the router task of the newly established connection...
-		struct router_signal rt_signal = {
-			.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-			.data = cla_get_cla_addr_from_link(link),
-		};
+		// Notify the BP task of the newly established connection...
 		const struct bundle_agent_interface *bundle_agent_interface =
 			config->bundle_agent_interface;
-		hal_queue_push_to_back(
-			bundle_agent_interface->router_signaling_queue,
-			&rt_signal
+		bundle_processor_inform(
+			bundle_agent_interface->bundle_signaling_queue,
+			NULL,
+			BP_SIGNAL_NEW_LINK_ESTABLISHED,
+			cla_get_cla_addr_from_link(link),
+			NULL,
+			NULL,
+			NULL
 		);
 	}
 
@@ -291,11 +291,17 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 	// RX task will delete itself
 	link->active = false;
 	// Notify dispatcher that the connection was lost
-	struct router_signal rt_signal = {
-		.type = ROUTER_SIGNAL_LINK_DOWN,
-		.data = cla_get_cla_addr_from_link(link),
-	};
-	hal_queue_push_to_back(link->config->bundle_agent_interface->router_signaling_queue, &rt_signal);
+	const struct bundle_agent_interface *bundle_agent_interface =
+		link->config->bundle_agent_interface;
+	bundle_processor_inform(
+		bundle_agent_interface->bundle_signaling_queue,
+		NULL,
+		BP_SIGNAL_LINK_DOWN,
+		cla_get_cla_addr_from_link(link),
+		NULL,
+		NULL,
+		NULL
+	);
 	// TX task will delete its queue and itself
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);
 	// The termination of the tasks means cla_link_wait_cleanup returns

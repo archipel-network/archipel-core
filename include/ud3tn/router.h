@@ -2,8 +2,12 @@
 #ifndef ROUTER_H_INCLUDED
 #define ROUTER_H_INCLUDED
 
+#include "platform/hal_types.h"
+
 #include "ud3tn/bundle.h"
+#include "ud3tn/common.h"
 #include "ud3tn/config.h"
+#include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
 
@@ -52,5 +56,39 @@ enum ud3tn_result router_add_bundle_to_contact(
 	struct contact *contact, struct bundle *b);
 enum ud3tn_result router_remove_bundle_from_contact(
 	struct contact *contact, struct bundle *bundle);
+
+/* BP-side API */
+
+enum router_command_type {
+	ROUTER_COMMAND_UNDEFINED,
+	ROUTER_COMMAND_ADD = 0x31,    /* ASCII 1 */
+	ROUTER_COMMAND_UPDATE = 0x32, /* ASCII 2 */
+	ROUTER_COMMAND_DELETE = 0x33, /* ASCII 3 */
+	ROUTER_COMMAND_QUERY = 0x34   /* ASCII 4 */
+};
+
+struct router_command {
+	enum router_command_type type;
+	struct node *data;
+};
+
+struct bundle_tx_result {
+	char *peer_cla_addr;
+	struct bundle *bundle;
+};
+
+enum router_result_status {
+	ROUTER_RESULT_OK,
+	ROUTER_RESULT_NO_ROUTE,
+	ROUTER_RESULT_NO_TIMELY_CONTACTS,
+	ROUTER_RESULT_NO_MEMORY,
+	ROUTER_RESULT_EXPIRED,
+};
+
+enum ud3tn_result router_process_command(
+	struct router_command *command,
+	struct rescheduling_handle rescheduler);
+enum router_result_status router_route_bundle(
+	struct bundle *b);
 
 #endif /* ROUTER_H_INCLUDED */

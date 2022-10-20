@@ -60,7 +60,11 @@ static void bundle_send(struct bundle *bundle, void *param)
 		config->bundle_agent_interface->bundle_signaling_queue,
 		bundle,
 		BP_SIGNAL_BUNDLE_INCOMING,
-		BUNDLE_SR_REASON_NO_INFO
+		// TODO: Add CLA address of sending peer here!
+		NULL,
+		NULL,
+		NULL,
+		NULL
 	);
 }
 

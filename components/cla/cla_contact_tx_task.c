@@ -11,33 +11,11 @@
 #include "platform/hal_task.h"
 
 #include "ud3tn/bundle.h"
+#include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/router_task.h"
 #include "ud3tn/task_tags.h"
 
 #include <stdlib.h>
-
-
-static inline void report_bundle(QueueIdentifier_t signaling_queue,
-				 struct bundle *bundle,
-				 char *cla_addr,
-				 enum router_signal_type type)
-{
-	struct bundle_tx_result *info = malloc(
-		sizeof(struct bundle_tx_result)
-	);
-
-	//info->bundle = cur->data->bundle_ptr;
-	info->bundle = bundle;
-	info->peer_cla_addr = cla_addr;
-
-	struct router_signal signal = {
-		.type = type,
-		.data = info,
-	};
-
-	hal_queue_push_to_back(signaling_queue, &signal);
-}
 
 // BPv7 5.4-4 / RFC5050 5.4-5
 static void prepare_bundle_for_forwarding(struct bundle *bundle)
@@ -73,8 +51,8 @@ static void cla_contact_tx_task(void *param)
 	enum ud3tn_result s;
 	void const *cla_send_packet_data =
 		link->config->vtable->cla_send_packet_data;
-	QueueIdentifier_t router_signaling_queue =
-		link->config->bundle_agent_interface->router_signaling_queue;
+	QueueIdentifier_t signaling_queue =
+		link->config->bundle_agent_interface->bundle_signaling_queue;
 
 	while (link->active) {
 		if (hal_queue_receive(link->tx_queue_handle,
@@ -104,18 +82,24 @@ static void cla_contact_tx_task(void *param)
 		link->config->vtable->cla_end_packet(link);
 
 		if (s == UD3TN_OK) {
-			report_bundle(
-				router_signaling_queue,
+			bundle_processor_inform(
+				signaling_queue,
 				b,
+				BP_SIGNAL_TRANSMISSION_SUCCESS,
 				cla_get_cla_addr_from_link(link),
-				ROUTER_SIGNAL_TRANSMISSION_SUCCESS
+				NULL,
+				NULL,
+				NULL
 			);
 		} else {
-			report_bundle(
-				router_signaling_queue,
+			bundle_processor_inform(
+				signaling_queue,
 				b,
+				BP_SIGNAL_TRANSMISSION_FAILURE,
 				cla_get_cla_addr_from_link(link),
-				ROUTER_SIGNAL_TRANSMISSION_FAILURE
+				NULL,
+				NULL,
+				NULL
 			);
 		}
 
@@ -128,11 +112,14 @@ static void cla_contact_tx_task(void *param)
 	// Consume the rest of the queue
 	while (hal_queue_receive(link->tx_queue_handle, &cmd, 0) != UD3TN_FAIL) {
 		if (cmd.type == TX_COMMAND_BUNDLES) {
-			report_bundle(
-				router_signaling_queue,
+			bundle_processor_inform(
+				signaling_queue,
 				cmd.bundle,
+				BP_SIGNAL_TRANSMISSION_FAILURE,
 				cla_get_cla_addr_from_link(link),
-				ROUTER_SIGNAL_TRANSMISSION_FAILURE
+				NULL,
+				NULL,
+				NULL
 			);
 			free(cmd.cla_address);
 		}

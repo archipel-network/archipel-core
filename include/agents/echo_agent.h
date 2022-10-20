@@ -2,7 +2,7 @@
 #ifndef ECHO_AGENT_H_
 #define ECHO_AGENT_H_
 
-#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/bundle_processor.h"
 
 #include <stdint.h>
 

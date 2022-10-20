@@ -4,7 +4,6 @@
 #include "platform/hal_time.h"
 
 #include "ud3tn/agent_util.h"
-#include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"

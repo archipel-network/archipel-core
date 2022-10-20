@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/agent_manager.h"
-#include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
 #include "ud3tn/init.h"
 #include "ud3tn/router.h"
-#include "ud3tn/router_task.h"
 #include "ud3tn/task_tags.h"
 
 #include "agents/application_agent.h"
@@ -59,29 +57,15 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_agent_interface.local_eid = opt->eid;
 
 	/* Initialize queues to communicate with the subsystems */
-	bundle_agent_interface.router_signaling_queue
-			= hal_queue_create(ROUTER_QUEUE_LENGTH,
-					   sizeof(struct router_signal));
-	ASSERT(bundle_agent_interface.router_signaling_queue != NULL);
 	bundle_agent_interface.bundle_signaling_queue
 			= hal_queue_create(BUNDLE_QUEUE_LENGTH,
 				sizeof(struct bundle_processor_signal));
 	ASSERT(bundle_agent_interface.bundle_signaling_queue != NULL);
 
-	struct router_task_parameters *router_task_params =
-			malloc(sizeof(struct router_task_parameters));
-	ASSERT(router_task_params != NULL);
-	router_task_params->router_signaling_queue =
-			bundle_agent_interface.router_signaling_queue;
-	router_task_params->bundle_processor_signaling_queue =
-			bundle_agent_interface.bundle_signaling_queue;
-
 	struct bundle_processor_task_parameters *bundle_processor_task_params
 		= malloc(sizeof(struct bundle_processor_task_parameters));
 
 	ASSERT(bundle_processor_task_params != NULL);
-	bundle_processor_task_params->router_signaling_queue =
-			bundle_agent_interface.router_signaling_queue;
 	bundle_processor_task_params->signaling_queue =
 			bundle_agent_interface.bundle_signaling_queue;
 	bundle_processor_task_params->local_eid =
@@ -89,22 +73,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_processor_task_params->status_reporting =
 			opt->status_reporting;
 
-	Task_t task_result;
-
-	task_result = hal_task_create(
-		router_task,
-		"router_t",
-		ROUTER_TASK_PRIORITY,
-		router_task_params,
-		DEFAULT_TASK_STACK_SIZE,
-		(void *)ROUTER_TASK_TAG
-	);
-	if (!task_result) {
-		LOG("INIT: Router task could not be started!");
-		exit(EXIT_FAILURE);
-	}
-
-	task_result = hal_task_create(
+	Task_t task_result = hal_task_create(
 		bundle_processor_task,
 		"bundl_proc_t",
 		BUNDLE_PROCESSOR_TASK_PRIORITY,
@@ -123,7 +92,6 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	result = config_agent_setup(
 		bundle_agent_interface.bundle_signaling_queue,
-		bundle_agent_interface.router_signaling_queue,
 		bundle_agent_interface.local_eid,
 		opt->allow_remote_configuration
 	);

@@ -3,7 +3,6 @@
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
 
-#include "platform/hal_queue.h"
 #include "platform/hal_time.h"
 
 #include "util/llsort.h"
@@ -41,7 +40,14 @@ static struct node *node11, *node1_no_cla1, *node1_no_cla2, *node12, *node13;
 static struct node *node2, *node3, *node4;
 static struct contact *c1, *c2, *c3, *c4, *c5, *c6, *c7,
 	*c8, *c9, *c10, *c11, *c12;
-static QueueIdentifier_t sig_queue;
+
+static struct rescheduling_handle rescheduler;
+
+static void rescheduling_mock(struct bundle *b, const void *ctx)
+{
+	(void)b;
+	(void)ctx;
+}
 
 TEST_SETUP(routingTable)
 {
@@ -99,8 +105,11 @@ TEST_SETUP(routingTable)
 	addnode(&node3->endpoints, "node6");
 	/* node4 */
 	node4 = node_create("node4");
-	/* queue */
-	sig_queue = hal_queue_create(60, 6);
+	/* rescheduling handle */
+	rescheduler = (struct rescheduling_handle) {
+		.reschedule_func = rescheduling_mock,
+		.reschedule_func_context = NULL,
+	};
 	/* init rt */
 	routing_table_init();
 	/* clock */
@@ -110,26 +119,25 @@ TEST_SETUP(routingTable)
 TEST_TEAR_DOWN(routingTable)
 {
 	routing_table_free();
-	hal_queue_delete(sig_queue);
 }
 
 TEST(routingTable, routing_table_invalid_cla)
 {
-	TEST_ASSERT_FALSE(routing_table_add_node(node1_no_cla1, sig_queue));
-	TEST_ASSERT_FALSE(routing_table_replace_node(node1_no_cla2, sig_queue));
-	TEST_ASSERT_FALSE(routing_table_delete_node(node11, sig_queue));
+	TEST_ASSERT_FALSE(routing_table_add_node(node1_no_cla1, rescheduler));
+	TEST_ASSERT_FALSE(routing_table_replace_node(node1_no_cla2, rescheduler));
+	TEST_ASSERT_FALSE(routing_table_delete_node(node11, rescheduler));
 }
 
 TEST(routingTable, routing_table_add_delete)
 {
 	struct node_table_entry *nti;
 
-	TEST_ASSERT_TRUE(routing_table_add_node(node11, sig_queue));
-	TEST_ASSERT_TRUE(routing_table_add_node(node2, sig_queue));
-	TEST_ASSERT_TRUE(routing_table_add_node(node12, sig_queue));
-	TEST_ASSERT_TRUE(routing_table_add_node(node3, sig_queue));
+	TEST_ASSERT_TRUE(routing_table_add_node(node11, rescheduler));
+	TEST_ASSERT_TRUE(routing_table_add_node(node2, rescheduler));
+	TEST_ASSERT_TRUE(routing_table_add_node(node12, rescheduler));
+	TEST_ASSERT_TRUE(routing_table_add_node(node3, rescheduler));
 	// Replaced/updated node has to exist, thus, REPLACE returns false
-	TEST_ASSERT_FALSE(routing_table_replace_node(node4, sig_queue));
+	TEST_ASSERT_FALSE(routing_table_replace_node(node4, rescheduler));
 	TEST_ASSERT_EQUAL_PTR(node11, routing_table_lookup_node("node1"));
 	TEST_ASSERT_EQUAL_PTR(node2, routing_table_lookup_node("node2"));
 	TEST_ASSERT_EQUAL_PTR(node3, routing_table_lookup_node("node3"));
@@ -168,7 +176,7 @@ TEST(routingTable, routing_table_add_delete)
 	TEST_ASSERT_NULL(nti);
 	/* delete */
 	LLSORT(struct contact_list, data->from, node13->contacts);
-	TEST_ASSERT_TRUE(routing_table_delete_node(node13, sig_queue));
+	TEST_ASSERT_TRUE(routing_table_delete_node(node13, rescheduler));
 	nti = routing_table_lookup_eid("node1");
 	TEST_ASSERT_NOT_NULL(nti);
 	TEST_ASSERT_EQUAL_UINT16(1, nti->ref_count);
@@ -209,11 +217,11 @@ TEST(routingTable, routing_table_add_delete)
 	TEST_ASSERT_NOT_NULL(nti->contacts->data);
 	TEST_ASSERT_EQUAL_PTR(c7, nti->contacts->data);
 	TEST_ASSERT_TRUE(routing_table_delete_node(
-		node_create("node1"), sig_queue));
+		node_create("node1"), rescheduler));
 	TEST_ASSERT_TRUE(routing_table_delete_node(
-		node_create("node2"), sig_queue));
+		node_create("node2"), rescheduler));
 	TEST_ASSERT_TRUE(routing_table_delete_node(
-		node_create("node3"), sig_queue));
+		node_create("node3"), rescheduler));
 }
 
 TEST(routingTable, routing_table_replace)
@@ -221,18 +229,18 @@ TEST(routingTable, routing_table_replace)
 	struct node_table_entry *nti;
 
 	LLSORT(struct contact_list, data->from, node13->contacts);
-	TEST_ASSERT_TRUE(routing_table_add_node(node13, sig_queue));
+	TEST_ASSERT_TRUE(routing_table_add_node(node13, rescheduler));
 	nti = routing_table_lookup_eid("node3");
 	TEST_ASSERT_EQUAL_UINT16(3, nti->ref_count);
 	TEST_ASSERT_NOT_NULL(nti->contacts);
 	TEST_ASSERT_EQUAL_PTR(c12, nti->contacts->next->next->data);
-	TEST_ASSERT_TRUE(routing_table_replace_node(node11, sig_queue));
+	TEST_ASSERT_TRUE(routing_table_replace_node(node11, rescheduler));
 	nti = routing_table_lookup_eid("node3");
 	TEST_ASSERT_NULL(nti);
 	TEST_ASSERT_NULL(routing_table_lookup_node("node2"));
 	TEST_ASSERT_TRUE(routing_table_delete_node(
 		node_create("node1"),
-		sig_queue
+		rescheduler
 	));
 	free_node(node12);
 	free_node(node2);

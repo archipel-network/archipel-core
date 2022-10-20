@@ -4,7 +4,7 @@
 
 #include "cla/cla.h"
 
-#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/bundle_processor.h"
 
 #include <stddef.h>
 

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/bundle.h"
-#include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 #include "ud3tn/node.h"
 #include "ud3tn/router.h"
@@ -111,10 +110,10 @@ uint8_t routing_table_lookup_hot_node(
 /* NODE LIST MODIFICATION */
 static void add_node_to_tables(struct node *node);
 static void remove_node_from_tables(struct node *node, bool drop_contacts,
-				  QueueIdentifier_t bproc_signaling_queue);
+				  struct rescheduling_handle rescheduler);
 
 static void reschedule_bundles(
-	struct contact *contact, QueueIdentifier_t bproc_signaling_queue);
+	struct contact *contact, struct rescheduling_handle rescheduler);
 
 static bool add_new_node(struct node *new_node)
 {
@@ -139,7 +138,7 @@ static bool add_new_node(struct node *new_node)
 }
 
 bool routing_table_add_node(
-	struct node *new_node, QueueIdentifier_t bproc_signaling_queue)
+	struct node *new_node, struct rescheduling_handle rescheduler)
 {
 	struct node_list *entry;
 	struct node *cur_node;
@@ -184,7 +183,7 @@ bool routing_table_add_node(
 		if (cap_modified->data->remaining_capacity_p0 < 0) {
 			reschedule_bundles(
 				cap_modified->data,
-				bproc_signaling_queue
+				rescheduler
 			);
 		}
 		next = cap_modified->next;
@@ -198,7 +197,7 @@ bool routing_table_add_node(
 }
 
 bool routing_table_replace_node(
-	struct node *node, QueueIdentifier_t bproc_signaling_queue)
+	struct node *node, struct rescheduling_handle rescheduler)
 {
 	struct node_list *entry;
 
@@ -209,7 +208,7 @@ bool routing_table_replace_node(
 		return false;
 
 	remove_node_from_tables(entry->node, true,
-				bproc_signaling_queue);
+				rescheduler);
 	free_node(entry->node);
 	entry->node = node;
 	add_node_to_tables(node);
@@ -217,7 +216,7 @@ bool routing_table_replace_node(
 }
 
 bool routing_table_delete_node_by_eid(
-	char *eid, QueueIdentifier_t bproc_signaling_queue)
+	char *eid, struct rescheduling_handle rescheduler)
 {
 	struct node_list **entry_ptr, *old_node_entry;
 
@@ -228,7 +227,7 @@ bool routing_table_delete_node_by_eid(
 		old_node_entry = *entry_ptr;
 		*entry_ptr = old_node_entry->next;
 		remove_node_from_tables(old_node_entry->node, true,
-					bproc_signaling_queue);
+					rescheduler);
 		free_node(old_node_entry->node);
 		free(old_node_entry);
 		return true;
@@ -237,7 +236,7 @@ bool routing_table_delete_node_by_eid(
 }
 
 bool routing_table_delete_node(
-	struct node *new_node, QueueIdentifier_t bproc_signaling_queue)
+	struct node *new_node, struct rescheduling_handle rescheduler)
 {
 	struct node_list **entry_ptr, *old_node_entry;
 	struct node *cur_node;
@@ -252,13 +251,13 @@ bool routing_table_delete_node(
 			old_node_entry = *entry_ptr;
 			*entry_ptr = old_node_entry->next;
 			remove_node_from_tables(old_node_entry->node, true,
-						bproc_signaling_queue);
+						rescheduler);
 			free_node(old_node_entry->node);
 			free(old_node_entry);
 			free_node(new_node);
 		} else {
 			/* Delete contacts/nodes */
-			remove_node_from_tables(cur_node, false, NULL);
+			remove_node_from_tables(cur_node, false, rescheduler);
 			cur_node->endpoints = endpoint_list_difference(
 				cur_node->endpoints, new_node->endpoints, 1);
 			cur_node->contacts = contact_list_difference(
@@ -267,7 +266,7 @@ bool routing_table_delete_node(
 			/* Process modified contacts */
 			while (modified != NULL) {
 				reschedule_bundles(
-					modified->data, bproc_signaling_queue);
+					modified->data, rescheduler);
 				next = modified->next;
 				free(modified);
 				modified = next;
@@ -275,7 +274,7 @@ bool routing_table_delete_node(
 			/* Process deleted contacts */
 			while (deleted != NULL) {
 				reschedule_bundles(
-					deleted->data, bproc_signaling_queue);
+					deleted->data, rescheduler);
 				if (deleted->data->active) {
 					tmp = deleted;
 					deleted = tmp->next;
@@ -332,7 +331,7 @@ static void add_node_to_tables(struct node *node)
 }
 
 static void remove_node_from_tables(struct node *node, bool drop_contacts,
-				  QueueIdentifier_t bproc_signaling_queue)
+				    struct rescheduling_handle rescheduler)
 {
 	struct contact_list **cur_slot;
 	struct endpoint_list *cur_persistent_node, *cur_contact_node;
@@ -358,7 +357,7 @@ static void remove_node_from_tables(struct node *node, bool drop_contacts,
 		remove_contact_from_list(&contact_list, cur_contact->data);
 		if (drop_contacts) {
 			reschedule_bundles(cur_contact->data,
-					   bproc_signaling_queue);
+					   rescheduler);
 			// If the contact is active, un-associate it to prevent
 			// freeing it right now.
 			if (cur_contact->data->active) {
@@ -487,17 +486,16 @@ void routing_table_delete_contact(struct contact *contact)
 }
 
 void routing_table_contact_passed(
-	struct contact *contact, QueueIdentifier_t bproc_signaling_queue)
+	struct contact *contact, struct rescheduling_handle rescheduler)
 {
 	struct routed_bundle_list *tmp;
 
 	if (contact->node != NULL) {
 		while (contact->contact_bundles != NULL) {
-			bundle_processor_inform(
-				bproc_signaling_queue,
+			rescheduler.reschedule_func(
 				contact->contact_bundles->data,
-				BP_SIGNAL_RESCHEDULE_BUNDLE,
-				BUNDLE_SR_REASON_NO_INFO);
+				rescheduler.reschedule_func_context
+			);
 			tmp = contact->contact_bundles->next;
 			free(contact->contact_bundles->data);
 			free(contact->contact_bundles);
@@ -510,7 +508,7 @@ void routing_table_contact_passed(
 /* RE-SCHEDULING */
 
 static void reschedule_bundles(
-	struct contact *contact, QueueIdentifier_t bproc_signaling_queue)
+	struct contact *contact, struct rescheduling_handle rescheduler)
 {
 	struct bundle *b;
 
@@ -519,10 +517,9 @@ static void reschedule_bundles(
 	while (contact->contact_bundles != NULL) {
 		b = contact->contact_bundles->data;
 		router_remove_bundle_from_contact(contact, b);
-		bundle_processor_inform(
-			bproc_signaling_queue, b,
-			BP_SIGNAL_RESCHEDULE_BUNDLE,
-			BUNDLE_SR_REASON_NO_INFO
+		rescheduler.reschedule_func(
+			contact->contact_bundles->data,
+			rescheduler.reschedule_func_context
 		);
 	}
 }

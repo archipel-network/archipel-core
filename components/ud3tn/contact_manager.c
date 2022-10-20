@@ -2,7 +2,6 @@
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/contact_manager.h"
-#include "ud3tn/router_task.h"
 #include "ud3tn/node.h"
 #include "ud3tn/task_tags.h"
 
@@ -247,18 +246,6 @@ static uint8_t check_for_contacts(struct contact_list *contact_list,
 	return removed_count;
 }
 
-static void inform_router(
-	enum router_signal_type type, void *data, QueueIdentifier_t queue)
-{
-	struct router_signal signal = {
-		.type = type,
-		.data = data
-	};
-
-	ASSERT(data != NULL);
-	hal_queue_push_to_back(queue, &signal);
-}
-
 /* We assume that contact_list will not change. */
 static void manage_contacts(
 	struct contact_list **contact_list, enum contact_manager_signal signal,
@@ -281,8 +268,15 @@ static void manage_contacts(
 	hal_semaphore_release(semphr);
 	for (i = 0; i < removed; i++) {
 		/* The contact has to be deleted first... */
-		inform_router(ROUTER_SIGNAL_CONTACT_OVER,
-			rem[i].contact, queue);
+		bundle_processor_inform(
+			queue,
+			NULL,
+			BP_SIGNAL_CONTACT_OVER,
+			NULL,
+			NULL,
+			rem[i].contact,
+			NULL
+		);
 	}
 }
 

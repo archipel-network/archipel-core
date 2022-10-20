@@ -22,7 +22,6 @@
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/bundle.h"
-#include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/task_tags.h"

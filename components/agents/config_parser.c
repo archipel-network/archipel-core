@@ -5,6 +5,7 @@
 
 #include "ud3tn/eid.h"
 #include "ud3tn/node.h"
+#include "ud3tn/router.h"
 
 #include <stdbool.h>
 #include <stddef.h>
