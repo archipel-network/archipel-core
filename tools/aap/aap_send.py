@@ -3,10 +3,9 @@
 # encoding: utf-8
 
 import argparse
-import logging
 
 from ud3tn_utils.aap import AAPTCPClient, AAPUnixClient
-from helpers import add_common_parser_arguments, logging_level
+from helpers import add_common_parser_arguments, initialize_logger
 from pyd3tn.bundle7 import (BibeProtocolDataUnit, Bundle, BundleProcFlag,
                             PayloadBlock, PrimaryBlock)
 
@@ -76,8 +75,7 @@ if __name__ == "__main__":
     else:
         args.payload = args.payload
 
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
+    logger = initialize_logger(args.verbosity)
 
     if args.tcp:
         with AAPTCPClient(address=args.tcp) as aap_client:

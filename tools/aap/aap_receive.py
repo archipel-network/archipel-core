@@ -3,19 +3,18 @@
 # encoding: utf-8
 
 import argparse
-import logging
 import sys
 
 import cbor  # type: ignore
 
 from pyd3tn.bundle7 import Bundle
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
-from helpers import add_common_parser_arguments, logging_level
+from helpers import add_common_parser_arguments, initialize_logger
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
-def run_aap_recv(aap_client, max_count=None, verify_pl=None):
-    print("Waiting for bundles...")
+def run_aap_recv(aap_client, logger, max_count=None, verify_pl=None):
+    logger.info("Waiting for bundles...")
     counter = 0
 
     while True:
@@ -35,23 +34,20 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
 
         if not err:
             enc = " encapsulated" if enc else ""
-            print("Received{} bundle from '{}': {}".format(
-                enc,
-                msg.eid,
-                payload,
-            ))
+            logger.info("Received%s bundle from '%s'", enc, msg.eid)
+            print(payload)
             if verify_pl is not None and verify_pl != payload:
-                print("Unexpected payload != '{}'".format(verify_pl))
+                logger.fatal("Unexpected payload != '%s'", verify_pl)
                 sys.exit(1)
         else:
-            print("Received administrative record of unknown type \
-            from '{}'!".format(
+            logger.warning(
+                "Received administrative record of unknown type from '%s'!",
                 msg.eid
-            ))
+            )
 
         counter += 1
         if max_count and counter >= max_count:
-            print("Expected amount of bundles received, terminating.")
+            logger.info("Expected amount of bundles received, terminating.")
             return
 
 
@@ -75,15 +71,13 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
+    logger = initialize_logger(args.verbosity)
 
     if args.tcp:
         with AAPTCPClient(address=args.tcp) as aap_client:
             aap_client.register(args.agentid)
-            run_aap_recv(aap_client, args.count, args.verify_pl)
+            run_aap_recv(aap_client, logger, args.count, args.verify_pl)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             aap_client.register(args.agentid)
-            run_aap_recv(aap_client, args.count, args.verify_pl)
+            run_aap_recv(aap_client, logger, args.count, args.verify_pl)
