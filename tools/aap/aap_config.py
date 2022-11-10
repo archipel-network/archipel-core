@@ -3,7 +3,6 @@
 # encoding: utf-8
 
 import argparse
-import logging
 
 from ud3tn_utils.aap import AAPTCPClient, AAPUnixClient
 
@@ -13,7 +12,7 @@ from ud3tn_utils.config import ConfigMessage, make_contact
 from helpers import (
     add_socket_group_parser_arguments,
     add_verbosity_parser_argument,
-    logging_level,
+    initialize_logger,
     get_config_eid,
 )
 
@@ -59,13 +58,10 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
+    logger = initialize_logger(args.verbosity)
 
     if not args.schedule:
-        print("at least one -s/--schedule argument must be given",
-              file=sys.stderr)
+        logger.fatal("At least one -s/--schedule argument must be given!")
         sys.exit(1)
 
     msg = bytes(ConfigMessage(
@@ -78,7 +74,7 @@ if __name__ == "__main__":
         reachable_eids=args.reaches,
     ))
 
-    print(msg)
+    logger.info("> %s", msg)
 
     if args.tcp:
         with AAPTCPClient(address=args.tcp) as aap_client:

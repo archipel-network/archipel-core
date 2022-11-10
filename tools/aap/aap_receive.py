@@ -3,19 +3,18 @@
 # encoding: utf-8
 
 import argparse
-import logging
 import sys
 
 import cbor  # type: ignore
 
 from pyd3tn.bundle7 import Bundle
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient
-from helpers import add_common_parser_arguments, logging_level
+from helpers import add_common_parser_arguments, initialize_logger
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
-def run_aap_recv(aap_client, max_count=None, verify_pl=None):
-    print("Waiting for bundles...")
+def run_aap_recv(aap_client, max_count, output, verify_pl):
+    logger.info("Waiting for bundles...")
     counter = 0
 
     while True:
@@ -26,32 +25,35 @@ def run_aap_recv(aap_client, max_count=None, verify_pl=None):
         enc = False
         err = False
         if msg.msg_type == AAPMessageType.RECVBUNDLE:
-            payload = msg.payload.decode("utf-8")
+            payload = msg.payload
         elif msg.msg_type == AAPMessageType.RECVBIBE:
             payload = cbor.loads(msg.payload)
             bundle = Bundle.parse(payload[2])
-            payload = bundle.payload_block.data.decode("utf-8")
+            payload = bundle.payload_block.data
             enc = True
 
         if not err:
             enc = " encapsulated" if enc else ""
-            print("Received{} bundle from '{}': {}".format(
+            logger.info(
+                "Received%s bundle from '%s', payload len = %d",
                 enc,
                 msg.eid,
-                payload,
-            ))
-            if verify_pl is not None and verify_pl != payload:
-                print("Unexpected payload != '{}'".format(verify_pl))
+                len(payload),
+            )
+            output.write(payload)
+            output.flush()
+            if verify_pl is not None and verify_pl.encode("utf-8") != payload:
+                logger.fatal("Unexpected payload != '%s'", verify_pl)
                 sys.exit(1)
         else:
-            print("Received administrative record of unknown type \
-            from '{}'!".format(
+            logger.warning(
+                "Received administrative record of unknown type from '%s'!",
                 msg.eid
-            ))
+            )
 
         counter += 1
         if max_count and counter >= max_count:
-            print("Expected amount of bundles received, terminating.")
+            logger.info("Expected amount of bundles received, terminating.")
             return
 
 
@@ -69,21 +71,38 @@ if __name__ == "__main__":
         help="amount of bundles to be received before terminating",
     )
     parser.add_argument(
+        "-o", "--output",
+        type=argparse.FileType("wb"),
+        default=sys.stdout.buffer,
+        help="file to write the received bundle contents",
+    )
+    parser.add_argument(
         "--verify-pl",
         default=None,
         help="verify that the payload is equal to the provided string",
     )
 
     args = parser.parse_args()
+    logger = initialize_logger(args.verbosity)
 
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
-
-    if args.tcp:
-        with AAPTCPClient(address=args.tcp) as aap_client:
-            aap_client.register(args.agentid)
-            run_aap_recv(aap_client, args.count, args.verify_pl)
-    else:
-        with AAPUnixClient(address=args.socket) as aap_client:
-            aap_client.register(args.agentid)
-            run_aap_recv(aap_client, args.count, args.verify_pl)
+    try:
+        if args.tcp:
+            with AAPTCPClient(address=args.tcp) as aap_client:
+                aap_client.register(args.agentid)
+                run_aap_recv(
+                    aap_client,
+                    args.count,
+                    args.output,
+                    args.verify_pl,
+                )
+        else:
+            with AAPUnixClient(address=args.socket) as aap_client:
+                aap_client.register(args.agentid)
+                run_aap_recv(
+                    aap_client,
+                    args.count,
+                    args.output,
+                    args.verify_pl,
+                )
+    finally:
+        args.output.close()

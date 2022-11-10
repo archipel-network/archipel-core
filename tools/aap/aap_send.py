@@ -3,10 +3,9 @@
 # encoding: utf-8
 
 import argparse
-import logging
 
 from ud3tn_utils.aap import AAPTCPClient, AAPUnixClient
-from helpers import add_common_parser_arguments, logging_level
+from helpers import add_common_parser_arguments, initialize_logger
 from pyd3tn.bundle7 import (BibeProtocolDataUnit, Bundle, BundleProcFlag,
                             PayloadBlock, PrimaryBlock)
 
@@ -18,7 +17,7 @@ def build_bibe_bundle(client, dest_eid, payload):
     Args:
         client (AAPClient): The AAP client used to send the bundle
         dest_eid (str): EID of the bundles destination
-        payload (str):  The payload of the encapsulated bundle
+        payload (bytes): The payload of the encapsulated bundle
 
     Returns:
         Bundle: A bundle containing the BIBE Administrative record
@@ -28,7 +27,7 @@ def build_bibe_bundle(client, dest_eid, payload):
             destination=dest_eid,
             source=client.eid
         ),
-        PayloadBlock(payload.encode())
+        PayloadBlock(payload)
     )
     outer_bundle = Bundle(
         PrimaryBlock(
@@ -57,39 +56,36 @@ if __name__ == "__main__":
         help="the destination EID of the created bundle",
     )
     parser.add_argument(
-        "payload",
-        nargs="?",
+        "PAYLOAD",
         default=None,
+        nargs="?",
         help="the payload of the created bundle, (default: read from STDIN)",
     )
-
     parser.add_argument(
         '--bibe',
         action='store_true',
         help="if set, bundle will be encapsulated before sending")
-
     args = parser.parse_args()
 
-    if not args.payload:
-        with sys.stdin as f:
-            args.payload = f.read()
+    if args.PAYLOAD:
+        payload = args.PAYLOAD.encode("utf-8")
     else:
-        args.payload = args.payload
+        payload = sys.stdin.buffer.read()
+        sys.stdin.buffer.close()
 
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
+    logger = initialize_logger(args.verbosity)
 
     if args.tcp:
         with AAPTCPClient(address=args.tcp) as aap_client:
             if not args.bibe:
                 aap_client.register(args.agentid)
-                aap_client.send_str(args.dest_eid, args.payload)
+                aap_client.send_bundle(args.dest_eid, payload, False)
             else:
                 aap_client.register(args.agentid)
                 encapsulating_bundle = build_bibe_bundle(
                     aap_client,
                     args.dest_eid,
-                    args.payload
+                    payload,
                 )
                 aap_client.send_bundle(
                     args.dest_eid,
@@ -99,13 +95,13 @@ if __name__ == "__main__":
         with AAPUnixClient(address=args.socket) as aap_client:
             if not args.bibe:
                 aap_client.register(args.agentid)
-                aap_client.send_str(args.dest_eid, args.payload)
+                aap_client.send_bundle(args.dest_eid, payload, False)
             else:
                 aap_client.register(args.agentid)
                 encapsulating_bundle = build_bibe_bundle(
                     aap_client,
                     args.dest_eid,
-                    args.payload
+                    payload,
                 )
                 aap_client.send_bundle(
                     args.dest_eid,

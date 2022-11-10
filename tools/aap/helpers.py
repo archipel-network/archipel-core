@@ -2,20 +2,23 @@
 # SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 # encoding: utf-8
 
+import logging
+import sys
+
 DEFAULT_CONFIG_AGENT_ID_DTN = "config"
 DEFAULT_CONFIG_AGENT_ID_IPN = "9000"
 
 
-def logging_level(verbosity):
-    level = [
-        0,   # logging.NOTSET
-        50,  # logging.CRITICAL
-        40,  # logging.ERROR
-        30,  # logging.WARNING
-        20,  # logging.INFO
-        10,  # logging.DEBUG
-    ]
-    return level[verbosity] if verbosity <= 5 else level[5]
+def initialize_logger(verbosity: int):
+    log_level = {
+        0: logging.WARN,
+        1: logging.INFO,
+    }.get(verbosity, logging.DEBUG)
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s %(levelname)s: %(message)s",
+    )
+    return logging.getLogger(sys.argv[0])
 
 
 def add_common_parser_arguments(parser):
@@ -28,6 +31,7 @@ def add_verbosity_parser_argument(parser):
     parser.add_argument(
         "-v", "--verbosity",
         action="count",
+        default=0,
         help="increase output verbosity"
     )
 

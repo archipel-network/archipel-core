@@ -9,7 +9,6 @@ between.
 """
 
 import argparse
-import logging
 import os
 import signal
 import sys
@@ -17,7 +16,7 @@ import time
 import threading
 
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient, AAPMessage
-from helpers import add_common_parser_arguments, logging_level
+from helpers import add_common_parser_arguments, initialize_logger
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
@@ -64,7 +63,7 @@ def _send_pings(aap_client, destination, interval, count, stop_event):
     os.kill(os.getpid(), signal.SIGINT)
 
 
-def _try_receive_ping(aap_client):
+def _try_receive_ping(aap_client, logger):
     # Wait for the next AAP message to be received
     msg = aap_client.receive()
     # Store the time we received the bundle as early as possible
@@ -72,7 +71,7 @@ def _try_receive_ping(aap_client):
 
     # AAPClient.receive will return None, e.g., if uD3TN disconnects.
     if not msg:
-        print("Lost connection, quitting")
+        logger.warning("Lost connection, quitting")
         sys.exit(1)
 
     if msg.msg_type != AAPMessageType.RECVBUNDLE:
@@ -81,17 +80,17 @@ def _try_receive_ping(aap_client):
 
     if msg.payload[0:4] != b"PING":
         # Just show we got something we do not want
-        print(
-            f"-> Received bundle of length {len(msg.payload)} byte "
-            f"from {msg.eid} that does not seem to be a PING bundle!"
-        )
+        logger.info((
+            "Received bundle of length %d bytes from %s that does not seem "
+            "to be a PING bundle!"
+        ), len(msg.payload), msg.eid)
         return False, None
 
     # Try to decode the payload of the message
     try:
         _, counter_str, time_str = msg.payload.decode("utf-8").split(":")
     except UnicodeError:  # if str.decode fails
-        print(f"-> Could not decode PING bundle from {msg.eid}")
+        logger.warning("Could not decode PING bundle from %s", msg.eid)
         return False, None
 
     # Try to get the numbers back
@@ -99,17 +98,18 @@ def _try_receive_ping(aap_client):
         counter_at_src = int(counter_str)
         time_at_src = float(time_str)
     except ValueError:  # int(...) or  float(...) failed
-        print(f"-> Could not read values in PING bundle from {msg.eid}")
+        logger.warning("Could not read values in PING bundle from %s", msg.eid)
         return False, None
 
     # Calculate the Round Trip Time (duration from sending to receiving)
     rtt = recv_time - time_at_src
-    print(f"Received PING from {msg.eid}: seq={counter_at_src}, rtt={rtt}")
+    logger.info("Received PING from %s: seq=%d, rtt=%f",
+                msg.eid, counter_at_src, rtt)
 
     return True, counter_at_src
 
 
-def run_aap_ping(aap_client, destination, interval, count):
+def run_aap_ping(aap_client, destination, interval, count, logger):
 
     start_time = time.time()  # remember to calculate how many bdl. we expected
 
@@ -131,7 +131,7 @@ def run_aap_ping(aap_client, destination, interval, count):
     receive_counter = 0
     try:
         while True:
-            success, seqno = _try_receive_ping(aap_client)
+            success, seqno = _try_receive_ping(aap_client, logger)
             if success:
                 receive_counter += 1
                 # If we got the last bundle, terminate immediately
@@ -143,10 +143,8 @@ def run_aap_ping(aap_client, destination, interval, count):
         expected_bundles = int(duration / interval) + 1
         if count:
             expected_bundles = min(expected_bundles, count)
-        print(
-            f"Ping ran for {duration}, received {receive_counter} of "
-            f"{expected_bundles} sent"
-        )
+        logger.info("Ping ran for %f seconds, received %d of %d sent",
+                    duration, receive_counter, expected_bundles)
         if receive_counter < expected_bundles:
             # Indicate that we did not receive everything
             sys.exit(1)
@@ -189,18 +187,16 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
+    logger = initialize_logger(args.verbosity + 1)  # log INFO by default
 
     if args.tcp:
         addr = (args.tcp[0], int(args.tcp[1]))
         with AAPTCPClient(address=addr) as aap_client:
             aap_client.register(args.agentid)
             run_aap_ping(aap_client, args.destination, args.interval,
-                         args.count)
+                         args.count, logger)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             aap_client.register(args.agentid)
             run_aap_ping(aap_client, args.destination, args.interval,
-                         args.count)
+                         args.count, logger)

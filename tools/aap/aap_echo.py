@@ -8,41 +8,33 @@ A tool that sends received bundles back to the sender.
 
 import sys
 import argparse
-import logging
-
 
 from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient, AAPMessage
-from helpers import add_common_parser_arguments, logging_level
+from helpers import add_common_parser_arguments, initialize_logger
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
 def run_echo(aap_client):
 
-    print(
-        f"Registered EID {aap_client.eid}"
-        f"\nWaiting for bundles..."
-    )
+    logger.info("Registered EID '%s', waiting for bundles...", aap_client.eid)
 
     while True:
 
         try:
-
             msg = aap_client.receive()
         except KeyboardInterrupt:
-
-            print("Quitting")
+            logger.info("Quitting")
             return
 
         if not msg:
-
-            print("Lost connection, quitting")
+            logger.warning("Lost connection, quitting")
             sys.exit(1)
 
         if msg.msg_type == AAPMessageType.RECVBUNDLE:
-
-            print(
-                f"-> Received bundle of length {len(msg.payload)} byte"
-                f" from {msg.eid} "
+            logger.debug(
+                "Received bundle of length %d bytes from '%s'",
+                len(msg.payload),
+                msg.eid,
             )
             aap_client.socket.send(
                 AAPMessage(
@@ -51,9 +43,7 @@ def run_echo(aap_client):
                     msg.payload
                 ).serialize()
             )
-            print(
-                f"-> Have sent a bundle back to {msg.eid}"
-            )
+            logger.debug("Sent a bundle back to '%s'", msg.eid)
 
 
 if __name__ == "__main__":
@@ -64,9 +54,7 @@ if __name__ == "__main__":
     add_common_parser_arguments(parser)
 
     args = parser.parse_args()
-
-    if args.verbosity:
-        logging.basicConfig(level=logging_level(args.verbosity))
+    logger = initialize_logger(args.verbosity + 1)  # log INFO by default
 
     if args.tcp:
         addr = (args.tcp[0], int(args.tcp[1]))
