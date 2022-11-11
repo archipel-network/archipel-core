@@ -31,7 +31,7 @@ def _send_and_recv(aap_client: AAPClient, dest_eid: str, payload: bytes,
         while True:
             msg = aap_client.receive()
             if not msg:
-                logger.warn("Received disconnect, terminating")
+                logger.warning("Received disconnect, terminating")
                 return
             enc = False
             if msg.msg_type == AAPMessageType.RECVBUNDLE:
