@@ -775,8 +775,14 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
-			agent_id, adu.length);
+			     agent_id, adu.length);
 			agent_forward(agent_id, adu);
+		} else if (record != NULL) {
+			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
+			     record->type);
+		} else {
+			LOGF("BundleProcessor: Received administrative record we cannot parse, discarding.",
+			     record->type);
 		}
 
 		free_administrative_record(record);
