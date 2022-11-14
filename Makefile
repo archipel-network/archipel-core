@@ -3,7 +3,7 @@
 ###############################################################################
 
 .PHONY: all
-all: posix
+all: posix-all
 
 .PHONY: ud3tn
 ud3tn: posix
@@ -182,7 +182,7 @@ endif
 # uD3TN-Builds
 ###############################################################################
 
-.PHONY: posix
+.PHONY: posix posix-lib posix-all unittest-posix ccmds-posix
 
 ifndef PLATFORM
 
@@ -191,6 +191,9 @@ posix:
 
 posix-lib:
 	@$(MAKE) PLATFORM=posix posix-lib
+
+posix-all:
+	@$(MAKE) PLATFORM=posix posix posix-lib
 
 unittest-posix:
 	@$(MAKE) PLATFORM=posix unittest-posix
@@ -205,6 +208,8 @@ include mk/build.mk
 
 posix: build/posix/ud3tn
 posix-lib: build/posix/libud3tn.so build/posix/libud3tn.a
+posix-all: posix posix-lib
 unittest-posix: build/posix/testud3tn
+ccmds-posix: build/posix/compile_commands.json
 
 endif # ifndef PLATFORM
