@@ -304,6 +304,8 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 /* 5.3 */
 static void bundle_dispatch(struct bundle *bundle)
 {
+	LOGF("BundleProcessor: Dispatching bundle #%d (from = %s, to = %s)",
+	     bundle->id, bundle->source, bundle->destination);
 	/* 5.3-1 */
 	if (bundle_endpoint_is_local(bundle)) {
 		bundle_deliver_local(bundle);
