@@ -67,7 +67,7 @@ static enum ud3tn_result handle_established_connection(
 
 	if (cla_tcp_link_init(&param->link.base, param->socket,
 			      &mtcp_config->base, param->cla_sock_addr,
-			      !param->is_outgoing, param->is_outgoing)
+			      param->is_outgoing)
 			!= UD3TN_OK) {
 		LOG("MTCP: Error initializing CLA link!");
 		return UD3TN_FAIL;

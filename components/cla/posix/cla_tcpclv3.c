@@ -232,7 +232,7 @@ static enum ud3tn_result handle_established_connection(
 
 	if (cla_tcp_link_init(&param->link, param->socket,
 			      &tcpclv3_config->base, param->cla_addr,
-			      true, true)
+			      true)
 			!= UD3TN_OK) {
 		LOG("TCPCLv3: Error initializing CLA link!");
 		param->state = TCPCLV3_CONNECTING;

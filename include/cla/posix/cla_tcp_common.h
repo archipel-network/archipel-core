@@ -71,7 +71,7 @@ enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
 	struct cla_tcp_config *config,
 	char *const cla_addr,
-	bool is_rx, bool is_tx);
+	bool is_tx);
 
 enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 				 const char *node, const char *service,
