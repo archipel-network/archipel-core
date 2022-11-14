@@ -204,7 +204,7 @@ include mk/$(PLATFORM).mk
 include mk/build.mk
 
 posix: build/posix/ud3tn
-posix-lib: build/posix/libud3tn.so
+posix-lib: build/posix/libud3tn.so build/posix/libud3tn.a
 unittest-posix: build/posix/testud3tn
 
 endif # ifndef PLATFORM
