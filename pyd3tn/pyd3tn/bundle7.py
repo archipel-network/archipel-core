@@ -519,6 +519,8 @@ class AdministrativeRecord(PayloadBlock):
             record_type_code,
             record_data
         ]))
+        self.record_type_code = record_type_code
+        self.record_data = record_data
 
 
 class BundleStatusReport(AdministrativeRecord):
