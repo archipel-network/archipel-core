@@ -86,32 +86,21 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if args.tcp:
-        with AAPTCPClient(address=args.tcp) as aap_client:
-            aap_client.register(args.agentid)
-            if not is_bibe:
-                aap_client.send_bundle(args.dest_eid, payload, False)
-            else:
-                bpdu = build_bpdu(
-                    args.bibe_source,
-                    args.bibe_destination,
-                    payload,
-                )
-                aap_client.send_bundle(
-                    args.dest_eid,
-                    bpdu,
-                    is_bibe)
+        aap_client = AAPTCPClient(address=args.tcp)
     else:
-        with AAPUnixClient(address=args.socket) as aap_client:
-            aap_client.register(args.agentid)
-            if not is_bibe:
-                aap_client.send_bundle(args.dest_eid, payload, False)
-            else:
-                bpdu = build_bpdu(
-                    args.bibe_source,
-                    args.bibe_destination,
-                    payload,
-                )
-                aap_client.send_bundle(
-                    args.dest_eid,
-                    bpdu,
-                    is_bibe)
+        aap_client = AAPUnixClient(address=args.socket)
+    with aap_client:
+        aap_client.register(args.agentid)
+        if not is_bibe:
+            aap_client.send_bundle(args.dest_eid, payload, False)
+        else:
+            bpdu = build_bpdu(
+                args.bibe_source,
+                args.bibe_destination,
+                payload,
+            )
+            aap_client.send_bundle(
+                args.dest_eid,
+                bpdu,
+                is_bibe,
+            )
