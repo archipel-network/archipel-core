@@ -108,7 +108,8 @@ static const char *tcpspp_get_name(void)
 static size_t tcpspp_mbs_get(struct cla_config *const config)
 {
 	(void)config;
-	return (1 << 16) - MAX_SPP_HEADER_SIZE; // conservative estimation
+	// conservative estimation
+	return CLA_TCPSPP_SPP_MAX_SIZE - MAX_SPP_HEADER_SIZE;
 }
 
 /*
@@ -334,6 +335,7 @@ static void tcpspp_begin_packet(struct cla_link *link, size_t length, char *cla_
 	uint8_t *header_end = &header_buf[0];
 
 	ASSERT(spp_length - length <= MAX_SPP_HEADER_SIZE);
+	ASSERT(spp_length <= CLA_TCPSPP_SPP_MAX_SIZE);
 
 	struct spp_meta_t metadata;
 
