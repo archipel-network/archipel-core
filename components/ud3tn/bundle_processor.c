@@ -65,7 +65,6 @@ static inline void handle_signal(const struct bundle_processor_signal signal);
 static void bundle_dispatch(struct bundle *bundle);
 static bool bundle_endpoint_is_local(struct bundle *bundle);
 static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout);
-static void bundle_forwarding_scheduled(struct bundle *bundle);
 static void bundle_forwarding_success(struct bundle *bundle);
 static void bundle_forwarding_contraindicated(
 	struct bundle *bundle, enum bundle_status_report_reason reason);
@@ -244,9 +243,6 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 	case BP_SIGNAL_BUNDLE_INCOMING:
 		bundle_receive(b);
 		break;
-	case BP_SIGNAL_BUNDLE_ROUTED:
-		bundle_forwarding_scheduled(b);
-		break;
 	case BP_SIGNAL_FORWARDING_CONTRAINDICATED:
 		bundle_forwarding_contraindicated(b, signal.reason);
 		break;
@@ -344,13 +340,6 @@ static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 	}
 	/* For steps after 5.4-2, see below */
 	return UD3TN_OK;
-}
-
-/* 5.4-4 */
-static void bundle_forwarding_scheduled(struct bundle *bundle)
-{
-	/* NOTE: We never accept custody, we do not have persistent storage. */
-	(void)bundle;
 }
 
 /* 5.4-6 */

@@ -192,15 +192,8 @@ static bool process_signal(
 			);
 			success = false;
 		} else {
-			for (int32_t i = 0;
-			     i < proc_result.status_or_fragments; i++) {
-				bundle_processor_inform(
-					bp_signaling_queue,
-					proc_result.fragments[i],
-					BP_SIGNAL_BUNDLE_ROUTED,
-					BUNDLE_SR_REASON_NO_INFO
-				);
-			}
+			/* 5.4-4 */
+			/* We do not accept custody -> only inform CM */
 			wake_up_contact_manager(
 				cm_queue,
 				CM_SIGNAL_PROCESS_CURRENT_BUNDLES
