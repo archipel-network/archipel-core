@@ -22,11 +22,7 @@ enum contact_manager_signal {
 };
 
 struct contact_manager_params contact_manager_start(
-	QueueIdentifier_t router_signaling_queue,
+	QueueIdentifier_t bp_queue,
 	struct contact_list **clistptr);
-
-uint64_t contact_manager_get_next_contact_time(void);
-uint8_t contact_manager_in_contact(void);
-void contact_manager_reset_time(void);
 
 #endif /* CONTACTMANAGER_H_INCLUDED */
