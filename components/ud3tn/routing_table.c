@@ -144,7 +144,11 @@ bool routing_table_add_node(
 	struct node *cur_node;
 	struct contact_list *cap_modified = NULL, *cur_contact, *next;
 
-	ASSERT(new_node != NULL);
+	if (!node_prepare_and_verify(new_node)) {
+		free_node(new_node);
+		return false;
+	}
+
 	entry = get_node_entry_by_eid(new_node->eid);
 
 	if (entry == NULL)
@@ -201,7 +205,11 @@ bool routing_table_replace_node(
 {
 	struct node_list *entry;
 
-	ASSERT(node != NULL);
+	if (!node_prepare_and_verify(node)) {
+		free_node(node);
+		return false;
+	}
+
 	entry = get_node_entry_by_eid(node->eid);
 
 	if (entry == NULL)
@@ -242,7 +250,11 @@ bool routing_table_delete_node(
 	struct node *cur_node;
 	struct contact_list *modified = NULL, *deleted = NULL, *next, *tmp;
 
-	ASSERT(new_node != NULL);
+	if (!node_prepare_and_verify(new_node)) {
+		free_node(new_node);
+		return false;
+	}
+
 	entry_ptr = get_node_entry_ptr_by_eid(new_node->eid);
 	if (entry_ptr != NULL) {
 		cur_node = (*entry_ptr)->node;
@@ -295,7 +307,6 @@ bool routing_table_delete_node(
 
 static bool add_contact_to_node_in_htab(char *eid, struct contact *c);
 static bool remove_contact_from_node_in_htab(char *eid, struct contact *c);
-static bool check_for_invalid_overlaps(struct contact *c);
 
 static void add_node_to_tables(struct node *node)
 {
@@ -305,11 +316,6 @@ static void add_node_to_tables(struct node *node)
 	ASSERT(node != NULL);
 	cur_contact = node->contacts;
 	while (cur_contact != NULL) {
-		/* TODO: Try to add contact but reduce timespan */
-		if (check_for_invalid_overlaps(cur_contact->data)) {
-			cur_contact = cur_contact->next;
-			continue;
-		}
 		add_contact_to_node_in_htab(node->eid, cur_contact->data);
 		cur_persistent_node = node->endpoints;
 		while (cur_persistent_node != NULL) {
@@ -413,31 +419,6 @@ static bool remove_contact_from_node_in_htab(char *eid, struct contact *c)
 		return true;
 	}
 	return false;
-}
-
-static bool check_for_invalid_overlaps(struct contact *c)
-{
-	uint8_t overlaps = 0;
-	struct contact_list *cur = contact_list;
-
-	while (cur != NULL && cur->data->to < c->from)
-		cur = cur->next;
-	if (cur == NULL || cur->data->from >= c->to)
-		return false;
-	do {
-		if (cur->data->to > c->from) {
-			/*
-			 * There cannot be two overlapping contacts with
-			 * the same ground station b/c this would use the
-			 * same CLA channel.
-			 */
-			if (cur->data->node == c->node)
-				return true;
-			overlaps++;
-		}
-		cur = cur->next;
-	} while (cur != NULL && cur->data->from < c->to);
-	return (bool)(overlaps >= MAX_CONCURRENT_CONTACTS);
 }
 
 /* CONTACT LIST */

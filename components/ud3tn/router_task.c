@@ -19,11 +19,6 @@ static bool process_router_command(
 	struct router_command *router_cmd,
 	struct rescheduling_handle rescheduler)
 {
-	/* This sorts and removes duplicates */
-	if (!node_prepare_and_verify(router_cmd->data)) {
-		free_node(router_cmd->data);
-		return false;
-	}
 	switch (router_cmd->type) {
 	case ROUTER_COMMAND_ADD:
 		return routing_table_add_node(

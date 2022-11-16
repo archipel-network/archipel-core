@@ -90,8 +90,11 @@ static uint8_t check_upcoming(
 		return 0;
 
 	// Too many contacts are already active, cannot add another...
-	if (ctx->current_contact_count >= MAX_CONCURRENT_CONTACTS)
+	if (ctx->current_contact_count >= MAX_CONCURRENT_CONTACTS) {
+		LOGF("ContactManager: Cannot start contact with \"%s\", too many contacts are already active",
+		    c->node->eid);
 		return 0;
+	}
 
 	/* Set "active" constraint, "blocking" the contact */
 	c->active = 1;
