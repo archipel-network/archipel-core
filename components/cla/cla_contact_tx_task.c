@@ -58,49 +58,58 @@ static void cla_contact_tx_task(void *param)
 		if (hal_queue_receive(link->tx_queue_handle,
 				      &cmd, -1) == UD3TN_FAIL)
 			continue;
-		else if (cmd.type == TX_COMMAND_FINALIZE || !cmd.bundle)
+		else if (cmd.type == TX_COMMAND_FINALIZE || !cmd.bundles)
 			break;
 
-		struct bundle *b = cmd.bundle;
+		struct routed_bundle_list *rbl = cmd.bundles;
 
-		prepare_bundle_for_forwarding(b);
-		LOGF(
-			"TX: Sending bundle %p via CLA %s",
-			b,
-			link->config->vtable->cla_name_get()
-		);
-		link->config->vtable->cla_begin_packet(
-			link,
-			bundle_get_serialized_size(b),
-			cmd.cla_address
-		);
-		s = bundle_serialize(
-			b,
-			cla_send_packet_data,
-			(void *)link
-		);
-		link->config->vtable->cla_end_packet(link);
+		while (rbl) {
+			struct bundle *b = rbl->data;
 
-		if (s == UD3TN_OK) {
-			bundle_processor_inform(
-				signaling_queue,
+			prepare_bundle_for_forwarding(b);
+			LOGF(
+				"TX: Sending bundle %p via CLA %s",
 				b,
-				BP_SIGNAL_TRANSMISSION_SUCCESS,
-				cla_get_cla_addr_from_link(link),
-				NULL,
-				NULL,
-				NULL
+				link->config->vtable->cla_name_get()
 			);
-		} else {
-			bundle_processor_inform(
-				signaling_queue,
+			link->config->vtable->cla_begin_packet(
+				link,
+				bundle_get_serialized_size(b),
+				cmd.cla_address
+			);
+			s = bundle_serialize(
 				b,
-				BP_SIGNAL_TRANSMISSION_FAILURE,
-				cla_get_cla_addr_from_link(link),
-				NULL,
-				NULL,
-				NULL
+				cla_send_packet_data,
+				(void *)link
 			);
+			link->config->vtable->cla_end_packet(link);
+
+			if (s == UD3TN_OK) {
+				bundle_processor_inform(
+					signaling_queue,
+					b,
+					BP_SIGNAL_TRANSMISSION_SUCCESS,
+					cla_get_cla_addr_from_link(link),
+					NULL,
+					NULL,
+					NULL
+				);
+			} else {
+				bundle_processor_inform(
+					signaling_queue,
+					b,
+					BP_SIGNAL_TRANSMISSION_FAILURE,
+					cla_get_cla_addr_from_link(link),
+					NULL,
+					NULL,
+					NULL
+				);
+			}
+
+			struct routed_bundle_list *tmp = rbl;
+
+			rbl = rbl->next;
+			free(tmp);
 		}
 
 		free(cmd.cla_address);
@@ -112,15 +121,27 @@ static void cla_contact_tx_task(void *param)
 	// Consume the rest of the queue
 	while (hal_queue_receive(link->tx_queue_handle, &cmd, 0) != UD3TN_FAIL) {
 		if (cmd.type == TX_COMMAND_BUNDLES) {
-			bundle_processor_inform(
-				signaling_queue,
-				cmd.bundle,
-				BP_SIGNAL_TRANSMISSION_FAILURE,
-				cla_get_cla_addr_from_link(link),
-				NULL,
-				NULL,
-				NULL
-			);
+			struct routed_bundle_list *rbl = cmd.bundles;
+
+			while (rbl) {
+				struct bundle *b = rbl->data;
+
+				bundle_processor_inform(
+					signaling_queue,
+					b,
+					BP_SIGNAL_TRANSMISSION_FAILURE,
+					cla_get_cla_addr_from_link(link),
+					NULL,
+					NULL,
+					NULL
+				);
+
+				struct routed_bundle_list *tmp = rbl;
+
+				rbl = rbl->next;
+				free(tmp);
+			}
+
 			free(cmd.cla_address);
 		}
 	}
@@ -158,7 +179,7 @@ void cla_contact_tx_task_request_exit(QueueIdentifier_t queue)
 {
 	struct cla_contact_tx_task_command command = {
 		.type = TX_COMMAND_FINALIZE,
-		.bundle = NULL,
+		.bundles = NULL,
 		.cla_address = NULL,
 	};
 

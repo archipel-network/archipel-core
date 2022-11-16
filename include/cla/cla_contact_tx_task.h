@@ -5,6 +5,7 @@
 #include "cla/cla.h"
 
 #include "ud3tn/bundle.h"
+#include "ud3tn/node.h"
 
 #include "platform/hal_queue.h"
 
@@ -16,7 +17,7 @@ enum cla_contact_tx_task_command_type {
 
 struct cla_contact_tx_task_command {
 	enum cla_contact_tx_task_command_type type;
-	struct bundle *bundle;
+	struct routed_bundle_list *bundles;
 	char *cla_address;
 };
 

@@ -231,28 +231,20 @@ static int hand_over_contact_bundles(
 
 	struct cla_contact_tx_task_command command = {
 		.type = TX_COMMAND_BUNDLES,
-		.bundle = NULL,
+		// Take over the bundles as we can now push them into the queue
+		// that is protected by the CLA semaphore.
+		.bundles = cinfo.contact->contact_bundles,
 	};
 
-	// Take over the bundles as we can now push them into the queue that
-	// is protected by the CLA semaphore.
-	struct routed_bundle_list *rbl = cinfo.contact->contact_bundles;
-
+	// Ensure the Router does not interfere. We own the list now and the
+	// TX task will free it.
 	cinfo.contact->contact_bundles = NULL;
 	// Now we can also let the BP do its thing again...
 	hal_semaphore_release(semphr);
 	// NOTE: From now on, cinfo.contact MAY become invalid again!
 
-	while (rbl != NULL) {
-		command.bundle = rbl->data;
-		command.cla_address = strdup(cinfo.cla_addr);
-		hal_queue_push_to_back(tx_queue.tx_queue_handle, &command);
-
-		struct routed_bundle_list *tmp = rbl;
-
-		rbl = rbl->next;
-		free(tmp);
-	}
+	command.cla_address = strdup(cinfo.cla_addr);
+	hal_queue_push_to_back(tx_queue.tx_queue_handle, &command);
 	hal_semaphore_release(tx_queue.tx_queue_sem); // taken by get_tx_queue
 
 	return 1;
