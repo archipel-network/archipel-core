@@ -294,7 +294,7 @@ bool routing_table_delete_node(
 	return false;
 }
 
-static bool add_contact_to_node_in_htab(char *eid, struct contact *c, float p);
+static bool add_contact_to_node_in_htab(char *eid, struct contact *c);
 static bool remove_contact_from_node_in_htab(char *eid, struct contact *c);
 static bool check_for_invalid_overlaps(struct contact *c);
 
@@ -311,19 +311,17 @@ static void add_node_to_tables(struct node *node)
 			cur_contact = cur_contact->next;
 			continue;
 		}
-		add_contact_to_node_in_htab(node->eid, cur_contact->data, 1.0f);
+		add_contact_to_node_in_htab(node->eid, cur_contact->data);
 		cur_persistent_node = node->endpoints;
 		while (cur_persistent_node != NULL) {
 			add_contact_to_node_in_htab(
-				cur_persistent_node->eid, cur_contact->data,
-				1.0f);
+				cur_persistent_node->eid, cur_contact->data);
 			cur_persistent_node = cur_persistent_node->next;
 		}
 		cur_contact_node = cur_contact->data->contact_endpoints;
 		while (cur_contact_node != NULL) {
 			add_contact_to_node_in_htab(
-				cur_contact_node->eid, cur_contact->data,
-				1.0f);
+				cur_contact_node->eid, cur_contact->data);
 			cur_contact_node = cur_contact_node->next;
 		}
 		add_contact_to_ordered_list(
@@ -376,12 +374,11 @@ static void remove_node_from_tables(struct node *node, bool drop_contacts,
 	}
 }
 
-static bool add_contact_to_node_in_htab(char *eid, struct contact *c, float p)
+static bool add_contact_to_node_in_htab(char *eid, struct contact *c)
 {
 	struct node_table_entry *entry;
 
 	ASSERT(eid != NULL);
-	ASSERT(p > 0.0f && p <= 1.0f);
 	ASSERT(c != NULL);
 	entry = (struct node_table_entry *)htab_get(&eid_table, eid);
 	if (entry == NULL) {
@@ -392,7 +389,7 @@ static bool add_contact_to_node_in_htab(char *eid, struct contact *c, float p)
 		entry->contacts = NULL;
 		htab_add(&eid_table, eid, entry);
 	}
-	if (add_contact_to_ordered_assoc_list(&(entry->contacts), c, p, 0)) {
+	if (add_contact_to_ordered_list(&(entry->contacts), c, 0)) {
 		entry->ref_count++;
 		return true;
 	}
@@ -408,7 +405,7 @@ static bool remove_contact_from_node_in_htab(char *eid, struct contact *c)
 	entry = (struct node_table_entry *)htab_get(&eid_table, eid);
 	if (entry == NULL)
 		return false;
-	if (remove_contact_from_assoc_list(&(entry->contacts), c)) {
+	if (remove_contact_from_list(&(entry->contacts), c)) {
 		entry->ref_count--;
 		if (entry->ref_count <= 0) {
 			htab_remove(&eid_table, eid);
@@ -496,10 +493,9 @@ void routing_table_contact_passed(
 
 	if (contact->node != NULL) {
 		while (contact->contact_bundles != NULL) {
-			/* TODO: Transmit struct routed_bundle? */
 			bundle_processor_inform(
 				bproc_signaling_queue,
-				contact->contact_bundles->data->bundle_ptr,
+				contact->contact_bundles->data,
 				BP_SIGNAL_RESCHEDULE_BUNDLE,
 				BUNDLE_SR_REASON_NO_INFO);
 			tmp = contact->contact_bundles->next;
@@ -516,22 +512,15 @@ void routing_table_contact_passed(
 static void reschedule_bundles(
 	struct contact *contact, QueueIdentifier_t bproc_signaling_queue)
 {
-	struct routed_bundle *rb;
-	struct fragment_route fr;
-	uint8_t c;
+	struct bundle *b;
 
 	ASSERT(contact != NULL);
 	/* Empty the bundle list and queue them in for re-scheduling */
 	while (contact->contact_bundles != NULL) {
-		rb = contact->contact_bundles->data;
-		ASSERT(rb->contact_count <= ROUTER_MAX_CONTACTS);
-		for (c = 0; c < rb->contact_count; c++)
-			fr.contacts[c] = rb->contacts[c];
-		fr.contact_count = rb->contact_count;
-		fr.payload_size = rb->size;
-		router_remove_bundle_from_route(&fr, rb->bundle_ptr, 1);
+		b = contact->contact_bundles->data;
+		router_remove_bundle_from_contact(contact, b);
 		bundle_processor_inform(
-			bproc_signaling_queue, rb->bundle_ptr,
+			bproc_signaling_queue, b,
 			BP_SIGNAL_RESCHEDULE_BUNDLE,
 			BUNDLE_SR_REASON_NO_INFO
 		);

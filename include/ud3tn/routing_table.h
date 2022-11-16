@@ -13,7 +13,7 @@
 
 struct node_table_entry {
 	uint16_t ref_count;
-	struct associated_contact_list *contacts;
+	struct contact_list *contacts;
 };
 
 enum ud3tn_result routing_table_init(void);

@@ -120,8 +120,7 @@ static bool process_signal(
 	QueueIdentifier_t cm_queue)
 {
 	bool success = true;
-	struct bundle *b = signal.data;
-	struct routed_bundle *rb;
+	struct bundle *b;
 	struct contact *contact;
 	struct router_command *command;
 	struct node *node;
@@ -151,6 +150,8 @@ static bool process_signal(
 		free(command);
 		break;
 	case ROUTER_SIGNAL_ROUTE_BUNDLE:
+		b = (struct bundle *)signal.data;
+
 		hal_semaphore_take_blocking(cm_semaphore);
 		/*
 		 * TODO: Check bundle expiration time
@@ -211,21 +212,16 @@ static bool process_signal(
 	case ROUTER_SIGNAL_TRANSMISSION_SUCCESS:
 	case ROUTER_SIGNAL_TRANSMISSION_FAILURE:
 		tx_result = (struct bundle_tx_result *)signal.data;
-		rb = tx_result->bundle;
+		b = tx_result->bundle;
 		free(tx_result->peer_cla_addr);
 		free(tx_result);
-		if (rb->serialized == rb->contact_count) {
-			bundle_processor_inform(
-				bp_signaling_queue, rb->bundle_ptr,
-				(rb->serialized == rb->transmitted)
-					? BP_SIGNAL_TRANSMISSION_SUCCESS
-					: BP_SIGNAL_TRANSMISSION_FAILURE,
-				BUNDLE_SR_REASON_NO_INFO
-			);
-			free(rb->destination);
-			free(rb->contacts);
-			free(rb);
-		}
+		bundle_processor_inform(
+			bp_signaling_queue, b,
+			(signal.type == ROUTER_SIGNAL_TRANSMISSION_SUCCESS)
+				? BP_SIGNAL_TRANSMISSION_SUCCESS
+				: BP_SIGNAL_TRANSMISSION_FAILURE,
+			BUNDLE_SR_REASON_NO_INFO
+		);
 		break;
 	case ROUTER_SIGNAL_WITHDRAW_NODE:
 		node = (struct node *)signal.data;
@@ -310,11 +306,11 @@ static struct bundle_processing_result process_bundle(struct bundle *bundle)
 	}
 
 	route = router_get_first_route(bundle);
-	/* TODO: Add to list if no route but own OR priority > X */
 	if (route.fragments == 1) {
 		result.fragments[0] = bundle;
-		if (router_add_bundle_to_route(&route.fragment_results[0],
-					       bundle))
+		if (router_add_bundle_to_contact(
+				route.fragment_results[0].contact,
+				bundle) == UD3TN_OK)
 			result.status_or_fragments = 1;
 		else
 			result.status_or_fragments = BUNDLE_RESULT_NO_MEMORY;
@@ -372,16 +368,17 @@ static struct bundle_processing_result apply_fragmentation(
 
 	/* Add to route */
 	for (f = 0; f < fragments; f++) {
-		if (!router_add_bundle_to_route(
-			&route.fragment_results[f], frags[f])
-		) {
+		if (router_add_bundle_to_contact(
+				route.fragment_results[f].contact,
+				frags[f]) != UD3TN_OK) {
 			LOGF("RouterTask: Scheduling bundle %p failed, dropping all fragments.",
 			     bundle);
 			// Remove from all previously-scheduled routes
 			for (g = 0; g < f; g++)
-				router_remove_bundle_from_route(
-					&route.fragment_results[g],
-					frags[g], 1);
+				router_remove_bundle_from_contact(
+					route.fragment_results[g].contact,
+					frags[g]
+				);
 			// Drop _all_ fragments
 			for (g = 0; g < fragments; g++)
 				bundle_free(frags[g]);

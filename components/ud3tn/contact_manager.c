@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/router_task.h"
 #include "ud3tn/node.h"
@@ -159,7 +160,7 @@ static void hand_over_contact_bundles(struct contact_info c)
 {
 	struct cla_contact_tx_task_command command = {
 		.type = TX_COMMAND_BUNDLES,
-		.bundles = NULL,
+		.bundle = NULL,
 	};
 
 	ASSERT(c.contact != NULL);
@@ -182,10 +183,16 @@ static void hand_over_contact_bundles(struct contact_info c)
 
 	LOGF("ContactManager: Queuing bundles for contact with \"%s\".", c.eid);
 
-	command.bundles = c.contact->contact_bundles;
-	command.cla_address = strdup(c.cla_addr);
-	c.contact->contact_bundles = NULL;
-	hal_queue_push_to_back(tx_queue.tx_queue_handle, &command);
+	while (c.contact->contact_bundles != NULL) {
+		struct routed_bundle_list *rbl = c.contact->contact_bundles;
+
+		command.bundle = rbl->data;
+		command.cla_address = strdup(c.cla_addr);
+		hal_queue_push_to_back(tx_queue.tx_queue_handle, &command);
+
+		c.contact->contact_bundles = rbl->next;
+		free(rbl);
+	}
 	hal_semaphore_release(tx_queue.tx_queue_sem); // taken by get_tx_queue
 }
 

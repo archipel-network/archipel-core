@@ -19,7 +19,7 @@
 
 
 static inline void report_bundle(QueueIdentifier_t signaling_queue,
-				 struct routed_bundle *bundle,
+				 struct bundle *bundle,
 				 char *cla_addr,
 				 enum router_signal_type type)
 {
@@ -69,8 +69,7 @@ static void cla_contact_tx_task(void *param)
 {
 	struct cla_link *link = param;
 	struct cla_contact_tx_task_command cmd;
-	struct bundle *b;
-	struct routed_bundle_list *cur;
+
 	enum ud3tn_result s;
 	void const *cla_send_packet_data =
 		link->config->vtable->cla_send_packet_data;
@@ -81,58 +80,45 @@ static void cla_contact_tx_task(void *param)
 		if (hal_queue_receive(link->tx_queue_handle,
 				      &cmd, -1) == UD3TN_FAIL)
 			continue;
-		else if (cmd.type == TX_COMMAND_FINALIZE)
+		else if (cmd.type == TX_COMMAND_FINALIZE || !cmd.bundle)
 			break;
-		/* TX_COMMAND_BUNDLES received */
-		while (cmd.bundles != NULL) {
-			cur = cmd.bundles;
-			cmd.bundles = cmd.bundles->next;
-			cur->data->serialized++;
-			b = cur->data->bundle_ptr;
-			if (b != NULL) {
-				prepare_bundle_for_forwarding(b);
-				LOGF(
-					"TX: Sending bundle %p via CLA %s",
-					b,
-					link->config->vtable->cla_name_get()
-				);
-				link->config->vtable->cla_begin_packet(
-					link,
-					bundle_get_serialized_size(b),
-					cmd.cla_address
-				);
-				s = bundle_serialize(
-					b,
-					cla_send_packet_data,
-					(void *)link
-				);
-				link->config->vtable->cla_end_packet(link);
-			} else {
-				LOGF("TX: Bundle %p not found!",
-				     cur->data->bundle_ptr);
-				s = UD3TN_FAIL;
-			}
 
+		struct bundle *b = cmd.bundle;
 
-			if (s == UD3TN_OK) {
-				cur->data->transmitted++;
-				report_bundle(
-					router_signaling_queue,
-					cur->data,
-					cla_get_cla_addr_from_link(link),
-					ROUTER_SIGNAL_TRANSMISSION_SUCCESS
-				);
-			} else {
-				report_bundle(
-					router_signaling_queue,
-					cur->data,
-					cla_get_cla_addr_from_link(link),
-					ROUTER_SIGNAL_TRANSMISSION_FAILURE
-				);
-			}
-			/* Free only the RB list, the RB is reported */
-			free(cur);
+		prepare_bundle_for_forwarding(b);
+		LOGF(
+			"TX: Sending bundle %p via CLA %s",
+			b,
+			link->config->vtable->cla_name_get()
+		);
+		link->config->vtable->cla_begin_packet(
+			link,
+			bundle_get_serialized_size(b),
+			cmd.cla_address
+		);
+		s = bundle_serialize(
+			b,
+			cla_send_packet_data,
+			(void *)link
+		);
+		link->config->vtable->cla_end_packet(link);
+
+		if (s == UD3TN_OK) {
+			report_bundle(
+				router_signaling_queue,
+				b,
+				cla_get_cla_addr_from_link(link),
+				ROUTER_SIGNAL_TRANSMISSION_SUCCESS
+			);
+		} else {
+			report_bundle(
+				router_signaling_queue,
+				b,
+				cla_get_cla_addr_from_link(link),
+				ROUTER_SIGNAL_TRANSMISSION_FAILURE
+			);
 		}
+
 		free(cmd.cla_address);
 	}
 
@@ -142,19 +128,12 @@ static void cla_contact_tx_task(void *param)
 	// Consume the rest of the queue
 	while (hal_queue_receive(link->tx_queue_handle, &cmd, 0) != UD3TN_FAIL) {
 		if (cmd.type == TX_COMMAND_BUNDLES) {
-			while (cmd.bundles != NULL) {
-				cur = cmd.bundles;
-				cmd.bundles = cmd.bundles->next;
-				cur->data->serialized++;
-				report_bundle(
-					router_signaling_queue,
-					cur->data,
-					cla_get_cla_addr_from_link(link),
-					ROUTER_SIGNAL_TRANSMISSION_FAILURE
-				);
-				/* Free only the RB list, the RB is reported */
-				free(cur);
-			}
+			report_bundle(
+				router_signaling_queue,
+				cmd.bundle,
+				cla_get_cla_addr_from_link(link),
+				ROUTER_SIGNAL_TRANSMISSION_FAILURE
+			);
 			free(cmd.cla_address);
 		}
 	}
@@ -192,7 +171,8 @@ void cla_contact_tx_task_request_exit(QueueIdentifier_t queue)
 {
 	struct cla_contact_tx_task_command command = {
 		.type = TX_COMMAND_FINALIZE,
-		.bundles = NULL,
+		.bundle = NULL,
+		.cla_address = NULL,
 	};
 
 	ASSERT(queue != NULL);

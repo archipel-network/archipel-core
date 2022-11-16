@@ -20,8 +20,6 @@ struct node *node_create(char *eid)
 
 	ret->cla_addr = NULL;
 	ret->flags = NODE_FLAG_NONE;
-	ret->trustworthiness = 1.0f;
-	ret->reliability = 1.0f;
 	ret->endpoints = NULL;
 	ret->contacts = NULL;
 	if (eid == NULL)
@@ -534,60 +532,6 @@ int remove_contact_from_list(
 	struct contact_list **list, struct contact *contact)
 {
 	struct contact_list **cur_entry, *tmp;
-
-	ASSERT(list != NULL);
-	ASSERT(contact != NULL);
-	cur_entry = list;
-	while (*cur_entry != NULL) {
-		if ((*cur_entry)->data == contact) {
-			tmp = *cur_entry;
-			*cur_entry = (*cur_entry)->next;
-			free(tmp);
-			return 1;
-		}
-		cur_entry = &(*cur_entry)->next;
-	}
-	return 0;
-}
-
-/* TODO: This is a bit ugly as it is copy-pasted. Find a way to unify... */
-int add_contact_to_ordered_assoc_list(
-	struct associated_contact_list **list, struct contact *contact,
-	float p, const int order_by_from)
-{
-	struct associated_contact_list **cur_entry, *new_entry;
-
-	ASSERT(list != NULL);
-	ASSERT(contact != NULL);
-	ASSERT(p >= 0.0f && p <= 1.0f);
-	cur_entry = list;
-	while (*cur_entry != NULL) {
-		if ((*cur_entry)->data == contact)
-			return 0;
-		if (order_by_from) {
-			if ((*cur_entry)->data->from > contact->from)
-				break;
-		} else {
-			if ((*cur_entry)->data->to > contact->to)
-				break;
-		}
-		cur_entry = &(*cur_entry)->next;
-	}
-	new_entry = malloc(sizeof(struct associated_contact_list));
-	if (new_entry == NULL)
-		return 0;
-	new_entry->data = contact;
-	new_entry->p = p;
-	new_entry->next = *cur_entry;
-	*cur_entry = new_entry;
-	return 1;
-}
-
-/* TODO: This is a bit ugly as it is copy-pasted. Find a way to unify... */
-int remove_contact_from_assoc_list(
-	struct associated_contact_list **list, struct contact *contact)
-{
-	struct associated_contact_list **cur_entry, *tmp;
 
 	ASSERT(list != NULL);
 	ASSERT(contact != NULL);

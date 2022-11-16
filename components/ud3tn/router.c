@@ -17,13 +17,7 @@
 static struct router_config RC = {
 	.global_mbs = ROUTER_GLOBAL_MBS,
 	.fragment_min_payload = FRAGMENT_MIN_PAYLOAD,
-	.min_probability = MIN_PROBABILITY,
-	.min_node_confidence_opportunistic = MIN_NODE_CONFIDENCE_OPPORTUNISTIC,
-	.min_node_confidence_deterministic = MIN_NODE_CONFIDENCE_DETERMINISTIC,
-	.node_trustworthiness_weight = NODE_TRUSTWORTHINESS_WEIGHT,
-	.node_reliability_weight = NODE_RELIABILITY_WEIGHT,
 	.router_min_contacts_htab = ROUTER_MIN_CONTACTS_HTAB,
-	.router_def_base_reliability = ROUTER_DEF_BASE_RELIABILITY
 };
 
 struct router_config router_get_config(void)
@@ -31,34 +25,12 @@ struct router_config router_get_config(void)
 	return RC;
 }
 
-enum ud3tn_result router_update_config(struct router_config conf)
+void router_update_config(struct router_config conf)
 {
-	float w = (
-		conf.node_trustworthiness_weight +
-		conf.node_reliability_weight
-	);
-
-	if (conf.min_probability > 1.0f
-		|| conf.min_probability <= 0
-		|| conf.min_node_confidence_opportunistic > 1.0f
-		|| conf.min_node_confidence_deterministic > 1.0f
-		|| conf.min_node_confidence_opportunistic <= 0
-		|| conf.min_node_confidence_deterministic <= 0
-		|| conf.min_node_confidence_opportunistic
-			> conf.min_node_confidence_deterministic
-		|| conf.min_node_confidence_deterministic
-			< conf.min_probability
-		|| w > 1.0001f || w < 0.9999f
-		|| conf.router_def_base_reliability > 1.0f
-		|| conf.router_def_base_reliability <= 0
-	) {
-		return UD3TN_FAIL;
-	}
 	RC = conf;
-	return UD3TN_OK;
 }
 
-struct associated_contact_list *router_lookup_destination(char *const dest)
+struct contact_list *router_lookup_destination(char *const dest)
 {
 	char *dest_node_eid = get_node_id(dest);
 	const struct node_table_entry *e = NULL;
@@ -71,14 +43,13 @@ struct associated_contact_list *router_lookup_destination(char *const dest)
 		e = routing_table_lookup_eid(dest);
 
 	uint16_t results = 0;
-	struct associated_contact_list *result = NULL;
+	struct contact_list *result = NULL;
 
 	if (e != NULL) {
-		struct associated_contact_list *cur = e->contacts;
+		struct contact_list *cur = e->contacts;
 
 		while (cur != NULL) {
-			add_contact_to_ordered_assoc_list(
-				&result, cur->data, cur->p, 0);
+			add_contact_to_ordered_list(&result, cur->data, 0);
 			results++;
 			cur = cur->next;
 		}
@@ -93,7 +64,7 @@ static inline struct max_fragment_size_result {
 	uint32_t max_fragment_size;
 	uint32_t payload_capacity;
 } router_get_max_reasonable_fragment_size(
-	struct associated_contact_list *contacts, uint32_t full_size,
+	struct contact_list *contacts, uint32_t full_size,
 	uint32_t max_fragment_min_size, uint32_t payload_size,
 	enum bundle_routing_priority priority, uint64_t exp_time)
 {
@@ -102,14 +73,12 @@ static inline struct max_fragment_size_result {
 	uint32_t min_capacity, c_capacity;
 	int32_t c_pay_capacity;
 	struct contact *c;
-	float conf, p;
 
 	(void)exp_time;
 	min_capacity = payload_size / ROUTER_MAX_FRAGMENTS;
 	min_capacity += max_fragment_min_size;
 	while (contacts != NULL && payload_capacity < payload_size) {
 		c = contacts->data;
-		p = contacts->p;
 		contacts = contacts->next;
 		//if (c->to > exp_time)
 		//	break;
@@ -121,8 +90,10 @@ static inline struct max_fragment_size_result {
 		struct cla_config *const cla_config = cla_config_get(
 			c->node->cla_addr
 		);
+
 		if (!cla_config)
 			continue;
+
 		const size_t c_mbs = MIN(
 			MIN(
 				(size_t)c_capacity,
@@ -138,23 +109,12 @@ static inline struct max_fragment_size_result {
 				payload_size,
 			};
 
-		conf = ROUTER_CONTACT_CONFIDENCE(c, p);
-		if (conf >= RC.min_node_confidence_deterministic) {
-			c_pay_capacity = c_capacity - max_fragment_min_size;
-			if (c_pay_capacity > RC.fragment_min_payload) {
-				payload_capacity += c_pay_capacity;
-				max_frag_size = MIN(max_frag_size, c_mbs);
-				if (c_capacity >= full_size)
-					break;
-			}
-		} else if (conf >= RC.min_node_confidence_opportunistic) {
-			c_pay_capacity = c_capacity - max_fragment_min_size;
-			if (c_pay_capacity > RC.fragment_min_payload) {
-				/* Reasonable? */
-				payload_capacity
-					+= (uint32_t)(conf * c_pay_capacity);
-				max_frag_size = MIN(max_frag_size, c_mbs);
-			}
+		c_pay_capacity = c_capacity - max_fragment_min_size;
+		if (c_pay_capacity > RC.fragment_min_payload) {
+			payload_capacity += c_pay_capacity;
+			max_frag_size = MIN(max_frag_size, c_mbs);
+			if (c_capacity >= full_size)
+				break;
 		}
 	}
 	return (struct max_fragment_size_result){
@@ -165,26 +125,19 @@ static inline struct max_fragment_size_result {
 
 uint8_t router_calculate_fragment_route(
 	struct fragment_route *res, uint32_t size,
-	struct associated_contact_list *contacts, uint32_t preprocessed_size,
+	struct contact_list *contacts, uint32_t preprocessed_size,
 	enum bundle_routing_priority priority, uint64_t exp_time,
 	struct contact **excluded_contacts, uint8_t excluded_contacts_count)
 {
 	uint64_t time = hal_time_get_timestamp_s();
 	uint32_t cap;
 	uint8_t d, i;
-	float conf, p;
 	struct contact *c;
 
 	(void)exp_time;
-	res->contact_count = 0;
-	res->probability = 0;
 	res->preemption_improved = 0;
-	while (contacts != NULL
-		&& res->probability < RC.min_probability
-		&& res->contact_count != ROUTER_MAX_CONTACTS
-	) {
+	while (contacts != NULL) {
 		c = contacts->data;
-		p = contacts->p;
 		contacts = contacts->next;
 		d = 0;
 		for (i = 0; i < excluded_contacts_count; i++)
@@ -215,26 +168,14 @@ uint8_t router_calculate_fragment_route(
 		} else {
 			preprocessed_size = 0;
 		}
-		conf = ROUTER_CONTACT_CONFIDENCE(c, p);
-		if (conf >= RC.min_node_confidence_deterministic) {
-			/* Deterministic routing */
-			res->contact_count = 0;
-			res->contacts[res->contact_count++] = c;
-			res->probability = conf;
-			break;
-		} else if (conf >= RC.min_node_confidence_opportunistic) {
-			/* Opportunistic routing */
-			res->contacts[res->contact_count++] = c;
-			/* P(A u B) = P(A) + P(B) - P(A n B) */
-			res->probability = res->probability + conf
-				- (res->probability * conf);
-		}
+		res->contact = c;
+		break;
 	}
-	return (res->probability >= RC.min_probability);
+	return (res->contact != NULL);
 }
 
 static inline void router_get_first_route_nonfrag(
-	struct router_result *res, struct associated_contact_list *contacts,
+	struct router_result *res, struct contact_list *contacts,
 	struct bundle *bundle, uint32_t bundle_size, uint64_t expiration_time)
 {
 	res->fragment_results[0].payload_size
@@ -246,15 +187,13 @@ static inline void router_get_first_route_nonfrag(
 		NULL, 0)
 	) {
 		res->fragments = 1;
-		res->probability
-			= res->fragment_results[0].probability;
 		res->preemption_improved
 			= res->fragment_results[0].preemption_improved;
 	}
 }
 
 static inline void router_get_first_route_frag(
-	struct router_result *res, struct associated_contact_list *contacts,
+	struct router_result *res, struct contact_list *contacts,
 	struct bundle *bundle, uint32_t bundle_size, uint64_t expiration_time,
 	uint32_t max_frag_sz, uint32_t first_frag_sz, uint32_t last_frag_sz)
 {
@@ -301,7 +240,6 @@ static inline void router_get_first_route_frag(
 
 	/* Determine routes */
 	success = 0;
-	res->probability = 1;
 	res->preemption_improved = 0;
 	processed_sz = 0;
 	for (index = 0; index < res->fragments; index++) {
@@ -316,15 +254,12 @@ static inline void router_get_first_route_frag(
 			&res->fragment_results[index], bundle_size,
 			contacts, processed_sz, ROUTER_BUNDLE_PRIORITY(bundle),
 			expiration_time, NULL, 0);
-		res->probability *= res->fragment_results[index].probability;
 		res->preemption_improved
 			+= res->fragment_results[index].preemption_improved;
 		processed_sz += bundle_size;
 	}
-	if (success != res->fragments) {
+	if (success != res->fragments)
 		res->fragments = 0;
-		res->probability = 0;
-	}
 }
 
 /* max. ~200 bytes on stack */
@@ -332,11 +267,10 @@ struct router_result router_get_first_route(struct bundle *bundle)
 {
 	const uint64_t expiration_time = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
 	struct router_result res;
-	struct associated_contact_list *contacts
+	struct contact_list *contacts
 		= router_lookup_destination(bundle->destination);
 
 	res.fragments = 0;
-	res.probability = 0.0f;
 	if (contacts == NULL) {
 		LOGF("Router: Could not determine a node over which the destination \"%s\" for bundle %p is reachable",
 		     bundle->destination, bundle);
@@ -401,10 +335,9 @@ struct router_result router_try_reuse(
 	uint32_t remaining_pay = bundle->payload_block->length;
 	uint32_t size, min_cap;
 	struct fragment_route *fr;
-	uint8_t c;
 	int32_t f;
 
-	if (route.fragments == 0 || route.probability < RC.min_probability)
+	if (route.fragments == 0)
 		return route;
 
 	/* Not fragmented */
@@ -412,17 +345,12 @@ struct router_result router_try_reuse(
 		size = bundle_get_serialized_size(bundle);
 		fr = &route.fragment_results[0];
 		fr->payload_size = remaining_pay;
-		for (c = 0; c < fr->contact_count; c++) {
-			if (fr->contacts[c]->to <= time
-				|| fr->contacts[c]->to > expiration_time
-				|| ROUTER_CONTACT_CAPACITY(fr->contacts[c], 0)
-					< (int32_t)size
-			) {
-				route.fragments = 0;
-				route.probability = 0;
-				return route;
-			}
-		}
+		if (fr->contact->to <= time
+			|| fr->contact->to > expiration_time
+			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
+				< (int32_t)size
+		)
+			route.fragments = 0;
 		return route;
 	}
 
@@ -436,22 +364,17 @@ struct router_result router_try_reuse(
 			size = bundle_get_mid_fragment_min_size(bundle);
 		fr = &route.fragment_results[f];
 		min_cap = UINT32_MAX;
-		for (c = 0; c < fr->contact_count; c++) {
-			if (fr->contacts[c]->to <= time
-				|| fr->contacts[c]->to > expiration_time
-				|| ROUTER_CONTACT_CAPACITY(fr->contacts[c], 0)
-					< (int32_t)(size
-						+ RC.fragment_min_payload)
-			) {
-				route.fragments = 0;
-				route.probability = 0;
-				return route;
-			}
-			min_cap = MIN(min_cap,
-				ROUTER_CONTACT_CAPACITY(fr->contacts[c], 0)
-				- size);
-
+		if (fr->contact->to <= time
+			|| fr->contact->to > expiration_time
+			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
+				< (int32_t)(size + RC.fragment_min_payload)
+		) {
+			route.fragments = 0;
+			return route;
 		}
+		min_cap = MIN(min_cap,
+			ROUTER_CONTACT_CAPACITY(fr->contact, 0)
+			- size);
 		fr->payload_size = MIN(remaining_pay, min_cap);
 		remaining_pay -= fr->payload_size;
 		if (remaining_pay == 0) {
@@ -460,57 +383,60 @@ struct router_result router_try_reuse(
 		}
 	}
 
-	if (remaining_pay != 0) {
+	if (remaining_pay != 0)
 		route.fragments = 0;
-		route.probability = 0;
-	}
 	return route;
 }
 
 enum ud3tn_result router_add_bundle_to_contact(
-	struct contact *contact, struct routed_bundle *rb)
+	struct contact *contact, struct bundle *b)
 {
 	struct routed_bundle_list *new_entry, **cur_entry;
 
 	ASSERT(contact != NULL);
-	ASSERT(rb != NULL);
+	ASSERT(b != NULL);
 	ASSERT(contact->remaining_capacity_p0 > 0);
 	new_entry = malloc(sizeof(struct routed_bundle_list));
 	if (new_entry == NULL)
 		return UD3TN_FAIL;
-	new_entry->data = rb;
+	new_entry->data = b;
 	new_entry->next = NULL;
 	cur_entry = &contact->contact_bundles;
 	/* Go to end of list (=> FIFO) */
-	while (*cur_entry != NULL)
+	while (*cur_entry != NULL) {
+		ASSERT((*cur_entry)->data != b);
 		cur_entry = &(*cur_entry)->next;
+	}
 	*cur_entry = new_entry;
 	contact->bundle_count++;
 	// This contact is of infinite capacity, just return "OK".
 	if (contact->remaining_capacity_p0 == INT32_MAX)
 		return UD3TN_OK;
-	contact->remaining_capacity_p0 -= rb->size;
-	if (rb->prio > BUNDLE_RPRIO_LOW) {
-		contact->remaining_capacity_p1 -= rb->size;
-		if (rb->prio != BUNDLE_RPRIO_NORMAL)
-			contact->remaining_capacity_p2 -= rb->size;
+
+	const size_t bundle_size = bundle_get_serialized_size(b);
+	const enum bundle_routing_priority prio =
+		bundle_get_routing_priority(b);
+
+	contact->remaining_capacity_p0 -= bundle_size;
+	if (prio > BUNDLE_RPRIO_LOW) {
+		contact->remaining_capacity_p1 -= bundle_size;
+		if (prio != BUNDLE_RPRIO_NORMAL)
+			contact->remaining_capacity_p2 -= bundle_size;
 	}
 	return UD3TN_OK;
 }
 
-struct routed_bundle *router_remove_bundle_from_contact(
+enum ud3tn_result router_remove_bundle_from_contact(
 	struct contact *contact, struct bundle *bundle)
 {
-	struct routed_bundle *rb;
 	struct routed_bundle_list **cur_entry, *tmp;
 
 	ASSERT(contact != NULL);
 	cur_entry = &contact->contact_bundles;
-	/* Find rb */
+	/* Find bundle */
 	while (*cur_entry != NULL) {
 		ASSERT((*cur_entry)->data != NULL);
-		if ((*cur_entry)->data->bundle_ptr == bundle) {
-			rb = (*cur_entry)->data;
+		if ((*cur_entry)->data == bundle) {
 			tmp = *cur_entry;
 			*cur_entry = (*cur_entry)->next;
 			free(tmp);
@@ -518,95 +444,22 @@ struct routed_bundle *router_remove_bundle_from_contact(
 			// This contact is of infinite capacity, do nothing.
 			if (contact->remaining_capacity_p0 == INT32_MAX)
 				continue;
-			contact->remaining_capacity_p0 += rb->size;
-			if (rb->prio > BUNDLE_RPRIO_LOW) {
-				contact->remaining_capacity_p1 += rb->size;
-				if (rb->prio != BUNDLE_RPRIO_NORMAL)
+
+			const size_t bundle_size =
+				bundle_get_serialized_size(bundle);
+			const enum bundle_routing_priority prio =
+				bundle_get_routing_priority(bundle);
+
+			contact->remaining_capacity_p0 += bundle_size;
+			if (prio > BUNDLE_RPRIO_LOW) {
+				contact->remaining_capacity_p1 += bundle_size;
+				if (prio != BUNDLE_RPRIO_NORMAL)
 					contact->remaining_capacity_p2
-						+= rb->size;
+						+= bundle_size;
 			}
-			return rb;
+			return UD3TN_OK;
 		}
 		cur_entry = &(*cur_entry)->next;
 	}
-	return NULL;
-}
-
-uint8_t router_add_bundle_to_route(struct fragment_route *r, struct bundle *b)
-{
-	uint8_t success;
-	struct routed_bundle *rb;
-
-	ASSERT(r != NULL);
-	ASSERT(b != NULL);
-	rb = malloc(sizeof(struct routed_bundle));
-	if (rb == NULL)
-		return 0;
-	rb->bundle_ptr = b;
-	rb->prio = bundle_get_routing_priority(b);
-	rb->size = bundle_get_serialized_size(b);
-	rb->exp_time = bundle_get_expiration_time_s(b, hal_time_get_timestamp_s());
-	rb->destination = strdup(b->destination);
-	if (rb->destination == NULL) {
-		free(rb);
-		return 0;
-	}
-	success = router_update_routed_bundle(r, rb);
-	if (!success) {
-		free(rb->destination);
-		free(rb);
-		return 0;
-	}
-	return 1;
-}
-
-uint8_t router_update_routed_bundle(
-	struct fragment_route *r, struct routed_bundle *rb)
-{
-	uint8_t c, added_contacts;
-
-	ASSERT(r != NULL);
-	ASSERT(rb != NULL);
-	ASSERT(r->contact_count != 0);
-	rb->preemption_improvement = r->preemption_improved;
-	rb->contact_count = r->contact_count;
-	rb->contacts = malloc(sizeof(void *) * r->contact_count);
-	if (rb->contacts == NULL)
-		return 0;
-	rb->transmitted = 0;
-	rb->serialized = 0;
-	added_contacts = 0;
-	for (c = 0; c < r->contact_count; c++) {
-		if (router_add_bundle_to_contact(r->contacts[c], rb)
-				== UD3TN_OK)
-			rb->contacts[added_contacts++] = r->contacts[c];
-	}
-	if (added_contacts != rb->contact_count) {
-		if (added_contacts == 0) {
-			free(rb->contacts);
-			return 0;
-		}
-		rb->contact_count = added_contacts;
-	}
-	return 1;
-}
-
-void router_remove_bundle_from_route(
-	struct fragment_route *r, struct bundle *bundle, uint8_t free_rb)
-{
-	uint8_t c;
-	struct routed_bundle *rb = NULL, *tmp;
-
-	ASSERT(r != NULL);
-	for (c = 0; c < r->contact_count; c++) {
-		tmp = router_remove_bundle_from_contact(
-			r->contacts[c], bundle);
-		if (tmp != NULL)
-			rb = tmp;
-	}
-	if (free_rb && rb != NULL) {
-		free(rb->destination);
-		free(rb->contacts);
-		free(rb);
-	}
+	return UD3TN_FAIL;
 }

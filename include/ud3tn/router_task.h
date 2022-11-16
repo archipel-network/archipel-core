@@ -34,9 +34,7 @@ enum router_signal_type {
 
 struct bundle_tx_result {
 	char *peer_cla_addr;
-	// TODO: struct bundle*
-	struct routed_bundle *bundle;
-	// TODO: Add success flag and remove struct router_signal.
+	struct bundle *bundle;
 };
 
 struct router_signal {

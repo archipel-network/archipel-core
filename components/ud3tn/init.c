@@ -53,10 +53,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		if (opt->mbs <= SIZE_MAX)
 			rc.global_mbs = (size_t)opt->mbs;
 
-		if (router_update_config(rc) != UD3TN_OK) {
-			LOG("INIT: Configuring the router failed!");
-			exit(EXIT_FAILURE);
-		}
+		router_update_config(rc);
 	}
 
 	bundle_agent_interface.local_eid = opt->eid;

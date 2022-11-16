@@ -12,6 +12,7 @@
 #include "platform/hal_task.h"
 
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 #include "ud3tn/result.h"
 #include "ud3tn/router_task.h"
 
