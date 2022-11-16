@@ -163,7 +163,7 @@ static int hand_over_contact_bundles(
 
 	// NOTE: cinfo.contact MAY not be valid at this point!
 	struct node_table_entry *n = routing_table_lookup_eid(cinfo.eid);
-	struct contact_list *cl = n->contacts;
+	struct contact_list *cl = (n != NULL) ? n->contacts : NULL;
 	bool found = false;
 
 	while (cl) {
