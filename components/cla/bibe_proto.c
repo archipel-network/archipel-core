@@ -80,7 +80,9 @@ size_t bibe_parser_parse(const uint8_t *const buffer,
 	size_t bundle_str_len;
 	enum CborError retval;
 
-	cbor_value_get_string_length(&report, &bundle_str_len);
+	retval = cbor_value_get_string_length(&report, &bundle_str_len);
+	if (retval)
+		return retval;
 	// Allocate memory for the encapsulated bundle
 	bpdu->encapsulated_bundle = malloc(bundle_str_len);
 	bpdu->payload_length = bundle_str_len;
@@ -88,12 +90,14 @@ size_t bibe_parser_parse(const uint8_t *const buffer,
 	//   "The next pointer, if not null, will be updated to point to the next item after
 	//    this string. If value points to the last item, then next will be invalid."
 	// Since we don't have a next element, we need to pass a null pointer to the function here.
-	cbor_value_copy_byte_string(
+	retval = cbor_value_copy_byte_string(
 		&report,
 		bpdu->encapsulated_bundle,
 		&bundle_str_len,
 		NULL
 	);
+	if (retval)
+		goto fail;
 	if (cbor_value_advance(&report)) {
 		retval = CborErrorUnexpectedEOF;
 		goto fail;
