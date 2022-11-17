@@ -124,12 +124,14 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 {
 	struct bibe_header hdr;
 	const size_t eid_len = strlen(dest_eid);
+	// len == 8 bytes + 1 byte header
+	const size_t CBOR_MAX_UINT_LENGTH = 9;
 
 	/* Encoding length of the bundle byte string */
-	uint8_t *temp_buffer = malloc(sizeof(uint64_t));
+	uint8_t *temp_buffer = malloc(CBOR_MAX_UINT_LENGTH);
 	CborEncoder encoder;
 
-	cbor_encoder_init(&encoder, temp_buffer, sizeof(uint64_t), 0);
+	cbor_encoder_init(&encoder, temp_buffer, CBOR_MAX_UINT_LENGTH, 0);
 	cbor_encode_uint(&encoder, (uint64_t)payload_len);
 	const size_t bpdu_size = cbor_encoder_get_buffer_size(
 		&encoder,
@@ -161,6 +163,7 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 	msg.payload_length = payload_len + bpdu_size;
 	msg.payload = NULL;
 
+	// NOTE: bpdu_size is still included here
 	hdr.hdr_len = aap_get_serialized_size(&msg) - payload_len;
 	hdr.data = malloc(hdr.hdr_len);
 
