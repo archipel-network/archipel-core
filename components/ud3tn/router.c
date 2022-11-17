@@ -165,8 +165,6 @@ uint8_t router_calculate_fragment_route(
 				res->preemption_improved++;
 			preprocessed_size = 0;
 			continue;
-		} else {
-			preprocessed_size = 0;
 		}
 		res->contact = c;
 		break;
