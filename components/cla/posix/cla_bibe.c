@@ -120,20 +120,42 @@ static void bibe_link_management_task(void *p)
 				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
 				continue;
 			}
-			LOGF("bibe: Connected successfully to \"%s\"",
-			     param->cla_sock_addr);
-			param->connected = true;
 
 			const struct aap_message register_bibe = {
 				.type = AAP_MESSAGE_REGISTER,
 				.eid = get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN ? "2925" : "bibe",
 				.eid_length = 4,
 			};
-			uint64_t *buffer = malloc(sizeof(struct aap_message));
+			struct tcp_write_to_socket_param wsp = {
+				.socket_fd = param->socket,
+				.errno_ = 0,
+			};
 
-			aap_serialize_into(buffer, &register_bibe, true);
-			tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
-			free(buffer);
+			aap_serialize(
+				&register_bibe,
+				tcp_write_to_socket,
+				&wsp,
+				true
+			);
+			if (wsp.errno_) {
+				LOGF("bibe: send(): %s",
+				     strerror(wsp.errno_));
+				close(param->socket);
+				if (++param->connect_attempt >
+						CLA_TCP_MAX_RETRY_ATTEMPTS) {
+					LOG("bibe: Final retry failed.");
+					break;
+				}
+				LOGF("bibe: Delayed retry %d of %d in %d ms",
+				     param->connect_attempt,
+				     CLA_TCP_MAX_RETRY_ATTEMPTS,
+				     CLA_TCP_RETRY_INTERVAL_MS);
+				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
+				continue;
+			}
+			LOGF("bibe: Connected successfully to \"%s\"",
+			     param->cla_sock_addr);
+			param->connected = true;
 		}
 	} while (param->in_contact);
 
