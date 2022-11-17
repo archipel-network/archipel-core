@@ -125,6 +125,8 @@ static void application_agent_listener_task(void *const param)
 		}
 		child_config->parent = config;
 		child_config->socket_fd = conn_fd;
+		child_config->last_bundle_timestamp_s = 0;
+		child_config->last_bundle_sequence_number = 0;
 		child_config->task = hal_task_create(
 			application_agent_comm_task,
 			"app_comm_t",
@@ -138,8 +140,6 @@ static void application_agent_listener_task(void *const param)
 			close(conn_fd);
 			free(child_config);
 		}
-		child_config->last_bundle_timestamp_s = 0;
-		child_config->last_bundle_sequence_number = 0;
 	}
 }
 
