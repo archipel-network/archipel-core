@@ -394,7 +394,10 @@ enum ud3tn_result router_add_bundle_to_contact(
 
 	ASSERT(contact != NULL);
 	ASSERT(b != NULL);
+	if (!contact || !b)
+		return UD3TN_FAIL;
 	ASSERT(contact->remaining_capacity_p0 > 0);
+
 	new_entry = malloc(sizeof(struct routed_bundle_list));
 	if (new_entry == NULL)
 		return UD3TN_FAIL;
@@ -404,6 +407,10 @@ enum ud3tn_result router_add_bundle_to_contact(
 	/* Go to end of list (=> FIFO) */
 	while (*cur_entry != NULL) {
 		ASSERT((*cur_entry)->data != b);
+		if ((*cur_entry)->data == b) {
+			free(new_entry);
+			return UD3TN_FAIL;
+		}
 		cur_entry = &(*cur_entry)->next;
 	}
 	*cur_entry = new_entry;
@@ -431,6 +438,8 @@ enum ud3tn_result router_remove_bundle_from_contact(
 	struct routed_bundle_list **cur_entry, *tmp;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return UD3TN_FAIL;
 	cur_entry = &contact->contact_bundles;
 	/* Find bundle */
 	while (*cur_entry != NULL) {

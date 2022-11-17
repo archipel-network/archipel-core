@@ -17,6 +17,9 @@ struct bundle *bundlefragmenter_create_new_fragment(
 	struct bundle *fragment;
 	struct bundle_block *fragment_pl;
 
+	ASSERT(prototype != NULL);
+	if (!prototype)
+		return NULL;
 	fragment = malloc(sizeof(struct bundle));
 	if (fragment == NULL)
 		return NULL;
@@ -59,6 +62,8 @@ struct bundle *bundlefragmenter_initialize_first_fragment(struct bundle *input)
 	struct bundle_block_list *cur_block;
 
 	ASSERT(input != NULL);
+	if (!input)
+		return NULL;
 	result = bundlefragmenter_create_new_fragment(input, false);
 	if (result == NULL)
 		return NULL;

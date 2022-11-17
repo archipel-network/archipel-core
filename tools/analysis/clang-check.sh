@@ -29,7 +29,7 @@ function clang-binary {
 }
 
 CLANG_CHECK="$(clang-binary clang-check)"
-CLANG_TIDY="$(clang-binary clang-tidy)"
+CLANG_TIDY="$(clang-binary clang-tidy) --use-color"
 
 CHECKER_CMD_ARGS="-p build/$2"
 for arg in "${CHECKER_ARGS[@]}"; do
@@ -55,7 +55,7 @@ fi
 
 function check-dir {
     echo "Checking $1..."
-    local out="$("$CHECKER" $CHECKER_CMD_ARGS $1/*.c 2>&1 | tee >(cat 1>&2))"
+    local out="$($CHECKER $CHECKER_CMD_ARGS $1/*.c 2>&1 | tee >(cat 1>&2))"
     if ! (echo "$out" | grep -i -e 'error:' -e 'warning:' > /dev/null); then
         return 0
     else

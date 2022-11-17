@@ -60,12 +60,18 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_agent_interface.bundle_signaling_queue
 			= hal_queue_create(BUNDLE_QUEUE_LENGTH,
 				sizeof(struct bundle_processor_signal));
-	ASSERT(bundle_agent_interface.bundle_signaling_queue != NULL);
+	if (!bundle_agent_interface.bundle_signaling_queue) {
+		LOG("INIT: Allocation of `bundle_signaling_queue` failed");
+		exit(EXIT_FAILURE);
+	}
 
 	struct bundle_processor_task_parameters *bundle_processor_task_params
 		= malloc(sizeof(struct bundle_processor_task_parameters));
 
-	ASSERT(bundle_processor_task_params != NULL);
+	if (!bundle_processor_task_params) {
+		LOG("INIT: Allocation of `bundle_processor_task_params` failed");
+		exit(EXIT_FAILURE);
+	}
 	bundle_processor_task_params->signaling_queue =
 			bundle_agent_interface.bundle_signaling_queue;
 	bundle_processor_task_params->local_eid =

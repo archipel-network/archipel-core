@@ -32,7 +32,11 @@ static void bundle_send(struct bundle *bundle, void *param)
 {
 	struct cla_config *const config = param;
 
-	ASSERT(bundle != NULL);
+	if (!bundle) {
+		LOG("Tried to send NULL bundle");
+		ASSERT(false);
+		return;
+	}
 
 	char *const source_node_id = get_node_id(bundle->source);
 

@@ -331,15 +331,31 @@ static void launch_connection_management_task(
 
 	if (sock < 0) {
 		ASSERT(eid && cla_addr);
+		if (!eid || !cla_addr) {
+			LOG("TCPCLv3: Invalid parameters!");
+			free(contact_params);
+			return;
+		}
 		contact_params->eid = strdup(eid);
+
+		if (!contact_params->eid) {
+			LOG("TCPCLv3: Failed to copy EID!");
+			free(contact_params);
+			return;
+		}
+
 		contact_params->cla_addr = cla_get_connect_addr(
 			cla_addr,
 			"tcpclv3"
 		);
-		if (!contact_params->eid || !contact_params->cla_addr) {
-			LOG("TCPCLv3: Failed to copy addresses!");
-			goto fail;
+
+		if (!contact_params->cla_addr) {
+			LOG("TCPCLv3: Invalid address");
+			free(contact_params->eid);
+			free(contact_params);
+			return;
 		}
+
 		contact_params->socket = -1;
 		contact_params->state = TCPCLV3_CONNECTING;
 		contact_params->opportunistic = false;
@@ -518,6 +534,12 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 		     eid);
 		param->opportunistic = false;
 		param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
+
+		if (!param->cla_addr) {
+			LOG("TCPCLv3: Invalid address");
+			hal_semaphore_release(tcpclv3_config->param_htab_sem);
+			return UD3TN_FAIL;
+		}
 
 		// Even if it is no _new_ connection, we notify the BP task
 		// (as long as the connection is already UP)

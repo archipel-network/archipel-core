@@ -146,7 +146,11 @@ static enum ud3tn_result replicate_blocks(
 	if (list != NULL) {
 		/* Go to 1st fragment's last block (payload block) */
 		entry = first->blocks;
-		ASSERT(entry != NULL);
+		if (entry == NULL) {
+			while (list != NULL)
+				list = bundle_block_entry_free(list);
+			return UD3TN_FAIL;
+		}
 		while (entry->next != NULL)
 			entry = entry->next;
 		/* Remove "last_block" flag */

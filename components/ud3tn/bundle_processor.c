@@ -246,8 +246,13 @@ void bundle_processor_task(void * const param)
 
 		char *const dot = strchr(ctx.local_eid_prefix, '.');
 
-		ASSERT(dot != NULL);
-		dot[1] = '\0'; // truncate string after dot
+		if (!dot) {
+			LOGF("BundleProcessor: Invalid local EID \"%s\"",
+			     ctx.local_eid_prefix);
+			ASSERT(false);
+		} else {
+			dot[1] = '\0'; // truncate string after dot
+		}
 	} else {
 		ctx.local_eid_prefix = strdup(ctx.local_eid);
 

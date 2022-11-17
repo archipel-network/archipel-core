@@ -79,9 +79,14 @@ static enum ud3tn_result handle_established_connection(
 
 static void mtcp_link_management_task(void *p)
 {
+	Task_t management_task;
 	struct mtcp_contact_parameters *const param = p;
 
 	ASSERT(param->cla_sock_addr != NULL);
+	if (!param->cla_sock_addr) {
+		LOG("MTCP: Empty CLA address, cannot launch management task");
+		goto fail;
+	}
 	do {
 		if (param->connected) {
 			ASSERT(param->socket > 0);
@@ -125,7 +130,8 @@ static void mtcp_link_management_task(void *p)
 	mtcp_parser_reset(&param->link.mtcp_parser);
 	free(param->cla_sock_addr);
 
-	Task_t management_task = param->management_task;
+fail:
+	management_task = param->management_task;
 
 	free(param);
 	hal_task_delete(management_task);
@@ -152,12 +158,26 @@ static void launch_connection_management_task(
 			cla_addr,
 			"mtcp"
 		);
+
+		if (!contact_params->cla_sock_addr) {
+			LOG("MTCP: Invalid address");
+			free(contact_params);
+			return;
+		}
+
 		contact_params->socket = -1;
 		contact_params->connected = false;
 		contact_params->in_contact = true;
 		contact_params->is_outgoing = true;
 	} else {
 		contact_params->cla_sock_addr = strdup(cla_addr);
+
+		if (!contact_params->cla_sock_addr) {
+			LOG("MTCP: Failed to allocate memory!");
+			free(contact_params);
+			return;
+		}
+
 		contact_params->socket = sock;
 		contact_params->connected = true;
 		contact_params->in_contact = false;
@@ -342,6 +362,11 @@ static struct mtcp_contact_parameters *get_contact_parameters(
 	struct mtcp_config *const mtcp_config =
 		(struct mtcp_config *)config;
 	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "mtcp");
+
+	if (!cla_sock_addr) {
+		LOG("MTCP: Invalid address");
+		return NULL;
+	}
 
 	struct mtcp_contact_parameters *param = htab_get(
 		&mtcp_config->param_htab,
