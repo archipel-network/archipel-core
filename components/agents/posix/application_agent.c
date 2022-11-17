@@ -352,7 +352,7 @@ static int16_t process_aap_message(
 		} else {
 			LOGF("AppAgent: Injected new bundle %p.", bundle);
 			response.type = AAP_MESSAGE_SENDCONFIRM;
-			response.bundle_id = (uint64_t)bundle;
+			response.bundle_id = (uint64_t)(uintptr_t)bundle;
 		}
 
 		break;
