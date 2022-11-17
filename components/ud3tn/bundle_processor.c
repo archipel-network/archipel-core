@@ -781,8 +781,7 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
 			     record->type);
 		} else {
-			LOGF("BundleProcessor: Received administrative record we cannot parse, discarding.",
-			     record->type);
+			LOG("BundleProcessor: Received administrative record we cannot parse, discarding.");
 		}
 
 		free_administrative_record(record);
