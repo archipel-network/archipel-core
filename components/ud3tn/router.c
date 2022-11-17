@@ -135,6 +135,7 @@ uint8_t router_calculate_fragment_route(
 	struct contact *c;
 
 	(void)exp_time;
+	res->contact = NULL;
 	res->preemption_improved = 0;
 	while (contacts != NULL) {
 		c = contacts->data;
