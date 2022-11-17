@@ -368,14 +368,13 @@ static struct cla_tx_queue bibe_get_tx_queue(
 		config,
 		cla_addr
 	);
-	const char *dest_eid = strchr(cla_addr, '#');
+	const char *const dest_eid_delimiter = strchr(cla_addr, '#');
 	const bool dest_eid_is_valid = (
-		dest_eid &&
-		dest_eid[0] != '\0' &&
-		validate_eid(&dest_eid[1]) == UD3TN_OK
+		dest_eid_delimiter &&
+		dest_eid_delimiter[0] != '\0' &&
+		// The EID starts after the delimiter.
+		validate_eid(&dest_eid_delimiter[1]) == UD3TN_OK
 	);
-
-	dest_eid = &dest_eid[1]; // EID starts _after_ the '#'
 
 	if (param && param->connected && dest_eid_is_valid) {
 		struct cla_link *const cla_link = &param->link.base.base;
