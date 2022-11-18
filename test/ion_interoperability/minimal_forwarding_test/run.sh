@@ -32,7 +32,7 @@ ldconfig
 cd "$UD3TN_DIR"
 
 # Compile uD3TN and create Python venv
-make
+make sanitize=yes
 make virtualenv || true
 source .venv/bin/activate
 
@@ -62,9 +62,11 @@ rm -f /tmp/*.log
 
 # Start first uD3TN instance (uD3TN1)
 stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "dtn://ud3tn1.dtn/" > /tmp/ud3tn1.log 2>&1 &
+UD3TN1_PID=$!
 
 # Start second uD3TN instance (uD3TN2)
 stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn/" > /tmp/ud3tn2.log 2>&1 &
+UD3TN2_PID=$!
 
 # Start ION instance
 ionstart -I test/ion_interoperability/minimal_forwarding_test/ionstart.rc
@@ -77,4 +79,10 @@ python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --
 PAYLOAD="THISISTHEBUNDLEPAYLOAD"
 python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid source "dtn://ud3tn2.dtn/sink" "$PAYLOAD" &
 
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid sink --count 1 --verify-pl "$PAYLOAD"
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid sink --count 1 --verify-pl "$PAYLOAD" -vv
+
+kill -TERM $UD3TN1_PID
+kill -TERM $UD3TN2_PID
+echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+wait $UD3TN1_PID
+wait $UD3TN2_PID
