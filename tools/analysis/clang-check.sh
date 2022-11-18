@@ -24,28 +24,21 @@ if [[ ! -r ./Makefile ]]; then
     exit 1
 fi
 
-function clang-binary {
-    echo "$(which "$1")"
-}
-
-CLANG_CHECK="$(clang-binary clang-check)"
-CLANG_TIDY="$(clang-binary clang-tidy) --use-color"
-
 CHECKER_CMD_ARGS="-p build/$2"
 for arg in "${CHECKER_ARGS[@]}"; do
     CHECKER_CMD_ARGS="$CHECKER_CMD_ARGS -extra-arg=$arg"
 done
 
-if [[ "${1:-}" == "tidy" ]]; then
-    echo 'Running clang-tidy instead of clang-check'
-    CHECKER="$CLANG_TIDY"
+CHECKER="$1"
+if [[ $CHECKER == *"clang-tidy"* ]]; then
+    echo 'Running clang-tidy'
     CHECKER_CMD_ARGS="$CHECKER_CMD_ARGS -header-filter='.*'"
     TARGETS="${2:-}"
     shift
     shift
     DIRS+=("${@}")
 else
-    CHECKER="$CLANG_CHECK"
+    echo 'Running clang-check'
     CHECKER_CMD_ARGS="$CHECKER_CMD_ARGS -analyze"
     TARGETS="${2:-}"
     shift

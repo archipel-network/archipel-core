@@ -101,7 +101,7 @@ check-style:
 
 .PHONY: clang-check-posix
 clang-check-posix: ccmds-posix
-	bash ./tools/analysis/clang-check.sh check \
+	bash ./tools/analysis/clang-check.sh clang-check \
 		"posix" \
 		"components/agents/posix" \
 		"components/cla/posix" \
@@ -109,7 +109,7 @@ clang-check-posix: ccmds-posix
 
 .PHONY: clang-tidy-posix
 clang-tidy-posix: ccmds-posix
-	bash ./tools/analysis/clang-check.sh tidy \
+	bash ./tools/analysis/clang-check.sh "clang-tidy --use-color" \
 		"posix" \
 		"components/agents/posix" \
 		"components/cla/posix" \
