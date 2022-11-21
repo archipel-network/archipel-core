@@ -4,6 +4,7 @@
 
 #include "ud3tn/common.h"
 #include "ud3tn/bundle.h"
+#include "ud3tn/eid.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -65,9 +66,9 @@ size_t bundle7_eid_sizeof(const char *eid)
 	}
 	// ipn:
 	else {
-		uint32_t node, service;
+		uint64_t node, service;
 
-		if (sscanf(eid, "ipn:%"PRIu32".%"PRIu32, &node, &service) < 2)
+		if (validate_ipn_eid(eid, &node, &service) != UD3TN_OK)
 			// Error
 			return 0;
 		return 1 // CBOR array header

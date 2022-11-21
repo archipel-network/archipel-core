@@ -15,6 +15,11 @@
  */
 size_t bundle7_cbor_uint_sizeof(uint64_t num);
 
+/**
+ * Returns the number of bytes that will be required for the CBORepresentation
+ * of the passed EID.
+ */
+size_t bundle7_eid_sizeof(const char *eid);
 
 /**
  * Converts the unified uD3TN flags into BPv7-bis protocol-compliant block
