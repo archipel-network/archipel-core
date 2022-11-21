@@ -96,13 +96,21 @@ uint16_t bundle7_convert_to_protocol_block_flags(
 void bundle7_recalculate_primary_block_length(struct bundle *bundle)
 {
 	// Primary Block
+	const size_t dst_eid_size = bundle7_eid_sizeof(bundle->destination);
+	const size_t src_eid_size = bundle7_eid_sizeof(bundle->source);
+	const size_t rpt_eid_size = bundle7_eid_sizeof(bundle->report_to);
+
+	ASSERT(dst_eid_size != 0);
+	ASSERT(src_eid_size != 0);
+	ASSERT(rpt_eid_size != 0);
+
 	size_t size = 1 // CBOR array header
 		+ bundle7_cbor_uint_sizeof(bundle->protocol_version)
 		+ bundle7_cbor_uint_sizeof(bundle->proc_flags)
 		+ bundle7_cbor_uint_sizeof(bundle->crc_type)
-		+ bundle7_eid_sizeof(bundle->destination)
-		+ bundle7_eid_sizeof(bundle->source)
-		+ bundle7_eid_sizeof(bundle->report_to)
+		+ dst_eid_size
+		+ src_eid_size
+		+ rpt_eid_size
 		// Creation Timestamp
 		+ 1  // CBOR array header
 		+ bundle7_cbor_uint_sizeof(bundle->creation_timestamp_ms)
