@@ -420,6 +420,14 @@ TEST(bundle7Serializer, dtn_none)
 	TEST_ASSERT_NOT_NULL(buffer);
 	TEST_ASSERT_EQUAL(sizeof(dtn_none), length);
 
+	buffer = bundle7_eid_serialize_alloc("", &length);
+	TEST_ASSERT_NOT_NULL(buffer);
+	TEST_ASSERT_EQUAL(sizeof(dtn_none), length);
+
+	buffer = bundle7_eid_serialize_alloc(NULL, &length);
+	TEST_ASSERT_NOT_NULL(buffer);
+	TEST_ASSERT_EQUAL(sizeof(dtn_none), length);
+
 	TEST_ASSERT_EQUAL_INT8_ARRAY(dtn_none, buffer,
 		sizeof(dtn_none));
 }

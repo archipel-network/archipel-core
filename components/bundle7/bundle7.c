@@ -50,7 +50,7 @@ size_t bundle7_cbor_uint_sizeof(uint64_t num)
 size_t bundle7_eid_sizeof(const char *eid)
 {
 	// dtn:none -> [1,0] -> 0x82 0x01 0x00
-	if (eid == NULL || strcmp(eid, "dtn:none") == 0)
+	if (eid == NULL || eid[0] == '\0' || strcmp(eid, "dtn:none") == 0)
 		return 3;
 
 	// dtn:
