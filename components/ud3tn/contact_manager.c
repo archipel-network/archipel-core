@@ -365,7 +365,8 @@ static void contact_manager_task(void *cm_parameters)
 		= (struct contact_manager_task_parameters *)cm_parameters;
 	int8_t led_state = 0;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
-	uint64_t cur_time, next_time, delay;
+	uint64_t cur_time, next_time;
+	int32_t delay;
 	struct contact_manager_context ctx = {
 		.current_contact_count = 0,
 		.next_contact_time = UINT64_MAX,
@@ -390,18 +391,18 @@ static void contact_manager_task(void *cm_parameters)
 		}
 		signal = CM_SIGNAL_UNKNOWN;
 		cur_time = hal_time_get_timestamp_ms();
-
-		next_time = MIN(UINT64_MAX, ctx.next_contact_time * 1000);
-		if (next_time > (cur_time + CONTACT_CHECKING_MAX_PERIOD))
-			delay = CONTACT_CHECKING_MAX_PERIOD;
-		else if (next_time <= cur_time)
-			continue;
-		else
-			delay = next_time - cur_time;
+		delay = -1; // infinite blocking on queue
+		if (ctx.next_contact_time < UINT64_MAX / 1000) {
+			next_time = ctx.next_contact_time * 1000;
+			if (next_time <= cur_time)
+				continue;
+			if (next_time - cur_time < (uint64_t)INT32_MAX)
+				delay = next_time - cur_time + 1;
+		}
 		hal_queue_receive(
 			parameters->control_queue,
 			&signal,
-			delay + 1
+			delay
 		);
 	}
 }
