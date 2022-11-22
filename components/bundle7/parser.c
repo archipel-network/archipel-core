@@ -341,7 +341,7 @@ CborError primary_block_crc(struct bundle7_parser *state, CborValue *it)
 
 		// Swap from network byte order to native order and clear all
 		// higher bits
-		state->bundle->crc.checksum = cbor_ntohs(crc.checksum) & 0xffff;
+		state->bundle->crc.checksum = cbor_ntohs(crc.checksum & 0xffff);
 
 		crc_verify(state,
 			state->crc16.checksum,
@@ -520,7 +520,7 @@ CborError block_crc(struct bundle7_parser *state, CborValue *it)
 
 		// Swap from network byte order to native order and clear all
 		// higher bits
-		BLOCK(state)->crc.checksum = cbor_ntohs(crc.checksum) & 0xffff;
+		BLOCK(state)->crc.checksum = cbor_ntohs(crc.checksum & 0xffff);
 
 		crc_verify(state,
 			state->crc16.checksum,
