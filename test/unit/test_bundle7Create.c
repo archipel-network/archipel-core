@@ -46,8 +46,11 @@ TEST(bundle7Create, create_bundle)
 
 	TEST_ASSERT_EQUAL(sizeof(test_payload),
 			  b->payload_block->length);
-	TEST_ASSERT_EQUAL_MEMORY(test_payload, b->payload_block->data,
-				 sizeof(test_payload));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		test_payload,
+		b->payload_block->data,
+		sizeof(test_payload)
+	);
 	TEST_ASSERT_EQUAL(1, b->payload_block->number);
 	TEST_ASSERT_EQUAL(0,  b->payload_block->flags);
 
