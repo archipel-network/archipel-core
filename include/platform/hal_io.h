@@ -17,13 +17,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define LOGF(f_, ...) \
+#define LOGF(f_, ...) ({ \
+	hal_time_print_log_time_string(); \
 	hal_io_message_printf( \
-		"[%s]: " f_ " [%s:%d]\n", \
-		hal_time_get_log_time_string(), \
+		f_ " [%s:%d]\n", \
 		__VA_ARGS__, \
 		__FILE__, (int)(__LINE__) \
-	)
+	); \
+})
 
 #define LOG(message) LOGF("%s", message)
 #define LOGI(message, itemid) LOGA(message, 0xFF, itemid)

@@ -93,6 +93,11 @@ void hal_platform_init(int argc, char *argv[])
 {
 	setup_exit_handler();
 
+	hal_io_init();
+	hal_time_init(UINT64_MAX); // required for logging
+	hal_random_init();
+	hal_hash_init();
+	hal_crc_init();
 	restart_args = malloc(sizeof(char *) * argc);
 	if (restart_args) {
 		// Copy all commandline args to the restart argument buffer
