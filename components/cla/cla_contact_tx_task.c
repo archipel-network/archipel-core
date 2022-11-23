@@ -34,7 +34,7 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 		blocks = &(*blocks)->next;
 	}
 
-	const uint8_t dwell_time_ms = hal_time_get_timestamp_ms() -
+	const uint64_t dwell_time_ms = hal_time_get_timestamp_ms() -
 		bundle->reception_timestamp_ms;
 
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
