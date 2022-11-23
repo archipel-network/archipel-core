@@ -172,6 +172,9 @@ acceptable.  Do NOT use for cryptographic purposes.
 
 // See below. This function intentionally accesses some bytes more.
 __attribute__((no_sanitize_address))
+#if defined(__clang__)
+__attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
 uint32_t hashlittle(const void *key, size_t length, uint32_t initval)
 {
 	/* internal state */
