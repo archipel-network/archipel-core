@@ -199,8 +199,9 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
 static uint8_t *bulk_read(struct cla_link *link)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
-	uint8_t *parsed = rx_data->input_buffer.start +
-			  rx_data->cur_parser->next_bytes;
+	uint8_t *parsed;
+
+	ASSERT(rx_data->input_buffer.end >= rx_data->input_buffer.start);
 
 	/*
 	 * Bulk read operation requested that is smaller than the input buffer.
@@ -215,11 +216,17 @@ static uint8_t *bulk_read(struct cla_link *link)
 	 *
 	 *
 	 */
-	if (parsed <= rx_data->input_buffer.end) {
+	if (rx_data->cur_parser->next_bytes <=
+			(size_t)(rx_data->input_buffer.end -
+				 rx_data->input_buffer.start)) {
 		/* Fill bulk read buffer from input buffer. */
 		memcpy(
 			rx_data->cur_parser->next_buffer,
 			rx_data->input_buffer.start,
+			rx_data->cur_parser->next_bytes
+		);
+		parsed = (
+			rx_data->input_buffer.start +
 			rx_data->cur_parser->next_bytes
 		);
 	}
