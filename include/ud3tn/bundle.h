@@ -16,6 +16,10 @@ struct endpoint_list {
 };
 
 enum bundle_proc_flags {
+	// Force enum type to be signed, such that var &= ~FLAG
+	// does not result in a signed to unsigned conversion.
+	BUNDLE_FLAG_INVALID = -1,
+
 	BUNDLE_FLAG_NONE = 0x000000,
 
 	// BPv7 Bundle Processing Flags
@@ -61,6 +65,10 @@ enum bundle_crc_type {
 };
 
 enum bundle_retention_constraints {
+	// Force enum type to be signed, such that var &= ~FLAG
+	// does not result in a signed to unsigned conversion.
+	BUNDLE_RET_CONSTRAINT_INVALID            = -1,
+
 	BUNDLE_RET_CONSTRAINT_NONE               = 0x00,
 	BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING   = 0x01,
 	BUNDLE_RET_CONSTRAINT_FORWARD_PENDING    = 0x02,
@@ -78,6 +86,10 @@ enum bundle_block_type {
 };
 
 enum bundle_block_flags {
+	// Force enum type to be signed, such that var &= ~FLAG
+	// does not result in a signed to unsigned conversion.
+	BUNDLE_BLOCK_FLAG_INVALID                 = -1,
+
 	BUNDLE_BLOCK_FLAG_NONE                    = 0x00,
 	BUNDLE_BLOCK_FLAG_MUST_BE_REPLICATED      = 0x01,
 	BUNDLE_BLOCK_FLAG_REPORT_IF_UNPROC        = 0x02,
@@ -182,10 +194,18 @@ enum bundle_administrative_record_type {
 };
 
 enum bundle_administrative_record_flags {
+	// Force enum type to be signed, such that var &= ~FLAG
+	// does not result in a signed to unsigned conversion.
+	BUNDLE_AR_FLAG_INVALID                 = -1,
+
 	BUNDLE_AR_FLAG_FRAGMENT = 0x1,
 };
 
 enum bundle_status_report_status_flags {
+	// Force enum type to be signed, such that var &= ~FLAG
+	// does not result in a signed to unsigned conversion.
+	BUNDLE_SR_FLAG_INVALID                 = -1,
+
 	BUNDLE_SR_FLAG_BUNDLE_RECEIVED  = 0x01,
 	BUNDLE_SR_FLAG_CUSTODY_TRANSFER = 0x02,
 	BUNDLE_SR_FLAG_BUNDLE_FORWARDED = 0x04,
