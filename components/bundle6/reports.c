@@ -22,12 +22,9 @@ static struct bundle *encapsulate_record(
 	uint8_t *payload, const int payload_len, const uint64_t timestamp_s)
 {
 	// Lifetime
-	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time_s(bundle, timestamp_s) -
-		timestamp_s
-	);
+	const uint64_t exp_time_s = bundle_get_expiration_time_s(bundle);
 
-	if (lifetime_seconds < 0) {
+	if (exp_time_s <= timestamp_s) {
 		// NOTE: payload is freed by the create function
 		return NULL;
 	}
@@ -36,7 +33,7 @@ static struct bundle *encapsulate_record(
 		payload, payload_len,
 		source_eid, dest_eid,
 		timestamp_s, 1,
-		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
+		exp_time_s - timestamp_s, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 
 	if (result == NULL) {
 		// NOTE: payload is freed by the create function

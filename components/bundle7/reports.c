@@ -235,12 +235,9 @@ struct bundle *bundle7_generate_status_report(
 	}
 
 	// Lifetime
-	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time_s(bundle, timestamp_s) -
-		timestamp_s
-	);
+	const uint64_t exp_time_s = bundle_get_expiration_time_s(bundle);
 
-	if (lifetime_seconds < 0) {
+	if (exp_time_s <= timestamp_s) {
 		free(compress);
 		return NULL;
 	}
@@ -248,7 +245,7 @@ struct bundle *bundle7_generate_status_report(
 	return bundle7_create_local(
 		compress, written, source, bundle->report_to,
 		timestamp_s, 1,
-		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
+		exp_time_s - timestamp_s, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 }
 
 

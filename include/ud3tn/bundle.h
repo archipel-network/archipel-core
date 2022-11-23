@@ -369,8 +369,7 @@ static inline bool bundle_block_must_be_replicated(
 /**
  * Get the approximate latest expiration time of the bundle in seconds.
  */
-uint64_t bundle_get_expiration_time_s(
-	const struct bundle *bundle, const uint64_t current_time_s);
+uint64_t bundle_get_expiration_time_s(const struct bundle *bundle);
 
 enum ud3tn_result bundle_age_update(struct bundle *bundle,
 	const uint64_t dwell_time_ms);

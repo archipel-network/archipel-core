@@ -262,7 +262,7 @@ static inline void router_get_first_route_frag(
 /* max. ~200 bytes on stack */
 struct router_result router_get_first_route(struct bundle *bundle)
 {
-	const uint64_t expiration_time = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
+	const uint64_t expiration_time = bundle_get_expiration_time_s(bundle);
 	struct router_result res;
 	struct contact_list *contacts
 		= router_lookup_destination(bundle->destination);
@@ -328,7 +328,7 @@ struct router_result router_try_reuse(
 	struct router_result route, struct bundle *bundle)
 {
 	uint64_t time = hal_time_get_timestamp_s();
-	uint64_t expiration_time = bundle_get_expiration_time_s(bundle, time);
+	uint64_t expiration_time = bundle_get_expiration_time_s(bundle);
 	uint32_t remaining_pay = bundle->payload_block->length;
 	uint32_t size, min_cap;
 	struct fragment_route *fr;

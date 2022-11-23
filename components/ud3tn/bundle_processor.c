@@ -518,7 +518,7 @@ static void bundle_receive(struct bp_context *const ctx, struct bundle *bundle)
 	// Check lifetime
 	const uint64_t timestamp_s = hal_time_get_timestamp_s();
 
-	if (bundle_get_expiration_time_s(bundle, timestamp_s) < timestamp_s) {
+	if (bundle_get_expiration_time_s(bundle) < timestamp_s) {
 		bundle_expired(ctx, bundle);
 		return;
 	}
@@ -1112,7 +1112,7 @@ static bool bundle_record_add_and_check_known(
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
 	uint64_t cur_time = hal_time_get_timestamp_s();
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle, cur_time);
+	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
 
 	if (bundle_deadline < cur_time)
 		return true; // We assume we "know" all expired bundles.
@@ -1153,7 +1153,7 @@ static bool bundle_reassembled_is_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
+	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
@@ -1176,7 +1176,7 @@ static void bundle_add_reassembled_as_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
+	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
