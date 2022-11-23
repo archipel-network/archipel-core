@@ -32,11 +32,11 @@ static char **restart_args;
 static void exit_handler(int signal)
 {
 	if (signal == SIGHUP)
-		LOG("SIGHUP detected, terminating");
+		fprintf(stderr, "SIGHUP detected, terminating\n");
 	if (signal == SIGINT)
-		LOG("SIGINT detected, terminating");
+		fprintf(stderr, "SIGINT detected, terminating\n");
 	if (signal == SIGTERM)
-		LOG("SIGTERM detected, terminating");
+		fprintf(stderr, "SIGTERM detected, terminating\n");
 
 	exit(EXIT_SUCCESS);
 }
@@ -114,7 +114,7 @@ __attribute__((noreturn))
 void hal_platform_restart(void)
 {
 	// TODO: Try to close open ports (e.g. TCP)
-	LOG("Restarting!");
+	fprintf(stderr, "Restarting!\n");
 
 	// If restart_args could not be allocated, this is used (no arguments)
 	char *const backup_restart_buf[1] = {NULL};
