@@ -115,7 +115,7 @@ enum failed_forwarding_policy {
 // The number of slots in the TCP CLA hash tables (e.g. for TCPCLv3 and MTCP)
 #define CLA_TCP_PARAM_HTAB_SLOT_COUNT 32
 // Whether or not to close active TCP connections after a contact
-#define CLA_MTCP_CLOSE_AFTER_CONTACT 0
+#define CLA_MTCP_CLOSE_AFTER_CONTACT 1
 
 
 
