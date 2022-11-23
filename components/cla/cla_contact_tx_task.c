@@ -54,7 +54,7 @@ static void cla_contact_tx_task(void *param)
 	QueueIdentifier_t signaling_queue =
 		link->config->bundle_agent_interface->bundle_signaling_queue;
 
-	while (link->active) {
+	for (;;) {
 		if (hal_queue_receive(link->tx_queue_handle,
 				      &cmd, -1) == UD3TN_FAIL)
 			continue;

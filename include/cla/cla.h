@@ -28,9 +28,6 @@ struct cla_config {
 struct cla_link {
 	struct cla_config *config;
 
-	// Flag to determine whether the link is still usable
-	bool active;
-
 	// CLA address (without the CLA identifier) related to the link
 	char *cla_addr;
 
@@ -39,9 +36,10 @@ struct cla_link {
 	// Semaphore for waiting until the TX task is finished
 	Semaphore_t tx_task_sem;
 
-
 	Task_t rx_task_handle;
 	struct rx_task_data rx_task_data;
+	// Semaphore for notifying the RX task to finish
+	Semaphore_t rx_task_notification;
 
 	// Timestamp of last received byte for implementing the read timeout
 	uint64_t last_rx_time_ms;
@@ -81,7 +79,12 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 				char *const cla_addr,
 				bool is_rx, bool is_tx);
 
+// Wait for the link tasks to terminate and, then, delete all associated data.
 void cla_link_wait_cleanup(struct cla_link *link);
+// Wait for graceful termination of RX and TX task.
+void cla_link_wait(struct cla_link *link);
+// Delete the data associated with the cla_link.
+void cla_link_cleanup(struct cla_link *link);
 
 char *cla_get_connect_addr(const char *cla_addr, const char *cla_name);
 

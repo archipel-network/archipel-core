@@ -323,10 +323,6 @@ static void tcpspp_begin_packet(struct cla_link *link, size_t length, char *cla_
 	struct tcpspp_config *const tcpspp_config_ =
 		(struct tcpspp_config *)link->config;
 
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
-
 	if (CLA_TCPSPP_USE_CRC)
 		length += 2;
 
@@ -375,10 +371,6 @@ static void tcpspp_end_packet(struct cla_link *link)
 	struct tcpspp_config *tcpspp_config_ =
 		(struct tcpspp_config *)link->config;
 
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
-
 	if (CLA_TCPSPP_USE_CRC) {
 		tcpspp_config_->crc16.feed_eof(&tcpspp_config_->crc16);
 		const uint8_t *crc16 = tcpspp_config_->crc16.bytes;
@@ -399,10 +391,6 @@ static void tcpspp_send_packet_data(
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 	struct tcpspp_config *tcpspp_config_
 		= (struct tcpspp_config *)link->config;
-
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
 		LOG("tcpspp: Error during sending. Data discarded.");

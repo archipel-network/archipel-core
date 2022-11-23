@@ -408,7 +408,7 @@ static void cla_contact_rx_task(void *const param)
 
 	uint8_t *parsed;
 
-	while (link->active) {
+	while (!hal_semaphore_is_blocked(link->rx_task_notification)) {
 		if (HAS_FLAG(rx_data->cur_parser->flags, PARSER_FLAG_BULK_READ))
 			parsed = bulk_read(link);
 		else
