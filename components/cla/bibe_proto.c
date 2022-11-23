@@ -85,6 +85,8 @@ size_t bibe_parser_parse(const uint8_t *const buffer,
 		return retval;
 	// Allocate memory for the encapsulated bundle
 	bpdu->encapsulated_bundle = malloc(bundle_str_len);
+	if (bpdu->encapsulated_bundle == NULL)
+		return CborErrorInternalError;
 	bpdu->payload_length = bundle_str_len;
 	// From the cbor docs:
 	//   "The next pointer, if not null, will be updated to point to the next item after
