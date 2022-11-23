@@ -219,6 +219,7 @@ void cla_tcp_disconnect_handler(struct cla_link *link)
 {
 	struct cla_tcp_link *tcp_link = (struct cla_tcp_link *)link;
 
+	shutdown(tcp_link->connection_socket, SHUT_RDWR);
 	close(tcp_link->connection_socket);
 	cla_generic_disconnect_handler(link);
 }
