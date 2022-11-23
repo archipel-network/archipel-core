@@ -163,6 +163,39 @@ void tcpspp_reset_parsers(struct cla_link *link)
 	ASSERT(rx_data->cur_parser);
 }
 
+static size_t forward_to_blackhole(struct cla_link *link,
+				   const uint8_t *buffer,
+				   size_t length)
+{
+	struct tcpspp_config *const config =
+		(struct tcpspp_config *)link->config;
+	struct rx_task_data *const rx_data = &link->rx_task_data;
+
+	LOGF("tcpspp: Forwarding data for APID %hu (length = %zu) to black hole.",
+	     config->spp_parser.header.apid,
+	     config->spp_parser.data_length);
+
+	// Ensure the SPP parser state is set such that we directly trigger
+	// the blackhole parser in `tcpspp_forward_to_specific_parser`.
+	config->spp_parser.state = SPP_PARSER_STATE_DATA_SUBPARSER;
+
+	rx_data->payload_type = PAYLOAD_IRRELEVANT;
+	rx_data->cur_parser = rx_data->blackhole_parser.basedata;
+	rx_data->blackhole_parser.to_read = config->spp_parser.data_length;
+
+	// CRC length is included in the length.
+	// We must not digest this, otherwise the next
+	// parsing step will be off.
+	if (CLA_TCPSPP_USE_CRC)
+		rx_data->blackhole_parser.to_read -= 2;
+
+	return blackhole_parser_read(
+		&rx_data->blackhole_parser,
+		buffer,
+		length
+	);
+}
+
 size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 					 const uint8_t *buffer,
 					 size_t length)
@@ -178,6 +211,14 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 			LOG("tcpspp: Ancillary data is not supported at the moment, resetting parsers.");
 			tcpspp_reset_parsers(link);
 			return 0;
+		} else if (config->spp_parser.state ==
+				SPP_PARSER_STATE_SH_TIMECODE_SUBPARSER &&
+			   config->spp_parser.header.apid != config->apid) {
+			return forward_to_blackhole(
+				link,
+				buffer,
+				length
+			);
 		}
 		return spp_parser_read(
 			&config->spp_parser,
@@ -194,23 +235,8 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 		switch (config->tcpspp_payload_type) {
 		case PAYLOAD_DATA:
 			if (config->spp_parser.header.apid != config->apid) {
-				LOGF("tcpspp: Forwarding payload for APID %hu (length = %zu) to black hole.",
-				     config->spp_parser.header.apid,
-				     config->spp_parser.data_length);
-				rx_data->payload_type = PAYLOAD_IRRELEVANT;
-				rx_data->cur_parser = (
-					rx_data->blackhole_parser.basedata
-				);
-				rx_data->blackhole_parser.to_read = (
-					config->spp_parser.data_length
-				);
-				// CRC length is included in the length.
-				// We must not digest this, otherwise the next
-				// parsing step will be off.
-				if (CLA_TCPSPP_USE_CRC)
-					rx_data->blackhole_parser.to_read -= 2;
-				result = blackhole_parser_read(
-					&rx_data->blackhole_parser,
+				result = forward_to_blackhole(
+					link,
 					buffer,
 					length
 				);

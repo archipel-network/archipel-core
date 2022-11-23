@@ -142,8 +142,12 @@ size_t spp_parser_read(struct spp_parser *parser,
 {
 	const uint8_t *const end = buffer + length;
 	const uint8_t *cur = buffer;
+	const enum spp_parser_state prev_state = parser->state;
 
 	for (; cur != end; ++cur) {
+		// give control back to the caller on every state change
+		if (parser->state != prev_state)
+			break;
 		if (!spp_parse_byte(parser, *cur)) {
 			/* need to increase by one here to ensure that read
 			 * count is correct.
