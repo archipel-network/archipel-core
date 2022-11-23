@@ -304,6 +304,8 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 /* 5.3 */
 static void bundle_dispatch(struct bundle *bundle)
 {
+	LOGF("BundleProcessor: Dispatching bundle #%d (from = %s, to = %s)",
+	     bundle->id, bundle->source, bundle->destination);
 	/* 5.3-1 */
 	if (bundle_endpoint_is_local(bundle)) {
 		bundle_deliver_local(bundle);
@@ -773,8 +775,13 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
-			agent_id, adu.length);
+			     agent_id, adu.length);
 			agent_forward(agent_id, adu);
+		} else if (record != NULL) {
+			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
+			     record->type);
+		} else {
+			LOG("BundleProcessor: Received administrative record we cannot parse, discarding.");
 		}
 
 		free_administrative_record(record);
