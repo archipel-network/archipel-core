@@ -80,7 +80,7 @@ def _try_receive_ping(aap_client, logger):
 
     if msg.payload[0:4] != b"PING":
         # Just show we got something we do not want
-        logger.info((
+        logger.warning((
             "Received bundle of length %d bytes from %s that does not seem "
             "to be a PING bundle!"
         ), len(msg.payload), msg.eid)

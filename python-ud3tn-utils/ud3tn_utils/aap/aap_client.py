@@ -35,12 +35,12 @@ class AAPClient(abc.ABC):
         """Establish a socket connection to a uD3TN instance and return the
         received welcome message.
         """
-        logger.info("Connected to uD3TN, awaiting WELCOME message...")
+        logger.debug("Connected to uD3TN, awaiting WELCOME message...")
         return self._welcome()
 
     def disconnect(self):
         """Shutdown and close the socket."""
-        logger.info("Terminating connection...")
+        logger.debug("Terminating connection...")
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
 
@@ -61,7 +61,7 @@ class AAPClient(abc.ABC):
         """
         msg_welcome = self.receive()
         assert msg_welcome.msg_type == AAPMessageType.WELCOME
-        logger.info(f"WELCOME message received! ~ EID = {msg_welcome.eid}")
+        logger.debug(f"WELCOME message received! ~ EID = {msg_welcome.eid}")
         self.node_eid = msg_welcome.eid
         return msg_welcome
 
@@ -93,12 +93,12 @@ class AAPClient(abc.ABC):
                 uuid.uuid4() is called to generate one.
         """
         self.agent_id = agent_id or self._generate_eid()
-        logger.info(f"Sending REGISTER message for '{agent_id}'...")
+        logger.debug(f"Sending REGISTER message for '{agent_id}'...")
         msg_ack = self.send(
             AAPMessage(AAPMessageType.REGISTER, self.agent_id)
         )
         assert msg_ack.msg_type == AAPMessageType.ACK
-        logger.info("ACK message received!")
+        logger.debug("ACK message received!")
 
     def ping(self):
         """Send a PING message via AAP and returns the ACK message (e.g. for
@@ -115,7 +115,7 @@ class AAPClient(abc.ABC):
         while msg is None:
             data = self.socket.recv(1)
             if not data:
-                logger.info("Disconnected")
+                logger.debug("Disconnected")
                 return None
             buf += data
             try:
@@ -144,24 +144,24 @@ class AAPClient(abc.ABC):
                 or a SENDBUNDLE message (False). Defaults to False.
         """
         if not bibe:
-            logger.info(f"Sending SENDBUNDLE message to {dest_eid}")
+            logger.debug(f"Sending SENDBUNDLE message to {dest_eid}")
             msg_sendconfirm = self.send(AAPMessage(
                 AAPMessageType.SENDBUNDLE, dest_eid, bundle_data
             ))
             assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
             bundle_id = msg_sendconfirm.bundle_id
-            logger.info(
+            logger.debug(
                 f"SENDCONFIRM message received! ~ ID = {bundle_id}"
             )
             return msg_sendconfirm
         else:
-            logger.info(f"Sending SENDBIBE message to {dest_eid}")
+            logger.debug(f"Sending SENDBIBE message to {dest_eid}")
             msg_sendconfirm = self.send(AAPMessage(
                 AAPMessageType.SENDBIBE, dest_eid, bundle_data
             ))
             assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
             bundle_id = msg_sendconfirm.bundle_id
-            logger.info(
+            logger.debug(
                 f"SENDCONFIRM message received! ~ ID = {bundle_id}"
             )
             return msg_sendconfirm
