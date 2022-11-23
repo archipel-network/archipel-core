@@ -327,7 +327,8 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 			state->error = PARSER_ERROR_BLOCK_LENGTH_EXHAUSTED;
 			return;
 		}
-		state->primary_bytes_remaining--;
+		if (state->primary_bytes_remaining != 0)
+			state->primary_bytes_remaining--;
 	}
 
 	switch (state->current_stage) {
