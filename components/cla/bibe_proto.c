@@ -146,7 +146,7 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 	temp_buffer[0] |= 0x40; // see bundle7 serializer.c lines 235-239
 
 	/* Encoding the BPDU */
-	char *bibe_bytes = malloc(bpdu_size);
+	uint8_t *bibe_bytes = malloc(bpdu_size);
 
 	bibe_bytes[0] = 0x83; // 83 (100|00011) -> Array of length 3
 	bibe_bytes[1] = 0x00; // 00             -> Integer 0 (transm. ID)
