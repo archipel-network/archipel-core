@@ -107,10 +107,10 @@ void hal_time_print_log_time_string(void)
 		time(&t);
 		timestr = ctime(&t);
 		timestr[strlen(timestr) - 1] = '\0'; // remove '\n'
-		printf("[%s] ", timestr);
+		fprintf(stderr, "[%s] ", timestr);
 	} else {
-		printf("[%llu ms] ",
-		       (unsigned long long)hal_time_get_timestamp_ms());
+		fprintf(stderr, "[%llu ms] ",
+			(unsigned long long)hal_time_get_timestamp_ms());
 	}
 	hal_semaphore_release(time_string_semph);
 }

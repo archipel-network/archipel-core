@@ -16,6 +16,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define LOGF(f_, ...) ({ \
 	hal_time_print_log_time_string(); \
@@ -24,6 +25,7 @@
 		__VA_ARGS__, \
 		__FILE__, (int)(__LINE__) \
 	); \
+	fflush(stderr); \
 })
 
 #define LOG(message) LOGF("%s", message)
