@@ -6,7 +6,7 @@ stages:
     - code_quality_test
     - publish
 
-image: buildpack-deps:buster
+image: buildpack-deps:bullseye
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
