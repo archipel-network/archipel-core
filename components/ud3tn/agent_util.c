@@ -28,7 +28,7 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 		return NULL;
 	}
 
-	memcpy(source_eid, local_eid, local_eid_length);
+	memcpy(source_eid, local_eid, local_eid_length + 1); // include '\0'
 	if (get_eid_scheme(source_eid) == EID_SCHEME_IPN) {
 		char *const dot = strchr(source_eid, '.');
 
