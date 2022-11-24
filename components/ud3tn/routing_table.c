@@ -484,6 +484,22 @@ void routing_table_contact_passed(
 	struct contact *contact, struct rescheduling_handle rescheduler)
 {
 	struct routed_bundle_list *tmp;
+	struct contact_list *clist = contact_list;
+	bool found = false;
+
+	if (contact == NULL)
+		return;
+	// Find contact in list -- if it has been already deleted, we must not
+	// access it.
+	while (clist != NULL) {
+		if (contact == clist->data) {
+			found = true;
+			break;
+		}
+		clist = clist->next;
+	}
+	if (!found)
+		return;
 
 	if (contact->node != NULL) {
 		while (contact->contact_bundles != NULL) {
