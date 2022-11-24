@@ -61,12 +61,13 @@ rm -f ion.log
 rm -f /tmp/*.log
 
 # Start first uD3TN instance (uD3TN1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "dtn://ud3tn1.dtn/" > /tmp/ud3tn1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "dtn://ud3tn1.dtn/" > /tmp/ud3tn1.log 2>&1 &
 UD3TN1_PID=$!
 
 # Start second uD3TN instance (uD3TN2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn/" > /tmp/ud3tn2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn/" > /tmp/ud3tn2.log 2>&1 &
 UD3TN2_PID=$!
+
 
 # Start ION instance
 ionstart -I test/ion_interoperability/minimal_forwarding_test/ionstart.rc

@@ -55,19 +55,19 @@ rm -f ion.log
 rm -f /tmp/*.log
 
 # Start first uD3TN instance (lower1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e dtn://lower1.dtn/ -c "tcpclv3:127.0.0.1,4555;mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e dtn://lower1.dtn/ -c "tcpclv3:127.0.0.1,4555;mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
 UD3TN1_PID=$!
 
 # Start second uD3TN instance (upper1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e dtn://upper1.dtn/ -c "bibe:," > /tmp/upper1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e dtn://upper1.dtn/ -c "bibe:," > /tmp/upper1.log 2>&1 &
 UD3TN2_PID=$!
 
 # Start third uD3TN instance (lower2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e dtn://lower2.dtn/ -c "tcpclv3:127.0.0.1,4554" > /tmp/lower2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e dtn://lower2.dtn/ -c "tcpclv3:127.0.0.1,4554" > /tmp/lower2.log 2>&1 &
 UD3TN3_PID=$!
 
 # Start fourth uD3TN instance (upper2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e dtn://upper2.dtn/ -c "bibe:," > /tmp/upper2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e dtn://upper2.dtn/ -c "bibe:," > /tmp/upper2.log 2>&1 &
 UD3TN4_PID=$!
 
 # Start ION instance
