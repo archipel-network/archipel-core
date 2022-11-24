@@ -24,7 +24,8 @@ cd /tmp
 wget -O "ion-$ION_VER.tar.gz" "https://sourceforge.net/projects/ion-dtn/files/ion-$ION_VER.tar.gz/download?use_mirror=netcologne&ts=$(date +%s)"
 tar xvf "ion-$ION_VER.tar.gz"
 cd "ion-open-source-$ION_VER"
-./configure
+# Issue with ION 4.0.0 and new compilers: maybe-uninitialized in CBOR library
+CPPFLAGS=-Wno-maybe-uninitialized ./configure
 make
 make install
 ldconfig
