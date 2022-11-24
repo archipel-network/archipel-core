@@ -4,6 +4,7 @@
 
 #include "ud3tn/common.h"
 #include "ud3tn/bundle.h"
+#include "ud3tn/eid.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -49,7 +50,7 @@ size_t bundle7_cbor_uint_sizeof(uint64_t num)
 size_t bundle7_eid_sizeof(const char *eid)
 {
 	// dtn:none -> [1,0] -> 0x82 0x01 0x00
-	if (eid == NULL || strcmp(eid, "dtn:none") == 0)
+	if (eid == NULL || eid[0] == '\0' || strcmp(eid, "dtn:none") == 0)
 		return 3;
 
 	// dtn:
@@ -65,9 +66,9 @@ size_t bundle7_eid_sizeof(const char *eid)
 	}
 	// ipn:
 	else {
-		uint32_t node, service;
+		uint64_t node, service;
 
-		if (sscanf(eid, "ipn:%"PRIu32".%"PRIu32, &node, &service) < 2)
+		if (validate_ipn_eid(eid, &node, &service) != UD3TN_OK)
 			// Error
 			return 0;
 		return 1 // CBOR array header
@@ -95,13 +96,21 @@ uint16_t bundle7_convert_to_protocol_block_flags(
 void bundle7_recalculate_primary_block_length(struct bundle *bundle)
 {
 	// Primary Block
+	const size_t dst_eid_size = bundle7_eid_sizeof(bundle->destination);
+	const size_t src_eid_size = bundle7_eid_sizeof(bundle->source);
+	const size_t rpt_eid_size = bundle7_eid_sizeof(bundle->report_to);
+
+	ASSERT(dst_eid_size != 0);
+	ASSERT(src_eid_size != 0);
+	ASSERT(rpt_eid_size != 0);
+
 	size_t size = 1 // CBOR array header
 		+ bundle7_cbor_uint_sizeof(bundle->protocol_version)
 		+ bundle7_cbor_uint_sizeof(bundle->proc_flags)
 		+ bundle7_cbor_uint_sizeof(bundle->crc_type)
-		+ bundle7_eid_sizeof(bundle->destination)
-		+ bundle7_eid_sizeof(bundle->source)
-		+ bundle7_eid_sizeof(bundle->report_to)
+		+ dst_eid_size
+		+ src_eid_size
+		+ rpt_eid_size
 		// Creation Timestamp
 		+ 1  // CBOR array header
 		+ bundle7_cbor_uint_sizeof(bundle->creation_timestamp_ms)

@@ -9,6 +9,7 @@
 #include "bundle7/eid.h"
 #include "bundle7/hopcount.h"
 #include "bundle7/bundle_age.h"
+#include "bundle7/bundle7.h"
 
 #include "platform/hal_io.h"
 
@@ -419,6 +420,14 @@ TEST(bundle7Serializer, dtn_none)
 	TEST_ASSERT_NOT_NULL(buffer);
 	TEST_ASSERT_EQUAL(sizeof(dtn_none), length);
 
+	buffer = bundle7_eid_serialize_alloc("", &length);
+	TEST_ASSERT_NOT_NULL(buffer);
+	TEST_ASSERT_EQUAL(sizeof(dtn_none), length);
+
+	buffer = bundle7_eid_serialize_alloc(NULL, &length);
+	TEST_ASSERT_NOT_NULL(buffer);
+	TEST_ASSERT_EQUAL(sizeof(dtn_none), length);
+
 	TEST_ASSERT_EQUAL_INT8_ARRAY(dtn_none, buffer,
 		sizeof(dtn_none));
 }
@@ -426,45 +435,56 @@ TEST(bundle7Serializer, dtn_none)
 
 // ipn:12.123
 static const uint8_t dtn_ipn[] = { 0x82, 0x02, 0x82, 0x0c, 0x18, 0x7b };
+static const char *const dtn_ipn_eid = "ipn:12.123";
 // max. value for ipn: EID
 static const uint8_t dtn_ipn2[] = {
 	0x82, 0x02, 0x82,
 	0x1B, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0x1B, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 };
+static const char *const dtn_ipn2_eid =
+	"ipn:18446744073709551615.18446744073709551615";
+static const char *const dtn_ipn_overflow1_eid =
+	"ipn:18446744073709551616.18446744073709551615";
+static const char *const dtn_ipn_overflow2_eid =
+	"ipn:18446744073709551615.18446744073709551616";
 
 TEST(bundle7Serializer, dtn_ipn)
 {
 	size_t length;
 	uint8_t *buffer;
 
-	buffer = bundle7_eid_serialize_alloc("ipn:12.123", &length);
+	buffer = bundle7_eid_serialize_alloc(dtn_ipn_eid, &length);
 	TEST_ASSERT_NOT_NULL(buffer);
 	TEST_ASSERT_EQUAL(sizeof(dtn_ipn), length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(dtn_ipn, buffer,
 		sizeof(dtn_ipn));
+	TEST_ASSERT_EQUAL(length, bundle7_eid_sizeof(dtn_ipn_eid));
 	free(buffer);
 
 	buffer = bundle7_eid_serialize_alloc(
-		"ipn:18446744073709551615.18446744073709551615",
+		dtn_ipn2_eid,
 		&length
 	);
 	TEST_ASSERT_NOT_NULL(buffer);
 	TEST_ASSERT_EQUAL(sizeof(dtn_ipn2), length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(dtn_ipn2, buffer,
 		sizeof(dtn_ipn2));
+	TEST_ASSERT_EQUAL(length, bundle7_eid_sizeof(dtn_ipn2_eid));
 	free(buffer);
 
 	buffer = bundle7_eid_serialize_alloc(
-		"ipn:18446744073709551616.18446744073709551615",
+		dtn_ipn_overflow1_eid,
 		&length
 	);
+	TEST_ASSERT_EQUAL(0, bundle7_eid_sizeof(dtn_ipn_overflow1_eid));
 	TEST_ASSERT_NULL(buffer);
 
 	buffer = bundle7_eid_serialize_alloc(
-		"ipn:18446744073709551615.18446744073709551616",
+		dtn_ipn_overflow2_eid,
 		&length
 	);
+	TEST_ASSERT_EQUAL(0, bundle7_eid_sizeof(dtn_ipn_overflow2_eid));
 	TEST_ASSERT_NULL(buffer);
 }
 

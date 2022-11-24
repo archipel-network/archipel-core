@@ -329,6 +329,10 @@ CborError serialize_ipn(const char *eid, CborEncoder *encoder)
 
 size_t bundle7_eid_get_max_serialized_size(const char *eid)
 {
+	// dtn:none
+	if (eid == NULL || eid[0] == '\0')
+		return 3;
+
 	// We use "string length + cbor_encode_uint(string length - 4)" as an
 	// upper bound of the required buffer size.
 	//
@@ -384,10 +388,11 @@ uint8_t *bundle7_eid_serialize_alloc(const char *eid, size_t *length)
 
 CborError bundle7_eid_serialize_cbor(const char *eid, CborEncoder *encoder)
 {
-	size_t str_length = strlen(eid);
+	size_t str_length = eid == NULL ? 0 : strlen(eid);
 
 	// Special case: null-EID
-	if (str_length == 8 && strncmp(eid, "dtn:none", 8) == 0)
+	if (str_length == 0 || (str_length == 8 &&
+				strncmp(eid, "dtn:none", 8) == 0))
 		return serialize_dtn_none(encoder);
 	// DTN (allows empty SSPs)
 	if (str_length >= 4 && strncmp(eid, "dtn:", 4) == 0)
