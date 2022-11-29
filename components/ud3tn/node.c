@@ -11,6 +11,14 @@
 #include <string.h>
 #include <stdbool.h>
 
+static int contacts_overlap(struct contact *a, struct contact *b)
+{
+	return (
+		a->from < b->to &&
+		a->to > b->from
+	);
+}
+
 struct node *node_create(char *eid)
 {
 	struct node *ret = malloc(sizeof(struct node));
@@ -295,7 +303,8 @@ struct contact_list *contact_list_union(
 	struct contact_list **modf)
 {
 	struct contact_list **cur_slot = &a;
-	struct contact_list *cur_can = b, *next_can;
+	struct contact_list *cur_can = b;
+	struct contact_list *next_can;
 	uint64_t cur_from, cur_to;
 	bool modified;
 
@@ -318,7 +327,8 @@ struct contact_list *contact_list_union(
 			if (strcmp(cur_can->data->node->eid,
 				   (*cur_slot)->data->node->eid) == 0) {
 				// same node
-				if (cur_can->data->to < cur_from) {
+				if (!contacts_overlap(cur_can->data,
+						      (*cur_slot)->data)) {
 					// no overlap -> insert before
 					cur_can->next = *cur_slot;
 					*cur_slot = cur_can;
@@ -456,14 +466,6 @@ struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el)
 	/* Sorted by ptr value */
 	LLSORT(struct endpoint_list, eid, el);
 	return el;
-}
-
-static int contacts_overlap(struct contact *a, struct contact *b)
-{
-	return (
-		a->from < b->to &&
-		a->to > b->from
-	);
 }
 
 int node_prepare_and_verify(struct node *node)
