@@ -437,12 +437,14 @@ struct contact_manager_params contact_manager_start(
 	cmt_params->control_queue = queue;
 	cmt_params->bp_queue = bp_queue;
 	cmt_params->contact_list_ptr = clistptr;
-	hal_task_create(contact_manager_task,
-			"cont_man_t",
-			CONTACT_MANAGER_TASK_PRIORITY,
-			cmt_params,
-			CONTACT_MANAGER_TASK_STACK_SIZE,
-			(void *)CONTACT_MANAGER_TASK_TAG);
+	ret.task = hal_task_create(
+		contact_manager_task,
+		"cont_man_t",
+		CONTACT_MANAGER_TASK_PRIORITY,
+		cmt_params,
+		CONTACT_MANAGER_TASK_STACK_SIZE,
+		(void *)CONTACT_MANAGER_TASK_TAG
+	);
 	ret.semaphore = semaphore;
 	ret.control_queue = queue;
 	return ret;
