@@ -508,7 +508,6 @@ void routing_table_contact_passed(
 				rescheduler.reschedule_func_context
 			);
 			tmp = contact->contact_bundles->next;
-			free(contact->contact_bundles->data);
 			free(contact->contact_bundles);
 			contact->contact_bundles = tmp;
 		}
