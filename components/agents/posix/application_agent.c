@@ -512,6 +512,7 @@ static void application_agent_comm_task(void *const param)
 		}
 	}
 
+	aap_parser_deinit(&parser);
 done:
 	close(config->bundle_pipe_fd[0]);
 	close(config->bundle_pipe_fd[1]);
