@@ -307,6 +307,14 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 	// The termination of the tasks means cla_link_wait_cleanup returns
 }
 
+#if defined(__GNUC__) && (__GNUC__ >= 8) && (__GNUC__ <= 10)
+#pragma GCC diagnostic push
+// GCC versions 8-10 warn about the line with strncpy on -O3 -Wextra, because
+// result_len depends on strlen of cla_name. Seems it cannot determine that's
+// also the size of the allocated buffer.
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+
 char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 {
 	const char *const cla_name = link->config->vtable->cla_name_get();
@@ -332,6 +340,10 @@ char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 
 	return result;
 }
+
+#if defined(__GNUC__) && (__GNUC__ >= 8) && (__GNUC__ <= 10)
+#pragma GCC diagnostic pop
+#endif
 
 // CLA Instance Management
 
