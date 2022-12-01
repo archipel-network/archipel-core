@@ -542,6 +542,8 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 		LOGF("TCPCLv3: Associating open connection with \"%s\" to new contact",
 		     eid);
 		param->opportunistic = false;
+		if (param->cla_addr)
+			free(param->cla_addr);
 		param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
 
 		if (!param->cla_addr) {
