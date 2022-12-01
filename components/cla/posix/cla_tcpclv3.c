@@ -159,7 +159,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 		return UD3TN_FAIL;
 	}
 
-	eid_buf[peer_eid_len] = 0;
+	eid_buf[peer_eid_len] = '\0';
 	if (validate_eid(eid_buf) != UD3TN_OK) {
 		LOGF("TCPCLv3: Received invalid peer EID of len %u: \"%s\"",
 		     peer_eid_len, eid_buf);
@@ -167,9 +167,18 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 		return UD3TN_FAIL;
 	}
 
-	LOGF("TCPCLv3: Handshake performed with \"%s\", has EID \"%s\"",
+	LOGF("TCPCLv3: Handshake performed with \"%s\", reports EID \"%s\"",
 	     param->cla_addr ? param->cla_addr : "<incoming>", eid_buf);
-	param->eid = eid_buf;
+	if (param->eid) {
+		// We did already configure a value for the EID (via a contact)
+		if (strcmp(param->eid, eid_buf) != 0) {
+			LOGF("TCPCLv3: Warning: EID \"%s\" differs from configured EID \"%s\", using own configuration",
+			     eid_buf, param->eid);
+		}
+		free(eid_buf);
+	} else {
+		param->eid = eid_buf;
+	}
 
 	return UD3TN_OK;
 }
