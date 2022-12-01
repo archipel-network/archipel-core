@@ -77,7 +77,7 @@ enum ud3tn_result rx_task_data_init(struct rx_task_data *rx_data,
 	if (!bundle7_parser_init(&rx_data->bundle7_parser,
 				 &bundle_send, cla_config))
 		return UD3TN_FAIL;
-	rx_data->bundle7_parser.bundle_quota = BUNDLE_QUOTA;
+	rx_data->bundle7_parser.bundle_quota = BUNDLE_MAX_SIZE;
 	if (!blackhole_parser_init(&rx_data->blackhole_parser))
 		return UD3TN_FAIL;
 

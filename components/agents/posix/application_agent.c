@@ -490,6 +490,7 @@ static void application_agent_comm_task(void *const param)
 	struct aap_parser parser;
 
 	aap_parser_init(&parser);
+	parser.max_payload_length = BUNDLE_MAX_SIZE;
 
 	for (;;) {
 		if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {

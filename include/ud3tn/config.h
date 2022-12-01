@@ -88,7 +88,7 @@ enum failed_forwarding_policy {
  * processing
  */
 /* Bundles requiring more space will be dropped immediately */
-#define BUNDLE_QUOTA 1073741824
+#define BUNDLE_MAX_SIZE 1073741824
 
 /* The maximum count of bundles for which we have custody at a time */
 #define CUSTODY_MAX_BUNDLE_COUNT 16
