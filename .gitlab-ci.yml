@@ -148,7 +148,7 @@ fragment-reassembly-test:
         - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
         - source .venv/bin/activate && python tools/aap/aap_config.py --socket ud3tn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn/ mtcp:localhost:4223
         - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED -v
-        - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED -vv
+        - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED --newline -vv
         - kill -TERM $UD3TN1_PID
         - kill -TERM $UD3TN2_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -171,7 +171,7 @@ ipv6-compatibility-test:
         # Check v4 via AAP to ud3tn1
         - source .venv/bin/activate && python tools/aap/aap_send.py --tcp 127.0.0.1 4242 dtn://ud3tn2.dtn/sink PAYLOAD -v
         # Check v4 reception of the correct bundle at ud3tn2
-        - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --tcp 127.0.0.1 4243 --agentid sink --count 1 --verify-pl PAYLOAD -vv
+        - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --tcp 127.0.0.1 4243 --agentid sink --count 1 --verify-pl PAYLOAD --newline -vv
         # Check that v6 does _not_ work on ud3tn2
         - "source .venv/bin/activate && if timeout -v 1 python tools/aap/aap_test.py --tcp '::1' 4243; then echo 'Error: Should not be able to connect via IPv6 here.'; false; else true; fi"
         - kill -TERM $UD3TN1_PID

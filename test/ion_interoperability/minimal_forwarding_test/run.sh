@@ -81,7 +81,7 @@ python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --
 PAYLOAD="THISISTHEBUNDLEPAYLOAD"
 python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid source "dtn://ud3tn2.dtn/sink" "$PAYLOAD" &
 
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid sink --count 1 --verify-pl "$PAYLOAD" -vv
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid sink --count 1 --verify-pl "$PAYLOAD" --newline -vv
 
 kill -TERM $UD3TN1_PID
 kill -TERM $UD3TN2_PID
