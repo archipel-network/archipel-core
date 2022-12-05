@@ -41,8 +41,9 @@ struct bundle_tx_result {
 
 struct router_signal {
 	enum router_signal_type type;
-	/* struct routed_bundle OR struct router_command */
-	/* OR struct contact OR (void *)bundleid_t OR NULL */
+	/* struct bundle_tx_result* OR struct router_command* */
+	/* OR struct contact* OR struct node* OR struct bundle* */
+	/* OR char* OR NULL */
 	void *data;
 };
 
