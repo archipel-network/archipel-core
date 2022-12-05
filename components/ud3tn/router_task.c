@@ -210,7 +210,7 @@ static bool process_signal(
 		break;
 	case ROUTER_SIGNAL_TRANSMISSION_SUCCESS:
 	case ROUTER_SIGNAL_TRANSMISSION_FAILURE:
-		tx_result = signal.data;
+		tx_result = (struct bundle_tx_result *)signal.data;
 		rb = tx_result->bundle;
 		free(tx_result->peer_cla_addr);
 		free(tx_result);
