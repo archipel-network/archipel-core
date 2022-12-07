@@ -9,8 +9,8 @@
 
 #include "platform/hal_types.h"
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -70,7 +70,8 @@ enum ud3tn_result cla_tcp_single_config_init(
 enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
 	struct cla_tcp_config *config,
-	char *const cla_addr);
+	char *const cla_addr,
+	bool is_tx);
 
 enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 				 const char *node, const char *service,

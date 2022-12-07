@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -62,13 +63,16 @@ enum ud3tn_result cla_tcp_single_config_init(
 enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
 	struct cla_tcp_config *config,
-	char *const cla_addr)
+	char *const cla_addr,
+	const bool is_tx)
 {
 	ASSERT(connected_socket >= 0);
 	link->connection_socket = connected_socket;
 
 	// This will fire up the RX and TX tasks
-	if (cla_link_init(&link->base, &config->base, cla_addr)
+	// NOTE: A TCP link _always_ needs an RX task to detect when the
+	// connection has been closed or reset.
+	if (cla_link_init(&link->base, &config->base, cla_addr, true, is_tx)
 			!= UD3TN_OK)
 		return UD3TN_FAIL;
 
@@ -245,7 +249,7 @@ static void handle_established_connection(
 	ASSERT(!config->link);
 	config->link = link;
 
-	if (cla_tcp_link_init(link, sock, &config->base, cla_addr)
+	if (cla_tcp_link_init(link, sock, &config->base, cla_addr, true)
 			!= UD3TN_OK) {
 		LOG("TCP: Error creating a link instance!");
 	} else {

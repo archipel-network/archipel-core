@@ -13,6 +13,7 @@
 
 #include "platform/hal_types.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -77,7 +78,8 @@ enum ud3tn_result cla_config_init(
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
 				struct cla_config *config,
-				char *const cla_addr);
+				char *const cla_addr,
+				bool is_rx, bool is_tx);
 
 void cla_link_wait_cleanup(struct cla_link *link);
 

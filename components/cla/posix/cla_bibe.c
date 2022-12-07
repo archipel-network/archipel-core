@@ -75,7 +75,8 @@ static enum ud3tn_result handle_established_connection(
 	struct bibe_config *const bibe_config = param->config;
 
 	if (cla_tcp_link_init(&param->link.base, param->socket,
-			      &bibe_config->base, param->cla_sock_addr)
+			      &bibe_config->base, param->cla_sock_addr,
+			      true)
 			!= UD3TN_OK) {
 		LOG("bibe: Error initializing CLA link!");
 		return UD3TN_FAIL;
