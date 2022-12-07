@@ -58,11 +58,10 @@ static const int IS_DEBUG_BUILD;
 /* Contact dropping / failed forwarding policy */
 enum failed_forwarding_policy {
 	POLICY_DROP,
-	POLICY_DROP_IF_NO_CUSTODY,
 	POLICY_TRY_RE_SCHEDULE
 };
 /* Policy for re-scheduling bundles on dropped contacts, etc. */
-#define FAILED_FORWARD_POLICY POLICY_DROP_IF_NO_CUSTODY
+#define FAILED_FORWARD_POLICY POLICY_DROP
 /* If policy decides to re-schedule, but processing times out => drop */
 /* Set this to 0 for an infinite delay - which implies a possible deadlock! */
 #define FAILED_FORWARD_TIMEOUT 1000
@@ -89,7 +88,7 @@ enum failed_forwarding_policy {
  * processing
  */
 /* Bundles requiring more space will be dropped immediately */
-#define BUNDLE_QUOTA 1073741824
+#define BUNDLE_MAX_SIZE 1073741824
 
 /* The maximum count of bundles for which we have custody at a time */
 #define CUSTODY_MAX_BUNDLE_COUNT 16
@@ -136,12 +135,6 @@ enum failed_forwarding_policy {
 #define MIN_NODE_CONFIDENCE_DETERMINISTIC 0.90f
 #define NODE_TRUSTWORTHINESS_WEIGHT 0.0f
 #define NODE_RELIABILITY_WEIGHT 1.0f
-/* The minimum available time for an optimization to be triggered */
-#define OPTIMIZATION_MIN_TIME 2
-#define OPTIMIZATION_MAX_BUNDLES 3
-#define OPTIMIZATION_MAX_PRE_BUNDLES 9
-#define OPTIMIZATION_MAX_PRE_BUNDLES_CONTACT 3
-#define ROUTER_OPTIMIZER_DELAY 50
 /* Number of slots in the node hash table */
 #define NODE_HTAB_SLOT_COUNT 128
 /* Below this, NBFs will be consulted */

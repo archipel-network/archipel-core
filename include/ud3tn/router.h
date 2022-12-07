@@ -18,10 +18,6 @@ struct router_config {
 	float min_node_confidence_deterministic;
 	float node_trustworthiness_weight;
 	float node_reliability_weight;
-	uint32_t opt_min_time;
-	uint8_t opt_max_bundles;
-	uint8_t opt_max_pre_bundles;
-	uint8_t opt_max_pre_bundles_contact;
 	uint8_t router_min_contacts_htab;
 	uint8_t router_min_contacts_nbf;
 	float router_nbf_base_reliability;
@@ -73,11 +69,11 @@ struct router_result router_try_reuse(
 enum ud3tn_result router_add_bundle_to_contact(
 	struct contact *contact, struct routed_bundle *rb);
 struct routed_bundle *router_remove_bundle_from_contact(
-	struct contact *contact, bundleid_t id);
+	struct contact *contact, struct bundle *bundle);
 uint8_t router_add_bundle_to_route(struct fragment_route *r, struct bundle *b);
 uint8_t router_update_routed_bundle(
 	struct fragment_route *r, struct routed_bundle *rb);
 void router_remove_bundle_from_route(
-	struct fragment_route *r, bundleid_t id, uint8_t free_rb);
+	struct fragment_route *r, struct bundle *bundle, uint8_t free_rb);
 
 #endif /* ROUTER_H_INCLUDED */

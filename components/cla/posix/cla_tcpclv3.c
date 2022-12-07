@@ -151,7 +151,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 	}
 
 	if (tcp_recv_all(param->socket, eid_buf,
-			 peer_eid_len) != peer_eid_len) {
+			 peer_eid_len) != (int64_t)peer_eid_len) {
 		free(eid_buf);
 		LOGF("TCPCLv3: Error receiving peer EID of len %u byte(s)",
 		     peer_eid_len);

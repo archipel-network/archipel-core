@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
-#include "ud3tn/custody_manager.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/report_manager.h"
 #include "ud3tn/result.h"
@@ -67,7 +65,6 @@ static inline void handle_signal(const struct bundle_processor_signal signal);
 static void bundle_dispatch(struct bundle *bundle);
 static bool bundle_endpoint_is_local(struct bundle *bundle);
 static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout);
-static void bundle_forwarding_scheduled(struct bundle *bundle);
 static void bundle_forwarding_success(struct bundle *bundle);
 static void bundle_forwarding_contraindicated(
 	struct bundle *bundle, enum bundle_status_report_reason reason);
@@ -80,10 +77,6 @@ static enum bundle_handling_result handle_unknown_block_flags(
 static void bundle_deliver_local(struct bundle *bundle);
 static void bundle_attempt_reassembly(struct bundle *bundle);
 static void bundle_deliver_adu(struct bundle_adu data);
-static void bundle_custody_accept(struct bundle *bundle);
-static void bundle_custody_success(struct bundle *bundle);
-static void bundle_custody_failure(
-	struct bundle *bundle, enum bundle_custody_signal_reason reason);
 static void bundle_delete(
 	struct bundle *bundle, enum bundle_status_report_reason reason);
 static void bundle_discard(struct bundle *bundle);
@@ -100,10 +93,7 @@ static void send_status_report(
 	struct bundle *bundle,
 	const enum bundle_status_report_status_flags status,
 	const enum bundle_status_report_reason reason);
-static void send_custody_signal(struct bundle *bundle,
-	const enum bundle_custody_signal_type,
-	const enum bundle_custody_signal_reason reason);
-static enum ud3tn_result send_bundle(bundleid_t bundle, uint16_t timeout);
+static enum ud3tn_result send_bundle(struct bundle *bundle, uint16_t timeout);
 
 static inline void bundle_add_rc(struct bundle *bundle,
 	const enum bundle_retention_constraints constraint)
@@ -122,7 +112,8 @@ static inline void bundle_rem_rc(struct bundle *bundle,
 /* COMMUNICATION */
 
 void bundle_processor_inform(
-	QueueIdentifier_t bundle_processor_signaling_queue, bundleid_t bundle,
+	QueueIdentifier_t bundle_processor_signaling_queue,
+	struct bundle *bundle,
 	enum bundle_processor_signal_type type,
 	enum bundle_status_report_reason reason)
 {
@@ -149,7 +140,7 @@ int bundle_processor_perform_agent_action(
 	struct bundle_processor_signal signal = {
 		.type = type,
 		.reason = BUNDLE_SR_REASON_NO_INFO,
-		.bundle = BUNDLE_INVALID_ID,
+		.bundle = NULL,
 		.extra = NULL
 	};
 
@@ -222,8 +213,6 @@ void bundle_processor_task(void * const param)
 	}
 	status_reporting = p->status_reporting;
 
-	custody_manager_init(p->local_eid);
-
 	LOGF("BundleProcessor: BPA initialized for \"%s\", status reports %s",
 	     p->local_eid, p->status_reporting ? "enabled" : "disabled");
 
@@ -240,7 +229,7 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 {
 	bool bundle_required = signal.type != BP_SIGNAL_AGENT_REGISTER &&
 		signal.type != BP_SIGNAL_AGENT_DEREGISTER;
-	struct bundle *b = bundle_storage_get(signal.bundle);
+	struct bundle *const b = signal.bundle;
 	struct agent_manager_parameters *aaps;
 	int feedback;
 
@@ -253,9 +242,6 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 	switch (signal.type) {
 	case BP_SIGNAL_BUNDLE_INCOMING:
 		bundle_receive(b);
-		break;
-	case BP_SIGNAL_BUNDLE_ROUTED:
-		bundle_forwarding_scheduled(b);
 		break;
 	case BP_SIGNAL_FORWARDING_CONTRAINDICATED:
 		bundle_forwarding_contraindicated(b, signal.reason);
@@ -304,8 +290,8 @@ static inline void handle_signal(const struct bundle_processor_signal signal)
 /* 5.3 */
 static void bundle_dispatch(struct bundle *bundle)
 {
-	LOGF("BundleProcessor: Dispatching bundle #%d (from = %s, to = %s)",
-	     bundle->id, bundle->source, bundle->destination);
+	LOGF("BundleProcessor: Dispatching bundle %p (from = %s, to = %s)",
+	     bundle, bundle->source, bundle->destination);
 	/* 5.3-1 */
 	if (bundle_endpoint_is_local(bundle)) {
 		bundle_deliver_local(bundle);
@@ -337,7 +323,7 @@ static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 	/* 4.3.4. Hop Count (BPv7-bis) */
 	/* TODO: Is this the correct point to perform the hop-count check? */
 	if (!hop_count_validation(bundle)) {
-		LOGF("BundleProcessor: Deleting bundle #%d: Hop Limit Exceeded", bundle->id);
+		LOGF("BundleProcessor: Deleting bundle %p: Hop Limit Exceeded", bundle);
 		bundle_delete(bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
 		return UD3TN_FAIL;
 	}
@@ -346,32 +332,14 @@ static enum ud3tn_result bundle_forward(struct bundle *bundle, uint16_t timeout)
 	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING);
 	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
 	/* 5.4-2 */
-	if (send_bundle(bundle->id, timeout) != UD3TN_OK) {
+	if (send_bundle(bundle, timeout) != UD3TN_OK) {
 		/* Could not store bundle in queue -> delete it. */
-		LOGF("BundleProcessor: Deleting bundle #%d: Cannot store in queue", bundle->id);
+		LOGF("BundleProcessor: Deleting bundle %p: Cannot store in queue", bundle);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return UD3TN_FAIL;
 	}
 	/* For steps after 5.4-2, see below */
 	return UD3TN_OK;
-}
-
-/* 5.4-4 */
-static void bundle_forwarding_scheduled(struct bundle *bundle)
-{
-	/* 5.4-4 */
-	/* Custody may have already been accepted if we are re-scheduling */
-	if (
-		HAS_FLAG(bundle->proc_flags,
-			 BUNDLE_V6_FLAG_CUSTODY_TRANSFER_REQUESTED)
-		&& !HAS_FLAG(bundle->ret_constraints,
-			BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED)
-		&& bundle->protocol_version == 6
-	) {
-		/* bundle_receive already checked if bundle is acceptable */
-		bundle_custody_accept(bundle);
-	}
-	/* 5.4-5 is done by contact manager / ground station task */
 }
 
 /* 5.4-6 */
@@ -401,38 +369,16 @@ static void bundle_forwarding_contraindicated(
 static void bundle_forwarding_failed(
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
-	enum bundle_custody_signal_reason cs_reason;
-
-	if (HAS_FLAG(bundle->proc_flags,
-		BUNDLE_V6_FLAG_CUSTODY_TRANSFER_REQUESTED)
-	) {
-		if (HAS_FLAG(bundle->ret_constraints,
-			BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED)
-		) {
-			/* TODO: See 5.12, evaluate what to do here */
-			/* We are the current custodian and... */
-			/* a) were re-scheduling but it wasn't possible or */
-			/* b) the GS task failed */
-		} else {
-			/* We tried to schedule the bundle but it failed */
-			cs_reason = (reason < BUNDLE_SR_REASON_DEPLETED_STORAGE
-					? BUNDLE_CS_REASON_NO_INFO
-					: (enum bundle_custody_signal_reason)
-						reason);
-			send_custody_signal(bundle, BUNDLE_CS_TYPE_REFUSAL,
-				cs_reason);
-		}
-	}
-	LOGF("BundleProcessor: Deleting bundle #%d: Forwarding Failed",
-	     bundle->id);
+	LOGF("BundleProcessor: Deleting bundle %p: Forwarding Failed",
+	     bundle);
 	bundle_delete(bundle, reason);
 }
 
 /* 5.5 */
 static void bundle_expired(struct bundle *bundle)
 {
-	LOGF("BundleProcessor: Deleting bundle #%d: Lifetime Expired",
-	     bundle->id);
+	LOGF("BundleProcessor: Deleting bundle %p: Lifetime Expired",
+	     bundle);
 	bundle_delete(bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
 }
 
@@ -473,8 +419,8 @@ static void bundle_receive(struct bundle *bundle)
 					BUNDLE_V6_BLOCK_FLAG_FWD_UNPROC;
 				break;
 			case BUNDLE_HRESULT_DELETED:
-				LOGF("BundleProcessor: Deleting bundle #%d: Block Unintelligible",
-				     bundle->id);
+				LOGF("BundleProcessor: Deleting bundle %p: Block Unintelligible",
+				     bundle);
 				bundle_delete(bundle,
 					BUNDLE_SR_REASON_BLOCK_UNINTELLIGIBLE);
 				return;
@@ -487,33 +433,12 @@ static void bundle_receive(struct bundle *bundle)
 		if (*e != NULL)
 			e = &(*e)->next;
 	}
-	/* Test for custody acceptance */
-	if (HAS_FLAG(bundle->proc_flags,
-		     BUNDLE_V6_FLAG_CUSTODY_TRANSFER_REQUESTED)
-		&& bundle->protocol_version == 6
-	) {
-		if (custody_manager_has_redundant_bundle(bundle)) {
-			/* 5.6-4 */
-			send_custody_signal(bundle, BUNDLE_CS_TYPE_REFUSAL,
-				BUNDLE_CS_REASON_REDUNDANT_RECEPTION);
-			bundle_rem_rc(bundle,
-				BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 1);
-		} else if (!custody_manager_storage_is_acceptable(bundle)) {
-			/* This is not part of the specification, but we have */
-			/* to check if we want to reject custody before */
-			/* dispatching the bundle. */
-			/* In that case, the bundle would be deleted. */
-			LOGF("BundleProcessor: Deleting bundle #%d: Cannot accept custody.",
-			     bundle->id);
-			send_custody_signal(bundle, BUNDLE_CS_TYPE_REFUSAL,
-				BUNDLE_CS_REASON_DEPLETED_STORAGE);
-			bundle_delete(bundle,
-				BUNDLE_SR_REASON_DEPLETED_STORAGE);
-		}
-	} else {
-		/* 5.6-5 */
-		bundle_dispatch(bundle);
-	}
+
+	/* NOTE: Test for custody acceptance here. */
+	/* NOTE: We never accept custody, we do not have persistent storage. */
+
+	/* 5.6-5 */
+	bundle_dispatch(bundle);
 }
 
 /* 5.6-3 */
@@ -539,8 +464,8 @@ static void bundle_deliver_local(struct bundle *bundle)
 
 	/* Check and record knowledge of bundle */
 	if (bundle_record_add_and_check_known(bundle)) {
-		LOGF("BundleProcessor: Bundle #%d was already delivered, dropping.",
-		     bundle->id);
+		LOGF("BundleProcessor: Bundle %p was already delivered, dropping.",
+		     bundle);
 		// NOTE: We cannot have custody as the CM checks for duplicates
 		bundle_discard(bundle);
 		return;
@@ -601,8 +526,8 @@ static void add_to_reassembly_bundle_list(struct reassembly_list *item,
 		sizeof(struct reassembly_bundle_list)
 	);
 	if (!new_entry) {
-		LOGF("BundleProcessor: Deleting bundle #%d: Cannot store in reassembly list.",
-		     bundle->id);
+		LOGF("BundleProcessor: Deleting bundle %p: Cannot store in reassembly list.",
+		     bundle);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return;
 	}
@@ -696,8 +621,8 @@ static void bundle_attempt_reassembly(struct bundle *bundle)
 	struct reassembly_list **r_list_e = &reassembly_list;
 
 	if (bundle_reassembled_is_known(bundle)) {
-		LOGF("BundleProcessor: Original bundle for #%d was already delivered, dropping.",
-		     bundle->id);
+		LOGF("BundleProcessor: Original bundle for %p was already delivered, dropping.",
+		     bundle);
 		// Already delivered the original bundle
 		bundle_rem_rc(
 			bundle,
@@ -724,8 +649,8 @@ static void bundle_attempt_reassembly(struct bundle *bundle)
 	);
 
 	if (!new_list) {
-		LOGF("BundleProcessor: Deleting bundle #%d: Cannot create reassembly list.",
-		     bundle->id);
+		LOGF("BundleProcessor: Deleting bundle %p: Cannot create reassembly list.",
+		     bundle);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return;
 	}
@@ -796,52 +721,8 @@ static void bundle_deliver_adu(struct bundle_adu adu)
 	agent_forward(agent_id, adu);
 }
 
-/* 5.10 */
-static void bundle_custody_accept(struct bundle *bundle)
-{
-	if (custody_manager_accept(bundle) != UD3TN_OK) {
-		/* TODO */
-		return;
-	}
-
-	if (HAS_FLAG(bundle->proc_flags,
-		BUNDLE_V6_FLAG_REPORT_CUSTODY_ACCEPTANCE)
-	) {
-		/* TODO: 5.10.1: */
-		/* However, if a bundle reception status report was */
-		/* generated for this bundle (Step 1 of Section 5.6), */
-		/* then this report should be generated by simply turning on */
-		/* the "Reporting node accepted custody of bundle" flag */
-		/* in that earlier report's status flags byte. */
-		send_status_report(bundle, BUNDLE_SR_FLAG_CUSTODY_TRANSFER,
-			BUNDLE_SR_REASON_NO_INFO);
-	}
-	send_custody_signal(bundle, BUNDLE_CS_TYPE_ACCEPTANCE,
-		BUNDLE_CS_REASON_NO_INFO);
-}
-
-/* 5.11 */
-static void bundle_custody_success(struct bundle *bundle)
-{
-	/* 5.10.2 */
-	custody_manager_release(bundle);
-}
-
-/* 5.12 */
-/* "Custody failed" signal received or timer expired (TODO) */
-static void bundle_custody_failure(
-	struct bundle *bundle, enum bundle_custody_signal_reason reason)
-{
-	switch (reason) {
-		/* TODO: Which reports should be generated? */
-	default:
-		custody_manager_release(bundle);
-		break;
-	}
-}
-
 /* 5.13 (BPv7) */
-/* TODO: Custody Transfer Deferral */
+/* NOTE: Custody Transfer Deferral would be implemented here. */
 
 /* 5.13 (RFC 5050) */
 /* 5.14 (BPv7-bis) */
@@ -850,15 +731,10 @@ static void bundle_delete(
 {
 	bool generate_report = false;
 
-	if (HAS_FLAG(bundle->ret_constraints,
-		BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED)
-	) {
-		custody_manager_release(bundle);
+	/* NOTE: If custody was accepted, test this here and report. */
+
+	if (HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_REPORT_DELETION))
 		generate_report = true;
-	} else if (HAS_FLAG(bundle->proc_flags,
-		BUNDLE_FLAG_REPORT_DELETION)) {
-		generate_report = true;
-	}
 
 	if (generate_report)
 		send_status_report(bundle,
@@ -872,7 +748,6 @@ static void bundle_delete(
 /* 5.15 (BPv7-bis) */
 static void bundle_discard(struct bundle *bundle)
 {
-	bundle_storage_delete(bundle->id);
 	bundle_drop(bundle);
 }
 
@@ -880,40 +755,23 @@ static void bundle_discard(struct bundle *bundle)
 static void bundle_handle_custody_signal(
 	struct bundle_administrative_record *signal)
 {
-	struct bundle *bundle = custody_manager_get_by_record(signal);
-
-	if (bundle == NULL)
-		return;
-	if (signal->custody_signal->type == BUNDLE_CS_TYPE_ACCEPTANCE)
-		bundle_custody_success(bundle);
-	else
-		bundle_custody_failure(bundle, signal->custody_signal->reason);
+	/* NOTE: We never accept custody, we do not have persistent storage. */
+	(void)signal;
 }
 
 /* RE-SCHEDULING */
 static void bundle_dangling(struct bundle *bundle)
 {
-	uint8_t resched = 0;
+	uint8_t resched = (FAILED_FORWARD_POLICY == POLICY_TRY_RE_SCHEDULE);
 
-	switch (FAILED_FORWARD_POLICY) {
-	case POLICY_TRY_RE_SCHEDULE:
-		resched = 1;
-		break;
-	case POLICY_DROP_IF_NO_CUSTODY:
-		resched = (HAS_FLAG(bundle->ret_constraints,
-				BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED) ||
-			HAS_FLAG(bundle->ret_constraints,
-				BUNDLE_RET_CONSTRAINT_FLAG_OWN));
-		break;
-	}
 	if (!resched) {
-		LOGF("BundleProcessor: Deleting bundle #%d: Forwarding failed and policy indicates to drop it.",
-		     bundle->id);
+		LOGF("BundleProcessor: Deleting bundle %p: Forwarding failed and policy indicates to drop it.",
+		     bundle);
 		bundle_delete(bundle, BUNDLE_SR_REASON_TRANSMISSION_CANCELED);
 	/* Send it to the router task again after evaluating policy. */
-	} else if (send_bundle(bundle->id, FAILED_FORWARD_TIMEOUT) != UD3TN_OK) {
-		LOGF("BundleProcessor: Failed forwarding bundle #%d to router task, dropping.",
-		     bundle->id);
+	} else if (send_bundle(bundle, FAILED_FORWARD_TIMEOUT) != UD3TN_OK) {
+		LOGF("BundleProcessor: Failed forwarding bundle %p to router task, dropping.",
+		     bundle);
 		bundle_delete(bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 	}
 }
@@ -942,46 +800,13 @@ static void send_status_report(
 
 	if (b != NULL) {
 		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
-		bundle_storage_add(b);
 		if (bundle_forward(b, STATUS_REPORT_TIMEOUT) != UD3TN_OK)
-			LOGF("BundleProcessor: Failed sending status report for bundle #%d.",
-			     bundle->id);
+			LOGF("BundleProcessor: Failed sending status report for bundle %p.",
+			     bundle);
 	}
 }
 
-static void send_custody_signal(struct bundle *bundle,
-	const enum bundle_custody_signal_type type,
-	const enum bundle_custody_signal_reason reason)
-{
-	struct bundle_custody_signal signal = {
-		.type = type,
-		.reason = reason,
-	};
-	struct bundle_list *next;
-	struct bundle_list *signals = generate_custody_signal(
-		bundle,
-		&signal,
-		local_eid
-	);
-
-	/* Walk through all signals and forward them to their destination */
-	while (signals != NULL) {
-		bundle_add_rc(signals->data,
-			BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
-		bundle_storage_add(signals->data);
-		if (bundle_forward(signals->data, CUSTODY_SIGNAL_TIMEOUT)
-		    != UD3TN_OK)
-			LOGF("BundleProcessor: Failed sending custody signal for bundle #%d.",
-			     bundle->id);
-
-		/* Free current list entry (but not the bundle itself) */
-		next = signals->next;
-		free(signals);
-		signals = next;
-	}
-}
-
-static enum ud3tn_result send_bundle(bundleid_t bundle, uint16_t timeout)
+static enum ud3tn_result send_bundle(struct bundle *bundle, uint16_t timeout)
 {
 	struct router_signal signal = {
 		.type = ROUTER_SIGNAL_ROUTE_BUNDLE,
@@ -1023,8 +848,8 @@ static bool hop_count_validation(struct bundle *bundle)
 
 	/* If block data cannot be parsed, ignore it */
 	if (!success) {
-		LOGI("BundleProcessor: Could not parse hop-count block",
-			bundle->id);
+		LOGF("BundleProcessor: Could not parse hop-count block of bundle %p.",
+			bundle);
 		return true;
 	}
 
@@ -1040,8 +865,8 @@ static bool hop_count_validation(struct bundle *bundle)
 
 	/* Out of memory - validation passes none the less */
 	if (buffer == NULL) {
-		LOGI("BundleProcessor: Could not increment hop-count",
-			bundle->id);
+		LOGF("BundleProcessor: Could not increment hop-count of bundle %p.",
+			bundle);
 		return true;
 	}
 

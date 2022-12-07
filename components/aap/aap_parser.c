@@ -2,7 +2,6 @@
 #include "aap/aap.h"
 #include "aap/aap_parser.h"
 
-#include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
 
 #include <stddef.h>
@@ -199,7 +198,7 @@ static size_t aap_parse_bundle_id(
 	if (length < 8)
 		return 0;
 
-	parser->message.bundle_id = (bundleid_t)read_uint64(buffer);
+	parser->message.bundle_id = read_uint64(buffer);
 
 	parser->status = PARSER_STATUS_DONE;
 	return 8;

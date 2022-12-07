@@ -8,7 +8,6 @@ void testud3tn(void)
 	RUN_TEST_GROUP(sdnv);
 	RUN_TEST_GROUP(node);
 	RUN_TEST_GROUP(routingTable);
-	RUN_TEST_GROUP(bundleStorageManager);
 	RUN_TEST_GROUP(eid);
 	RUN_TEST_GROUP(random);
 	RUN_TEST_GROUP(malloc);

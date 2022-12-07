@@ -98,8 +98,9 @@ struct aap_message {
 	/**
 	 * The identifier of the bundle,
 	 * valid in the SENDCONFIRM and CANCELBUNDLE messages.
+	 * 0 is the "invalid/unknown", thus, default value for this field.
 	 */
-	bundleid_t bundle_id;
+	uint64_t bundle_id;
 };
 
 /**

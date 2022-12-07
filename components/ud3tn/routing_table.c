@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/node.h"
 #include "ud3tn/router.h"
@@ -500,7 +499,7 @@ void routing_table_contact_passed(
 			/* TODO: Transmit struct routed_bundle? */
 			bundle_processor_inform(
 				bproc_signaling_queue,
-				contact->contact_bundles->data->id,
+				contact->contact_bundles->data->bundle_ptr,
 				BP_SIGNAL_RESCHEDULE_BUNDLE,
 				BUNDLE_SR_REASON_NO_INFO);
 			tmp = contact->contact_bundles->next;
@@ -519,7 +518,6 @@ static void reschedule_bundles(
 {
 	struct routed_bundle *rb;
 	struct fragment_route fr;
-	bundleid_t id;
 	uint8_t c;
 
 	ASSERT(contact != NULL);
@@ -531,10 +529,9 @@ static void reschedule_bundles(
 			fr.contacts[c] = rb->contacts[c];
 		fr.contact_count = rb->contact_count;
 		fr.payload_size = rb->size;
-		id = rb->id;
-		router_remove_bundle_from_route(&fr, id, 1);
+		router_remove_bundle_from_route(&fr, rb->bundle_ptr, 1);
 		bundle_processor_inform(
-			bproc_signaling_queue, id,
+			bproc_signaling_queue, rb->bundle_ptr,
 			BP_SIGNAL_RESCHEDULE_BUNDLE,
 			BUNDLE_SR_REASON_NO_INFO
 		);

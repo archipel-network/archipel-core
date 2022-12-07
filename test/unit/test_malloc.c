@@ -21,7 +21,7 @@ TEST(malloc, alloc_huge)
 
 	TEST_ASSERT_NOT_NULL(mem);
 	free(mem);
-	mem = malloc(BUNDLE_QUOTA);
+	mem = malloc(BUNDLE_MAX_SIZE);
 	TEST_ASSERT_NOT_NULL(mem);
 	free(mem);
 	mem = malloc(65537);

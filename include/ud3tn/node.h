@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 struct routed_bundle {
-	bundleid_t id;
+	struct bundle *bundle_ptr;
 	char *destination; /* TODO: Optimize */
 	uint8_t preemption_improvement;
 	enum bundle_routing_priority prio;

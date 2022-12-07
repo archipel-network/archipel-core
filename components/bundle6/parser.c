@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "bundle6/parser.h"
 
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/config.h"
 #include "ud3tn/common.h"
 
@@ -47,8 +46,7 @@ enum ud3tn_result bundle6_parser_reset(struct bundle6_parser *state)
 	state->primary_bytes_remaining = 0;
 	state->cur_bytes_remaining = 0;
 	state->current_index = 0;
-	state->current_size = bundle_storage_get_usage()
-		+ sizeof(struct bundle);
+	state->current_size = sizeof(struct bundle);
 	state->last_block = 0;
 
 	if (state->bundle != NULL)
@@ -224,7 +222,7 @@ static inline void bundle6_parser_next(struct bundle6_parser *state)
 		}
 		state->cur_bytes_remaining = state->dict_length;
 		state->current_size += state->cur_bytes_remaining + 1;
-		if (state->current_size > BUNDLE_QUOTA) {
+		if (state->current_size > BUNDLE_MAX_SIZE) {
 			state->basedata->status = PARSER_STATUS_ERROR;
 		} else {
 			// We ensure that the dict is zero-terminated
@@ -266,7 +264,7 @@ static inline void bundle6_parser_next(struct bundle6_parser *state)
 		state->basedata->next_bytes =
 			(*state->current_block_entry)->data->length;
 		state->current_size += state->basedata->next_bytes;
-		if (state->current_size > BUNDLE_QUOTA) {
+		if (state->current_size > BUNDLE_MAX_SIZE) {
 			state->basedata->status = PARSER_STATUS_ERROR;
 		} else {
 			state->basedata->next_buffer =

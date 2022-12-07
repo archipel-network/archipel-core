@@ -7,7 +7,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/eid.h"
 
 #include <stddef.h>
@@ -59,7 +58,7 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 	return result;
 }
 
-bundleid_t agent_create_forward_bundle(
+struct bundle *agent_create_forward_bundle(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const uint8_t bp_version, char *sink_id, char *destination,
 	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
@@ -79,20 +78,15 @@ bundleid_t agent_create_forward_bundle(
 		flags
 	);
 
-	if (bundle == NULL)
-		return BUNDLE_INVALID_ID;
+	if (!bundle)
+		return NULL;
 
-	bundleid_t bundle_id = bundle_storage_add(bundle);
+	bundle_processor_inform(
+		bundle_agent_interface->bundle_signaling_queue,
+		bundle,
+		BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
+		BUNDLE_SR_REASON_NO_INFO
+	);
 
-	if (bundle_id != BUNDLE_INVALID_ID)
-		bundle_processor_inform(
-			bundle_agent_interface->bundle_signaling_queue,
-			bundle_id,
-			BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
-			BUNDLE_SR_REASON_NO_INFO
-		);
-	else
-		bundle_free(bundle);
-
-	return bundle_id;
+	return bundle;
 }

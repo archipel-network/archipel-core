@@ -11,7 +11,6 @@
 #include "platform/hal_task.h"
 
 #include "ud3tn/bundle.h"
-#include "ud3tn/bundle_storage_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/router_task.h"
 #include "ud3tn/task_tags.h"
@@ -54,7 +53,7 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
 	// possible moment ... the bundle age value MUST be increased ..."
 	if (bundle_age_update(bundle, dwell_time_ms) == UD3TN_FAIL)
-		LOGF("TX: Bundle #%d age block update failed!", bundle->id);
+		LOGF("TX: Bundle %p age block update failed!", bundle);
 }
 
 static void cla_contact_tx_task(void *param)
@@ -80,12 +79,12 @@ static void cla_contact_tx_task(void *param)
 			cur = cmd.bundles;
 			cmd.bundles = cmd.bundles->next;
 			cur->data->serialized++;
-			b = bundle_storage_get(cur->data->id);
+			b = cur->data->bundle_ptr;
 			if (b != NULL) {
 				prepare_bundle_for_forwarding(b);
 				LOGF(
-					"TX: Sending bundle #%d via CLA %s",
-					b->id,
+					"TX: Sending bundle %p via CLA %s",
+					b,
 					link->config->vtable->cla_name_get()
 				);
 				link->config->vtable->cla_begin_packet(
@@ -100,8 +99,8 @@ static void cla_contact_tx_task(void *param)
 				);
 				link->config->vtable->cla_end_packet(link);
 			} else {
-				LOGF("TX: Bundle #%d not found!",
-				     cur->data->id);
+				LOGF("TX: Bundle %p not found!",
+				     cur->data->bundle_ptr);
 				s = UD3TN_FAIL;
 			}
 
