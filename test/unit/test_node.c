@@ -15,13 +15,15 @@ static struct endpoint_list *some_eids2;
 static struct contact_list *some_ct1;
 static struct contact_list *some_ct2;
 
-static struct contact *createct(uint64_t from, uint64_t to, uint16_t bitrate)
+static struct contact *createct(uint64_t from, uint64_t to, uint16_t bitrate,
+				char *eid)
 {
 	struct contact *c = contact_create(NULL);
 
 	c->from = from;
 	c->to = to;
 	c->bitrate = bitrate;
+	c->node = node_create(eid);
 	recalculate_contact_capacity(c);
 	return c;
 }
@@ -52,12 +54,13 @@ TEST_SETUP(node)
 	some_eids2 = endpoint_list_strip_and_sort(some_eids2);
 	/* contacts */
 	some_ct1 = malloc(sizeof(struct contact_list));
-	some_ct1->data = createct(1, 3, 300);
+	some_ct1->data = createct(1, 3, 300, "ipn:1.0");
 	some_ct1->next = malloc(sizeof(struct contact_list));
-	some_ct1->next->data = createct(0x100000000, 0x100000001, 500);
+	some_ct1->next->data = createct(0x100000000, 0x100000001, 500,
+					"ipn:1.0");
 	some_ct1->next->next = NULL;
 	some_ct2 = malloc(sizeof(struct contact_list));
-	some_ct2->data = createct(0x100000000, 0x100000001, 600);
+	some_ct2->data = createct(0x100000000, 0x100000001, 600, "ipn:1.0");
 	some_ct2->next = NULL;
 	/* time */
 	hal_time_init(0);
@@ -188,9 +191,9 @@ TEST(node, contact_list_difference)
 
 TEST(node, add_contact_to_ordered_list)
 {
-	struct contact *c1 = createct(100, 500, 1);
-	struct contact *c2 = createct(200, 600, 1);
-	struct contact *c3 = createct(300, 400, 1);
+	struct contact *c1 = createct(100, 500, 1, "ipn:1.0");
+	struct contact *c2 = createct(200, 600, 1, "ipn:1.0");
+	struct contact *c3 = createct(300, 400, 1, "ipn:1.0");
 	struct contact_list *l = NULL;
 
 	TEST_ASSERT_TRUE(add_contact_to_ordered_list(&l, c1, 0));

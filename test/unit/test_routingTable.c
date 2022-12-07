@@ -37,9 +37,9 @@ static void addnode(struct endpoint_list **list, char *node)
 }
 
 static struct node *node11, *node1_no_cla1, *node1_no_cla2, *node12, *node13;
-static struct node *node2, *node3, *node4;
-static struct contact *c1, *c2, *c3, *c4, *c5, *c6, *c7,
-	*c8, *c9, *c10, *c11, *c12;
+static struct node *node14, *node2, *node3, *node4;
+static struct contact *c1, *c2, *c3, *c5, *c6, *c7,
+	*c8, *c9, *c10, *c11, *c12, *c13, *c14, *c15;
 
 static struct rescheduling_handle rescheduler;
 
@@ -72,10 +72,8 @@ TEST_SETUP(routingTable)
 	node12 = node_create("node1");
 	node12->cla_addr = strdup("cla:addr2");
 	addnode(&node12->endpoints, "node3");
-	c4 = createct(node12, 5, 6, 500);
 	c5 = createct(node12, 2, 3, 600);
 	c6 = createct(node12, 4, 6, 700);
-	add_contact_to_ordered_list(&node12->contacts, c4, 1);
 	add_contact_to_ordered_list(&node12->contacts, c5, 1);
 	add_contact_to_ordered_list(&node12->contacts, c6, 1);
 	/* node1-3 */
@@ -90,6 +88,16 @@ TEST_SETUP(routingTable)
 	add_contact_to_ordered_list(&node13->contacts, c10, 0);
 	add_contact_to_ordered_list(&node13->contacts, c11, 0);
 	add_contact_to_ordered_list(&node13->contacts, c12, 0);
+	/* node1-4 */
+	node14 = node_create("node1");
+	node14->cla_addr = strdup("cla:addr4");
+	addnode(&node14->endpoints, "node3");
+	c13 = createct(node14, 1, 2, 200);
+	c14 = createct(node14, 2, 3, 300);
+	c15 = createct(node14, 5, 6, 700);
+	add_contact_to_ordered_list(&node14->contacts, c13, 0);
+	add_contact_to_ordered_list(&node14->contacts, c14, 0);
+	add_contact_to_ordered_list(&node14->contacts, c15, 0);
 	/* node2 */
 	node2 = node_create("node2");
 	node2->cla_addr = strdup("cla:addr4");
@@ -176,7 +184,8 @@ TEST(routingTable, routing_table_add_delete)
 	TEST_ASSERT_NULL(nti);
 	/* delete */
 	LLSORT(struct contact_list, data->from, node13->contacts);
-	TEST_ASSERT_TRUE(routing_table_delete_node(node13, rescheduler));
+	TEST_ASSERT_FALSE(routing_table_delete_node(node13, rescheduler));
+	TEST_ASSERT_TRUE(routing_table_delete_node(node14, rescheduler));
 	nti = routing_table_lookup_eid("node1");
 	TEST_ASSERT_NOT_NULL(nti);
 	TEST_ASSERT_EQUAL_UINT16(1, nti->ref_count);
@@ -184,6 +193,10 @@ TEST(routingTable, routing_table_add_delete)
 	TEST_ASSERT_NULL(nti->contacts->next);
 	TEST_ASSERT_NOT_NULL(nti->contacts->data);
 	TEST_ASSERT_EQUAL_PTR(c3, nti->contacts->data);
+	// updated via ADD node12
+	TEST_ASSERT_EQUAL_UINT64(4, c3->from);
+	TEST_ASSERT_EQUAL_UINT64(6, c3->to);
+	TEST_ASSERT_EQUAL_UINT32(700, c3->bitrate);
 	nti = routing_table_lookup_eid("node2");
 	TEST_ASSERT_NOT_NULL(nti);
 	TEST_ASSERT_EQUAL_UINT16(2, nti->ref_count);
@@ -229,11 +242,12 @@ TEST(routingTable, routing_table_replace)
 	struct node_table_entry *nti;
 
 	LLSORT(struct contact_list, data->from, node13->contacts);
-	TEST_ASSERT_TRUE(routing_table_add_node(node13, rescheduler));
+	TEST_ASSERT_FALSE(routing_table_add_node(node13, rescheduler));
+	TEST_ASSERT_TRUE(routing_table_add_node(node14, rescheduler));
 	nti = routing_table_lookup_eid("node3");
 	TEST_ASSERT_EQUAL_UINT16(3, nti->ref_count);
 	TEST_ASSERT_NOT_NULL(nti->contacts);
-	TEST_ASSERT_EQUAL_PTR(c12, nti->contacts->next->next->data);
+	TEST_ASSERT_EQUAL_PTR(c15, nti->contacts->next->next->data);
 	TEST_ASSERT_TRUE(routing_table_replace_node(node11, rescheduler));
 	nti = routing_table_lookup_eid("node3");
 	TEST_ASSERT_NULL(nti);

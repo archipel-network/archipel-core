@@ -11,6 +11,14 @@
 #include <string.h>
 #include <stdbool.h>
 
+static int contacts_overlap(struct contact *a, struct contact *b)
+{
+	return (
+		a->from < b->to &&
+		a->to > b->from
+	);
+}
+
 struct node *node_create(char *eid)
 {
 	struct node *ret = malloc(sizeof(struct node));
@@ -269,13 +277,20 @@ static inline void add_to_modified_list(
 	}
 }
 
+// merges new into old
 static inline bool merge_contacts(struct contact *old, struct contact *new)
 {
+	const uint64_t old_duration = old->to - old->from;
+
+	old->from = MIN(old->from, new->from);
+	old->to = MAX(old->to, new->to);
+
 	/* Union EID lists */
 	old->contact_endpoints = endpoint_list_union(
 		old->contact_endpoints, new->contact_endpoints);
-	/* Update bitrate, if modified (cap changed) => return true */
-	if (old->bitrate != new->bitrate) {
+	/* Capacity changed => update bitrate and return true */
+	if (old->bitrate != new->bitrate ||
+			old->to - old->from != old_duration) {
 		old->bitrate = new->bitrate;
 		recalculate_contact_capacity(old);
 		return true;
@@ -288,8 +303,9 @@ struct contact_list *contact_list_union(
 	struct contact_list **modf)
 {
 	struct contact_list **cur_slot = &a;
-	struct contact_list *cur_can = b, *next_can;
-	uint64_t cur_from;
+	struct contact_list *cur_can = b;
+	struct contact_list *next_can;
+	uint64_t cur_from, cur_to;
 	bool modified;
 
 	ASSERT(contact_list_sorted(a, 1));
@@ -300,20 +316,26 @@ struct contact_list *contact_list_union(
 		return a;
 	while (*cur_slot != NULL) {
 		cur_from = (*cur_slot)->data->from;
+		cur_to = (*cur_slot)->data->to;
+		ASSERT((*cur_slot)->data->node != NULL);
 		/* Traverse b linearly and insert contacts "smaller" than the
 		 * current one in a before it.
 		 */
 		while (cur_can != NULL && cur_can->data->from <= cur_from) {
 			next_can = cur_can->next;
-			if (cur_can->data->from < cur_from) {
-				/* < : Insert before */
-				cur_can->next = *cur_slot;
-				*cur_slot = cur_can;
-				cur_slot = &cur_can->next;
-			} else {
-				/* == : Update existing */
-				if (cur_can->data->to == (*cur_slot)->data->to
-				) {
+			ASSERT(cur_can->data->node != NULL);
+			if (strcmp(cur_can->data->node->eid,
+				   (*cur_slot)->data->node->eid) == 0) {
+				// same node
+				if (!contacts_overlap(cur_can->data,
+						      (*cur_slot)->data)) {
+					// no overlap -> insert before
+					cur_can->next = *cur_slot;
+					*cur_slot = cur_can;
+					cur_slot = &cur_can->next;
+
+				} else {
+					// overlap -> merge
 					modified = merge_contacts(
 						(*cur_slot)->data,
 						cur_can->data);
@@ -321,21 +343,48 @@ struct contact_list *contact_list_union(
 						add_to_modified_list(
 							(*cur_slot)->data,
 							modf);
+					contact_list_free_internal(cur_can, 0);
 				}
-				/* Remove redundant list element */
-				/* XXX Currently contacts beginning at the
-				 * same time are considered invalid and
-				 * are thus deleted
-				 * TODO: Check if same node
-				 */
-				contact_list_free_internal(cur_can, 0);
+			} else {
+				// other node, insert before
+				cur_can->next = *cur_slot;
+				*cur_slot = cur_can;
+				cur_slot = &cur_can->next;
 			}
 			cur_can = next_can;
 		}
+
+		// Check rest of cur_can if can->from < slot->to and same node
+		struct contact_list **cur_can_p = &cur_can;
+
+		while (*cur_can_p != NULL) {
+			ASSERT((*cur_can_p)->data->node != NULL);
+			if ((*cur_can_p)->data->from < cur_to &&
+			    strcmp((*cur_can_p)->data->node->eid,
+				   (*cur_slot)->data->node->eid) == 0) {
+				// overlap -> merge
+				modified = merge_contacts(
+					(*cur_slot)->data,
+					(*cur_can_p)->data);
+				if (modified)
+					add_to_modified_list(
+						(*cur_slot)->data,
+						modf);
+				*cur_can_p = contact_list_free_internal(
+					*cur_can_p,
+					0
+				);
+			} else {
+				cur_can_p = &(*cur_can_p)->next;
+			}
+		}
+
 		cur_slot = &(*cur_slot)->next;
 	}
+
 	/* Concatenate list ends */
 	*cur_slot = cur_can;
+
 	return a;
 }
 
@@ -419,17 +468,11 @@ struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el)
 	return el;
 }
 
-static int contacts_overlap(struct contact *a, struct contact *b)
-{
-	return (
-		(a->from >= b->from && a->from <= b->to) ||
-		(a->to >= b->from && a->to <= b->to)
-	);
-}
-
 int node_prepare_and_verify(struct node *node)
 {
 	struct contact_list *cl, *i;
+
+	ASSERT(node != NULL);
 
 	if (node->eid == NULL)
 		return 0;
@@ -438,6 +481,8 @@ int node_prepare_and_verify(struct node *node)
 	cl = node->contacts;
 	node->endpoints = endpoint_list_strip_and_sort(node->endpoints);
 	while (cl != NULL) {
+		if (cl->data->from >= cl->data->to)
+			return 0;
 		cl->data->contact_endpoints = endpoint_list_strip_and_sort(
 			cl->data->contact_endpoints);
 		i = cl->next;
