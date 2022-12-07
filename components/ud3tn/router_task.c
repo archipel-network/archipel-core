@@ -382,6 +382,15 @@ static struct bundle_processing_result apply_fragmentation(
 			for (g = 0; g <= f; g++)
 				bundle_free(frags[g]);
 			return result;
+		} else if (frags[f] == frags[f + 1]) {
+			// Not fragmented b/c not needed - the router does some
+			// conservative estimations regarding size of CBOR ints
+			// that may lead to fewer actual fragments here.
+			// Just update the count accordingly and do not schedule
+			// the rest.
+			route.fragments = fragments = f + 1;
+			frags[f + 1] = NULL;
+			break;
 		}
 	}
 
