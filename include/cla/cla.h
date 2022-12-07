@@ -30,6 +30,9 @@ struct cla_link {
 	// Flag to determine whether the link is still usable
 	bool active;
 
+	// CLA address (without the CLA identifier) related to the link
+	char *cla_addr;
+
 	// Semaphore for waiting until the RX task is finished
 	Semaphore_t rx_task_sem;
 	// Semaphore for waiting until the TX task is finished
@@ -73,13 +76,17 @@ enum ud3tn_result cla_config_init(
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
-				struct cla_config *config);
+				struct cla_config *config,
+				char *const cla_addr);
 
 void cla_link_wait_cleanup(struct cla_link *link);
 
 char *cla_get_connect_addr(const char *cla_addr, const char *cla_name);
 
 void cla_generic_disconnect_handler(struct cla_link *link);
+
+// Constructs the CLA address (`<cla>:<addr>`) from the connected link address.
+char *cla_get_cla_addr_from_link(const struct cla_link *link);
 
 /*
  * Virtual Functions

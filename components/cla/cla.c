@@ -149,10 +149,13 @@ enum ud3tn_result cla_config_init(
 }
 
 enum ud3tn_result cla_link_init(struct cla_link *link,
-				struct cla_config *config)
+				struct cla_config *config,
+				char *const cla_addr)
 {
 	link->config = config;
 	link->active = true;
+
+	link->cla_addr = cla_addr ? strdup(cla_addr) : NULL;
 
 	link->rx_task_handle = NULL;
 	link->tx_task_handle = NULL;
@@ -210,7 +213,7 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	// Notify the router task of the newly established connection...
 	struct router_signal rt_signal = {
 		.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-		.data = NULL,
+		.data = cla_get_cla_addr_from_link(link),
 	};
 	const struct bundle_agent_interface *const bundle_agent_interface =
 		config->bundle_agent_interface;
@@ -259,6 +262,8 @@ void cla_link_wait_cleanup(struct cla_link *link)
 
 	link->config->vtable->cla_rx_task_reset_parsers(link);
 	rx_task_data_deinit(&link->rx_task_data);
+
+	free(link->cla_addr);
 }
 
 char *cla_get_connect_addr(const char *cla_addr, const char *cla_name)
@@ -276,9 +281,40 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 {
 	// RX task will delete itself
 	link->active = false;
+	// Notify dispatcher that the connection was lost
+	struct router_signal rt_signal = {
+		.type = ROUTER_SIGNAL_LINK_DOWN,
+		.data = cla_get_cla_addr_from_link(link),
+	};
+	hal_queue_push_to_back(link->config->bundle_agent_interface->router_signaling_queue, &rt_signal);
 	// TX task will delete its queue and itself
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);
 	// The termination of the tasks means cla_link_wait_cleanup returns
+}
+
+char *cla_get_cla_addr_from_link(const struct cla_link *const link)
+{
+	const char *const cla_name = link->config->vtable->cla_name_get();
+
+	ASSERT(cla_name != NULL);
+
+	const size_t cla_name_len = strlen(cla_name);
+
+	const char *const addr = link->cla_addr;
+	const size_t addr_len = addr ? strlen(addr) : 0;
+
+	// <cla_name>:<addr>\0
+	const size_t result_len = cla_name_len + 1 + addr_len + 1;
+	char *const result = malloc(result_len);
+
+	strncpy(result, cla_name, result_len);
+	result[cla_name_len] = ':';
+	if (addr)
+		strncpy(result + cla_name_len + 1, addr,
+			result_len - 1 - cla_name_len);
+	result[result_len - 1] = '\0';
+
+	return result;
 }
 
 // CLA Instance Management

@@ -125,6 +125,7 @@ static bool process_signal(
 	struct contact *contact;
 	struct router_command *command;
 	struct node *node;
+	struct bundle_tx_result *tx_result;
 
 	switch (signal.type) {
 	case ROUTER_SIGNAL_PROCESS_COMMAND:
@@ -209,7 +210,10 @@ static bool process_signal(
 		break;
 	case ROUTER_SIGNAL_TRANSMISSION_SUCCESS:
 	case ROUTER_SIGNAL_TRANSMISSION_FAILURE:
-		rb = (struct routed_bundle *)signal.data;
+		tx_result = (struct bundle_tx_result *)signal.data;
+		rb = tx_result->bundle;
+		free(tx_result->peer_cla_addr);
+		free(tx_result);
 		if (rb->serialized == rb->contact_count) {
 			bundle_processor_inform(
 				bp_signaling_queue, rb->bundle_ptr,
@@ -234,12 +238,18 @@ static bool process_signal(
 		LOGF("RouterTask: Node withdrawn (%p)!", node);
 		break;
 	case ROUTER_SIGNAL_NEW_LINK_ESTABLISHED:
+		// XXX: We do not use the provided CLA address.
+		free(signal.data);
 		// NOTE: When we implement a "bundle backlog", we will attempt
 		// to route the bundles here.
 		wake_up_contact_manager(
 			cm_queue,
 			CM_SIGNAL_PROCESS_CURRENT_BUNDLES
 		);
+		break;
+	case ROUTER_SIGNAL_LINK_DOWN:
+		// XXX: We do not use the provided CLA address.
+		free(signal.data);
 		break;
 	default:
 		LOGF("RouterTask: Invalid signal (%d) received!", signal.type);

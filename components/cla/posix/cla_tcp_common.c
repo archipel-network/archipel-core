@@ -61,13 +61,15 @@ enum ud3tn_result cla_tcp_single_config_init(
 
 enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
-	struct cla_tcp_config *config)
+	struct cla_tcp_config *config,
+	char *const cla_addr)
 {
 	ASSERT(connected_socket >= 0);
 	link->connection_socket = connected_socket;
 
 	// This will fire up the RX and TX tasks
-	if (cla_link_init(&link->base, &config->base) != UD3TN_OK)
+	if (cla_link_init(&link->base, &config->base, cla_addr)
+			!= UD3TN_OK)
 		return UD3TN_FAIL;
 
 	return UD3TN_OK;
@@ -234,7 +236,7 @@ void cla_tcp_single_disconnect_handler(struct cla_link *link)
 }
 
 static void handle_established_connection(
-	struct cla_tcp_single_config *config,
+	struct cla_tcp_single_config *config, char *const cla_addr,
 	int sock, const size_t struct_size)
 {
 	ASSERT(struct_size >= sizeof(struct cla_tcp_link));
@@ -243,7 +245,8 @@ static void handle_established_connection(
 	ASSERT(!config->link);
 	config->link = link;
 
-	if (cla_tcp_link_init(link, sock, &config->base) != UD3TN_OK) {
+	if (cla_tcp_link_init(link, sock, &config->base, cla_addr)
+			!= UD3TN_OK) {
 		LOG("TCP: Error creating a link instance!");
 	} else {
 		// Notify the router task of the newly established connection...
@@ -277,7 +280,7 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 			     CLA_TCP_RETRY_INTERVAL_MS);
 			hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
 		} else {
-			handle_established_connection(config,
+			handle_established_connection(config, NULL,
 						      config->base.socket,
 						      struct_size);
 			LOGF("TCP: CLA \"%s\": Connection terminated, will reconnect as soon as a contact occurs.",
@@ -304,7 +307,7 @@ void cla_tcp_single_listen_task(struct cla_tcp_single_config *config,
 		if (sock == -1)
 			break; // cla_tcp_accept_from_socket failing is fatal
 
-		handle_established_connection(config, sock, struct_size);
+		handle_established_connection(config, NULL, sock, struct_size);
 
 		LOGF("TCP: CLA \"%s\" is looking for a new connection now!",
 		     config->base.base.vtable->cla_name_get());

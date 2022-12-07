@@ -28,13 +28,22 @@ enum router_signal_type {
 	ROUTER_SIGNAL_TRANSMISSION_SUCCESS,
 	ROUTER_SIGNAL_TRANSMISSION_FAILURE,
 	ROUTER_SIGNAL_WITHDRAW_NODE,
-	ROUTER_SIGNAL_NEW_LINK_ESTABLISHED
+	ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
+	ROUTER_SIGNAL_LINK_DOWN
+};
+
+struct bundle_tx_result {
+	char *peer_cla_addr;
+	// TODO: struct bundle*
+	struct routed_bundle *bundle;
+	// TODO: Add success flag and remove struct router_signal.
 };
 
 struct router_signal {
 	enum router_signal_type type;
-	/* struct routed_bundle OR struct router_command */
-	/* OR struct contact OR (void *)bundleid_t OR NULL */
+	/* struct bundle_tx_result* OR struct router_command* */
+	/* OR struct contact* OR struct node* OR struct bundle* */
+	/* OR char* OR NULL */
 	void *data;
 };
 

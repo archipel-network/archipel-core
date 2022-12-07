@@ -69,7 +69,8 @@ enum ud3tn_result cla_tcp_single_config_init(
 
 enum ud3tn_result cla_tcp_link_init(
 	struct cla_tcp_link *link, int connected_socket,
-	struct cla_tcp_config *config);
+	struct cla_tcp_config *config,
+	char *const cla_addr);
 
 enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 				 const char *node, const char *service,

@@ -20,11 +20,20 @@
 
 static inline void report_bundle(QueueIdentifier_t signaling_queue,
 				 struct routed_bundle *bundle,
+				 char *cla_addr,
 				 enum router_signal_type type)
 {
+	struct bundle_tx_result *info = malloc(
+		sizeof(struct bundle_tx_result)
+	);
+
+	//info->bundle = cur->data->bundle_ptr;
+	info->bundle = bundle;
+	info->peer_cla_addr = cla_addr;
+
 	struct router_signal signal = {
 		.type = type,
-		.data = bundle
+		.data = info,
 	};
 
 	hal_queue_push_to_back(signaling_queue, &signal);
@@ -104,17 +113,20 @@ static void cla_contact_tx_task(void *param)
 				s = UD3TN_FAIL;
 			}
 
+
 			if (s == UD3TN_OK) {
 				cur->data->transmitted++;
 				report_bundle(
 					router_signaling_queue,
 					cur->data,
+					cla_get_cla_addr_from_link(link),
 					ROUTER_SIGNAL_TRANSMISSION_SUCCESS
 				);
 			} else {
 				report_bundle(
 					router_signaling_queue,
 					cur->data,
+					cla_get_cla_addr_from_link(link),
 					ROUTER_SIGNAL_TRANSMISSION_FAILURE
 				);
 			}
@@ -137,6 +149,7 @@ static void cla_contact_tx_task(void *param)
 				report_bundle(
 					router_signaling_queue,
 					cur->data,
+					cla_get_cla_addr_from_link(link),
 					ROUTER_SIGNAL_TRANSMISSION_FAILURE
 				);
 				/* Free only the RB list, the RB is reported */
