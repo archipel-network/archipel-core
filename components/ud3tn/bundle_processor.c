@@ -427,7 +427,6 @@ static enum ud3tn_result bundle_forward(
 	const struct bp_context *const ctx, struct bundle *bundle)
 {
 	/* 4.3.4. Hop Count (BPv7-bis) */
-	/* TODO: Is this the correct point to perform the hop-count check? */
 	if (!hop_count_validation(bundle)) {
 		LOGF("BundleProcessor: Deleting bundle %p: Hop Limit Exceeded", bundle);
 		bundle_delete(ctx, bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);

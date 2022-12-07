@@ -109,9 +109,13 @@ static void cla_contact_tx_task(void *param)
 			struct routed_bundle_list *tmp = rbl;
 
 			rbl = rbl->next;
+			// Free the bundle list from the command step-by-step.
 			free(tmp);
 		}
 
+		// Free the attached CLA address - a copy is made by the
+		// contact manager because the contact containing the original
+		// copy may be deleted in the meantime.
 		free(cmd.cla_address);
 	}
 
