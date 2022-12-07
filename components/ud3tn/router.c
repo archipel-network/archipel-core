@@ -125,11 +125,6 @@ static inline struct max_fragment_size_result {
 		c_capacity = ROUTER_CONTACT_CAPACITY(c, priority);
 		if (c_capacity < min_capacity)
 			continue;
-		if (c_capacity >= INT32_MAX)
-			return (struct max_fragment_size_result){
-				INT32_MAX,
-				payload_size,
-			};
 
 		// A CLA may have a maximum bundle size, determine it
 		struct cla_config *const cla_config = cla_config_get(
@@ -144,6 +139,13 @@ static inline struct max_fragment_size_result {
 			),
 			RC.global_mbs
 		);
+
+		// Contact of "infinite" capacity -> max. frag. size == MBS
+		if (c_capacity >= INT32_MAX)
+			return (struct max_fragment_size_result){
+				MIN((uint32_t)INT32_MAX, c_mbs),
+				payload_size,
+			};
 
 		conf = ROUTER_CONTACT_CONFIDENCE(c, p);
 		if (conf >= RC.min_node_confidence_deterministic) {
@@ -376,6 +378,9 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		LOGF("Router: Determined max. frag size of %lu bytes for bundle of size %lu bytes (payload sz. = %lu)",
 		     mrfs.max_fragment_size, bundle_size,
 		     bundle->payload_block->length);
+	} else {
+		LOGF("Router: Determined infinite max. frag size for bundle of size %lu bytes (payload sz. = %lu)",
+		     bundle_size, bundle->payload_block->length);
 	}
 
 	if (bundle_must_not_fragment(bundle) ||

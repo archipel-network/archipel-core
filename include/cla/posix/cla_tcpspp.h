@@ -5,6 +5,7 @@
 #include "cla/cla.h"
 
 #include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/config.h"
 
 #include <stddef.h>
 
@@ -18,6 +19,10 @@
 
 #ifndef CLA_TCPSPP_USE_CRC
 #define CLA_TCPSPP_USE_CRC (true)
+#endif
+
+#ifndef CLA_TCPSPP_SPP_MAX_SIZE
+#define CLA_TCPSPP_SPP_MAX_SIZE (1 << 16)
 #endif
 
 struct cla_config *tcpspp_create(

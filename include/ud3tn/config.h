@@ -116,6 +116,8 @@ enum failed_forwarding_policy {
 #define CLA_TCP_PARAM_HTAB_SLOT_COUNT 32
 // Whether or not to close active TCP connections after a contact
 #define CLA_MTCP_CLOSE_AFTER_CONTACT 1
+// The maximum size of SPPs created by the TCPSPP CLA
+#define CLA_TCPSPP_SPP_MAX_SIZE (1 << 16)
 
 
 
