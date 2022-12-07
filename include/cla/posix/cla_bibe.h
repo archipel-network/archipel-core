@@ -8,7 +8,7 @@
 #include "cla/posix/cla_tcp_common.h"
 #include "cla/bibe_proto.h"
 
-#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/bundle_processor.h"
 
 #include <stddef.h>
 

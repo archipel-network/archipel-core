@@ -5,6 +5,7 @@
 
 #include "ud3tn/eid.h"
 #include "ud3tn/node.h"
+#include "ud3tn/router.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -243,8 +244,7 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 				parser->basedata->status = PARSER_STATUS_ERROR;
 				break;
 			}
-			cur_gs->reliability
-				= (float)tmp / 1000.0f;
+			// NOTE: Reliability is not used anymore.
 			parser->stage = RP_EXPECT_CLA_ADDR_START_DELIMITER;
 			if (byte == COMMAND_END_MARKER)
 				parser->basedata->status = PARSER_STATUS_DONE;

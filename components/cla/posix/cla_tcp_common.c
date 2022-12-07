@@ -12,8 +12,8 @@
 #include "platform/hal_task.h"
 
 #include "ud3tn/common.h"
+#include "ud3tn/config.h"
 #include "ud3tn/result.h"
-#include "ud3tn/router_task.h"
 
 #include <netdb.h>
 #include <netinet/tcp.h>
@@ -253,15 +253,18 @@ static void handle_established_connection(
 			!= UD3TN_OK) {
 		LOG("TCP: Error creating a link instance!");
 	} else {
-		// Notify the router task of the newly established connection...
-		struct router_signal rt_signal = {
-			.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-			.data = NULL,
-		};
-		const struct bundle_agent_interface *const bai =
+		// Notify the BP task of the newly established connection...
+		const struct bundle_agent_interface *bundle_agent_interface =
 			config->base.base.bundle_agent_interface;
-
-		hal_queue_push_to_back(bai->router_signaling_queue, &rt_signal);
+		bundle_processor_inform(
+			bundle_agent_interface->bundle_signaling_queue,
+			NULL,
+			BP_SIGNAL_NEW_LINK_ESTABLISHED,
+			cla_get_cla_addr_from_link(&link->base),
+			NULL,
+			NULL,
+			NULL
+		);
 
 		cla_link_wait_cleanup(&link->base);
 	}

@@ -16,8 +16,9 @@ struct config_agent_item {
 	size_t data_length;
 };
 
-int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
-	QueueIdentifier_t router_signaling_queue, const char *local_eid,
+int config_agent_setup(
+	QueueIdentifier_t bundle_processor_signaling_queue,
+	const char *local_eid,
 	bool allow_remote_configuration);
 
 #endif /* CONFIGAGENT_H_INCLUDED */

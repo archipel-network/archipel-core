@@ -4,7 +4,7 @@
 
 #include "cla/cla_contact_rx_task.h"
 
-#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/bundle_processor.h"
 #include "ud3tn/crc.h"
 #include "ud3tn/node.h"
 #include "ud3tn/result.h"

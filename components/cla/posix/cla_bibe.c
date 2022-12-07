@@ -20,14 +20,12 @@
 #include "platform/hal_task.h"
 #include "platform/hal_types.h"
 
-#include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
-#include "ud3tn/router_task.h"
 #include "ud3tn/simplehtab.h"
 #include "ud3tn/task_tags.h"
 
@@ -395,19 +393,23 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 		     cla_addr);
 		param->in_contact = true;
 
-		// Even if it is no _new_ connection, we notify the router task
-		struct router_signal rt_signal = {
-			.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-			.data = cla_get_cla_addr_from_link(
-				&param->link.base.base
-			),
-		};
-		const struct bundle_agent_interface *bundle_agent_interface =
+		// Even if it is no _new_ connection, we notify the BP task
+		const struct bundle_agent_interface *bai =
 			config->bundle_agent_interface;
-		hal_queue_push_to_back(
-			bundle_agent_interface->router_signaling_queue,
-			&rt_signal
-		);
+
+		if (param->connected) {
+			bundle_processor_inform(
+				bai->bundle_signaling_queue,
+				NULL,
+				BP_SIGNAL_NEW_LINK_ESTABLISHED,
+				cla_get_cla_addr_from_link(
+					&param->link.base.base
+				),
+				NULL,
+				NULL,
+				NULL
+			);
+		}
 
 		hal_semaphore_release(bibe_config->param_htab_sem);
 		return UD3TN_OK;

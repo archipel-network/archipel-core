@@ -8,7 +8,6 @@
 #include "ud3tn/eid.h"
 
 #include "platform/hal_io.h"
-#include "platform/hal_queue.h"
 #include "platform/hal_types.h"
 
 #include <stdbool.h>
@@ -26,16 +25,19 @@ struct config_agent_params {
 
 static void router_command_send(struct router_command *cmd, void *param)
 {
-	struct router_signal signal = {
-		.type = ROUTER_SIGNAL_PROCESS_COMMAND,
-		.data = cmd
-	};
-
 	ASSERT(cmd != NULL);
 
-	QueueIdentifier_t router_signaling_queue = param;
+	QueueIdentifier_t bp_queue = param;
 
-	hal_queue_push_to_back(router_signaling_queue, &signal);
+	bundle_processor_inform(
+		bp_queue,
+		NULL,
+		BP_SIGNAL_PROCESS_ROUTER_COMMAND,
+		NULL,
+		NULL,
+		NULL,
+		cmd
+	);
 }
 
 static void callback(struct bundle_adu data, void *param)
@@ -64,14 +66,15 @@ static void callback(struct bundle_adu data, void *param)
 	bundle_adu_free_members(data);
 }
 
-int config_agent_setup(QueueIdentifier_t bundle_processor_signaling_queue,
-	QueueIdentifier_t router_signaling_queue, const char *local_eid,
+int config_agent_setup(
+	QueueIdentifier_t bundle_processor_signaling_queue,
+	const char *local_eid,
 	bool allow_remote_configuration)
 {
 	const int is_ipn = get_eid_scheme(local_eid) == EID_SCHEME_IPN;
 
 	ASSERT(config_parser_init(&parser, &router_command_send,
-				  router_signaling_queue));
+				  bundle_processor_signaling_queue));
 
 	struct config_agent_params *const ca_param = malloc(
 		sizeof(struct config_agent_params)

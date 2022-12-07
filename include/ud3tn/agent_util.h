@@ -3,7 +3,7 @@
 #define AGENT_UTIL_H_
 
 #include "ud3tn/bundle.h"
-#include "ud3tn/bundle_agent_interface.h"
+#include "ud3tn/bundle_processor.h"
 
 #include <stddef.h>
 #include <stdint.h>

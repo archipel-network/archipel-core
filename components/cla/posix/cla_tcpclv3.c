@@ -19,13 +19,12 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/cmdline.h"
+#include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
-#include "ud3tn/router_task.h"
 #include "ud3tn/simplehtab.h"
 #include "ud3tn/task_tags.h"
 
@@ -520,19 +519,22 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 		param->opportunistic = false;
 		param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
 
-		// Even if it is no _new_ connection, we notify the router task
-		struct router_signal rt_signal = {
-			.type = ROUTER_SIGNAL_NEW_LINK_ESTABLISHED,
-			.data = cla_get_cla_addr_from_link(
-				&param->link.base
-			),
-		};
-		const struct bundle_agent_interface *bundle_agent_interface =
-			config->bundle_agent_interface;
-		hal_queue_push_to_back(
-			bundle_agent_interface->router_signaling_queue,
-			&rt_signal
-		);
+		// Even if it is no _new_ connection, we notify the BP task
+		// (as long as the connection is already UP)
+		if (param->state == TCPCLV3_ESTABLISHED) {
+			const struct bundle_agent_interface *bai =
+				config->bundle_agent_interface;
+			ASSERT(param->link.base.config != NULL);
+			bundle_processor_inform(
+				bai->bundle_signaling_queue,
+				NULL,
+				BP_SIGNAL_NEW_LINK_ESTABLISHED,
+				cla_get_cla_addr_from_link(&param->link.base),
+				NULL,
+				NULL,
+				NULL
+			);
+		}
 
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 		return UD3TN_OK;

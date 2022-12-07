@@ -5,7 +5,6 @@
 #include "ud3tn/agent_util.h"
 #include "ud3tn/common.h"
 #include "ud3tn/bundle.h"
-#include "ud3tn/bundle_agent_interface.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/eid.h"
 
@@ -85,7 +84,10 @@ struct bundle *agent_create_forward_bundle(
 		bundle_agent_interface->bundle_signaling_queue,
 		bundle,
 		BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
-		BUNDLE_SR_REASON_NO_INFO
+		NULL,
+		NULL,
+		NULL,
+		NULL
 	);
 
 	return bundle;

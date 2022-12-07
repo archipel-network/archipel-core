@@ -7,21 +7,8 @@
 
 #include <stdint.h>
 
-struct routed_bundle {
-	struct bundle *bundle_ptr;
-	char *destination; /* TODO: Optimize */
-	uint8_t preemption_improvement;
-	enum bundle_routing_priority prio;
-	uint32_t size;
-	uint64_t exp_time;
-	struct contact **contacts;
-	uint8_t contact_count;
-	uint8_t serialized;
-	uint8_t transmitted;
-};
-
 struct routed_bundle_list {
-	struct routed_bundle *data;
+	struct bundle *data;
 	struct routed_bundle_list *next;
 };
 
@@ -45,12 +32,6 @@ struct contact_list {
 	struct contact_list *next;
 };
 
-struct associated_contact_list {
-	struct contact *data;
-	float p;
-	struct associated_contact_list *next;
-};
-
 enum node_flags {
 	NODE_FLAG_NONE = 0,
 	NODE_FLAG_INTERNET_ACCESS = 0x1
@@ -60,8 +41,6 @@ struct node {
 	char *eid;
 	char *cla_addr;
 	enum node_flags flags;
-	float trustworthiness;
-	float reliability;
 	struct endpoint_list *endpoints;
 	struct contact_list *contacts;
 };
@@ -108,10 +87,5 @@ int add_contact_to_ordered_list(
 	const int order_by_from);
 int remove_contact_from_list(
 	struct contact_list **list, struct contact *contact);
-int add_contact_to_ordered_assoc_list(
-	struct associated_contact_list **list, struct contact *contact,
-	float p, const int order_by_from);
-int remove_contact_from_assoc_list(
-	struct associated_contact_list **list, struct contact *contact);
 
 #endif // NODE_H_INCLUDED
