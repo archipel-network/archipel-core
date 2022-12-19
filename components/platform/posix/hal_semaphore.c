@@ -57,6 +57,9 @@ enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
 {
 	struct timespec ts;
 
+	if (timeout_ms == 0)
+		return sem_trywait(sem) == -1 ? UD3TN_FAIL : UD3TN_OK;
+
 	if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
 		exit(EXIT_FAILURE);
 	ts.tv_sec += timeout_ms/1000;
