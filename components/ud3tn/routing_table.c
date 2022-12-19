@@ -272,8 +272,9 @@ bool routing_table_delete_node(
 			remove_node_from_tables(cur_node, false, rescheduler);
 			cur_node->endpoints = endpoint_list_difference(
 				cur_node->endpoints, new_node->endpoints, 1);
+			new_node->endpoints = NULL; // free'd
 			cur_node->contacts = contact_list_difference(
-				cur_node->contacts, new_node->contacts, 1,
+				cur_node->contacts, new_node->contacts,
 				&modified, &deleted);
 			/* Process modified contacts */
 			while (modified != NULL) {
@@ -296,8 +297,7 @@ bool routing_table_delete_node(
 				}
 			}
 			add_node_to_tables(cur_node);
-			free(new_node->eid);
-			free(new_node);
+			free_node(new_node);
 		}
 		return true;
 	}
