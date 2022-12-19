@@ -212,36 +212,19 @@ static enum ud3tn_result handle_established_connection(
 	if (other && other != param) {
 		hal_semaphore_take_blocking(other->param_semphr);
 
-		// Another connection exists. If it currently has not
-		// established a TCPCLv3 session or the socket has been closed
-		// and it is in the process of cleaning up resources
-		// (active == false), we replace it as primary connection
-		// used for TX. However, if the connection is established, we
-		// do not replace it (first come, first serve).
-		if (other->state != TCPCLV3_ESTABLISHED) {
-			LOGF("TCPCLv3: Taking over management of connection with \"%s\"",
-			     param->eid);
-			htab_remove(&tcpclv3_config->param_htab, param->eid);
-			if (!other->opportunistic) {
-				// Take over the "planned" status
-				other->opportunistic = true;
-				param->opportunistic = false;
-				if (!param->cla_addr) {
-					param->cla_addr = other->cla_addr;
-					other->cla_addr = NULL;
-				}
-			}
-		} else {
-			LOGF("TCPCLv3: Leaving open primary connection with \"%s\" as-is",
-			     param->eid);
-			if (!param->opportunistic) {
-				// Give over the "planned" status
-				other->opportunistic = false;
-				param->opportunistic = true;
-				if (!other->cla_addr) {
-					other->cla_addr = param->cla_addr;
-					param->cla_addr = NULL;
-				}
+		// Another connection exists. We replace it as primary
+		// connection used for TX, assuming the newest connection is
+		// always the one to be used.
+		LOGF("TCPCLv3: Taking over management of connection with \"%s\"",
+		     param->eid);
+		htab_remove(&tcpclv3_config->param_htab, param->eid);
+		if (!other->opportunistic) {
+			// Take over the "planned" status
+			other->opportunistic = true;
+			param->opportunistic = false;
+			if (!param->cla_addr) {
+				param->cla_addr = other->cla_addr;
+				other->cla_addr = NULL;
 			}
 		}
 
@@ -328,8 +311,11 @@ static void tcpclv3_link_management_task(void *p)
 			ASSERT(param->socket > 0);
 			if (cla_tcpclv3_perform_handshake(param) == UD3TN_OK)
 				handle_established_connection(param);
-			if (param->opportunistic || !param->cla_addr ||
-			    param->cla_addr[0] == '\0') {
+			if (param->opportunistic) {
+				LOG("TCPCLv3: Link marked as opportunistic, not initiating reconnection attempt");
+				break;
+			}
+			if (!param->cla_addr || param->cla_addr[0] == '\0') {
 				LOG("TCPCLv3: No CLA address present, not initiating reconnection attempt");
 				break;
 			}
