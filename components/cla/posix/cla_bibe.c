@@ -367,6 +367,11 @@ size_t bibe_forward_to_specific_parser(struct cla_link *const link,
 		if (msg.type == AAP_MESSAGE_RECVBIBE) {
 			// Parsing the BPDU
 			struct bibe_protocol_data_unit bpdu;
+
+			// Ensure it is always initialized, so we can safely
+			// invoke free() below.
+			bpdu.encapsulated_bundle = NULL;
+
 			size_t err = bibe_parser_parse(
 				msg.payload,
 				msg.payload_length,
@@ -382,6 +387,8 @@ size_t bibe_forward_to_specific_parser(struct cla_link *const link,
 					bpdu.payload_length
 				);
 			}
+
+			free(bpdu.encapsulated_bundle);
 		}
 
 		aap_message_clear(&msg);
