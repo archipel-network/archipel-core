@@ -531,7 +531,7 @@ static void reschedule_bundles(
 		b = contact->contact_bundles->data;
 		router_remove_bundle_from_contact(contact, b);
 		rescheduler.reschedule_func(
-			contact->contact_bundles->data,
+			b,
 			rescheduler.reschedule_func_context
 		);
 	}
