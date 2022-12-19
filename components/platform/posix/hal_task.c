@@ -112,9 +112,11 @@ Task_t hal_task_create(void (*task_function)(void *), const char *task_name,
 	}
 
 #if LINUX_SPECIFIC_API
-	if (pthread_setname_np(thread, task_name)) {
-		LOG("Could not set thread name!");
-		goto fail_attr;
+	if (task_name) {
+		if (pthread_setname_np(thread, task_name)) {
+			LOG("Could not set thread name!");
+			goto fail_attr;
+		}
 	}
 #endif
 

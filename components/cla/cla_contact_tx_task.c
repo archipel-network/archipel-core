@@ -159,17 +159,10 @@ static void cla_contact_tx_task(void *param)
 
 enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 {
-	static uint8_t ctr = 1;
-	static char tname_buf[6];
-
-	tname_buf[0] = 't';
-	tname_buf[1] = 'x';
-	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
-
 	hal_semaphore_take_blocking(link->tx_task_sem);
 	link->tx_task_handle = hal_task_create(
 		cla_contact_tx_task,
-		tname_buf,
+		NULL,
 		CONTACT_TX_TASK_PRIORITY,
 		link,
 		CONTACT_TX_TASK_STACK_SIZE,
