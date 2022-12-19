@@ -84,13 +84,16 @@ enum ud3tn_result cla_tcp_read(struct cla_link *link,
 			       size_t *bytes_read)
 {
 	struct cla_tcp_link *tcp_link = (struct cla_tcp_link *)link;
+	ssize_t ret;
 
-	const ssize_t ret = recv(
-		tcp_link->connection_socket,
-		buffer,
-		length,
-		0
-	);
+	do {
+		ret = recv(
+			tcp_link->connection_socket,
+			buffer,
+			length,
+			0
+		);
+	} while (ret == -1 && errno == EINTR);
 
 	if (ret < 0) {
 		LOGF("TCP: Error reading from socket: %s", strerror(errno));
