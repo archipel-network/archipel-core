@@ -10,6 +10,7 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_config.h"
 
+#include "ud3tn/common.h"
 #include "ud3tn/result.h"
 
 #include <stdlib.h>
@@ -35,6 +36,7 @@ void hal_semaphore_take_blocking(Semaphore_t sem)
 
 void hal_semaphore_release(Semaphore_t sem)
 {
+	ASSERT(hal_semaphore_is_blocked(sem));
 	sem_post(sem);
 }
 
