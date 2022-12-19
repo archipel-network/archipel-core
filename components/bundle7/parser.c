@@ -411,18 +411,24 @@ CborError block_type(struct bundle7_parser *state, CborValue *it)
 
 	cbor_value_get_uint64(it, &type);
 
-	// Create bundle block
-	struct bundle_block *block = bundle_block_create(type);
-
-	if (block == NULL)
-		return CborErrorOutOfMemory;
-
-	// Create bundle block list entry
-	*state->current_block_entry = bundle_block_entry_create(block);
-
 	if (*state->current_block_entry == NULL) {
-		bundle_block_free(block);
-		return CborErrorOutOfMemory;
+		// Create bundle block
+		struct bundle_block *block = bundle_block_create(type);
+
+		if (block == NULL)
+			return CborErrorOutOfMemory;
+
+		// Create bundle block list entry
+		*state->current_block_entry = bundle_block_entry_create(block);
+
+		if (*state->current_block_entry == NULL) {
+			bundle_block_free(block);
+			return CborErrorOutOfMemory;
+		}
+	} else {
+		// Was already created but the last operation failed with a
+		// too-short chunk (CborErrorUnexpectedEOF).
+		ASSERT((*state->current_block_entry)->data->type == type);
 	}
 
 	state->next = block_number;
