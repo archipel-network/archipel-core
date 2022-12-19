@@ -26,6 +26,10 @@
 
 static struct bundle_agent_interface bundle_agent_interface;
 
+// References kept for program runtime
+static Task_t bp_task_result;
+static struct application_agent_config *aa_cfg;
+
 void init(int argc, char *argv[])
 {
 	hal_platform_init(argc, argv);
@@ -79,7 +83,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_processor_task_params->status_reporting =
 			opt->status_reporting;
 
-	Task_t task_result = hal_task_create(
+	bp_task_result = hal_task_create(
 		bundle_processor_task,
 		"bundl_proc_t",
 		BUNDLE_PROCESSOR_TASK_PRIORITY,
@@ -87,7 +91,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		DEFAULT_TASK_STACK_SIZE,
 		(void *)BUNDLE_PROCESSOR_TASK_TAG
 	);
-	if (!task_result) {
+	if (!bp_task_result) {
 		LOG("INIT: Bundle processor task could not be started!");
 		exit(EXIT_FAILURE);
 	}
@@ -128,7 +132,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	if (opt->allow_remote_configuration)
 		LOG("!! WARNING !! Remote configuration capability ENABLED!");
 
-	const struct application_agent_config *aa_cfg = application_agent_setup(
+	aa_cfg = application_agent_setup(
 		&bundle_agent_interface,
 		opt->aap_socket,
 		opt->aap_node,
