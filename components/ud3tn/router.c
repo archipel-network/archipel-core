@@ -412,7 +412,6 @@ enum ud3tn_result router_add_bundle_to_contact(
 		cur_entry = &(*cur_entry)->next;
 	}
 	*cur_entry = new_entry;
-	contact->bundle_count++;
 	// This contact is of infinite capacity, just return "OK".
 	if (contact->remaining_capacity_p0 == INT32_MAX)
 		return UD3TN_OK;
@@ -446,7 +445,6 @@ enum ud3tn_result router_remove_bundle_from_contact(
 			tmp = *cur_entry;
 			*cur_entry = (*cur_entry)->next;
 			free(tmp);
-			contact->bundle_count--;
 			// This contact is of infinite capacity, do nothing.
 			if (contact->remaining_capacity_p0 == INT32_MAX)
 				continue;

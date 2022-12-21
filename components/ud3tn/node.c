@@ -53,7 +53,6 @@ struct contact *contact_create(struct node *node)
 	ret->remaining_capacity_p2 = 0;
 	ret->contact_endpoints = NULL;
 	ret->contact_bundles = NULL;
-	ret->bundle_count = 0;
 	ret->active = 0;
 	return ret;
 }

@@ -23,7 +23,6 @@ struct contact {
 	int32_t remaining_capacity_p2;
 	struct endpoint_list *contact_endpoints;
 	struct routed_bundle_list *contact_bundles;
-	uint8_t bundle_count;
 	int8_t active;
 };
 
