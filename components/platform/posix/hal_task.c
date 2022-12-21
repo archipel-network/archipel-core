@@ -136,11 +136,13 @@ fail:
 }
 
 
+__attribute__((noreturn))
 void hal_task_start_scheduler(void)
 {
 	/* Put the calling thread (in this case the main thread) to */
 	/* sleep indefinitely */
-	pause();
+	for (;;)
+		pause();
 }
 
 
