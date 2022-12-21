@@ -14,8 +14,8 @@
 static int contacts_overlap(struct contact *a, struct contact *b)
 {
 	return (
-		a->from_s < b->to_s &&
-		a->to_s > b->from_s
+		a->from_ms < b->to_ms &&
+		a->to_ms > b->from_ms
 	);
 }
 
@@ -44,8 +44,8 @@ struct contact *contact_create(struct node *node)
 	if (ret == NULL)
 		return NULL;
 	ret->node = node;
-	ret->from_s = 0;
-	ret->to_s = 0;
+	ret->from_ms = 0;
+	ret->to_ms = 0;
 	ret->bitrate_bytes_per_s = 0;
 	ret->total_capacity_bytes = 0;
 	ret->remaining_capacity_p0 = 0;
@@ -224,16 +224,16 @@ int contact_list_sorted(struct contact_list *cl, const int order_by_from)
 
 	if (order_by_from) {
 		while (cl != NULL) {
-			if (cl->data->from_s < last)
+			if (cl->data->from_ms < last)
 				return 0;
-			last = cl->data->from_s;
+			last = cl->data->from_ms;
 			cl = cl->next;
 		}
 	} else {
 		while (cl != NULL) {
-			if (cl->data->to_s < last)
+			if (cl->data->to_ms < last)
 				return 0;
-			last = cl->data->to_s;
+			last = cl->data->to_ms;
 			cl = cl->next;
 		}
 	}
@@ -283,17 +283,17 @@ static inline void add_to_modified_list(
 // merges new into old
 static inline bool merge_contacts(struct contact *old, struct contact *new)
 {
-	const uint64_t old_duration = old->to_s - old->from_s;
+	const uint64_t old_duration_ms = old->to_ms - old->from_ms;
 
-	old->from_s = MIN(old->from_s, new->from_s);
-	old->to_s = MAX(old->to_s, new->to_s);
+	old->from_ms = MIN(old->from_ms, new->from_ms);
+	old->to_ms = MAX(old->to_ms, new->to_ms);
 
 	/* Union EID lists */
 	old->contact_endpoints = endpoint_list_union(
 		old->contact_endpoints, new->contact_endpoints);
 	/* Capacity changed => update bitrate and return true */
 	if (old->bitrate_bytes_per_s != new->bitrate_bytes_per_s ||
-			old->to_s - old->from_s != old_duration) {
+			old->to_ms - old->from_ms != old_duration_ms) {
 		old->bitrate_bytes_per_s = new->bitrate_bytes_per_s;
 		recalculate_contact_capacity(old);
 		return true;
@@ -318,13 +318,13 @@ struct contact_list *contact_list_union(
 	else if (b == NULL)
 		return a;
 	while (*cur_slot != NULL) {
-		cur_from = (*cur_slot)->data->from_s;
-		cur_to = (*cur_slot)->data->to_s;
+		cur_from = (*cur_slot)->data->from_ms;
+		cur_to = (*cur_slot)->data->to_ms;
 		ASSERT((*cur_slot)->data->node != NULL);
 		/* Traverse b linearly and insert contacts "smaller" than the
 		 * current one in a before it.
 		 */
-		while (cur_can != NULL && cur_can->data->from_s <= cur_from) {
+		while (cur_can != NULL && cur_can->data->from_ms <= cur_from) {
 			next_can = cur_can->next;
 			ASSERT(cur_can->data->node != NULL);
 			if (cur_can->data->node &&
@@ -366,7 +366,7 @@ struct contact_list *contact_list_union(
 			ASSERT((*cur_can_p)->data->node != NULL);
 			if ((*cur_can_p)->data->node &&
 			    (*cur_slot)->data->node &&
-			    (*cur_can_p)->data->from_s < cur_to &&
+			    (*cur_can_p)->data->from_ms < cur_to &&
 			    strcmp((*cur_can_p)->data->node->eid,
 				   (*cur_slot)->data->node->eid) == 0) {
 				// overlap -> merge
@@ -408,11 +408,11 @@ struct contact_list *contact_list_difference(
 		return a;
 	while (*cur_slot != NULL) {
 		while (*cur_slot != NULL
-			&& cur_can != NULL && cur_can->data->from_s
-				<= (*cur_slot)->data->from_s
+			&& cur_can != NULL && cur_can->data->from_ms
+				<= (*cur_slot)->data->from_ms
 		) {
-			if (cur_can->data->from_s == (*cur_slot)->data->from_s
-			    && cur_can->data->to_s == (*cur_slot)->data->to_s
+			if (cur_can->data->from_ms == (*cur_slot)->data->from_ms
+			    && cur_can->data->to_ms == (*cur_slot)->data->to_ms
 			) {
 				if (cur_can->data->contact_endpoints == NULL) {
 					/* Add to "deleted" list and rm */
@@ -479,11 +479,11 @@ int node_prepare_and_verify(struct node *node)
 	if (!node || node->eid == NULL)
 		return 0;
 
-	LLSORT(struct contact_list, data->from_s, node->contacts);
+	LLSORT(struct contact_list, data->from_ms, node->contacts);
 	cl = node->contacts;
 	node->endpoints = endpoint_list_strip_and_sort(node->endpoints);
 	while (cl != NULL) {
-		if (cl->data->from_s >= cl->data->to_s)
+		if (cl->data->from_ms >= cl->data->to_ms)
 			return 0;
 		cl->data->contact_endpoints = endpoint_list_strip_and_sort(
 			cl->data->contact_endpoints);
@@ -500,19 +500,19 @@ int node_prepare_and_verify(struct node *node)
 
 void recalculate_contact_capacity(struct contact *contact)
 {
-	uint64_t duration, new_capacity_bytes;
+	uint64_t duration_s, new_capacity_bytes;
 	int32_t capacity_difference;
 
 	ASSERT(contact != NULL);
 	if (!contact)
 		return;
 
-	duration = contact->to_s - contact->from_s;
-	new_capacity_bytes = duration * contact->bitrate_bytes_per_s;
+	duration_s = (contact->to_ms - contact->from_ms + 500) / 1000;
+	new_capacity_bytes = duration_s * contact->bitrate_bytes_per_s;
 	// If the calculation overflows or the capacity is > INT32_MAX,
 	// we assume an "infinite" contact capacity.
-	if ((duration != 0 &&
-	     new_capacity_bytes / duration != contact->bitrate_bytes_per_s) ||
+	if ((duration_s != 0 &&
+	     new_capacity_bytes / duration_s != contact->bitrate_bytes_per_s) ||
 	    new_capacity_bytes >= INT32_MAX) {
 		contact->total_capacity_bytes = INT32_MAX;
 		contact->remaining_capacity_p0 = INT32_MAX;
@@ -530,10 +530,10 @@ void recalculate_contact_capacity(struct contact *contact)
 	contact->remaining_capacity_p2 += capacity_difference;
 }
 
-int32_t contact_get_cur_remaining_capacity_bytes(
-	struct contact *contact, enum bundle_routing_priority prio)
+int32_t contact_get_remaining_capacity_bytes(
+	struct contact *contact, enum bundle_routing_priority prio,
+	uint64_t time_ms)
 {
-	uint64_t time;
 	uint64_t cap_left;
 	int32_t cap_result;
 
@@ -541,20 +541,29 @@ int32_t contact_get_cur_remaining_capacity_bytes(
 	if (!contact)
 		return 0;
 
-	time = hal_time_get_timestamp_s();
-	if (time >= contact->to_s)
+	if (time_ms >= contact->to_ms)
 		return 0;
-	if (time <= contact->from_s)
+	if (time_ms <= contact->from_ms)
 		return CONTACT_CAPACITY(contact, prio);
 	if (contact->total_capacity_bytes >= INT32_MAX)
 		return INT32_MAX;
 	cap_left = (
 		contact->total_capacity_bytes *
-		(uint64_t)(contact->to_s - time) /
-		(uint64_t)(contact->to_s - contact->from_s)
+		(uint64_t)(contact->to_ms - time_ms) /
+		(uint64_t)(contact->to_ms - contact->from_ms)
 	);
 	cap_result = cap_left;
 	return MIN(cap_result, CONTACT_CAPACITY(contact, prio));
+}
+
+int32_t contact_get_cur_remaining_capacity_bytes(
+	struct contact *contact, enum bundle_routing_priority prio)
+{
+	return contact_get_remaining_capacity_bytes(
+		contact,
+		prio,
+		hal_time_get_timestamp_ms()
+	);
 }
 
 int add_contact_to_ordered_list(
@@ -573,10 +582,10 @@ int add_contact_to_ordered_list(
 		if ((*cur_entry)->data == contact)
 			return 0;
 		if (order_by_from) {
-			if ((*cur_entry)->data->from_s > contact->from_s)
+			if ((*cur_entry)->data->from_ms > contact->from_ms)
 				break;
 		} else {
-			if ((*cur_entry)->data->to_s > contact->to_s)
+			if ((*cur_entry)->data->to_ms > contact->to_ms)
 				break;
 		}
 		cur_entry = &(*cur_entry)->next;

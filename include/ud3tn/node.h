@@ -14,8 +14,8 @@ struct routed_bundle_list {
 
 struct contact {
 	struct node *node;
-	uint64_t from_s;
-	uint64_t to_s;
+	uint64_t from_ms;
+	uint64_t to_ms;
 	uint32_t bitrate_bytes_per_s;
 	uint32_t total_capacity_bytes;
 	int32_t remaining_capacity_p0;
@@ -79,6 +79,9 @@ struct contact_list *contact_list_difference(
 struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el);
 int node_prepare_and_verify(struct node *node);
 void recalculate_contact_capacity(struct contact *contact);
+int32_t contact_get_remaining_capacity_bytes(
+	struct contact *contact, enum bundle_routing_priority prio,
+	uint64_t time_ms);
 int32_t contact_get_cur_remaining_capacity_bytes(
 	struct contact *contact, enum bundle_routing_priority prio);
 int add_contact_to_ordered_list(
