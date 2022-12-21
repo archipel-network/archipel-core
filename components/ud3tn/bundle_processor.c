@@ -52,7 +52,7 @@ struct bp_context {
 
 	struct known_bundle_list {
 		struct bundle_unique_identifier id;
-		uint64_t deadline;
+		uint64_t deadline_ms;
 		struct known_bundle_list *next;
 	} *known_bundle_list;
 };
@@ -530,9 +530,9 @@ static void bundle_receive(struct bp_context *const ctx, struct bundle *bundle)
 		);
 
 	// Check lifetime
-	const uint64_t timestamp_s = hal_time_get_timestamp_s();
+	const uint64_t timestamp_ms = hal_time_get_timestamp_ms();
 
-	if (bundle_get_expiration_time_s(bundle) < timestamp_s) {
+	if (bundle_get_expiration_time_ms(bundle) < timestamp_ms) {
 		bundle_expired(ctx, bundle);
 		return;
 	}
@@ -1127,10 +1127,12 @@ static bool bundle_record_add_and_check_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	uint64_t cur_time = hal_time_get_timestamp_s();
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
+	uint64_t cur_time_ms = hal_time_get_timestamp_ms();
+	const uint64_t bundle_deadline_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 
-	if (bundle_deadline < cur_time)
+	if (bundle_deadline_ms < cur_time_ms)
 		return true; // We assume we "know" all expired bundles.
 	// 1. Cleanup and search
 	while (*cur_entry != NULL) {
@@ -1138,12 +1140,12 @@ static bool bundle_record_add_and_check_known(
 
 		if (bundle_is_equal(bundle, &e->id)) {
 			return true;
-		} else if (e->deadline < cur_time) {
+		} else if (e->deadline_ms < cur_time_ms) {
 			*cur_entry = e->next;
 			bundle_free_unique_identifier(&e->id);
 			free(e);
 			continue;
-		} else if (e->deadline > bundle_deadline) {
+		} else if (e->deadline_ms > bundle_deadline_ms) {
 			// Won't find, insert here!
 			break;
 		}
@@ -1158,7 +1160,7 @@ static bool bundle_record_add_and_check_known(
 	if (!new_entry)
 		return false;
 	new_entry->id = bundle_get_unique_identifier(bundle);
-	new_entry->deadline = bundle_deadline;
+	new_entry->deadline_ms = bundle_deadline_ms;
 	new_entry->next = *cur_entry;
 	*cur_entry = new_entry;
 
@@ -1169,7 +1171,9 @@ static bool bundle_reassembled_is_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
+	const uint64_t bundle_deadline_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
@@ -1179,7 +1183,7 @@ static bool bundle_reassembled_is_known(
 				e->id.payload_length ==
 					bundle->total_adu_length) {
 			return true;
-		} else if (e->deadline > bundle_deadline) {
+		} else if (e->deadline_ms > bundle_deadline_ms) {
 			// Won't find...
 			break;
 		}
@@ -1192,12 +1196,14 @@ static void bundle_add_reassembled_as_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle);
+	const uint64_t bundle_deadline_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
 
-		if (e->deadline > bundle_deadline)
+		if (e->deadline_ms > bundle_deadline_ms)
 			break;
 		cur_entry = &(*cur_entry)->next;
 	}
@@ -1211,7 +1217,7 @@ static void bundle_add_reassembled_as_known(
 	new_entry->id = bundle_get_unique_identifier(bundle);
 	new_entry->id.fragment_offset = 0;
 	new_entry->id.payload_length = bundle->total_adu_length;
-	new_entry->deadline = bundle_deadline;
+	new_entry->deadline_ms = bundle_deadline_ms;
 	new_entry->next = *cur_entry;
 	*cur_entry = new_entry;
 }
