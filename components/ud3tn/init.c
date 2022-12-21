@@ -160,6 +160,5 @@ int start_os(void)
 	hal_task_start_scheduler();
 	/* Should never get here! */
 	ASSERT(0);
-	hal_platform_restart();
 	__builtin_unreachable();
 }

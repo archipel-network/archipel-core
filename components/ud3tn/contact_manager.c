@@ -363,7 +363,6 @@ static void contact_manager_task(void *cm_parameters)
 {
 	struct contact_manager_task_parameters *parameters
 		= (struct contact_manager_task_parameters *)cm_parameters;
-	int8_t led_state = 0;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
 	uint64_t cur_time, next_time;
 	int32_t delay;
@@ -378,8 +377,6 @@ static void contact_manager_task(void *cm_parameters)
 		return;
 	}
 	for (;;) {
-		hal_platform_led_set((led_state = 1 - led_state) + 3);
-
 		if (signal != CM_SIGNAL_NONE) {
 			manage_contacts(
 				&ctx,

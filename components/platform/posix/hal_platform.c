@@ -72,23 +72,6 @@ static void setup_exit_handler(void)
 	signal(SIGPIPE, SIG_IGN);
 }
 
-void hal_platform_led_pin_set(uint8_t led_identifier, int mode)
-{
-	/* not relevant for the POSIX implementation */
-}
-
-
-void hal_platform_led_set(int led_preset)
-{
-	/* not relevant for the POSIX implementation */
-}
-
-void mpu_init(void)
-{
-	/* currently not relevant for the POSIX implementation */
-}
-
-
 void hal_platform_init(int argc, char *argv[])
 {
 	setup_exit_handler();
@@ -108,21 +91,4 @@ void hal_platform_init(int argc, char *argv[])
 	} else {
 		LOG("Error: Cannot allocate memory for restart buffer");
 	}
-}
-
-__attribute__((noreturn))
-void hal_platform_restart(void)
-{
-	// TODO: Try to close open ports (e.g. TCP)
-	fprintf(stderr, "Restarting!\n");
-
-	// If restart_args could not be allocated, this is used (no arguments)
-	char *const backup_restart_buf[1] = {NULL};
-
-	if (restart_args)
-		execv("/proc/self/exe", restart_args);
-	else
-		execv("/proc/self/exe", backup_restart_buf);
-
-	__builtin_unreachable();
 }
