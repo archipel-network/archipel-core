@@ -40,7 +40,7 @@ uint64_t hal_time_get_timestamp_s(void)
 uint64_t hal_time_get_timestamp_ms(void)
 {
 	struct timespec ts;
-	long ms; /* Milliseconds */
+	unsigned long ms; /* Milliseconds */
 	time_t s;  /* Seconds */
 
 	/* Returns the time relative to the unix epoch */
@@ -49,16 +49,16 @@ uint64_t hal_time_get_timestamp_ms(void)
 	/* We want to use the DTN epoch -> subtract the offset */
 	s = ts.tv_sec - DTN_TIMESTAMP_OFFSET;
 	/* Convert nanoseconds to milliseconds */
-	ms = round(ts.tv_nsec / 1.0e6);
+	ms = (ts.tv_nsec + 500000) / 1000000;
 
-	return (s*1.0e3)+ms;
+	return ((uint64_t)s * 1000) + (uint64_t)ms;
 }
 
 
 uint64_t hal_time_get_timestamp_us(void)
 {
 	struct timespec ts;
-	long us; /* Milliseconds */
+	unsigned long us; /* Microseconds */
 	time_t s;  /* Seconds */
 
 	/* Returns the time relative to the unix epoch */
@@ -67,9 +67,9 @@ uint64_t hal_time_get_timestamp_us(void)
 	/* We want to use the DTN epoch -> subtract the offset */
 	s = ts.tv_sec - DTN_TIMESTAMP_OFFSET;
 	/* Convert nanoseconds to microseconds */
-	us = round(ts.tv_nsec / 1.0e3);
+	us = (ts.tv_nsec + 500) / 1000;
 
-	return (s*1.0e6)+us;
+	return ((uint64_t)s * 1000000) + (uint64_t)us;
 }
 
 
