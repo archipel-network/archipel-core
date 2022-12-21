@@ -21,7 +21,7 @@ static struct contact *createct(struct node *node,
 
 	c->from = from;
 	c->to = to;
-	c->bitrate = bitrate;
+	c->bitrate_bytes_per_s = bitrate;
 	recalculate_contact_capacity(c);
 	return c;
 }
@@ -171,7 +171,7 @@ TEST(routingTable, routing_table_add_delete)
 	TEST_ASSERT_NULL(nti->contacts->next);
 	TEST_ASSERT_NOT_NULL(nti->contacts->data);
 	TEST_ASSERT_EQUAL_PTR(c2, nti->contacts->data);
-	TEST_ASSERT_EQUAL_UINT16(600, nti->contacts->data->bitrate);
+	TEST_ASSERT_EQUAL_UINT16(600, nti->contacts->data->bitrate_bytes_per_s);
 	/* check some other nodes */
 	nti = routing_table_lookup_eid("node5");
 	TEST_ASSERT_NOT_NULL(nti);
@@ -196,7 +196,7 @@ TEST(routingTable, routing_table_add_delete)
 	// updated via ADD node12
 	TEST_ASSERT_EQUAL_UINT64(4, c3->from);
 	TEST_ASSERT_EQUAL_UINT64(6, c3->to);
-	TEST_ASSERT_EQUAL_UINT32(700, c3->bitrate);
+	TEST_ASSERT_EQUAL_UINT32(700, c3->bitrate_bytes_per_s);
 	nti = routing_table_lookup_eid("node2");
 	TEST_ASSERT_NOT_NULL(nti);
 	TEST_ASSERT_EQUAL_UINT16(2, nti->ref_count);

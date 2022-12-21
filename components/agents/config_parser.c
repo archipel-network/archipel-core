@@ -384,13 +384,13 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 		break;
 	case RP_EXPECT_CONTACT_BITRATE:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
-			end_read_uint32(parser,
-				&(parser->current_contact->data->bitrate));
+			end_read_uint32(parser, &(parser->current_contact->data
+						  ->bitrate_bytes_per_s));
 			parser->stage
 				= RP_EXPECT_CONTACT_NODE_LIST_START_DELIMITER;
 		} else if (byte == OBJECT_END_DELIMITER) {
-			end_read_uint32(parser,
-				&(parser->current_contact->data->bitrate));
+			end_read_uint32(parser, &(parser->current_contact->data
+						  ->bitrate_bytes_per_s));
 			parser->stage = RP_EXPECT_CONTACT_SEPARATOR;
 		} else if (!read_integer(parser, byte)) {
 			parser->basedata->status = PARSER_STATUS_ERROR;

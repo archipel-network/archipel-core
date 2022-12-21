@@ -46,8 +46,8 @@ struct contact *contact_create(struct node *node)
 	ret->node = node;
 	ret->from = 0;
 	ret->to = 0;
-	ret->bitrate = 0;
-	ret->total_capacity = 0;
+	ret->bitrate_bytes_per_s = 0;
+	ret->total_capacity_bytes = 0;
 	ret->remaining_capacity_p0 = 0;
 	ret->remaining_capacity_p1 = 0;
 	ret->remaining_capacity_p2 = 0;
@@ -293,9 +293,9 @@ static inline bool merge_contacts(struct contact *old, struct contact *new)
 	old->contact_endpoints = endpoint_list_union(
 		old->contact_endpoints, new->contact_endpoints);
 	/* Capacity changed => update bitrate and return true */
-	if (old->bitrate != new->bitrate ||
+	if (old->bitrate_bytes_per_s != new->bitrate_bytes_per_s ||
 			old->to - old->from != old_duration) {
-		old->bitrate = new->bitrate;
+		old->bitrate_bytes_per_s = new->bitrate_bytes_per_s;
 		recalculate_contact_capacity(old);
 		return true;
 	}
@@ -501,7 +501,7 @@ int node_prepare_and_verify(struct node *node)
 
 void recalculate_contact_capacity(struct contact *contact)
 {
-	uint64_t duration, new_capacity;
+	uint64_t duration, new_capacity_bytes;
 	int32_t capacity_difference;
 
 	ASSERT(contact != NULL);
@@ -509,25 +509,29 @@ void recalculate_contact_capacity(struct contact *contact)
 		return;
 
 	duration = contact->to - contact->from;
-	new_capacity = duration * contact->bitrate;
+	new_capacity_bytes = duration * contact->bitrate_bytes_per_s;
 	// If the calculation overflows or the capacity is > INT32_MAX,
 	// we assume an "infinite" contact capacity.
-	if ((duration != 0 && new_capacity / duration != contact->bitrate) ||
-	    new_capacity >= INT32_MAX) {
-		contact->total_capacity = INT32_MAX;
+	if ((duration != 0 &&
+	     new_capacity_bytes / duration != contact->bitrate_bytes_per_s) ||
+	    new_capacity_bytes >= INT32_MAX) {
+		contact->total_capacity_bytes = INT32_MAX;
 		contact->remaining_capacity_p0 = INT32_MAX;
 		contact->remaining_capacity_p1 = INT32_MAX;
 		contact->remaining_capacity_p2 = INT32_MAX;
 		return;
 	}
-	capacity_difference = new_capacity - (int32_t)contact->total_capacity;
-	contact->total_capacity = (uint32_t)new_capacity;
+	capacity_difference = (
+		new_capacity_bytes -
+		(int32_t)contact->total_capacity_bytes
+	);
+	contact->total_capacity_bytes = (uint32_t)new_capacity_bytes;
 	contact->remaining_capacity_p0 += capacity_difference;
 	contact->remaining_capacity_p1 += capacity_difference;
 	contact->remaining_capacity_p2 += capacity_difference;
 }
 
-int32_t contact_get_cur_remaining_capacity(
+int32_t contact_get_cur_remaining_capacity_bytes(
 	struct contact *contact, enum bundle_routing_priority prio)
 {
 	uint64_t time;
@@ -543,11 +547,13 @@ int32_t contact_get_cur_remaining_capacity(
 		return 0;
 	if (time <= contact->from)
 		return CONTACT_CAPACITY(contact, prio);
-	if (contact->total_capacity >= INT32_MAX)
+	if (contact->total_capacity_bytes >= INT32_MAX)
 		return INT32_MAX;
-	cap_left = contact->total_capacity
-		* (uint64_t)(contact->to - time)
-		/ (uint64_t)(contact->to - contact->from);
+	cap_left = (
+		contact->total_capacity_bytes *
+		(uint64_t)(contact->to - time) /
+		(uint64_t)(contact->to - contact->from)
+	);
 	cap_result = cap_left;
 	return MIN(cap_result, CONTACT_CAPACITY(contact, prio));
 }

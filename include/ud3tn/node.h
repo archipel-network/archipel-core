@@ -16,8 +16,8 @@ struct contact {
 	struct node *node;
 	uint64_t from;
 	uint64_t to;
-	uint32_t bitrate;
-	uint32_t total_capacity;
+	uint32_t bitrate_bytes_per_s;
+	uint32_t total_capacity_bytes;
 	int32_t remaining_capacity_p0;
 	int32_t remaining_capacity_p1;
 	int32_t remaining_capacity_p2;
@@ -80,7 +80,7 @@ struct contact_list *contact_list_difference(
 struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el);
 int node_prepare_and_verify(struct node *node);
 void recalculate_contact_capacity(struct contact *contact);
-int32_t contact_get_cur_remaining_capacity(
+int32_t contact_get_cur_remaining_capacity_bytes(
 	struct contact *contact, enum bundle_routing_priority prio);
 int add_contact_to_ordered_list(
 	struct contact_list **list, struct contact *contact,
