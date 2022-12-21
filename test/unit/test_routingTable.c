@@ -19,8 +19,8 @@ static struct contact *createct(struct node *node,
 {
 	struct contact *c = contact_create(node);
 
-	c->from = from;
-	c->to = to;
+	c->from_s = from;
+	c->to_s = to;
 	c->bitrate_bytes_per_s = bitrate;
 	recalculate_contact_capacity(c);
 	return c;
@@ -183,7 +183,7 @@ TEST(routingTable, routing_table_add_delete)
 	nti = routing_table_lookup_eid("node6");
 	TEST_ASSERT_NULL(nti);
 	/* delete */
-	LLSORT(struct contact_list, data->from, node13->contacts);
+	LLSORT(struct contact_list, data->from_s, node13->contacts);
 	TEST_ASSERT_FALSE(routing_table_delete_node(node13, rescheduler));
 	TEST_ASSERT_TRUE(routing_table_delete_node(node14, rescheduler));
 	nti = routing_table_lookup_eid("node1");
@@ -194,8 +194,8 @@ TEST(routingTable, routing_table_add_delete)
 	TEST_ASSERT_NOT_NULL(nti->contacts->data);
 	TEST_ASSERT_EQUAL_PTR(c3, nti->contacts->data);
 	// updated via ADD node12
-	TEST_ASSERT_EQUAL_UINT64(4, c3->from);
-	TEST_ASSERT_EQUAL_UINT64(6, c3->to);
+	TEST_ASSERT_EQUAL_UINT64(4, c3->from_s);
+	TEST_ASSERT_EQUAL_UINT64(6, c3->to_s);
 	TEST_ASSERT_EQUAL_UINT32(700, c3->bitrate_bytes_per_s);
 	nti = routing_table_lookup_eid("node2");
 	TEST_ASSERT_NOT_NULL(nti);
@@ -241,7 +241,7 @@ TEST(routingTable, routing_table_replace)
 {
 	struct node_table_entry *nti;
 
-	LLSORT(struct contact_list, data->from, node13->contacts);
+	LLSORT(struct contact_list, data->from_s, node13->contacts);
 	TEST_ASSERT_FALSE(routing_table_add_node(node13, rescheduler));
 	TEST_ASSERT_TRUE(routing_table_add_node(node14, rescheduler));
 	nti = routing_table_lookup_eid("node3");

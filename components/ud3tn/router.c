@@ -78,7 +78,7 @@ static inline struct max_fragment_size_result {
 	while (contacts != NULL && payload_capacity < payload_size) {
 		c = contacts->data;
 		contacts = contacts->next;
-		//if (c->to > exp_time)
+		//if (c->to_s > exp_time)
 		//	break;
 		c_capacity = ROUTER_CONTACT_CAPACITY(c, priority);
 		if (c_capacity < min_capacity)
@@ -144,9 +144,9 @@ uint8_t router_calculate_fragment_route(
 				d = 1;
 		if (d)
 			continue;
-		if (c->from >= exp_time)
+		if (c->from_s >= exp_time)
 			continue; // Ignore -- NOTE: List is ordered by c->to
-		if (c->to <= time)
+		if (c->to_s <= time)
 			continue;
 		cap = ROUTER_CONTACT_CAPACITY(c, 0);
 		if (preprocessed_size != 0) {
@@ -342,8 +342,8 @@ struct router_result router_try_reuse(
 		size = bundle_get_serialized_size(bundle);
 		fr = &route.fragment_results[0];
 		fr->payload_size = remaining_pay;
-		if (fr->contact->to <= time
-			|| fr->contact->to > expiration_time
+		if (fr->contact->to_s <= time
+			|| fr->contact->to_s > expiration_time
 			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
 				< (int32_t)size
 		)
@@ -361,8 +361,8 @@ struct router_result router_try_reuse(
 			size = bundle_get_mid_fragment_min_size(bundle);
 		fr = &route.fragment_results[f];
 		min_cap = UINT32_MAX;
-		if (fr->contact->to <= time
-			|| fr->contact->to > expiration_time
+		if (fr->contact->to_s <= time
+			|| fr->contact->to_s > expiration_time
 			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
 				< (int32_t)(size + RC.fragment_min_payload)
 		) {

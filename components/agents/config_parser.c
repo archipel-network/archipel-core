@@ -357,7 +357,7 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 	case RP_EXPECT_CONTACT_START_TIME:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint64(parser,
-				&(parser->current_contact->data->from));
+				&(parser->current_contact->data->from_s));
 			begin_read_integer(parser);
 			parser->stage = RP_EXPECT_CONTACT_END_TIME;
 		} else if (!read_integer(parser, byte)) {
@@ -367,10 +367,10 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 	case RP_EXPECT_CONTACT_END_TIME:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint64(parser,
-				&(parser->current_contact->data->to));
-			if (parser->current_contact->data->to >
-				parser->current_contact->data->from
-				&& parser->current_contact->data->to >
+				&(parser->current_contact->data->to_s));
+			if (parser->current_contact->data->to_s >
+				parser->current_contact->data->from_s
+				&& parser->current_contact->data->to_s >
 				hal_time_get_timestamp_s()
 			) {
 				begin_read_integer(parser);

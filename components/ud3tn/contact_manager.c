@@ -55,14 +55,15 @@ static bool contact_active(
 
 static int8_t remove_expired_contacts(
 	struct contact_manager_context *const ctx,
-	const uint64_t current_timestamp, struct contact_info list[])
+	const uint64_t current_timestamp_s, struct contact_info list[])
 {
 	/* Check for ending contacts */
 	/* We do this first as it frees space in the list */
 	int8_t i, c, removed = 0;
 
 	for (i = ctx->current_contact_count - 1; i >= 0; i--) {
-		if (ctx->current_contacts[i].contact->to <= current_timestamp) {
+		if (ctx->current_contacts[i].contact->to_s <=
+		    current_timestamp_s) {
 			ASSERT(i <= MAX_CONCURRENT_CONTACTS);
 			/* Unset "active" constraint */
 			ctx->current_contacts[i].contact->active = 0;
@@ -132,21 +133,24 @@ static int8_t process_upcoming_list(
 	ctx->next_contact_time = UINT64_MAX;
 	cur_entry = contact_list;
 	while (cur_entry != NULL) {
-		if (cur_entry->data->from <= current_timestamp) {
-			if (cur_entry->data->to > current_timestamp) {
+		if (cur_entry->data->from_s <= current_timestamp) {
+			if (cur_entry->data->to_s > current_timestamp) {
 				added += check_upcoming(
 					ctx,
 					cur_entry->data,
 					list,
 					added
 				);
-				if (cur_entry->data->to < ctx->next_contact_time)
+				if (cur_entry->data->to_s <
+				    ctx->next_contact_time)
 					ctx->next_contact_time =
-						cur_entry->data->to;
+						cur_entry->data->to_s;
 			}
 		} else {
-			if (cur_entry->data->from < ctx->next_contact_time)
-				ctx->next_contact_time = cur_entry->data->from;
+			if (cur_entry->data->from_s < ctx->next_contact_time)
+				ctx->next_contact_time = (
+					cur_entry->data->from_s
+				);
 			/* As our contact_list is sorted ascending by */
 			/* from-time we can stop checking here */
 			break;

@@ -14,8 +14,8 @@ struct routed_bundle_list {
 
 struct contact {
 	struct node *node;
-	uint64_t from;
-	uint64_t to;
+	uint64_t from_s;
+	uint64_t to_s;
 	uint32_t bitrate_bytes_per_s;
 	uint32_t total_capacity_bytes;
 	int32_t remaining_capacity_p0;
