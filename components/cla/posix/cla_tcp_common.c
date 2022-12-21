@@ -339,6 +339,7 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 			     config->base.base.vtable->cla_name_get(),
 			     config->node, config->service);
 			ASSERT(0);
+			return;
 		}
 		cla_tcp_single_listen_task(config, struct_size);
 	}
