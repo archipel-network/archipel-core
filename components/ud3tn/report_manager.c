@@ -24,7 +24,7 @@ struct bundle *generate_status_report(
 			bundle,
 			report,
 			local_eid,
-			hal_time_get_timestamp_s()
+			hal_time_get_timestamp_ms()
 		);
 	// BPv7-bis
 	case 7:
@@ -32,7 +32,7 @@ struct bundle *generate_status_report(
 			bundle,
 			report,
 			local_eid,
-			hal_time_get_timestamp_s()
+			hal_time_get_timestamp_ms()
 		);
 	default:
 		return NULL;
@@ -54,7 +54,7 @@ struct bundle_list *generate_custody_signal(
 				bundle,
 				signal,
 				local_eid,
-				hal_time_get_timestamp_s()
+				hal_time_get_timestamp_ms()
 		);
 		return bundle_list_entry_create(signal_bundle);
 	default:

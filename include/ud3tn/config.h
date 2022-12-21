@@ -33,7 +33,7 @@ static const int IS_DEBUG_BUILD;
 /* BP version used for generated bundles */
 #define DEFAULT_BUNDLE_VERSION 7
 /* Default lifetime, in seconds, of bundles sent via AAP */
-#define DEFAULT_BUNDLE_LIFETIME 86400
+#define DEFAULT_BUNDLE_LIFETIME_S 86400
 /* Default CRC type
  * BUNDLE_CRC_TYPE_NONE = 0,
  * BUNDLE_CRC_TYPE_16   = 1,

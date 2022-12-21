@@ -31,7 +31,7 @@ TEST_SETUP(bundle6ParserSerializer)
 		sizeof(test_payload),
 		"dtn:sourceeid",
 		"dtn:desteid",
-		creation_timestamp_s, 1, 42,
+		creation_timestamp_s * 1000, 1, 42 * 1000,
 		BUNDLE_FLAG_REPORT_DELIVERY |
 		BUNDLE_V6_FLAG_CUSTODY_TRANSFER_REQUESTED
 	);

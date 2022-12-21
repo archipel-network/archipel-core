@@ -113,7 +113,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	result = echo_agent_setup(
 		&bundle_agent_interface,
-		opt->lifetime
+		opt->lifetime_s * 1000
 	);
 	if (result) {
 		LOG("INIT: Echo agent could not be initialized!");
@@ -129,7 +129,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		opt->aap_node,
 		opt->aap_service,
 		opt->bundle_version,
-		opt->lifetime
+		opt->lifetime_s * 1000
 	);
 
 	if (!aa_cfg) {
