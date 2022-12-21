@@ -120,8 +120,6 @@ TEST_SETUP(routingTable)
 	};
 	/* init rt */
 	routing_table_init();
-	/* clock */
-	hal_time_init(0);
 }
 
 TEST_TEAR_DOWN(routingTable)

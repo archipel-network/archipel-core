@@ -62,8 +62,6 @@ TEST_SETUP(node)
 	some_ct2 = malloc(sizeof(struct contact_list));
 	some_ct2->data = createct(16000000, 16001000, 600, "ipn:1.0");
 	some_ct2->next = NULL;
-	/* time */
-	hal_time_init(0);
 }
 
 TEST_TEAR_DOWN(node)
