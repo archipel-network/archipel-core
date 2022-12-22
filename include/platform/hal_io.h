@@ -33,6 +33,16 @@
 #define LOGA(message, actionid, itemid) \
 	LOGF("%s (a = %d, i = %d)", message, actionid, itemid)
 
+#define LOGERROR(component_, msg_, errno_) ({ \
+	hal_time_print_log_time_string(); \
+	hal_io_message_printf( \
+		"%s: System error [%s:%d] -> ", \
+		component_, __FILE__, (int)(__LINE__) \
+	); \
+	hal_io_print_error(msg_, errno_); \
+	fflush(stderr); \
+})
+
 /**
  * @brief hal_io_init Initialization of underlying OS/HW for I/O
  * @return Whether the operation was successful
@@ -46,5 +56,12 @@ enum ud3tn_result hal_io_init(void);
  * @param format Parameters as standard libc-printf()
  */
 int hal_io_message_printf(const char *format, ...);
+
+/**
+ * @brief hal_io_perror Print a system error (i.e., saved errno) using perror()
+ * @param message The message passed to perror()
+ * @param error The error number obtained from errno
+ */
+void hal_io_print_error(const char *message, int error);
 
 #endif /* HAL_IO_H_INCLUDED */

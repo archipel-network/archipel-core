@@ -96,7 +96,7 @@ enum ud3tn_result cla_tcp_read(struct cla_link *link,
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret < 0) {
-		LOGF("TCP: Error reading from socket: %s", strerror(errno));
+		LOGERROR("TCP", "recv()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 		return UD3TN_FAIL;
 	} else if (ret == 0) {
@@ -155,7 +155,7 @@ enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 
 	// Listen for incoming connections.
 	if (listen(config->socket, backlog) < 0) {
-		LOGF("TCP: Listening to socket failed: %s", strerror(errno));
+		LOGERROR("TCP", "listen()", errno);
 		close(config->socket);
 		config->socket = -1;
 		return UD3TN_FAIL;
@@ -185,7 +185,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 			      &sockaddr_tmp_len)) == -1) {
 		const int err = errno;
 
-		LOGF("TCP: Accepting connection failed: %s", strerror(err));
+		LOGERROR("TCP", "accept()", err);
 
 		// See "Error handling" section of Linux man page
 		if (err != EAGAIN && err != EINTR && err != ENETDOWN &&
@@ -217,8 +217,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 	/* Disable the nagle algorithm to prevent delays in responses */
 	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 		       &enable, sizeof(int)) < 0) {
-		LOGF("TCP: setsockopt(TCP_NODELAY) failed: %s",
-		     strerror(errno));
+		LOGERROR("TCP", "setsockopt(TCP_NODELAY)", errno);
 	}
 
 	return sock;

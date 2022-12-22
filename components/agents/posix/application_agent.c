@@ -83,7 +83,7 @@ static void application_agent_listener_task(void *const param)
 		);
 
 		if (conn_fd == -1) {
-			LOGF("AppAgent: accept(): %s", strerror(errno));
+			LOGERROR("AppAgent", "accept()", errno);
 			continue;
 		}
 
@@ -173,7 +173,7 @@ static int send_message(const int socket_fd,
 
 	aap_serialize(msg, tcp_write_to_socket, &wsp, true);
 	if (wsp.errno_)
-		LOGF("AppAgent: send(): %s", strerror(wsp.errno_));
+		LOGERROR("AppAgent", "send()", wsp.errno_);
 	return -wsp.errno_;
 }
 
@@ -188,7 +188,7 @@ static void agent_msg_recv(struct bundle_adu data, void *param)
 
 	if (pipeq_write_all(config->bundle_pipe_fd[1],
 			    &data, sizeof(struct bundle_adu)) <= 0) {
-		LOGF("AppAgent: write(): %s", strerror(errno));
+		LOGERROR("AppAgent", "write()", errno);
 		bundle_adu_free_members(data);
 	}
 }
@@ -389,7 +389,7 @@ static ssize_t receive_from_socket(
 	);
 	if (recv_result <= 0) {
 		if (recv_result < 0)
-			LOGF("AppAgent: recv(): %s", strerror(errno));
+			LOGERROR("AppAgent", "recv()", errno);
 		return -1;
 	}
 	bytes_available += recv_result;
@@ -445,7 +445,7 @@ static void application_agent_comm_task(void *const param)
 	config->registered_agent_id = NULL;
 
 	if (pipe(config->bundle_pipe_fd) == -1) {
-		LOGF("AppAgent: pipe(): %s", strerror(errno));
+		LOGERROR("AppAgent", "pipe()", errno);
 		goto pipe_creation_error;
 	}
 
@@ -475,7 +475,7 @@ static void application_agent_comm_task(void *const param)
 
 	for (;;) {
 		if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {
-			LOGF("AppAgent: poll(): %s", strerror(errno));
+			LOGERROR("AppAgent", "poll()", errno);
 			// Try again if interrupted by a signal, else fail.
 			if (errno == EINTR)
 				continue;
@@ -504,7 +504,7 @@ static void application_agent_comm_task(void *const param)
 			if (pipeq_read_all(config->bundle_pipe_fd[0],
 					   &data,
 					   sizeof(struct bundle_adu)) <= 0) {
-				LOGF("AppAgent: read(): %s", strerror(errno));
+				LOGERROR("AppAgent", "read()", errno);
 				break;
 			}
 			if (send_bundle(config->socket_fd, data) < 0)
@@ -530,8 +530,7 @@ static int create_unix_domain_socket(const char *path)
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (sock == -1) {
-		LOGF("UNIX Domain Socket: Failed to create socket: %s",
-		     errno ? strerror(errno) : "<unknown>");
+		LOGERROR("AppAgent", "socket(AF_UNIX)", errno);
 		return -1;
 	}
 
@@ -545,9 +544,7 @@ static int create_unix_domain_socket(const char *path)
 		       (const struct sockaddr *) &addr,
 		       sizeof(struct sockaddr_un));
 	if (ret == -1) {
-		LOGF("UNIX Domain Socket: Failed to bind to: %s: %s",
-		     addr.sun_path,
-		     errno ? strerror(errno) : "<unknown>");
+		LOGERROR("AppAgent", "bind(unix_domain_socket)", errno);
 		return -1;
 	}
 

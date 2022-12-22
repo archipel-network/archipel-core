@@ -115,7 +115,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 
 	if (tcp_send_all(socket, header, header_len) == -1) {
 		free(header);
-		LOGF("TCPCLv3: Error sending header: %s", strerror(errno));
+		LOGERROR("TCPCLv3", "send(header)", errno);
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
@@ -787,8 +787,8 @@ static void tcpclv3_begin_packet(struct cla_link *link, size_t length, char *cla
 
 	if (tcp_send_all(param->link.connection_socket,
 			 header_buffer, sdnv_len + 1) == -1) {
-		LOGF("TCPCLv3: Error sending segment header: %s",
-		     strerror(errno));
+		LOGERROR("TCPCLv3", "send(segment_header)",
+			 errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -812,7 +812,7 @@ static void tcpclv3_send_packet_data(
 	ASSERT(param->state == TCPCLV3_ESTABLISHED);
 
 	if (tcp_send_all(param->link.connection_socket, data, length) == -1) {
-		LOGF("TCPCLv3: Error during sending: %s", strerror(errno));
+		LOGERROR("TCPCLv3", "send()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }

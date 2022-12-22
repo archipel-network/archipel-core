@@ -9,6 +9,7 @@
 
 #include "ud3tn/result.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -31,4 +32,10 @@ int hal_io_message_printf(const char *format, ...)
 	rc = vfprintf(stderr, format, v);
 	va_end(v);
 	return rc;
+}
+
+void hal_io_print_error(const char *message, int error)
+{
+	errno = error;
+	perror(message);
 }

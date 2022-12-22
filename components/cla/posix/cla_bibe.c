@@ -166,8 +166,7 @@ static void bibe_link_management_task(void *p)
 				true
 			);
 			if (wsp.errno_) {
-				LOGF("bibe: send(): %s",
-				     strerror(wsp.errno_));
+				LOGERROR("bibe", "send()", wsp.errno_);
 				close(param->socket);
 				if (++param->connect_attempt >
 						CLA_TCP_MAX_RETRY_ATTEMPTS) {
