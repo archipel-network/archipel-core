@@ -92,7 +92,6 @@ static enum ud3tn_result handle_established_connection(
 
 static void mtcp_link_management_task(void *p)
 {
-	Task_t management_task;
 	struct mtcp_contact_parameters *const param = p;
 
 	ASSERT(param->cla_sock_addr != NULL);
@@ -163,11 +162,9 @@ static void mtcp_link_management_task(void *p)
 	free(param->cla_sock_addr);
 
 fail:
-	management_task = param->management_task;
-
 	hal_semaphore_delete(param->param_semphr);
+	hal_task_delete(param->management_task);
 	free(param);
-	hal_task_delete(management_task);
 }
 
 static void launch_connection_management_task(
@@ -291,8 +288,10 @@ static void mtcp_listener_task(void *param)
 		hal_semaphore_release(mtcp_config->param_htab_sem);
 		free(cla_addr);
 	}
+
 	// unexpected failure to accept() - exit thread in release mode
 	ASSERT(0);
+	hal_task_delete(mtcp_config->base.listen_task);
 }
 
 static enum ud3tn_result mtcp_launch(struct cla_config *const config)

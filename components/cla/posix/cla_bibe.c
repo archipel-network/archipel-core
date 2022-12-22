@@ -100,7 +100,6 @@ static enum ud3tn_result handle_established_connection(
 
 static void bibe_link_management_task(void *p)
 {
-	Task_t management_task;
 	struct bibe_contact_parameters *const param = p;
 
 	ASSERT(param->cla_sock_addr != NULL);
@@ -208,11 +207,9 @@ static void bibe_link_management_task(void *p)
 	free(param->cla_sock_addr);
 
 fail:
-	management_task = param->management_task;
-
 	hal_semaphore_delete(param->param_semphr);
+	hal_task_delete(param->management_task);
 	free(param);
-	hal_task_delete(management_task);
 }
 
 static void launch_connection_management_task(

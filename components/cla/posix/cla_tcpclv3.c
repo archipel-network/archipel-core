@@ -358,12 +358,9 @@ static void tcpclv3_link_management_task(void *p)
 	tcpclv3_parser_reset(&param->tcpclv3_parser);
 	free(param->eid);
 	free(param->cla_addr);
-
-	Task_t management_task = param->management_task;
-
 	hal_semaphore_delete(param->param_semphr);
+	hal_task_delete(param->management_task);
 	free(param);
-	hal_task_delete(management_task);
 }
 
 static void launch_connection_management_task(
@@ -510,8 +507,10 @@ static void tcpclv3_listener_task(void *p)
 		);
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 	}
+
 	// unexpected failure to accept() - exit thread in release mode
 	ASSERT(0);
+	hal_task_delete(tcpclv3_config->base.listen_task);
 }
 
 /*
