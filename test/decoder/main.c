@@ -3,6 +3,8 @@
 #include "cla/cla.h"
 #include "cla/cla_contact_rx_task.h"
 
+#include "platform/hal_platform.h"
+
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
 #include "ud3tn/parser.h"
@@ -151,7 +153,10 @@ static enum ud3tn_result parse_until_done(
 		}
 	}
 
-	return link.error ? UD3TN_FAIL : UD3TN_OK;
+	if (link.error || rx_data->cur_parser->status != PARSER_STATUS_DONE)
+		return UD3TN_FAIL;
+
+	return UD3TN_OK;
 }
 
 // GENERIC BUNDLE HELPERS
@@ -236,7 +241,7 @@ static size_t invoke_bpv7_parser(
 static int parse_bpv7(FILE *const fp)
 {
 	struct bundle7_parser bpv7_parser = {};
-	struct bundle *result;
+	struct bundle *result = NULL;
 
 	if (!bundle7_parser_init(&bpv7_parser, send_bundle, &result)) {
 		fprintf(stderr, "Failed to initialize parser.\n");
@@ -254,6 +259,13 @@ static int parse_bpv7(FILE *const fp)
 
 	if (rc != UD3TN_OK) {
 		fprintf(stderr, "Failed parsing file as BPv7 bundle.\n");
+		return 1;
+	}
+
+	// if parse_until_done returned UD3TN_OK there must be some result...
+	ASSERT(result != NULL);
+	if (!result) {
+		fprintf(stderr, "Parser did not return a result, aborting.\n");
 		return 1;
 	}
 
@@ -278,7 +290,7 @@ static void usage(void)
 	fprintf(stderr, "%s", usage_text);
 }
 
-int main(const int argc, const char *const argv[])
+int main(const int argc, char *argv[])
 {
 	if (argc >= 2 && strcmp(argv[1], "-h") == 0) {
 		usage();
@@ -296,6 +308,8 @@ int main(const int argc, const char *const argv[])
 		perror("fopen()");
 		return 1;
 	}
+
+	hal_platform_init(argc, argv);
 
 	int rc = 0;
 
