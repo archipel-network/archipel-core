@@ -154,6 +154,5 @@ void hal_task_delay(int delay)
 
 void hal_task_delete(Task_t task)
 {
-	pthread_cancel(*task);
 	free(task);
 }
