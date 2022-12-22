@@ -149,7 +149,10 @@ class AAPClient(abc.ABC):
                 AAPMessageType.SENDBUNDLE, dest_eid, bundle_data
             ))
             assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
-            bundle_id = msg_sendconfirm.bundle_id
+            try:
+                bundle_id = msg_sendconfirm.decode_bundle_id()
+            except ValueError:
+                bundle_id = msg_sendconfirm.bundle_id
             logger.debug(
                 f"SENDCONFIRM message received! ~ ID = {bundle_id}"
             )
@@ -160,7 +163,10 @@ class AAPClient(abc.ABC):
                 AAPMessageType.SENDBIBE, dest_eid, bundle_data
             ))
             assert msg_sendconfirm.msg_type == AAPMessageType.SENDCONFIRM
-            bundle_id = msg_sendconfirm.bundle_id
+            try:
+                bundle_id = msg_sendconfirm.decode_bundle_id()
+            except ValueError:
+                bundle_id = msg_sendconfirm.bundle_id
             logger.debug(
                 f"SENDCONFIRM message received! ~ ID = {bundle_id}"
             )
