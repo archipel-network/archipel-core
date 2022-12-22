@@ -52,6 +52,10 @@ void rx_task_data_deinit(struct rx_task_data *rx_data);
 // Forward declaration to prevent (circular) inclusion of cla.h here.
 struct cla_link;
 
+// Export read operations for the data decoder binary
+uint8_t *rx_bulk_read(struct cla_link *link);
+uint8_t *rx_chunk_read(struct cla_link *link);
+
 /**
  * @brief cla_launch_contact_rx_task Creates a new RX handler task.
  * @param link The link associated to the task

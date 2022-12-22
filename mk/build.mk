@@ -33,6 +33,7 @@ $(eval $(call addComponentWithRules,external/util/src))
 
 $(eval $(call generateComponentRules,components/daemon))
 $(eval $(call generateComponentRules,test/unit))
+$(eval $(call generateComponentRules,test/decoder))
 
 build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
 build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
@@ -70,6 +71,16 @@ build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/src
 build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/extras/fixture/src
 build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
 build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
+	$(call cmd,link)
+
+# DECODER EXECUTABLE
+
+$(eval $(call addComponent,ud3tndecode,test/decoder))
+
+build/$(PLATFORM)/ud3tndecode: build/$(PLATFORM)/libud3tn.a
+build/$(PLATFORM)/ud3tndecode: LDFLAGS += $(LDFLAGS_EXECUTABLE)
+build/$(PLATFORM)/ud3tndecode: LIBS = $(LIBS_ud3tndecode) build/$(PLATFORM)/libud3tn.a
+build/$(PLATFORM)/ud3tndecode: $(LIBS_ud3tndecode) | build/$(PLATFORM)
 	$(call cmd,link)
 
 # GENERAL RULES

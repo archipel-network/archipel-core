@@ -207,6 +207,9 @@ posix-all:
 unittest-posix:
 	@$(MAKE) PLATFORM=posix unittest-posix
 
+data-decoder:
+	@$(MAKE) PLATFORM=posix data-decoder
+
 ccmds-posix:
 	@$(MAKE) PLATFORM=posix build/posix/compile_commands.json
 
@@ -218,6 +221,7 @@ include mk/build.mk
 posix: build/posix/ud3tn
 posix-lib: build/posix/libud3tn.so build/posix/libud3tn.a
 posix-all: posix posix-lib
+data-decoder: build/posix/ud3tndecode
 unittest-posix: build/posix/testud3tn
 ccmds-posix: build/posix/compile_commands.json
 
