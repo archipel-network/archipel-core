@@ -520,7 +520,7 @@ pipe_creation_error:
 	deregister_sink(config);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
-	free(config->task);
+	hal_task_delete(config->task);
 	free(config);
 	LOG("AppAgent: Closed connection.");
 }
