@@ -163,6 +163,7 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
 			link->config->vtable->cla_rx_task_reset_parsers(
 				link
 			);
+			break;
 		} else if (HAS_FLAG(rx_data->cur_parser->flags,
 				    PARSER_FLAG_BULK_READ)) {
 			/* Bulk read requested - not handled by us. */
