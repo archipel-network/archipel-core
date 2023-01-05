@@ -6,8 +6,8 @@
 TEST_GROUP(random);
 
 #define BUCK 10
-#define ITER 10000
-#define MAX_PERCENT 11
+#define ITER 100000
+#define MAX_PERCENT 20
 
 TEST_SETUP(random)
 {
