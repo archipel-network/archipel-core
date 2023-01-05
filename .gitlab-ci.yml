@@ -133,6 +133,7 @@ mtcp-test:
         - make virtualenv
         - source .venv/bin/activate && python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - source .venv/bin/activate && timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
+        - sleep 0.2
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN_PID
