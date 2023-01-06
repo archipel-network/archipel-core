@@ -12,6 +12,7 @@
 #include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
+#include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 #include "platform/hal_time.h"
 #include "platform/hal_types.h"
@@ -57,6 +58,7 @@ struct application_agent_comm_config {
 	int socket_fd;
 	int bundle_pipe_fd[2];
 	Task_t task;
+	Semaphore_t cleanup_sem; // ensures that task is set properly
 	char *registered_agent_id;
 	uint64_t last_bundle_timestamp_s;
 	uint64_t last_bundle_sequence_number;
@@ -127,6 +129,7 @@ static void application_agent_listener_task(void *const param)
 		child_config->socket_fd = conn_fd;
 		child_config->last_bundle_timestamp_s = 0;
 		child_config->last_bundle_sequence_number = 0;
+		child_config->cleanup_sem = hal_semaphore_init_binary();
 		child_config->task = hal_task_create(
 			application_agent_comm_task,
 			"app_comm_t",
@@ -135,9 +138,11 @@ static void application_agent_listener_task(void *const param)
 			DEFAULT_TASK_STACK_SIZE,
 			(void *)APPLICATION_AGENT_COMM_TASK_TAG
 		);
+		hal_semaphore_release(child_config->cleanup_sem);
 		if (!child_config->task) {
 			LOG("AppAgent: Error starting comm. task!");
 			close(conn_fd);
+			hal_semaphore_delete(child_config->cleanup_sem);
 			free(child_config);
 		}
 	}
@@ -517,6 +522,8 @@ done:
 	close(config->bundle_pipe_fd[0]);
 	close(config->bundle_pipe_fd[1]);
 pipe_creation_error:
+	hal_semaphore_take_blocking(config->cleanup_sem);
+	hal_semaphore_delete(config->cleanup_sem);
 	deregister_sink(config);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
