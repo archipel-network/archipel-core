@@ -82,6 +82,10 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_processor_task_params->allow_remote_configuration =
 			opt->allow_remote_configuration;
 
+	// NOTE: Must be called before launching the BP which calls the function
+	// to register agents from its thread.
+	agent_manager_init(bundle_agent_interface.local_eid);
+
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
 		"bundl_proc_t",
@@ -94,8 +98,6 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		LOG("INIT: Bundle processor task could not be started!");
 		exit(EXIT_FAILURE);
 	}
-
-	agent_manager_init(bundle_agent_interface.local_eid);
 
 	int result;
 
