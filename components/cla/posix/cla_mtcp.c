@@ -22,7 +22,6 @@
 #include "ud3tn/config.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -47,8 +46,6 @@ struct mtcp_contact_parameters {
 	struct mtcp_config *config;
 
 	Semaphore_t param_semphr; // rw access to params struct
-
-	Task_t management_task;
 
 	char *cla_sock_addr;
 
@@ -163,7 +160,6 @@ static void mtcp_link_management_task(void *p)
 
 fail:
 	hal_semaphore_delete(param->param_semphr);
-	hal_task_delete(param->management_task);
 	free(param);
 }
 
@@ -234,16 +230,15 @@ static void launch_connection_management_task(
 		goto fail_sem;
 	}
 
-	contact_params->management_task = hal_task_create(
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		mtcp_link_management_task,
 		"mtcp_mgmt_t",
 		CONTACT_MANAGEMENT_TASK_PRIORITY,
 		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_MANAGEMENT_TASK_STACK_SIZE
 	);
 
-	if (!contact_params->management_task) {
+	if (task_creation_result != UD3TN_OK) {
 		LOG("MTCP: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->cla_sock_addr);
@@ -291,26 +286,17 @@ static void mtcp_listener_task(void *param)
 
 	// unexpected failure to accept() - exit thread in release mode
 	ASSERT(0);
-	hal_task_delete(mtcp_config->base.listen_task);
 }
 
 static enum ud3tn_result mtcp_launch(struct cla_config *const config)
 {
-	struct mtcp_config *const mtcp_config = (struct mtcp_config *)config;
-
-	mtcp_config->base.listen_task = hal_task_create(
+	return hal_task_create(
 		mtcp_listener_task,
 		"mtcp_listen_t",
 		CONTACT_LISTEN_TASK_PRIORITY,
 		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_LISTEN_TASK_STACK_SIZE
 	);
-
-	if (!mtcp_config->base.listen_task)
-		return UD3TN_FAIL;
-
-	return UD3TN_OK;
 }
 
 static const char *mtcp_name_get(void)

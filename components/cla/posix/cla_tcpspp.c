@@ -22,7 +22,6 @@
 #include "ud3tn/config.h"
 #include "ud3tn/parser.h"
 #include "ud3tn/result.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 
@@ -80,25 +79,17 @@ static void tcpspp_link_creation_task(void *param)
 	);
 
 	ASSERT(0);
-	hal_task_delete(tcpspp_config->base.base.listen_task);
 }
 
 static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
 {
-	struct tcpspp_config *tcpspp_config = (struct tcpspp_config *)config;
-
-	tcpspp_config->base.base.listen_task = hal_task_create(
+	return hal_task_create(
 		tcpspp_link_creation_task,
 		"spp_listen_t",
 		CONTACT_LISTEN_TASK_PRIORITY,
 		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_LISTEN_TASK_STACK_SIZE
 	);
-
-	if (!tcpspp_config->base.base.listen_task)
-		return UD3TN_FAIL;
-	return UD3TN_OK;
 }
 
 static const char *tcpspp_get_name(void)

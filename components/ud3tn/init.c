@@ -5,7 +5,6 @@
 #include "ud3tn/common.h"
 #include "ud3tn/init.h"
 #include "ud3tn/router.h"
-#include "ud3tn/task_tags.h"
 
 #include "agents/application_agent.h"
 #include "agents/config_agent.h"
@@ -26,8 +25,7 @@
 
 static struct bundle_agent_interface bundle_agent_interface;
 
-// References kept for program runtime
-static Task_t bp_task_result;
+// Reference kept for program runtime
 static struct application_agent_config *aa_cfg;
 
 void init(int argc, char *argv[])
@@ -83,15 +81,15 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_processor_task_params->status_reporting =
 			opt->status_reporting;
 
-	bp_task_result = hal_task_create(
+	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
 		"bundl_proc_t",
 		BUNDLE_PROCESSOR_TASK_PRIORITY,
 		bundle_processor_task_params,
-		DEFAULT_TASK_STACK_SIZE,
-		(void *)BUNDLE_PROCESSOR_TASK_TAG
+		DEFAULT_TASK_STACK_SIZE
 	);
-	if (!bp_task_result) {
+
+	if (bp_task_result != UD3TN_OK) {
 		LOG("INIT: Bundle processor task could not be started!");
 		exit(EXIT_FAILURE);
 	}

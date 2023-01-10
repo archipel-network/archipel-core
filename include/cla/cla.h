@@ -36,7 +36,6 @@ struct cla_link {
 	// Semaphore for waiting until the TX task is finished
 	Semaphore_t tx_task_sem;
 
-	Task_t rx_task_handle;
 	struct rx_task_data rx_task_data;
 	// Semaphore for notifying the RX task to finish
 	Semaphore_t rx_task_notification;
@@ -44,7 +43,6 @@ struct cla_link {
 	// Timestamp of last received byte for implementing the read timeout
 	uint64_t last_rx_time_ms;
 
-	Task_t tx_task_handle;
 	// Queue handing over bundles to the TX task
 	QueueIdentifier_t tx_queue_handle;
 	// Semaphore blocking the TX queue while bundles are being added

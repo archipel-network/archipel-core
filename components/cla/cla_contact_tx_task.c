@@ -13,7 +13,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/task_tags.h"
 
 #include <stdlib.h>
 
@@ -150,26 +149,26 @@ static void cla_contact_tx_task(void *param)
 		}
 	}
 
-	Task_t tx_task_handle = link->tx_task_handle;
-
-	// After releasing the semaphore, link may become invalid.
 	hal_semaphore_release(link->tx_task_sem);
-	hal_task_delete(tx_task_handle);
 }
 
 enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 {
 	hal_semaphore_take_blocking(link->tx_task_sem);
-	link->tx_task_handle = hal_task_create(
+
+	const enum ud3tn_result res = hal_task_create(
 		cla_contact_tx_task,
 		NULL,
 		CONTACT_TX_TASK_PRIORITY,
 		link,
-		CONTACT_TX_TASK_STACK_SIZE,
-		(void *)CONTACT_TX_TASK_TAG
+		CONTACT_TX_TASK_STACK_SIZE
 	);
 
-	return link->tx_task_handle ? UD3TN_OK : UD3TN_FAIL;
+	// Not launched, no need to wait for exit.
+	if (res != UD3TN_OK)
+		hal_semaphore_release(link->tx_task_sem);
+
+	return res;
 }
 
 void cla_contact_tx_task_request_exit(QueueIdentifier_t queue)

@@ -25,7 +25,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/eid.h"
-#include "ud3tn/task_tags.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -50,15 +49,12 @@ struct application_agent_config {
 	uint64_t lifetime;
 
 	int listen_socket;
-	Task_t listener_task;
 };
 
 struct application_agent_comm_config {
 	struct application_agent_config *parent;
 	int socket_fd;
 	int bundle_pipe_fd[2];
-	Task_t task;
-	Semaphore_t cleanup_sem; // ensures that task is set properly
 	char *registered_agent_id;
 	uint64_t last_bundle_timestamp_s;
 	uint64_t last_bundle_sequence_number;
@@ -129,20 +125,18 @@ static void application_agent_listener_task(void *const param)
 		child_config->socket_fd = conn_fd;
 		child_config->last_bundle_timestamp_s = 0;
 		child_config->last_bundle_sequence_number = 0;
-		child_config->cleanup_sem = hal_semaphore_init_binary();
-		child_config->task = hal_task_create(
+
+		const enum ud3tn_result task_creation_result = hal_task_create(
 			application_agent_comm_task,
 			"app_comm_t",
 			APPLICATION_AGENT_TASK_PRIORITY,
 			child_config,
-			DEFAULT_TASK_STACK_SIZE,
-			(void *)APPLICATION_AGENT_COMM_TASK_TAG
+			DEFAULT_TASK_STACK_SIZE
 		);
-		hal_semaphore_release(child_config->cleanup_sem);
-		if (!child_config->task) {
+
+		if (task_creation_result != UD3TN_OK) {
 			LOG("AppAgent: Error starting comm. task!");
 			close(conn_fd);
-			hal_semaphore_delete(child_config->cleanup_sem);
 			free(child_config);
 		}
 	}
@@ -522,12 +516,9 @@ done:
 	close(config->bundle_pipe_fd[0]);
 	close(config->bundle_pipe_fd[1]);
 pipe_creation_error:
-	hal_semaphore_take_blocking(config->cleanup_sem);
-	hal_semaphore_delete(config->cleanup_sem);
 	deregister_sink(config);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
-	hal_task_delete(config->task);
 	free(config);
 	LOG("AppAgent: Closed connection.");
 }
@@ -600,18 +591,20 @@ struct application_agent_config *application_agent_setup(
 	config->bundle_agent_interface = bundle_agent_interface;
 	config->bp_version = bp_version;
 	config->lifetime = lifetime;
-	config->listener_task = hal_task_create(
+
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		application_agent_listener_task,
 		"app_listener_t",
 		APPLICATION_AGENT_TASK_PRIORITY,
 		config,
-		DEFAULT_TASK_STACK_SIZE,
-		(void *)APPLICATION_AGENT_LISTENER_TASK_TAG
+		DEFAULT_TASK_STACK_SIZE
 	);
-	if (!config->listener_task) {
+
+	if (task_creation_result != UD3TN_OK) {
 		LOG("AppAgent: Error creating listener task!");
 		free(config);
 		return NULL;
 	}
+
 	return config;
 }

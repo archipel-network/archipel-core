@@ -4,7 +4,6 @@
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
-#include "ud3tn/task_tags.h"
 
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
@@ -409,6 +408,7 @@ struct contact_manager_params contact_manager_start(
 	struct contact_list **clistptr)
 {
 	struct contact_manager_params ret = {
+		.task_creation_result = UD3TN_FAIL,
 		.semaphore = NULL,
 		.control_queue = NULL,
 	};
@@ -434,15 +434,19 @@ struct contact_manager_params contact_manager_start(
 	cmt_params->control_queue = queue;
 	cmt_params->bp_queue = bp_queue;
 	cmt_params->contact_list_ptr = clistptr;
-	ret.task = hal_task_create(
+	ret.task_creation_result = hal_task_create(
 		contact_manager_task,
 		"cont_man_t",
 		CONTACT_MANAGER_TASK_PRIORITY,
 		cmt_params,
-		CONTACT_MANAGER_TASK_STACK_SIZE,
-		(void *)CONTACT_MANAGER_TASK_TAG
+		CONTACT_MANAGER_TASK_STACK_SIZE
 	);
-	ret.semaphore = semaphore;
-	ret.control_queue = queue;
+	if (ret.task_creation_result == UD3TN_OK) {
+		ret.semaphore = semaphore;
+		ret.control_queue = queue;
+	} else {
+		hal_semaphore_delete(semaphore);
+		hal_queue_delete(queue);
+	}
 	return ret;
 }

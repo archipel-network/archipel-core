@@ -35,7 +35,6 @@ enum ud3tn_result cla_tcp_config_init(
 	if (cla_config_init(&config->base, bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 
-	config->listen_task = NULL;
 	config->socket = -1;
 
 	return UD3TN_OK;
@@ -75,6 +74,11 @@ enum ud3tn_result cla_tcp_link_init(
 	if (cla_link_init(&link->base, &config->base, cla_addr, true, is_tx)
 			!= UD3TN_OK)
 		return UD3TN_FAIL;
+
+	// If termination of the RX task is already requested (e.g., if spawning
+	// the TX task failed), allow it to exit by closing the socket.
+	if (hal_semaphore_is_blocked(link->base.rx_task_notification))
+		close(link->connection_socket);
 
 	return UD3TN_OK;
 }

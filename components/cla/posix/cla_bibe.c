@@ -27,7 +27,6 @@
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -56,8 +55,6 @@ struct bibe_contact_parameters {
 	struct bibe_config *config;
 
 	Semaphore_t param_semphr; // rw access to params struct
-
-	Task_t management_task;
 
 	char *cla_sock_addr;
 	const char *partner_eid;
@@ -208,7 +205,6 @@ static void bibe_link_management_task(void *p)
 
 fail:
 	hal_semaphore_delete(param->param_semphr);
-	hal_task_delete(param->management_task);
 	free(param);
 }
 
@@ -275,16 +271,15 @@ static void launch_connection_management_task(
 		goto fail_sem;
 	}
 
-	contact_params->management_task = hal_task_create(
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		bibe_link_management_task,
 		"bibe_mgmt_t",
 		CONTACT_MANAGEMENT_TASK_PRIORITY,
 		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_MANAGEMENT_TASK_STACK_SIZE
 	);
 
-	if (!contact_params->management_task) {
+	if (task_creation_result != UD3TN_OK) {
 		LOG("bibe: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->cla_sock_addr);

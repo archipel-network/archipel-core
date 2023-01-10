@@ -26,7 +26,6 @@
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
-#include "ud3tn/task_tags.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -71,8 +70,6 @@ struct tcpclv3_contact_parameters {
 	struct tcpclv3_config *config;
 
 	Semaphore_t param_semphr; // for modifying ops on the params struct
-
-	Task_t management_task;
 
 	char *eid;
 	char *cla_addr;
@@ -359,7 +356,6 @@ static void tcpclv3_link_management_task(void *p)
 	free(param->eid);
 	free(param->cla_addr);
 	hal_semaphore_delete(param->param_semphr);
-	hal_task_delete(param->management_task);
 	free(param);
 }
 
@@ -444,16 +440,15 @@ static void launch_connection_management_task(
 		}
 	}
 
-	contact_params->management_task = hal_task_create(
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		tcpclv3_link_management_task,
 		"tcpclv3_mgmt_t",
 		CONTACT_MANAGEMENT_TASK_PRIORITY,
 		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_MANAGEMENT_TASK_STACK_SIZE
 	);
 
-	if (!contact_params->management_task) {
+	if (task_creation_result != UD3TN_OK) {
 		LOG("TCPCLv3: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->eid);
@@ -510,7 +505,6 @@ static void tcpclv3_listener_task(void *p)
 
 	// unexpected failure to accept() - exit thread in release mode
 	ASSERT(0);
-	hal_task_delete(tcpclv3_config->base.listen_task);
 }
 
 /*
@@ -519,23 +513,13 @@ static void tcpclv3_listener_task(void *p)
 
 static enum ud3tn_result tcpclv3_launch(struct cla_config *const config)
 {
-	struct cla_tcp_config *const tcp_config = (
-		(struct cla_tcp_config *)config
-	);
-
-	tcp_config->listen_task = hal_task_create(
+	return hal_task_create(
 		tcpclv3_listener_task,
 		"tcpclv3_listen_t",
 		CONTACT_LISTEN_TASK_PRIORITY,
 		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_LISTEN_TASK_STACK_SIZE
 	);
-
-	if (!tcp_config->listen_task)
-		return UD3TN_FAIL;
-
-	return UD3TN_OK;
 }
 
 static const char *tcpclv3_name_get(void)

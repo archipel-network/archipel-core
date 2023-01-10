@@ -18,7 +18,6 @@
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/result.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 
@@ -41,27 +40,17 @@ static void smtcp_link_creation_task(void *param)
 	);
 
 	ASSERT(0);
-	hal_task_delete(smtcp_config->base.listen_task);
 }
 
 static enum ud3tn_result smtcp_launch(struct cla_config *const config)
 {
-	struct cla_tcp_single_config *const smtcp_config =
-		(struct cla_tcp_single_config *)config;
-
-	smtcp_config->base.listen_task = hal_task_create(
+	return hal_task_create(
 		smtcp_link_creation_task,
 		"smtcp_listen_t",
 		CONTACT_LISTEN_TASK_PRIORITY,
 		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_LISTEN_TASK_STACK_SIZE
 	);
-
-	if (!smtcp_config->base.listen_task)
-		return UD3TN_FAIL;
-
-	return UD3TN_OK;
 }
 
 static const char *smtcp_name_get(void)

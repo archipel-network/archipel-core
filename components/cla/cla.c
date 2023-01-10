@@ -158,9 +158,6 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 
 	link->cla_addr = cla_addr ? strdup(cla_addr) : NULL;
 
-	link->rx_task_handle = NULL;
-	link->tx_task_handle = NULL;
-
 	link->last_rx_time_ms = hal_time_get_timestamp_ms();
 
 	link->tx_queue_handle = NULL;
@@ -218,7 +215,16 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	if (is_tx) {
 		if (cla_launch_contact_tx_task(link) != UD3TN_OK) {
 			LOG("CLA: Failed to start TX task!");
-			goto fail_tx_task;
+			// The RX task already takes care of the link; we MUST
+			// NOT invalidate the associated data. The TX task
+			// semaphore is not locked, so it is properly treated
+			// as not being running.
+			// We also report UD3TN_OK as otherwise the caller will
+			// consider `link` invalid, which it is not in this
+			// case. However, we do not trigger BP and inform the
+			// RX task that it should terminate.
+			hal_semaphore_try_take(link->rx_task_notification, 0);
+			return UD3TN_OK;
 		}
 
 		// Notify the BP task of the newly established connection...
@@ -237,8 +243,6 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 
 	return UD3TN_OK;
 
-fail_tx_task:
-	hal_task_delete(link->rx_task_handle);
 fail_rx_task:
 	hal_semaphore_delete(link->tx_queue_sem);
 fail_tx_queue_sem:

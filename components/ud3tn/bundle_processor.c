@@ -8,7 +8,6 @@
 #include "ud3tn/report_manager.h"
 #include "ud3tn/result.h"
 #include "ud3tn/router.h"
-#include "ud3tn/task_tags.h"
 
 #include "bundle6/bundle6.h"
 #include "bundle7/bundle_age.h"
@@ -269,7 +268,10 @@ void bundle_processor_task(void * const param)
 	ctx.cm_param = contact_manager_start(
 		p->signaling_queue,
 		routing_table_get_raw_contact_list_ptr());
-	ASSERT(ctx.cm_param.control_queue != NULL);
+	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
+		LOG("BundleProcessor: Contact manager could not be initialized!");
+		ASSERT(false);
+	}
 
 	LOGF("BundleProcessor: BPA initialized for \"%s\", status reports %s",
 	     p->local_eid, p->status_reporting ? "enabled" : "disabled");

@@ -16,7 +16,6 @@
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/eid.h"
-#include "ud3tn/task_tags.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -473,11 +472,7 @@ static void cla_contact_rx_task(void *const param)
 		}
 	}
 
-	Task_t rx_task_handle = link->rx_task_handle;
-
-	// After releasing the semaphore, link may become invalid.
 	hal_semaphore_release(link->rx_task_sem);
-	hal_task_delete(rx_task_handle);
 }
 
 enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
@@ -490,13 +485,18 @@ enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
 	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
 
 	hal_semaphore_take_blocking(link->rx_task_sem);
-	link->rx_task_handle = hal_task_create(
+
+	const enum ud3tn_result res = hal_task_create(
 		cla_contact_rx_task,
 		tname_buf,
 		CONTACT_RX_TASK_PRIORITY,
 		link,
-		CONTACT_RX_TASK_STACK_SIZE,
-		(void *)CONTACT_RX_TASK_TAG
+		CONTACT_RX_TASK_STACK_SIZE
 	);
-	return link->rx_task_handle ? UD3TN_OK : UD3TN_FAIL;
+
+	// Not launched, no need to wait for exit.
+	if (res != UD3TN_OK)
+		hal_semaphore_release(link->rx_task_sem);
+
+	return res;
 }
