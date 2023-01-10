@@ -176,8 +176,11 @@ static int send_message(const int socket_fd,
 	return -wsp.errno_;
 }
 
-static void agent_msg_recv(struct bundle_adu data, void *param)
+static void agent_msg_recv(struct bundle_adu data, void *param,
+			   const void *bp_context)
 {
+	(void)bp_context;
+
 	struct application_agent_comm_config *const config = (
 		(struct application_agent_comm_config *)param
 	);

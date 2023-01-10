@@ -23,8 +23,10 @@ struct config_agent_params {
 	bool allow_remote_configuration;
 };
 
-static void callback(struct bundle_adu data, void *param)
+static void callback(struct bundle_adu data, void *param, const void *ctx)
 {
+	(void)ctx;
+
 	struct config_agent_params *const ca_param = param;
 
 	if (!ca_param->allow_remote_configuration) {

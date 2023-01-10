@@ -76,12 +76,25 @@ int bundle_processor_perform_agent_action(
 	QueueIdentifier_t bundle_processor_signaling_queue,
 	enum bundle_processor_signal_type type,
 	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param),
+	void (*const callback)(struct bundle_adu data, void *param,
+			       const void *bp_context),
 	void *param,
 	bool wait_for_feedback);
 
+// Forward declaration of internal opaque struct. Only to be used by agents
+// from the BP task (not thread safe).
+struct bp_context;
+
+/**
+ * @brief Dispatch a bundle - only to be executed from the BP thread.
+ * @note Only to be used by agents from the BP task (not thread safe).
+ */
+enum ud3tn_result bundle_processor_bundle_dispatch(
+	void *bp_context, struct bundle *bundle);
+
 /**
  * @brief Process a router command - only to be executed by the config agent.
+ * @note Only to be used by agents from the BP task (not thread safe).
  */
 void bundle_processor_handle_router_command(
 	void *bp_context, struct router_command *cmd);

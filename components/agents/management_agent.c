@@ -18,8 +18,11 @@ struct management_agent_params {
 	bool allow_remote_configuration;
 };
 
-static void callback(struct bundle_adu data, void *param)
+static void callback(struct bundle_adu data, void *param,
+		     const void *bp_context)
 {
+	(void)bp_context;
+
 	struct management_agent_params *const ma_param = param;
 
 	if (!ma_param->allow_remote_configuration) {

@@ -164,7 +164,8 @@ int bundle_processor_perform_agent_action(
 	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
 	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param),
+	void (*const callback)(struct bundle_adu data, void *param,
+			       const void *bp_context),
 	void *param,
 	bool wait_for_feedback)
 {
@@ -414,6 +415,12 @@ static enum ud3tn_result bundle_dispatch(
 	}
 	/* 5.3-2 */
 	return bundle_forward(ctx, bundle);
+}
+
+enum ud3tn_result bundle_processor_bundle_dispatch(
+	void *bp_context, struct bundle *bundle)
+{
+	return bundle_dispatch(bp_context, bundle);
 }
 
 /* 5.3-1 */
@@ -846,7 +853,7 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
 			     agent_id, adu.length);
-			agent_forward(agent_id, adu);
+			agent_forward(agent_id, adu, ctx);
 		} else if (record != NULL) {
 			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
 			     record->type);
@@ -863,7 +870,7 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 	ASSERT(agent_id != NULL);
 	LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
 	     agent_id, adu.length);
-	agent_forward(agent_id, adu);
+	agent_forward(agent_id, adu, ctx);
 }
 
 /* 5.13 (BPv7) */
