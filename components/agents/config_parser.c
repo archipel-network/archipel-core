@@ -531,7 +531,7 @@ enum ud3tn_result config_parser_reset(struct config_parser *parser)
 
 struct parser *config_parser_init(
 	struct config_parser *parser,
-	void (*send_callback)(struct router_command *, void *), void *param)
+	void (*send_callback)(void *, struct router_command *), void *param)
 {
 	parser->basedata = malloc(sizeof(struct parser));
 	if (parser->basedata == NULL)
@@ -554,6 +554,6 @@ static void send_router_command(struct config_parser *parser)
 	ptr = parser->router_command;
 	/* Unset router cmd, the recipient has to take care of it... */
 	parser->router_command = NULL;
-	parser->send_callback(ptr, parser->send_param);
+	parser->send_callback(parser->send_param, ptr);
 	/* Don't reset the parser here as the input task must know the state */
 }

@@ -5,6 +5,7 @@
 #include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle.h"
 #include "ud3tn/node.h"
+#include "ud3tn/router.h"
 
 #include "platform/hal_types.h"
 
@@ -23,7 +24,6 @@ enum bundle_processor_signal_type {
 	BP_SIGNAL_AGENT_DEREGISTER,
 	BP_SIGNAL_NEW_LINK_ESTABLISHED,
 	BP_SIGNAL_LINK_DOWN,
-	BP_SIGNAL_PROCESS_ROUTER_COMMAND,
 	BP_SIGNAL_CONTACT_OVER,
 };
 
@@ -47,6 +47,7 @@ struct bundle_processor_task_parameters {
 	QueueIdentifier_t signaling_queue;
 	const char *local_eid;
 	bool status_reporting;
+	bool allow_remote_configuration;
 };
 
 void bundle_processor_inform(
@@ -79,6 +80,11 @@ int bundle_processor_perform_agent_action(
 	void *param,
 	bool wait_for_feedback);
 
+/**
+ * @brief Process a router command - only to be executed by the config agent.
+ */
+void bundle_processor_handle_router_command(
+	void *bp_context, struct router_command *cmd);
 
 void bundle_processor_task(void *param);
 

@@ -19,6 +19,7 @@ struct config_agent_item {
 int config_agent_setup(
 	QueueIdentifier_t bundle_processor_signaling_queue,
 	const char *local_eid,
-	bool allow_remote_configuration);
+	bool allow_remote_configuration,
+	void *bundle_processor_context);
 
 #endif /* CONFIGAGENT_H_INCLUDED */

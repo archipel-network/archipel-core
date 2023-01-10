@@ -7,7 +7,6 @@
 #include "ud3tn/router.h"
 
 #include "agents/application_agent.h"
-#include "agents/config_agent.h"
 #include "agents/echo_agent.h"
 #include "agents/management_agent.h"
 
@@ -80,6 +79,8 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 			bundle_agent_interface.local_eid;
 	bundle_processor_task_params->status_reporting =
 			opt->status_reporting;
+	bundle_processor_task_params->allow_remote_configuration =
+			opt->allow_remote_configuration;
 
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
@@ -97,16 +98,6 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	agent_manager_init(bundle_agent_interface.local_eid);
 
 	int result;
-
-	result = config_agent_setup(
-		bundle_agent_interface.bundle_signaling_queue,
-		bundle_agent_interface.local_eid,
-		opt->allow_remote_configuration
-	);
-	if (result) {
-		LOG("INIT: Config agent could not be initialized!");
-		exit(EXIT_FAILURE);
-	}
 
 	result = management_agent_setup(
 		bundle_agent_interface.bundle_signaling_queue,
