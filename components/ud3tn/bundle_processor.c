@@ -857,8 +857,10 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 		} else if (record != NULL) {
 			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
 			     record->type);
+			bundle_adu_free_members(adu);
 		} else {
 			LOG("BundleProcessor: Received administrative record we cannot parse, discarding.");
+			bundle_adu_free_members(adu);
 		}
 
 		free_administrative_record(record);
