@@ -23,6 +23,8 @@ bool bundle7_hop_count_parse(struct bundle_hop_count *hop_count,
 	//
 	// Hop Limit
 	//
+	// A false positive error of clang-tidy follows...
+	// NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
 	if (!cbor_value_is_unsigned_integer(&it))
 		return false;
 
