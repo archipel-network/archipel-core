@@ -184,15 +184,11 @@ class AsyncTCPCLConnection(TCPCLConnection):
 
     Args:
         eid (str): Endpoint identifier for this DTN node
-        loop (asyncio.AbstractEventLoop, optional): Event loop that should be
-            used. If not given the default :func:`asyncio.get_event_loop` will
-            be used.
     """
 
-    def __init__(self, eid, loop=None):
+    def __init__(self, eid):
         super().__init__(eid)
 
-        self.loop = loop or asyncio.get_event_loop()
         self.reader = None
         self.writer = None
 
@@ -209,13 +205,14 @@ class AsyncTCPCLConnection(TCPCLConnection):
         if not self.sock:
             return
 
+        loop = asyncio.get_event_loop()
         # Establish TCP connection
-        await self.loop.sock_connect(
+        await loop.sock_connect(
             self.sock, (host, port)
         )
         # Create stream reader and writer pair
         self.reader, self.writer = await asyncio.open_connection(
-            sock=self.sock, loop=self.loop
+            sock=self.sock
         )
         logger.debug("TCPCL: Connected to %s:%d", host, port)
 
@@ -287,19 +284,15 @@ class TCPCLServer(object):
         host (str): Hostname / IP address the server should listening on
         port (int): TCP port number the server should listenin on
         backlog (int, optional): Number of concurrent TCP connections
-        loop (asyncio.AbstractEventLoop, optional): Event loop that should be
-            used. If not given the default :func:`asyncio.get_event_loop` will
-            be used.
     """
 
-    def __init__(self, eid, host, port, backlog=100, loop=None):
+    def __init__(self, eid, host, port, backlog=100):
         self.eid = eid
         self.host = host
         self.port = port
         self.backlog = backlog
         self.server = None
         self.handlers = []
-        self.loop = loop or asyncio.get_event_loop()
 
     async def start(self):
         """Start listening on the specified host and port"""
@@ -308,7 +301,7 @@ class TCPCLServer(object):
 
         self.server = await asyncio.start_server(
             self.client_connected, host=self.host, port=self.port,
-            backlog=self.backlog, loop=self.loop
+            backlog=self.backlog
         )
         logger.debug("TCPCLServer: Listening on %s:%d", self.host, self.port)
 
@@ -350,7 +343,8 @@ class TCPCLServer(object):
         # to be able to cancel them. A call to "self.server.close()" would stop
         # this coroutine without any exception. Hence we have no possibility to
         # shutdown the TCPCL connection properly in this coroutine.
-        task = self.loop.create_task(self.handle_connection(reader, writer))
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(self.handle_connection(reader, writer))
         task.add_done_callback(lambda task: self.handlers.remove(task))
         self.handlers.append(task)
 
