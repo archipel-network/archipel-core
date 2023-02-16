@@ -125,13 +125,21 @@ aap-test:
 ion-bpv6-interoperability-test:
     stage: functional_test
     when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:3.7.1
     script:
+        - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 6
 
 ion-bpv7-interoperability-test:
     stage: functional_test
     when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.0.1
     script:
+        - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7
 
 mtcp-test:
