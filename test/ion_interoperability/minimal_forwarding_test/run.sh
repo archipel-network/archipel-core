@@ -1,48 +1,32 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 
-set -o errexit
+set -euo pipefail
 
-if [ -z "$1" ] || [ $1 -eq '7' ]
-then
-    ION_VER="4.0.0"
-    BP_VERSION=7
-elif [ $1 -eq '6' ]
-then
-    ION_VER="3.7.1"
-    BP_VERSION=6
-else
-    exit -1
-fi
+# uD3TN + ION Interoperability test
+# It is recommended to run this script in a Docker image based on the
+# `ion-interop` Dockerfile provided with uD3TN as follows:
+# $ docker run -it -v "$(pwd):/ud3tn" ud3tn-ion-interop:<tag> \
+#   bash -c '/ud3tn/test/ion_interoperability/prepare_for_test.sh /ud3tn /ud3tn_build && cd /ud3tn_build && source /ud3tn_venv/bin/activate && test/ion_interoperability/minimal_forwarding_test/run.sh 7'
+
+BP_VERSION=$1
 
 # This assumes you are running the command from within the "ud3tn" directory.
 UD3TN_DIR="$(pwd)"
-
-cd /tmp
-
-# Download and build ION
-wget -O "ion-$ION_VER.tar.gz" "https://sourceforge.net/projects/ion-dtn/files/ion-$ION_VER.tar.gz/download?use_mirror=netcologne&ts=$(date +%s)"
-tar xvf "ion-$ION_VER.tar.gz"
-cd "ion-open-source-$ION_VER"
-# Issue with ION 4.0.0 and new compilers: maybe-uninitialized in CBOR library
-CPPFLAGS=-Wno-maybe-uninitialized ./configure
-make
-make install
-ldconfig
-
 cd "$UD3TN_DIR"
-
-# Compile uD3TN and create Python venv
-make sanitize=yes
-make virtualenv || true
-source .venv/bin/activate
 
 exit_handler() {
     cd "$UD3TN_DIR"
 
-    echo "Terminating ION and uD3TN..."
-    ionstop || true
-    kill -KILL $(ps ax | grep ud3tn | tr -s ' ' | sed 's/^ *//g' | cut -d ' ' -f 1) 2> /dev/null || true
+    kill -TERM $UD3TN1_PID
+    kill -TERM $UD3TN2_PID
+    echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+    wait $UD3TN1_PID
+    wait $UD3TN2_PID
+
+    echo "Terminating ION (timeout 20s)..."
+    (ionstop || true) &
+    sleep 20
 
     echo
     echo ">>> ION LOGFILE"
@@ -56,10 +40,8 @@ exit_handler() {
     echo
 }
 
-trap exit_handler EXIT
-
 rm -f ion.log
-rm -f /tmp/*.log
+rm -f /tmp/ion*log /tmp/ud3tn*.log
 
 # Start first uD3TN instance (uD3TN1)
 "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "dtn://ud3tn1.dtn/" > /tmp/ud3tn1.log 2>&1 &
@@ -69,10 +51,12 @@ UD3TN1_PID=$!
 "$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "dtn://ud3tn2.dtn/" > /tmp/ud3tn2.log 2>&1 &
 UD3TN2_PID=$!
 
-
 # Start ION instance
 ulimit -n 512 # fix behavior on systems with a huge limit (e.g. if the container runtime does not change the kernel default), see: #121
 ionstart -I test/ion_interoperability/minimal_forwarding_test/ionstart.rc
+
+# UD3TN1_PID and UD3TN2_PID must be defined for this
+trap exit_handler EXIT
 
 # Configure a contact to ION in uD3TN1 which allows to reach uD3TN2
 sleep 0.5
@@ -83,9 +67,3 @@ PAYLOAD="THISISTHEBUNDLEPAYLOAD"
 python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid source "dtn://ud3tn2.dtn/sink" "$PAYLOAD" &
 
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid sink --count 1 --verify-pl "$PAYLOAD" --newline -vv
-
-kill -TERM $UD3TN1_PID
-kill -TERM $UD3TN2_PID
-echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
-wait $UD3TN1_PID
-wait $UD3TN2_PID
