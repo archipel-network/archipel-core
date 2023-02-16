@@ -71,6 +71,7 @@ UD3TN2_PID=$!
 
 
 # Start ION instance
+ulimit -n 512 # fix behavior on systems with a huge limit (e.g. if the container runtime does not change the kernel default), see: #121
 ionstart -I test/ion_interoperability/minimal_forwarding_test/ionstart.rc
 
 # Configure a contact to ION in uD3TN1 which allows to reach uD3TN2

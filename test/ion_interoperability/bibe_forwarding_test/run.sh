@@ -72,6 +72,7 @@ UD3TN3_PID=$!
 UD3TN4_PID=$!
 
 # Start ION instance
+ulimit -n 512 # fix behavior on systems with a huge limit (e.g. if the container runtime does not change the kernel default), see: #121
 ionstart -I test/ion_interoperability/bibe_forwarding_test/ionstart.rc
 
 # Configure contacts
