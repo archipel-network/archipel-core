@@ -122,7 +122,27 @@ aap-test:
         - wait $UD3TN1_PID
         - wait $UD3TN2_PID
 
-ion-bpv6-interoperability-test:
+ion-ipn-bpv6-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:3.7.4
+    script:
+        - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 6 ipn
+
+ion-ipn-bpv7-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
+    script:
+        - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
+
+ion-dtn-bpv6-interoperability-test:
     stage: functional_test
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:3.7.1
@@ -130,9 +150,9 @@ ion-bpv6-interoperability-test:
         - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 6
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 6 dtn
 
-ion-bpv7-interoperability-test:
+ion-dtn-bpv7-interoperability-test:
     stage: functional_test
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.0.1
@@ -140,7 +160,7 @@ ion-bpv7-interoperability-test:
         - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 dtn
 
 mtcp-test:
     stage: functional_test

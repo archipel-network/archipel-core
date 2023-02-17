@@ -50,6 +50,5 @@ s
 ## end ipnadmin
 
 ## begin dtn2admin
-a plan dtn://ud3tn1.dtn* x tcp/127.0.0.1:4555
 a plan dtn://ud3tn2.dtn* x tcp/127.0.0.1:4554
 ## end dtn2admin
