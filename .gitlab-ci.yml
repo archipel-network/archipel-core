@@ -246,8 +246,11 @@ bibe-internal-forwarding-test:
 ion-bibe-interoperability-test:
     stage: functional_test
     when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
     script:
-        - make clean
+        - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
         - bash test/ion_interoperability/bibe_forwarding_test/run.sh
 
 license-check:
