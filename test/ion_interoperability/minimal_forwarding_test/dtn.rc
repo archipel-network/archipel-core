@@ -23,6 +23,10 @@ m consumption 100000
 ## begin bpadmin
 1
 
+# watch: print bundle actions, see manpage
+# you should see "ybc" in the test; you should not see '~' or '!'
+w 1
+
 # add DTN scheme
 a scheme dtn 'dtn2fw' 'dtn2adminep'
 # the scheme will use the "gethostname" command and
