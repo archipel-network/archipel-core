@@ -145,7 +145,7 @@ ion-ipn-bpv7-interoperability-test:
 ion-dtn-bpv6-interoperability-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:3.7.1
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:3.7.4
     script:
         - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
@@ -155,7 +155,7 @@ ion-dtn-bpv6-interoperability-test:
 ion-dtn-bpv7-interoperability-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.0.1
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
     script:
         - bash test/ion_interoperability/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
