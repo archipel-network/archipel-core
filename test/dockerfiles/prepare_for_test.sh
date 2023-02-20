@@ -24,9 +24,11 @@ shift
 # Build uD3TN
 cd $WORK_DIR
 make clean
-make -j4 sanitize=yes "$@"
+make -j4 "$@"
 
 # Python dependencies
 source /ud3tn_venv/bin/activate
-pip install -e "$WORK_DIR/pyd3tn"
-pip install -e "$WORK_DIR/python-ud3tn-utils"
+pip install --no-cache-dir -r "$WORK_DIR/test/integration/requirements.txt"
+pip install --no-cache-dir -r "$WORK_DIR/tools/analysis/requirements.txt"
+pip install --no-cache-dir -e "$WORK_DIR/pyd3tn"
+pip install --no-cache-dir -e "$WORK_DIR/python-ud3tn-utils"
