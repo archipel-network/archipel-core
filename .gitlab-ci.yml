@@ -1,7 +1,6 @@
 ---
 stages:
     - builds
-    - unit_test
     - functional_test
     - code_quality_test
     - publish
@@ -38,7 +37,7 @@ build-clang-posix-release:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
 unit-test-posix-debug:
-    stage: unit_test
+    stage: functional_test
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
@@ -46,7 +45,7 @@ unit-test-posix-debug:
         - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
 unit-test-posix-release:
-    stage: unit_test
+    stage: functional_test
     when: always
     script:
         - timeout 60 make type=release run-unittest-posix
