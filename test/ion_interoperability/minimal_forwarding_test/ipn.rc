@@ -42,14 +42,10 @@ a induct tcp 0.0.0.0:4556 tcpcli
 # add outduct to uD3TN2 instance
 a outduct tcp 127.0.0.1:4554 tcpcli
 
+# add egress plan
+a plan ipn:3.0
+a planduct ipn:3.0 tcp 127.0.0.1:4554
+
 # start daemons
 s
 ## end bpadmin
-
-## begin ipnadmin
-a plan 3 tcp/127.0.0.1:4554
-## end ipnadmin
-
-## begin dtn2admin
-# no dtn: EIDs configured
-## end dtn2admin
