@@ -42,6 +42,17 @@ from pyd3tn.bundle7 import serialize_bundle7
 serialize_bundle7("dtn://GS1/", "dtn://GS2/", b"Hello world!")
 ```
 
+## Use an own virtual environment handler
+
+You may also use other tools or a manual approach for managing the virtual
+environment, e.g., if you want it to use another path.
+In this case, create and `activate` a new virtual environment using the method
+of your choice and then install the dependencies:
+
+```bash
+make update-virtualenv
+```
+
 ## Optional: direnv support
 
 [direnv](https://direnv.net/) is an environment switcher loading environtal
