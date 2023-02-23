@@ -103,7 +103,7 @@ Use the `--recursive` option if you `git clone` the project or run
 
 ### Test
 
-The µD3TN development is accompanied by extensive testing. For this purpose, you should install `gdb` and a recent version of Python 3 (>= 3.6). Our test suite covering static analysis, unit, and integration tests is documented in [`doc/testing.md`](doc/testing.md).
+The µD3TN development is accompanied by extensive testing. For this purpose, you should install `gdb` and a recent version of Python 3 (>= 3.6), plus the, `venv`, `pip`, and `setuptools` packages for your Python version. Our test suite covering static analysis, unit, and integration tests is documented in [`doc/testing.md`](doc/testing.md).
 
 ### Contribute
 

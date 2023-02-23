@@ -10,8 +10,7 @@ implementation of several DTN protocols and convergence layers, provided in the
 
 A [venv](https://docs.python.org/3/library/venv.html) is used to isolate the
 µD3TN Python environment from the system. The Makefile target `virtualenv`
-creates a default Python virtualenv including [pip](https://pip.pypa.io/) and
-all required Python packages.
+creates a default Python virtualenv including all required Python packages.
 
 ```bash
 make virtualenv

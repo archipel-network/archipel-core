@@ -19,7 +19,7 @@ A VM or Docker container will work for this purpose, too.
 
 Please install all dependencies stated in the [`README.md` file](https://gitlab.com/d3tn/ud3tn/-/blob/master/README.md) for the version you have obtained.
 At least an up-to-date **C build toolchain**, **GNU Make**, and the **GNU Binutils** are always needed.
-Apart from that, you need an up-to-date version of **Python 3** for the µD3TN tools and **Git** for working with the code repository.
+Apart from that, you need an up-to-date version of **Python 3** including **pip** and **setuptools** for the µD3TN tools and **Git** for working with the code repository.
 
 ## Getting the code
 
