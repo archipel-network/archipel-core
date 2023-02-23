@@ -10,7 +10,7 @@ from helpers import add_socket_group_parser_arguments
 AGENT_ID = "testagent"
 
 
-def run_aap_test():
+def run_aap_test(aap_client):
     print("Sending PING message...")
     aap_client.ping()
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     if args.tcp:
         with AAPTCPClient(address=args.tcp) as aap_client:
-            run_aap_test()
+            run_aap_test(aap_client)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
-            run_aap_test()
+            run_aap_test(aap_client)
