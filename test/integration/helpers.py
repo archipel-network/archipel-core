@@ -18,6 +18,11 @@ TCPCL_PORT = 4556
 SMTCP_PORT = 4222
 # MTCP_PORT = 4224
 
+AAP_USE_TCP = os.environ.get("AAP_USE_TCP", "0") == "1"
+AAP_SOCKET = os.environ.get("AAP_SOCKET", "ud3tn.socket")
+AAP_AGENT_ID = "testagent"
+TEST_AAP = os.environ.get("TEST_AAP", "1") == "1"
+
 UD3TN_EID = "dtn://ud3tn.dtn/"
 UD3TN_CONFIG_EP = UD3TN_EID + "config"
 UD3TN_MANAGEMENT_EP = UD3TN_EID + "management"
