@@ -33,6 +33,7 @@ w 1
 
 a scheme ipn 'ipnfw' 'ipnadminep'
 a endpoint ipn:1.0 q
+a endpoint ipn:1.1 q
 
 # add the tcp convergence layer and outducts
 # note that your IPs will be different

@@ -20,6 +20,7 @@ case "$2" in
         SOURCE_AGENTID=source
         SINK_AGENTID=sink
         SINK_EID=dtn://ud3tn2.dtn/sink
+        ION_SINK_EID=dtn:none
         ;;
     ipn)
         ION_SCRIPT_NAME=ipn.rc
@@ -29,6 +30,7 @@ case "$2" in
         SOURCE_AGENTID=1
         SINK_AGENTID=1
         SINK_EID=ipn:3.1
+        ION_SINK_EID=ipn:1.1
         ;;
     *)
         echo "Usage: $0 (6|7) (dtn|ipn)"
@@ -96,3 +98,14 @@ timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3
 # Test forwarding from ION directly
 (sleep 0.5 && bpsource "$SINK_EID" "$PAYLOAD") &
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
+
+if [[ "$ION_SINK_EID" != "dtn:none" ]]; then
+    (sleep 0.5 && python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$ION_SINK_EID" "$PAYLOAD") &
+    timeout 10 bprecvfile "$ION_SINK_EID" 1
+    RECEIVED_PAYLOAD="$(cat testfile1)"
+    echo "bprecvfile: $RECEIVED_PAYLOAD"
+    if [[ "$RECEIVED_PAYLOAD" != "$PAYLOAD" ]]; then
+        echo "Received payload does not match: $RECEIVED_PAYLOAD"
+        exit 1
+    fi
+fi
