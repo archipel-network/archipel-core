@@ -92,3 +92,7 @@ PAYLOAD="THISISTHEBUNDLEPAYLOAD"
 python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID" "$PAYLOAD" &
 
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
+
+# Test forwarding from ION directly
+(sleep 0.5 && bpsource "$SINK_EID" "$PAYLOAD") &
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
