@@ -27,8 +27,6 @@ int hal_io_message_printf(const char *format, ...)
 	va_list v;
 
 	va_start(v, format);
-	// A false positive error of clang-tidy follows...
-	// NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
 	rc = vfprintf(stderr, format, v);
 	va_end(v);
 	return rc;
