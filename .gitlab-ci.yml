@@ -226,7 +226,11 @@ ipv6-compatibility-test:
 bibe-internal-forwarding-test:
     stage: functional_test
     when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
         - bash test/functional/bibe_internal_forwarding_test/run.sh
 
 ion-bibe-interoperability-test:

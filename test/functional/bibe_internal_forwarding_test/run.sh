@@ -13,11 +13,6 @@ set -o errexit
 # This assumes you are running the command from within the "ud3tn" directory.
 UD3TN_DIR="$(pwd)"
 
-# Compile uD3TN and create Python venv
-make sanitize-strict=yes
-make virtualenv || true
-source .venv/bin/activate
-
 exit_handler() {
     cd "$UD3TN_DIR"
 
