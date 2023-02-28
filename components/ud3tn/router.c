@@ -42,7 +42,6 @@ struct contact_list *router_lookup_destination(char *const dest)
 	if (!dest_node_eid || !e)
 		e = routing_table_lookup_eid(dest);
 
-	uint16_t results = 0;
 	struct contact_list *result = NULL;
 
 	if (e != NULL) {
@@ -50,7 +49,6 @@ struct contact_list *router_lookup_destination(char *const dest)
 
 		while (cur != NULL) {
 			add_contact_to_ordered_list(&result, cur->data, 0);
-			results++;
 			cur = cur->next;
 		}
 	}
