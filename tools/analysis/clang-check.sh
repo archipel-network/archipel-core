@@ -32,7 +32,9 @@ done
 CHECKER="$1"
 if [[ $CHECKER == *"clang-tidy"* ]]; then
     echo 'Running clang-tidy'
-    CHECKER_CMD_ARGS="$CHECKER_CMD_ARGS -header-filter='.*'"
+    CHECKER_CMD_ARGS="$CHECKER_CMD_ARGS -header-filter=.*"
+    # False positive, see: #117, https://github.com/llvm/llvm-project/issues/40656
+    CHECKER_CMD_ARGS="$CHECKER_CMD_ARGS -checks=-clang-analyzer-valist.*"
     TARGETS="${2:-}"
     shift
     shift
