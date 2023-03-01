@@ -145,6 +145,16 @@ ion-ipn-bpv7-interoperability-test:
         - source /ud3tn_venv/bin/activate
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
 
+ione-ipn-bpv7-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
+
 ion-dtn-bpv6-interoperability-test:
     stage: functional_test
     when: always
@@ -159,6 +169,16 @@ ion-dtn-bpv7-interoperability-test:
     stage: functional_test
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 dtn
+
+ione-dtn-bpv7-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
         - cd /ud3tn_build
@@ -259,6 +279,16 @@ ion-bibe-interoperability-test:
     stage: functional_test
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/ion_interoperability/bibe_forwarding_test/run.sh
+
+ione-bibe-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
         - cd /ud3tn_build
