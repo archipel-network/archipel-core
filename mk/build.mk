@@ -41,7 +41,8 @@ $(eval $(call addComponentWithRules,external/util/src))
 $(eval $(call generateComponentRules,components/daemon))
 $(eval $(call generateComponentRules,test/unit))
 
-build/$(PLATFORM)/libud3tn.so: LDFLAGS += $(LDFLAGS_LIB)
+build/$(PLATFORM)/libud3tn.so: LDFLAGS += $(LDFLAGS_LIB) -Wl,--no-whole-archive
+build/$(PLATFORM)/libud3tn.so: LDFLAGS_PRE += -Wl,--whole-archive
 build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
 build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
 	$(call cmd,link)
