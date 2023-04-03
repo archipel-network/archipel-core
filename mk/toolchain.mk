@@ -54,7 +54,7 @@ quiet_cmd_ar       = AR      $@
 cmd_ar             = "$(AR)" rcs "$@" $(OBJECTS)
 
 quiet_cmd_link     = LINK    $@
-cmd_link           = "$(LD)" -o "$@" "-Wl,-Map=$@.map" \
+cmd_link           = "$(LD)" -o "$@" \
                      -Wl,--whole-archive -Wl,--start-group \
                      $(OBJECTS) $(LIBS) \
                      -Wl,--end-group -Wl,--no-whole-archive \
