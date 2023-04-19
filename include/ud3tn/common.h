@@ -57,9 +57,9 @@ while (list != NULL) { \
 #define ARRAY_SIZE ARRAY_LENGTH
 
 #if defined(__GNUC__) && (__GNUC__ >= 7) && !defined(__clang__)
-#define fallthrough __attribute__ ((fallthrough))
+#define fallthrough_ok __attribute__ ((fallthrough))
 #else
-#define fallthrough
+#define fallthrough_ok
 #endif
 
 /* ASSERT */
