@@ -19,6 +19,16 @@ RANLIB   := $(GCC_TOOLCHAIN_PREFIX)ranlib
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objdump
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objcopy
 
+# OS DETECTION
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+  EXPECT_MACOS_LINKER ?= 1
+else
+  EXPECT_MACOS_LINKER ?= 0
+endif
+
 # COMMON FLAGS
 
 CPPFLAGS += $(ARCH_FLAGS) -MMD -Iinclude $(EXTERNAL_INCLUDES)
@@ -34,6 +44,11 @@ ifeq ($(TOOLCHAIN),clang)
   ifneq ($(CLANG_SYSROOT),)
     CPPFLAGS += --sysroot $(CLANG_SYSROOT)
   endif
+endif
+
+ifneq ($(EXPECT_MACOS_LINKER),1)
+  LDFLAGS_PRE += -Wl,--start-group
+  LDFLAGS += -Wl,--end-group
 endif
 
 # COMMANDS
@@ -56,9 +71,7 @@ cmd_ar             = "$(AR)" rcs "$@" $(OBJECTS)
 quiet_cmd_link     = LINK    $@
 cmd_link           = "$(LD)" -o "$@" \
                      $(LDFLAGS_PRE) \
-                     -Wl,--start-group \
                      $(OBJECTS) $(LIBS) \
-                     -Wl,--end-group \
                      $(LDFLAGS)
 
 quiet_cmd_mkdir    = MKDIR   $@
