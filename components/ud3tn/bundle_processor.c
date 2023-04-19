@@ -222,6 +222,7 @@ int bundle_processor_perform_agent_action(
 	}
 
 	hal_queue_delete(feedback_queue);
+	ASSERT(0); // hal_queue_receive with timeout == -1 should never fail
 	return -1;
 }
 

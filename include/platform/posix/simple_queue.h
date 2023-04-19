@@ -16,7 +16,6 @@
 #ifndef SIMPLE_QUEUE_H_INCLUDED
 #define SIMPLE_QUEUE_H_INCLUDED
 
-#include <semaphore.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -30,11 +29,11 @@ typedef struct {
 	int item_size;
 
 	// provides mutual exclusion for the given queue
-	sem_t semaphore;
+	struct Semaphore *semaphore;
 
 	// these semaphores circumvent busy waiting
-	sem_t sem_pop;
-	sem_t sem_push;
+	struct Semaphore *sem_pop;
+	struct Semaphore *sem_push;
 
 	// abs_start and abs_end are pointers to the first and last
 	// byte of the reserved memory

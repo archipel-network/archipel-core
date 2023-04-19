@@ -23,6 +23,13 @@
 Semaphore_t hal_semaphore_init_binary(void);
 
 /**
+ * @brief hal_semaphore_init_value Creates a new semaphore with the given
+ *				  initial value
+ * @return An OS-specific identifier for the created semaphore
+ */
+Semaphore_t hal_semaphore_init_value(int value);
+
+/**
  * @brief hal_semaphore_take_blocking Take a previously initialized semaphore,
  *			    if the semaphore is alread taken, block until it is
  *			    released
