@@ -97,13 +97,4 @@ enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
  */
 void hal_queue_reset(QueueIdentifier_t queue);
 
-/**
- * @brief hal_queue_nr_of_data_waiting Return the number of waiting items
- *				       in a queue
- * @param The queue that should be checked
- * @return 0 if the queue doesn't exist, otherwise the number of waiting
- *	     items
- */
-uint8_t hal_queue_nr_of_items_waiting(QueueIdentifier_t queue);
-
 #endif /* HAL_QUEUE_H_INCLUDED */

@@ -70,14 +70,6 @@ void queueDelete(Queue_t *queue);
 void queueReset(Queue_t *queue);
 
 /**
- * @brief queueItemsWaiting Returns the number of items that are currently in
- *				the list
- * @param queue	The pointer to the queue structure
- * @return The number of items in the list
- */
-unsigned int queueItemsWaiting(Queue_t *queue);
-
-/**
  * @brief queuePush Pushes an item to the end of the queue
  * @param queue The pointer to the queue structure
  * @param item A pointer to the item that should be queued

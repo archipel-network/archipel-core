@@ -110,11 +110,6 @@ void queueReset(Queue_t *queue)
 	hal_semaphore_release(queue->semaphore);
 }
 
-unsigned int queueItemsWaiting(Queue_t *queue)
-{
-	return -1; // unsupported
-}
-
 uint8_t queuePop(Queue_t *queue, void *targetBuffer, int timeout)
 {
 	if (hal_semaphore_try_take(queue->sem_pop, timeout) == UD3TN_FAIL)

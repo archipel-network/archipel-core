@@ -63,8 +63,3 @@ enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
 {
 	return queuePush(queue, item, -1, true) == 0 ? UD3TN_OK : UD3TN_FAIL;
 }
-
-uint8_t hal_queue_nr_of_items_waiting(QueueIdentifier_t queue)
-{
-	return queueItemsWaiting(queue);
-}
