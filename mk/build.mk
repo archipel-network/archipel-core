@@ -76,6 +76,9 @@ build/$(PLATFORM)/testud3tn: LDFLAGS += -Wl,-wrap,putchar \
                                        -Wl,-wrap,unity_realloc \
                                        -Wl,-wrap,unity_free
 build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
+ifeq ($(EXPECT_MACOS_LINKER),1)
+build/$(PLATFORM)/testud3tn: $(warning Unfortunately, building the tests using the Darwin linker is not supported at the moment. You can override this auto-detection by setting EXPECT_MACOS_LINKER=0.)
+endif
 build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
 	$(call cmd,link)
 
