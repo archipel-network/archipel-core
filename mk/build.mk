@@ -2,10 +2,7 @@ include mk/toolchain.mk
 
 # COMPONENTS
 
-EXTERNAL_INCLUDES += -Iexternal/platform/$(PLATFORM)/include \
-                     -Iexternal/tinycbor/src \
-                     -Iexternal/unity/src \
-                     -Iexternal/unity/extras/fixture/src \
+EXTERNAL_INCLUDES += -Iexternal/tinycbor/src \
                      -Iexternal/util/include
 
 $(eval $(call addComponentWithRules,components/aap))
@@ -30,10 +27,6 @@ TINYCBOR_SOURCES := \
 	cbortojson.c
 
 $(eval $(call addComponentWithRules,external/tinycbor/src,$(TINYCBOR_SOURCES)))
-
-$(eval $(call addComponentWithRules,external/unity/src))
-$(eval $(call addComponentWithRules,external/unity/extras/fixture/src))
-
 $(eval $(call addComponentWithRules,external/util/src))
 
 # LIB
@@ -63,12 +56,20 @@ build/$(PLATFORM)/ud3tn: $(LIBS_ud3tn) | build/$(PLATFORM)
 
 # TEST EXECUTABLE
 
+$(eval $(call generateComponentRules,external/unity/src))
+$(eval $(call generateComponentRules,external/unity/extras/fixture/src))
+
+$(eval $(call addComponent,testud3tn,external/unity/src))
+$(eval $(call addComponent,testud3tn,external/unity/extras/fixture/src))
+
 $(eval $(call addComponent,testud3tn,test/unit))
 
 build/$(PLATFORM)/testud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
 # 64 bit support has to be enabled first.
 build/$(PLATFORM)/testud3tn: CPPFLAGS += -DUNITY_SUPPORT_64
 build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Itest/unit
+build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/src
+build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/extras/fixture/src
 build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
 build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
 	$(call cmd,link)
