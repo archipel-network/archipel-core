@@ -85,6 +85,9 @@ void queueDelete(Queue_t *queue)
 	// free the data memory
 	free(queue->abs_start);
 
+	hal_semaphore_delete(queue->sem_pop);
+	hal_semaphore_delete(queue->sem_push);
+
 	// destroy the semaphore
 	hal_semaphore_delete(queue->semaphore);
 
