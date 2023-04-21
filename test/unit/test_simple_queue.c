@@ -5,7 +5,7 @@
 #include "platform/posix/hal_types.h"
 #include "platform/posix/simple_queue.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdint.h>
 #include <stdlib.h>

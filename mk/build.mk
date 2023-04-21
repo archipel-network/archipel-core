@@ -68,17 +68,8 @@ $(eval $(call addComponent,testud3tn,test/unit))
 build/$(PLATFORM)/testud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
 # 64 bit support has to be enabled first.
 build/$(PLATFORM)/testud3tn: CPPFLAGS += -DUNITY_SUPPORT_64
-# We wrap some functions to make Unity usable without surprises on our platform.
-build/$(PLATFORM)/testud3tn: LDFLAGS += -Wl,-wrap,putchar \
-                                       -Wl,-wrap,UNITY_OUTPUT_CHAR \
-                                       -Wl,-wrap,unity_malloc \
-                                       -Wl,-wrap,unity_calloc \
-                                       -Wl,-wrap,unity_realloc \
-                                       -Wl,-wrap,unity_free
+build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Itest/unit
 build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
-ifeq ($(EXPECT_MACOS_LINKER),1)
-build/$(PLATFORM)/testud3tn: $(warning Unfortunately, building the tests using the Darwin linker is not supported at the moment. You can override this auto-detection by setting EXPECT_MACOS_LINKER=0.)
-endif
 build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
 	$(call cmd,link)
 

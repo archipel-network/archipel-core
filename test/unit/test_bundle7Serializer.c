@@ -15,7 +15,7 @@
 
 #include "ud3tn/bundle.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stddef.h>
 #include <stdlib.h>  // malloc(), free()
