@@ -18,7 +18,7 @@ else
 endif
 
 LDFLAGS += -lpthread
-LDFLAGS_EXECUTABLE += -pie
+LDFLAGS_EXECUTABLE += -Wl,-pie
 LDFLAGS_LIB += -shared
 
 ifeq "$(type)" "release"
