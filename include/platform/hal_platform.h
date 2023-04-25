@@ -10,8 +10,6 @@
 #ifndef HAL_PLATFORM_H_INCLUDED
 #define HAL_PLATFORM_H_INCLUDED
 
-#include <stdint.h>
-
 /**
  * @brief hal_platform_init Allows the initialization of the underlying
  *			    operating system or hardware.
