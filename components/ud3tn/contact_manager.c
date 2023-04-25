@@ -277,6 +277,8 @@ static uint8_t check_for_contacts(
 		added_contacts
 	);
 
+	ASSERT(ctx->next_contact_time_ms > current_timestamp_ms);
+
 	for (i = 0; i < added_count; i++) {
 		LOGF("ContactManager: Scheduled contact with \"%s\" started (%p).",
 		     added_contacts[i].eid,
