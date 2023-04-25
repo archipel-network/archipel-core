@@ -129,6 +129,13 @@ enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
 	ts.tv_sec += timeout_ms / 1000;
 	ts.tv_nsec += (timeout_ms % 1000) * 1000000;
 
+	// Ensure that the sum in tv_nsec is < 1 second in nanoseconds.
+	if (ts.tv_nsec >= 1000000000) {
+		ts.tv_sec += 1;
+		ts.tv_nsec -= 1000000000;
+		ASSERT(ts.tv_nsec < 1000000000);
+	}
+
 	do {
 		ret = sem_timedwait(&sem->sem, &ts);
 	} while (ret == -1 && errno == EINTR);
