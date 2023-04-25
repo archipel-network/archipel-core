@@ -15,6 +15,7 @@
 #include "ud3tn/result.h"
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 
 
@@ -31,7 +32,7 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item)
 
 
 enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue, void *targetBuffer,
-				    int timeout)
+				    int64_t timeout)
 {
 	return queuePop(queue, targetBuffer, timeout) == 0
 		? UD3TN_OK : UD3TN_FAIL;
@@ -45,7 +46,7 @@ void hal_queue_reset(QueueIdentifier_t queue)
 
 
 enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
-					     const void *item, int timeout)
+					     const void *item, int64_t timeout)
 {
 	return queuePush(queue, item, timeout, false) == 0
 		? UD3TN_OK : UD3TN_FAIL;

@@ -113,7 +113,7 @@ void queueReset(Queue_t *queue)
 	hal_semaphore_release(queue->semaphore);
 }
 
-uint8_t queuePop(Queue_t *queue, void *targetBuffer, int timeout)
+uint8_t queuePop(Queue_t *queue, void *targetBuffer, int64_t timeout)
 {
 	if (hal_semaphore_try_take(queue->sem_pop, timeout) == UD3TN_FAIL)
 		return EXIT_FAILURE;
@@ -136,7 +136,7 @@ uint8_t queuePop(Queue_t *queue, void *targetBuffer, int timeout)
 }
 
 
-uint8_t queuePush(Queue_t *queue, const void *item, int timeout, bool force)
+uint8_t queuePush(Queue_t *queue, const void *item, int64_t timeout, bool force)
 {
 	// forcefully replace the last element of the queue
 	if (force) {

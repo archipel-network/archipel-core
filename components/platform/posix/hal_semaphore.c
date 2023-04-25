@@ -103,9 +103,11 @@ void hal_semaphore_delete(Semaphore_t sem)
 	free(sem);
 }
 
-enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
+enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int64_t timeout_ms)
 {
-	if (timeout_ms < 0) {
+	// Infinite blocking in invalid value range. 9223372036854 is
+	// floor(INT64_MAX / 1000000), so we can convert to nanoseconds.
+	if (timeout_ms < 0 || timeout_ms > 9223372036854) {
 		hal_semaphore_take_blocking(sem);
 		return UD3TN_OK;
 	}

@@ -74,12 +74,15 @@ void queueReset(Queue_t *queue);
  * @param queue The pointer to the queue structure
  * @param item A pointer to the item that should be queued
  * @param timeout Defines how long the queuing should be tried
- *			(in milliseconds)
+ *		  (in milliseconds)
+ *		  If this value is -1 or larger than 9223372036854, pushing
+ *		  will block indefinitely (see hal_semaphore_try_take)
  * @param force Defines if the last element of the queue should be replaced
  *		forcefully (only applied when queue is full)
  * @return Exitcode, if queueing was successfull
  */
-uint8_t queuePush(Queue_t *queue, const void *item, int timeout, bool force);
+uint8_t queuePush(Queue_t *queue, const void *item, int64_t timeout,
+		  bool force);
 
 /**
  * @brief queuePop Pops the upmost element of the queue
@@ -87,9 +90,11 @@ uint8_t queuePush(Queue_t *queue, const void *item, int timeout, bool force);
  * @param targetBuffer The memory location where the queued item should be
  *			copied to
  * @param timeout Defines how long the dequeuing should be tried
- *			(in milliseconds)
+ *		  (in milliseconds)
+ *		  If this value is -1 or larger than 9223372036854, popping
+ *		  will block indefinitely (see hal_semaphore_try_take)
  * @return Exitcode, if dequeueing was successfull
  */
-uint8_t queuePop(Queue_t *queue, void *targetBuffer, int timeout);
+uint8_t queuePop(Queue_t *queue, void *targetBuffer, int64_t timeout);
 
 #endif /* SIMPLE_QUEUE_H_INCLUDED */
