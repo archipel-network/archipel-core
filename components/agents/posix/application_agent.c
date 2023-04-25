@@ -544,13 +544,29 @@ static int create_unix_domain_socket(const char *path)
 	struct sockaddr_un addr = {
 		.sun_family = AF_UNIX,
 	};
-	strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+	const int rv1 = snprintf(
+		addr.sun_path,
+		sizeof(addr.sun_path),
+		"%s",
+		path
+	);
+
+	if (rv1 <= 0 || (unsigned int)rv1 > sizeof(addr.sun_path)) {
+		LOGF(
+			"AppAgent: Invalid socket path, len = %d, maxlen = %zu",
+			rv1,
+			sizeof(addr.sun_path)
+		);
+		return -1;
+	}
 
 	unlink(path);
-	int ret = bind(sock,
-		       (const struct sockaddr *) &addr,
-		       sizeof(struct sockaddr_un));
-	if (ret == -1) {
+	int rv2 = bind(
+		sock,
+		(const struct sockaddr *)&addr,
+		sizeof(struct sockaddr_un)
+	);
+	if (rv2 == -1) {
 		LOGERROR("AppAgent", "bind(unix_domain_socket)", errno);
 		return -1;
 	}

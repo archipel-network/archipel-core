@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #define HASHL(key, len) (hashlittle(key, len, 0) & 0xFFFF)
@@ -136,7 +137,7 @@ struct htab_entrylist *htab_add_known(
 
 	new_elem = malloc(sizeof(struct htab_entrylist));
 	new_elem->key = malloc(key_length + 1);
-	strncpy(new_elem->key, key, key_length + 1);
+	snprintf(new_elem->key, key_length + 1, "%s", key);
 	new_elem->value = valptr;
 	new_elem->next = NULL;
 
