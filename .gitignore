@@ -49,3 +49,6 @@ __pycache__
 
 # uD3TN Socket
 *.socket
+
+*.egg-info
+*.egg

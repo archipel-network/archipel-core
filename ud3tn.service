@@ -1,0 +1,10 @@
+[Unit]
+Description=µD3TN
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/ud3tn
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

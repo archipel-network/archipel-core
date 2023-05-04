@@ -13,6 +13,19 @@ clean::
 	$(RM) -rf build/
 
 ###############################################################################
+# Install
+###############################################################################
+
+.PHONY: install-posix
+install-posix: posix
+	mkdir -p /usr/share/ud3tn
+	cp -f build/posix/ud3tn /usr/share/ud3tn/
+	cp -f ud3tn.service /etc/systemd/system/
+	cp -f user-ud3tn.service /etc/systemd/user/ud3tn.service
+	ln -f -s /usr/share/ud3tn/ud3tn /usr/bin/ud3tn
+	python3 pyd3tn/setup.py install
+
+###############################################################################
 # Execution and Deployment
 ###############################################################################
 
