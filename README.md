@@ -1,9 +1,11 @@
-## About
+# µD3TN - A free Bundle Protocol DTN implementation
+
+**Note:** This is a fork of original µD3TN released on [https://gitlab.com/d3tn/ud3tn](https://gitlab.com/d3tn/ud3tn). This fork is implementing custom routing algorithms and experimental features that doesn't need to be merged to the main codebase.
+
+---
 
 µD3TN (pronounced "Micro-Dee-Tee-En") is a free, lean, and space-tested DTN protocol implementation running on POSIX (plus Linux ;-)).
 Though µD3TN is easily portable to further platforms, we currently support only POSIX-compliant systems (former versions also included support for STM32/FreeRTOS platforms).
-
-![](doc/overview.svg)
 
 A general introduction of µD3TN is available at its project web site at https://d3tn.com/ud3tn.html. µD3TN currently implements:
 
