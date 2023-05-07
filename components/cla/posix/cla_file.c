@@ -34,10 +34,11 @@ struct filecla_config {
 };
 
 struct filecla_contact {
-	char *eid;
-	char *folder;
+	const char *eid;
+	const char *folder;
 	struct cla_tx_queue queue;
 };
+
 
 /* Returns a unique identifier of the CLA as part of the CLA address */
 static const char *filecla_name_get(void)
@@ -51,8 +52,10 @@ struct bundle_injection_params {
 	QueueIdentifier_t signaling_queue;
 };
 
-static void inject_bundle(struct bundle *bundle, struct bundle_injection_params* params)
+static void inject_bundle(struct bundle *bundle, void* p)
 {
+	struct bundle_injection_params* params = (struct bundle_injection_params*) p;
+
 	// Check if bundle isn't coming fromp ourself
 	struct bundle_block_list **blocks = &bundle->blocks;
 	while (*blocks != NULL) {
@@ -104,7 +107,7 @@ static void filecla_folder_watching_task(void *p){
 	bundle7_parser_init(&b7_parser, &inject_bundle, &parser_params);
 	b7_parser.bundle_quota = BUNDLE_MAX_SIZE;
 
-	char* buffer[FILECLA_READ_BUFFER_SIZE];
+	uint8_t buffer[FILECLA_READ_BUFFER_SIZE];
 
 	LOG("FileCLA : folder watching task started");
 
@@ -112,7 +115,7 @@ static void filecla_folder_watching_task(void *p){
 
 
 		char* folders[FILECLA_MAX_CONTACTS];
-		int n_folders = 0;
+		size_t n_folders = 0;
 
 		hal_semaphore_take_blocking(config->contacts_semaphore);
 		for (size_t i = 0; i < FILECLA_MAX_CONTACTS; i++)
@@ -216,7 +219,11 @@ static void eid_to_filename(char* eid){
 	}
 }
 
-static void write_to_file(FILE* f, const uint8_t * buffer, const size_t size){
+static void write_to_file(void* file, const void * b, const size_t size){
+
+	FILE* f = (FILE*) file;
+	const uint8_t* buffer = (const uint8_t*) b;
+
 	if(fwrite(buffer, 1, size, f) != size) {
 		LOG("FileCLA : failed to write file buffer");
 	}
@@ -269,7 +276,7 @@ static void filecla_bundle_writing(void *p){
 	for (;;) {
 
 		struct filecla_queue_folder contacts[FILECLA_MAX_CONTACTS];
-		int n_contacts = 0;
+		size_t n_contacts = 0;
 
 		hal_semaphore_take_blocking(config->contacts_semaphore);
 		for (size_t i = 0; i < FILECLA_MAX_CONTACTS; i++)
@@ -314,10 +321,10 @@ static void filecla_bundle_writing(void *p){
 						struct bundle* bundle = bundlelist->data;
 						
 						char seq_num[25];
-						sprintf(&seq_num, "%d", bundle->sequence_number);
+						sprintf(seq_num, "%ld", bundle->sequence_number);
 
 						char protocol_version[5];
-						sprintf(&protocol_version, "%d", bundle->protocol_version);
+						sprintf(protocol_version, "%d", bundle->protocol_version);
 
 						char *eid = malloc(sizeof(char) * (strlen(bundle->source) + 1));
 						strcpy(eid, bundle->source);
@@ -325,9 +332,9 @@ static void filecla_bundle_writing(void *p){
 
 						uint64_t filename_size =	sizeof(char) * (
 													strlen(qf->folder) + 1 + // Folder path + '/'
-													strlen(&seq_num) + 1 + // Sequence number + '_'
+													strlen(seq_num) + 1 + // Sequence number + '_'
 													strlen(eid) + // bundle source
-													7 + strlen(&protocol_version) + // extension .bundle6 or .bundle7
+													7 + strlen(protocol_version) + // extension .bundle6 or .bundle7
 													1); // ending \0
 						
 						char* filename = malloc(filename_size);
@@ -447,7 +454,7 @@ static enum ud3tn_result filecla_start_scheduled_contact(
 		(struct filecla_config *)config
 	);
 
-	char* folder_path = cla_addr + 5; // Remove prefix "file:" (5 char)
+	const char* folder_path = cla_addr + 5; // Remove prefix "file:" (5 char)
 
 	LOGF("FileCLA: Added contact \"%s\" using folder %s",
 		     eid,
@@ -488,58 +495,6 @@ static enum ud3tn_result filecla_end_scheduled_contact(
 	return UD3TN_OK;
 }
 
-/* Initiates bundle transmission for a single bundle */
-static void filecla_begin_packet(struct cla_link *link, size_t length)
-{
-	//TODO
-}
-
-/* Terminates bundle transmission for a single bundle */
-static void filecla_end_packet(struct cla_link *link)
-{
-	// STUB
-	(void)link;
-}
-
-/* Sends part of the serialized bundle. Can be called multiple times. */
-static void filecla_send_packet_data(
-	struct cla_link *link, const void *data, const size_t length)
-{
-	//TODO
-}
-
-void filecla_reset_parsers(struct cla_link *link)
-{
-	//TODO
-}
-
-static size_t filecla_forward_to_specific_parser(struct cla_link *link,
-						const uint8_t *buffer,
-						size_t length)
-{
-	//TODO
-
-	return 0;
-}
-
-/* Reads a chunk of data */
-static enum ud3tn_result filecla_read(struct cla_link *link,
-				    uint8_t *buffer, size_t length,
-				    size_t *bytes_read)
-{
-	//TODO
-
-	return UD3TN_OK;
-}
-
-/* Cleans up resources after a link broke */
-static void filecla_disconnect_handler(struct cla_link *link)
-{
-	(void)link;
-	ASSERT(0);
-}
-
-
 // Vtable of methods used for communication with this CLA
 const struct cla_vtable filecla_vtable = {
 	.cla_name_get = filecla_name_get,
@@ -549,18 +504,6 @@ const struct cla_vtable filecla_vtable = {
 	.cla_get_tx_queue = filecla_get_tx_queue,
 	.cla_start_scheduled_contact = filecla_start_scheduled_contact,
 	.cla_end_scheduled_contact = filecla_end_scheduled_contact,
-
-	.cla_begin_packet = filecla_begin_packet,
-	.cla_end_packet = filecla_end_packet,
-	.cla_send_packet_data = filecla_send_packet_data,
-
-	.cla_rx_task_reset_parsers = filecla_reset_parsers,
-	.cla_rx_task_forward_to_specific_parser =
-			filecla_forward_to_specific_parser,
-
-	.cla_read = filecla_read,
-
-	.cla_disconnect_handler = filecla_disconnect_handler,
 };
 
 // Entry point of cla creation and configuration
