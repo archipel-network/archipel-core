@@ -7,6 +7,7 @@
 #include "cla/posix/cla_tcpclv3.h"
 #include "cla/posix/cla_tcpspp.h"
 #include "cla/posix/cla_bibe.h"
+#include "cla/posix/cla_file.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
@@ -41,6 +42,7 @@ const struct available_cla_list_entry AVAILABLE_CLAS[] = {
 	{ "tcpclv3", &tcpclv3_create },
 	{ "tcpspp", &tcpspp_create },
 	{ "bibe", &bibe_create },
+	{ "file", &filecla_create },
 };
 
 

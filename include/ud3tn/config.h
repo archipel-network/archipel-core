@@ -154,4 +154,14 @@ enum failed_forwarding_policy {
 /* Maximum number of concurrent contacts that can be handled by CM */
 #define MAX_CONCURRENT_CONTACTS 10
 
+/*
+* [FileCLA] File based convergence layer
+*/
+
+// Delay between two check of contact folder
+#define FILECLA_FOLDER_WATCHING_DELAY 1000
+#define FILECLA_IDLE_TIMEOUT 10
+#define FILECLA_MAX_CONTACTS 1000
+#define FILECLA_READ_BUFFER_SIZE 512
+
 #endif /* CONFIG_H_INCLUDED */
