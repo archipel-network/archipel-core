@@ -23,7 +23,8 @@ install-posix: posix
 	cp -f ud3tn.service /etc/systemd/system/
 	cp -f user-ud3tn.service /etc/systemd/user/ud3tn.service
 	ln -f -s /usr/share/ud3tn/ud3tn /usr/bin/ud3tn
-	python3 pyd3tn/setup.py install
+	cd pyd3tn && python3 setup.py install
+	cd python-ud3tn-utils && python3 setup.py install
 
 ###############################################################################
 # Execution and Deployment
