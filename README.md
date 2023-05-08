@@ -40,6 +40,7 @@ git push origin ud3tn
 Here are some others experiments and projects around DTN and Archipel Core
 
 * [`ipnd-upcn`](https://github.com/EpicKiwi/ipnd-upcn) Implementation of the [DTN IP Neighbor Discovery protocol](https://datatracker.ietf.org/doc/html/draft-irtf-dtnrg-ipnd-03) for µD3TN and Archipel Core
+* [`archipel-file-carrier`](https://github.com/EpicKiwi/archipel-file-carrier) Daemon configuring FileCLA contacts when a removable drive is connected
 
 ---
 
