@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug file CLA",
+            "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/posix/ud3tn",
@@ -14,5 +14,25 @@
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Make posix"
         },
+        {
+            "name": "Debug file CLA",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/posix/ud3tn",
+            "args": ["-e", "dtn://source.filecla.dtn/", "-c", "file:"],
+            "environment": [{ "name": "config", "value": "Debug" }],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Make posix"
+        },
+        {
+            "name": "Debug file CLA (destination)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/posix/ud3tn",
+            "args": ["-e", "dtn://destination.filecla.dtn/", "-c", "file:"],
+            "environment": [{ "name": "config", "value": "Debug" }],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Make posix"
+        }
     ]
 }
