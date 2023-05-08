@@ -1,4 +1,4 @@
-# µD3TN - A free Bundle Protocol DTN implementation
+# Archipel Core - An experimental µD3TN fork
 
 **Note:** This is a fork of original µD3TN released on [https://gitlab.com/d3tn/ud3tn](https://gitlab.com/d3tn/ud3tn). This fork is implementing custom routing algorithms and experimental features that doesn't need to be merged to the main codebase.
 
