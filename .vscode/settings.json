@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "common.h": "c",
+        "config.h": "c",
+        "task_tags.h": "c",
+        "simplehtab.h": "c",
+        "dirent.h": "c",
+        "algorithm": "c",
+        "aap_serializer.h": "c",
+        "serializer.h": "c",
+        "types.h": "c",
+        "string.h": "c",
+        "bundle_processor.h": "c"
+    }
+}

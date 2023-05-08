@@ -2,6 +2,35 @@
 
 **Note:** This is a fork of original µD3TN released on [https://gitlab.com/d3tn/ud3tn](https://gitlab.com/d3tn/ud3tn). This fork is implementing custom routing algorithms and experimental features that doesn't need to be merged to the main codebase.
 
+## Branches
+
+The following branches are present in this repository
+
+* `master` Current working state of this fork inclusding customizations
+* `ud3tn` Current state of µD3TN from main repo [https://gitlab.com/d3tn/ud3tn](https://gitlab.com/d3tn/ud3tn)
+* `feature/*` Branches adding a new feature
+
+### Sync with µD3TN
+
+Add a new remote if you don't have any
+
+```
+git remote add ud3tn "https://gitlab.com/d3tn/ud3tn.git"
+```
+
+Go on the `ud3tn` and pull `master` branch from µD3TN repository
+
+```
+git checkout ud3tn
+git pull ud3tn master
+```
+
+Don't forget to pull the result on this repository
+
+```
+git push origin ud3tn
+```
+
 ---
 
 µD3TN (pronounced "Micro-Dee-Tee-En") is a free, lean, and space-tested DTN protocol implementation running on POSIX (plus Linux ;-)).
