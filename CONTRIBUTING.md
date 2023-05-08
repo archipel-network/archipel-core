@@ -1,15 +1,18 @@
-# Introduction
+# Welcome!
 
-Thank you for your interest in contributing to µD3TN!
+We're so glad you're thinking about contributing to Archipel Core! If you're unsure about anything, just ask -- or submit the issue or pull request anyway. The worst that can happen is you'll be politely asked to change something. We love all friendly contributions.
 
-If you have any questions or need support in deploying µD3TN, please reach out
-to the maintainers directly via contact@d3tn.com before opening an issue.
-D3TN GmbH also offers commercial support and adaptation services for µD3TN.
+We want to ensure a welcoming environment for all of our projects. We follow the [Berlin code of conduct](https://berlincodeofconduct.org/) and all contributors should do the same.
 
-The processes documented here might change over time, thus, please regularly
-check this document for updates.
+We encourage you to read this project's CONTRIBUTING policy (you are here), its [LICENSE](LICENSE.md), and its [README](README.md).
 
-# Submission of Issues and Enhancements
+Archipel Core is an experimental project, we don't really know where we are going;
+So we try things out and see if it's cool to keep it.
+If you can and want to add a new feature, a good improvement, a nice documentation or other cool stuff : please do.
+
+And if you don't know what you can do, you can take a look at ["Good first issue" labeled issues](https://github.com/EpicKiwi/archipel-core/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22).
+
+## Submission of Issues and Enhancements
 
 Please don't hesitate to open new issues on our issue tracker, provided that
 the subject of submission is not already covered in any existing one.
@@ -17,18 +20,9 @@ In the issue body, please indicate the problem along with your expectations
 (what should happen instead) and any conditions that might have an influence
 as detailed as possible.
 
-If you found a security-related bug, please mark the issue as confidential or
-contact the maintainers directly.
+## Contributing to µD3TN
 
-# Submission of Changes
+Archipel Core is based on µD3TN and we support it's development.
+If your feature is focused on the Bundle protocol implementation, an important missing features based on DTN standards that should be implemented to a larger audience than a single experimental projet (like Archipel Core) or any improvement of performance on the main codebase. Then, you may consider contributing to µD3TN on [gitlab https://gitlab.com/d3tn/ud3tn](https://gitlab.com/d3tn/ud3tn).
 
-- Before you create a merge request, please make sure that the subject of change
-  is covered by an issue.
-- Only submissions conformant to the Developer Certificate of Origin can be
-  accepted into µD3TN. Please see the DCO Version 1.1 for details, available at
-  <DCO.txt> or via https://developercertificate.org/.
-  When making a contribution you have to explicitly agree to these terms,
-  using your real name. For this purpose, append a sign-off at the end of all
-  Git commits in a format like `Signed-off-by: Joe Smith <joe.smith@email.com>`.
-  This can be done automatically, if you set `user.name` and `user.email` in
-  your Git configuration and pass the `-s` option to `git commit`.
+If you don't know, just ask

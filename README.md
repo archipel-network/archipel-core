@@ -1,5 +1,9 @@
 # Archipel Core - An experimental µD3TN fork
 
+*Exploring Delay Tolerant Networks*
+
+An experimental fork of µD3TN focused on the creation of a frugal delay tolerant network.
+
 **Note:** This is a fork of original µD3TN released on [https://gitlab.com/d3tn/ud3tn](https://gitlab.com/d3tn/ud3tn). This fork is implementing custom routing algorithms and experimental features that doesn't need to be merged to the main codebase.
 
 ## Branches
@@ -30,6 +34,12 @@ Don't forget to pull the result on this repository
 ```
 git push origin ud3tn
 ```
+
+## Related Projects
+
+Here are some others experiments and projects around DTN and Archipel Core
+
+* [`ipnd-upcn`](https://github.com/EpicKiwi/ipnd-upcn) Implementation of the [DTN IP Neighbor Discovery protocol](https://datatracker.ietf.org/doc/html/draft-irtf-dtnrg-ipnd-03) for µD3TN and Archipel Core
 
 ---
 
