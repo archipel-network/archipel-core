@@ -98,14 +98,17 @@ static void filecla_folder_watching_task(void *p){
 		(struct filecla_config *)p
 	);
 
-	struct bundle7_parser b7_parser;
-
 	struct bundle_injection_params parser_params = {
 		.local_eid = config->local_eid,
 		.signaling_queue = config->signaling_queue,
 	};
+
+	struct bundle7_parser b7_parser;
 	bundle7_parser_init(&b7_parser, &inject_bundle, &parser_params);
 	b7_parser.bundle_quota = BUNDLE_MAX_SIZE;
+
+	struct bundle6_parser b6_parser;
+	bundle6_parser_init(&b6_parser, &inject_bundle, &parser_params);
 
 	uint8_t buffer[FILECLA_READ_BUFFER_SIZE];
 
@@ -147,11 +150,7 @@ static void filecla_folder_watching_task(void *p){
 
 					if(entry->d_type == 8){ //  Regular file
 					
-						if(bundle_ver == '6'){
-							LOGF("FileCLA : Bundle 6 not yet implmented %s", file_path);
-
-						} else if(bundle_ver == '7') {
-
+						if(bundle_ver == '6' || bundle_ver == '7'){
 
 							FILE* file = fopen(file_path, "r");
 							if(file != NULL){
@@ -160,9 +159,18 @@ static void filecla_folder_watching_task(void *p){
 								size_t len;
 								while((len = fread(&buffer, sizeof(char), FILECLA_READ_BUFFER_SIZE, file)) > 0){
 
-									bundle7_parser_read(&b7_parser, buffer, len);
-									if(b7_parser.basedata->status == PARSER_STATUS_ERROR){
-										if(b7_parser.basedata->flags & PARSER_FLAG_CRC_INVALID){
+									struct parser *basedata;
+
+									if(bundle_ver == '6'){
+										bundle6_parser_read(&b6_parser, buffer, len);
+										basedata = b7_parser.basedata;
+									} else if(bundle_ver == '7') {
+										bundle7_parser_read(&b7_parser, buffer, len);
+										basedata = b6_parser.basedata;
+									}
+
+									if(basedata->status == PARSER_STATUS_ERROR){
+										if(basedata->flags & PARSER_FLAG_CRC_INVALID){
 											LOGF("FileCLA : Invalid CRC for %s", file_path);
 										} else {
 											LOGF("FileCLA : Parsing error for %s", file_path);
@@ -173,12 +181,16 @@ static void filecla_folder_watching_task(void *p){
 								
 								fclose(file);
 
-								bundle7_parser_reset(&b7_parser);
+								if(bundle_ver == '6'){
+									bundle6_parser_reset(&b6_parser);
+								} else if(bundle_ver == '7') {
+									bundle7_parser_reset(&b7_parser);
+								}
+
 							} else {
 								LOGF("FileCLA : Unable to open file %s", file_path);
 							}
-
-
+								
 						} else {
 							LOGF("FileCLA : Could not get bundle version from file name of %s", file_path);
 						}
