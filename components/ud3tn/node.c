@@ -128,6 +128,8 @@ static enum ud3tn_result endpoint_list_add(
 
 	ASSERT(list != NULL);
 	ASSERT(eid != NULL);
+	if (!list || !eid)
+		return UD3TN_FAIL;
 	cur_entry = list;
 	while (*cur_entry != NULL) {
 		if ((*cur_entry)->eid == eid)
@@ -161,6 +163,8 @@ static enum ud3tn_result endpoint_list_remove(
 
 	ASSERT(list != NULL);
 	ASSERT(eid != NULL);
+	if (!list || !eid)
+		return UD3TN_FAIL;
 	cur_entry = list;
 	while (*cur_entry != NULL) {
 		if (strcmp((*cur_entry)->eid, eid) == 0) {
@@ -324,7 +328,9 @@ struct contact_list *contact_list_union(
 		while (cur_can != NULL && cur_can->data->from <= cur_from) {
 			next_can = cur_can->next;
 			ASSERT(cur_can->data->node != NULL);
-			if (strcmp(cur_can->data->node->eid,
+			if (cur_can->data->node &&
+			    (*cur_slot)->data->node &&
+			    strcmp(cur_can->data->node->eid,
 				   (*cur_slot)->data->node->eid) == 0) {
 				// same node
 				if (!contacts_overlap(cur_can->data,
@@ -359,7 +365,9 @@ struct contact_list *contact_list_union(
 
 		while (*cur_can_p != NULL) {
 			ASSERT((*cur_can_p)->data->node != NULL);
-			if ((*cur_can_p)->data->from < cur_to &&
+			if ((*cur_can_p)->data->node &&
+			    (*cur_slot)->data->node &&
+			    (*cur_can_p)->data->from < cur_to &&
 			    strcmp((*cur_can_p)->data->node->eid,
 				   (*cur_slot)->data->node->eid) == 0) {
 				// overlap -> merge
@@ -473,8 +481,7 @@ int node_prepare_and_verify(struct node *node)
 	struct contact_list *cl, *i;
 
 	ASSERT(node != NULL);
-
-	if (node->eid == NULL)
+	if (!node || node->eid == NULL)
 		return 0;
 
 	LLSORT(struct contact_list, data->from, node->contacts);
@@ -502,6 +509,9 @@ void recalculate_contact_capacity(struct contact *contact)
 	int32_t capacity_difference;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return;
+
 	duration = contact->to - contact->from;
 	new_capacity = duration * contact->bitrate;
 	// If the calculation overflows or the capacity is > INT32_MAX,
@@ -529,6 +539,9 @@ int32_t contact_get_cur_remaining_capacity(
 	int32_t cap_result;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return 0;
+
 	time = hal_time_get_timestamp_s();
 	if (time >= contact->to)
 		return 0;
@@ -551,6 +564,9 @@ int add_contact_to_ordered_list(
 
 	ASSERT(list != NULL);
 	ASSERT(contact != NULL);
+	if (!list || !contact)
+		return 0;
+
 	cur_entry = list;
 	while (*cur_entry != NULL) {
 		if ((*cur_entry)->data == contact)
@@ -580,6 +596,9 @@ int remove_contact_from_list(
 
 	ASSERT(list != NULL);
 	ASSERT(contact != NULL);
+	if (!list || !contact)
+		return 0;
+
 	cur_entry = list;
 	while (*cur_entry != NULL) {
 		if ((*cur_entry)->data == contact) {

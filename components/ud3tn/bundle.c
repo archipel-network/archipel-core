@@ -56,7 +56,8 @@ struct bundle *bundle_init(void)
 
 inline void bundle_free_dynamic_parts(struct bundle *bundle)
 {
-	ASSERT(bundle != NULL);
+	if (!bundle)
+		return;
 
 	// EIDs
 	free(bundle->destination);
@@ -130,7 +131,9 @@ struct bundle *bundle_dup(const struct bundle *bundle)
 	struct bundle *dup;
 	struct bundle_block_list *cur_block;
 
-	ASSERT(bundle != NULL);
+	if (!bundle)
+		return NULL;
+
 	dup = malloc(sizeof(struct bundle));
 	if (dup == NULL)
 		return NULL;
@@ -222,7 +225,8 @@ struct bundle_list *bundle_list_entry_free(struct bundle_list *entry)
 {
 	struct bundle_list *next;
 
-	ASSERT(entry != NULL);
+	if (!entry)
+		return NULL;
 	next = entry->next;
 	bundle_free(entry->data);
 	free(entry);
@@ -287,7 +291,8 @@ struct bundle_block_list *bundle_block_entry_free(struct bundle_block_list *e)
 {
 	struct bundle_block_list *next;
 
-	ASSERT(e != NULL);
+	if (!e)
+		return NULL;
 	next = e->next;
 	bundle_block_free(e->data);
 	free(e);
@@ -298,7 +303,8 @@ struct bundle_block *bundle_block_dup(struct bundle_block *b)
 {
 	struct bundle_block *dup;
 
-	ASSERT(b != NULL);
+	if (!b)
+		return NULL;
 	dup = malloc(sizeof(struct bundle_block));
 	if (dup == NULL)
 		return NULL;
@@ -333,7 +339,8 @@ struct bundle_block_list *bundle_block_entry_dup(struct bundle_block_list *e)
 	struct bundle_block *dup;
 	struct bundle_block_list *result;
 
-	ASSERT(e != NULL);
+	if (!e)
+		return NULL;
 	dup = bundle_block_dup(e->data);
 	if (dup == NULL)
 		return NULL;

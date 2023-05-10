@@ -32,7 +32,11 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 	if (get_eid_scheme(source_eid) == EID_SCHEME_IPN) {
 		char *const dot = strchr(source_eid, '.');
 
-		ASSERT(dot != NULL);
+		if (!dot) {
+			free(source_eid);
+			free(payload);
+			return NULL;
+		}
 		memcpy(&dot[1], sink_id, sink_length + 1);
 	} else {
 		memcpy(&source_eid[local_eid_length],

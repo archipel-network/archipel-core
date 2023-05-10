@@ -343,6 +343,9 @@ static void remove_node_from_tables(struct node *node, bool drop_contacts,
 	struct endpoint_list *cur_persistent_node, *cur_contact_node;
 
 	ASSERT(node != NULL);
+	if (!node)
+		return;
+
 	cur_slot = &node->contacts;
 	while (*cur_slot != NULL) {
 		struct contact_list *const cur_contact = *cur_slot;
@@ -385,6 +388,9 @@ static bool add_contact_to_node_in_htab(char *eid, struct contact *c)
 
 	ASSERT(eid != NULL);
 	ASSERT(c != NULL);
+	if (!eid || !c)
+		return false;
+
 	entry = (struct node_table_entry *)htab_get(&eid_table, eid);
 	if (entry == NULL) {
 		entry = malloc(sizeof(struct node_table_entry));
@@ -407,6 +413,9 @@ static bool remove_contact_from_node_in_htab(char *eid, struct contact *c)
 
 	ASSERT(eid != NULL);
 	ASSERT(c != NULL);
+	if (!eid || !c)
+		return false;
+
 	entry = (struct node_table_entry *)htab_get(&eid_table, eid);
 	if (entry == NULL)
 		return false;
@@ -437,7 +446,12 @@ void routing_table_delete_contact(struct contact *contact)
 	struct endpoint_list *cur_eid;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return;
 	ASSERT(contact->contact_bundles == NULL);
+	if (contact->contact_bundles != NULL)
+		return;
+
 	if (contact->node != NULL) {
 		remove_contact_from_node_in_htab(
 			contact->node->eid, contact);
@@ -494,6 +508,9 @@ static void reschedule_bundles(
 	struct bundle *b;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return;
+
 	/* Empty the bundle list and queue them in for re-scheduling */
 	while (contact->contact_bundles != NULL) {
 		b = contact->contact_bundles->data;

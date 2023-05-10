@@ -371,7 +371,11 @@ static void contact_manager_task(void *cm_parameters)
 		.next_contact_time = UINT64_MAX,
 	};
 
-	ASSERT(parameters != NULL);
+	if (!parameters) {
+		LOG("ContactManager: Cannot start, parameters not defined");
+		ASSERT(false);
+		return;
+	}
 	for (;;) {
 		hal_platform_led_set((led_state = 1 - led_state) + 3);
 

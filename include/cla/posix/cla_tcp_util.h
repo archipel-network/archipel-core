@@ -66,4 +66,28 @@ ssize_t tcp_send_all(const int socket, const void *const buffer,
  */
 ssize_t tcp_recv_all(const int socket, void *const buffer, const size_t length);
 
+/**
+ * Helper structure for serializers accepting a writer function.
+ */
+struct tcp_write_to_socket_param {
+	/**
+	 * The socket to be written into.
+	 */
+	int socket_fd;
+	/**
+	 * Error number returned by the write operation. Needs to be set to 0.
+	 */
+	int errno_;
+};
+
+/**
+ * Helper function to pass to a serializer to write data via tcp_send_all().
+ *
+ * @param p The struct tcp_write_to_socket_param * - needs to be passed through.
+ * @param buffer The buffer containing the data to be written.
+ * @param length The number of bytes to be written.
+ */
+void tcp_write_to_socket(
+	void *const p, const void *const buffer, const size_t length);
+
 #endif // CLA_TCP_UTIL_H_INCLUDED

@@ -42,7 +42,6 @@ struct contact_list *router_lookup_destination(char *const dest)
 	if (!dest_node_eid || !e)
 		e = routing_table_lookup_eid(dest);
 
-	uint16_t results = 0;
 	struct contact_list *result = NULL;
 
 	if (e != NULL) {
@@ -50,7 +49,6 @@ struct contact_list *router_lookup_destination(char *const dest)
 
 		while (cur != NULL) {
 			add_contact_to_ordered_list(&result, cur->data, 0);
-			results++;
 			cur = cur->next;
 		}
 	}
@@ -135,6 +133,7 @@ uint8_t router_calculate_fragment_route(
 	struct contact *c;
 
 	(void)exp_time;
+	res->contact = NULL;
 	res->preemption_improved = 0;
 	while (contacts != NULL) {
 		c = contacts->data;
@@ -165,8 +164,6 @@ uint8_t router_calculate_fragment_route(
 				res->preemption_improved++;
 			preprocessed_size = 0;
 			continue;
-		} else {
-			preprocessed_size = 0;
 		}
 		res->contact = c;
 		break;
@@ -395,7 +392,10 @@ enum ud3tn_result router_add_bundle_to_contact(
 
 	ASSERT(contact != NULL);
 	ASSERT(b != NULL);
+	if (!contact || !b)
+		return UD3TN_FAIL;
 	ASSERT(contact->remaining_capacity_p0 > 0);
+
 	new_entry = malloc(sizeof(struct routed_bundle_list));
 	if (new_entry == NULL)
 		return UD3TN_FAIL;
@@ -405,6 +405,10 @@ enum ud3tn_result router_add_bundle_to_contact(
 	/* Go to end of list (=> FIFO) */
 	while (*cur_entry != NULL) {
 		ASSERT((*cur_entry)->data != b);
+		if ((*cur_entry)->data == b) {
+			free(new_entry);
+			return UD3TN_FAIL;
+		}
 		cur_entry = &(*cur_entry)->next;
 	}
 	*cur_entry = new_entry;
@@ -432,6 +436,8 @@ enum ud3tn_result router_remove_bundle_from_contact(
 	struct routed_bundle_list **cur_entry, *tmp;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return UD3TN_FAIL;
 	cur_entry = &contact->contact_bundles;
 	/* Find bundle */
 	while (*cur_entry != NULL) {

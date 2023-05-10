@@ -364,8 +364,7 @@ struct bundle_administrative_record *bundle6_parse_administrative_record(
 	uint32_t i = 0;
 	const uint8_t *cur_byte;
 
-	ASSERT(data != NULL);
-	if (record_parser_init(&parser) != UD3TN_OK)
+	if (data == NULL || record_parser_init(&parser) != UD3TN_OK)
 		return NULL;
 	cur_byte = data;
 	parser.record->start_of_record_ptr = data + 1;

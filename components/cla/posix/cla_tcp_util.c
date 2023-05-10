@@ -327,3 +327,16 @@ ssize_t tcp_recv_all(const int socket, void *const buffer, const size_t length)
 
 	return recvd;
 }
+
+void tcp_write_to_socket(
+	void *const p, const void *const buffer, const size_t length)
+{
+	struct tcp_write_to_socket_param *const wsp = p;
+	ssize_t result;
+
+	if (wsp->errno_)
+		return;
+	result = tcp_send_all(wsp->socket_fd, buffer, length);
+	if (result == -1)
+		wsp->errno_ = errno;
+}

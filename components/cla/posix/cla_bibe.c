@@ -87,9 +87,14 @@ static enum ud3tn_result handle_established_connection(
 
 static void bibe_link_management_task(void *p)
 {
+	Task_t management_task;
 	struct bibe_contact_parameters *const param = p;
 
 	ASSERT(param->cla_sock_addr != NULL);
+	if (!param->cla_sock_addr) {
+		LOG("bibe: Empty CLA address, cannot launch management task");
+		goto fail;
+	}
 	do {
 		if (param->connected) {
 			ASSERT(param->socket > 0);
@@ -120,20 +125,42 @@ static void bibe_link_management_task(void *p)
 				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
 				continue;
 			}
-			LOGF("bibe: Connected successfully to \"%s\"",
-			     param->cla_sock_addr);
-			param->connected = true;
 
 			const struct aap_message register_bibe = {
 				.type = AAP_MESSAGE_REGISTER,
 				.eid = get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN ? "2925" : "bibe",
 				.eid_length = 4,
 			};
-			uint64_t *buffer = malloc(sizeof(struct aap_message));
+			struct tcp_write_to_socket_param wsp = {
+				.socket_fd = param->socket,
+				.errno_ = 0,
+			};
 
-			aap_serialize_into(buffer, &register_bibe, true);
-			tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
-			free(buffer);
+			aap_serialize(
+				&register_bibe,
+				tcp_write_to_socket,
+				&wsp,
+				true
+			);
+			if (wsp.errno_) {
+				LOGF("bibe: send(): %s",
+				     strerror(wsp.errno_));
+				close(param->socket);
+				if (++param->connect_attempt >
+						CLA_TCP_MAX_RETRY_ATTEMPTS) {
+					LOG("bibe: Final retry failed.");
+					break;
+				}
+				LOGF("bibe: Delayed retry %d of %d in %d ms",
+				     param->connect_attempt,
+				     CLA_TCP_MAX_RETRY_ATTEMPTS,
+				     CLA_TCP_RETRY_INTERVAL_MS);
+				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
+				continue;
+			}
+			LOGF("bibe: Connected successfully to \"%s\"",
+			     param->cla_sock_addr);
+			param->connected = true;
 		}
 	} while (param->in_contact);
 
@@ -145,7 +172,8 @@ static void bibe_link_management_task(void *p)
 	aap_parser_reset(&param->link.aap_parser);
 	free(param->cla_sock_addr);
 
-	Task_t management_task = param->management_task;
+fail:
+	management_task = param->management_task;
 
 	free(param);
 	hal_task_delete(management_task);
@@ -169,6 +197,13 @@ static void launch_connection_management_task(
 	contact_params->connect_attempt = 0;
 
 	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+
+	if (!cla_sock_addr) {
+		LOG("bibe: Invalid address");
+		free(contact_params);
+		return;
+	}
+
 	char *const eid_delimiter = strchr(cla_sock_addr, '#');
 
 	// If <connect-addr>#<lower-eid> is used (we find a '#' delimiter)
@@ -319,6 +354,12 @@ static struct bibe_contact_parameters *get_contact_parameters(
 	struct bibe_config *const bibe_config =
 		(struct bibe_config *)config;
 	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+
+	if (!cla_sock_addr) {
+		LOG("bibe: Invalid address");
+		return NULL;
+	}
+
 	char *const eid_delimiter = strchr(cla_sock_addr, '#');
 
 	// If <connect-addr>#<lower-eid> is used (we find a '#' delimiter)
@@ -346,14 +387,13 @@ static struct cla_tx_queue bibe_get_tx_queue(
 		config,
 		cla_addr
 	);
-	const char *dest_eid = strchr(cla_addr, '#');
+	const char *const dest_eid_delimiter = strchr(cla_addr, '#');
 	const bool dest_eid_is_valid = (
-		dest_eid &&
-		dest_eid[0] != '\0' &&
-		validate_eid(&dest_eid[1]) == UD3TN_OK
+		dest_eid_delimiter &&
+		dest_eid_delimiter[0] != '\0' &&
+		// The EID starts after the delimiter.
+		validate_eid(&dest_eid_delimiter[1]) == UD3TN_OK
 	);
-
-	dest_eid = &dest_eid[1]; // EID starts _after_ the '#'
 
 	if (param && param->connected && dest_eid_is_valid) {
 		struct cla_link *const cla_link = &param->link.base.base;

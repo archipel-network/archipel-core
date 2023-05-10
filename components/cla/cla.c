@@ -311,7 +311,8 @@ char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 {
 	const char *const cla_name = link->config->vtable->cla_name_get();
 
-	ASSERT(cla_name != NULL);
+	if (!cla_name)
+		return NULL;
 
 	const size_t cla_name_len = strlen(cla_name);
 
@@ -352,7 +353,9 @@ static void cla_register(struct cla_config *config)
 
 struct cla_config *cla_config_get(const char *cla_addr)
 {
-	ASSERT(cla_addr != NULL);
+	if (!cla_addr)
+		return NULL;
+
 	const size_t addr_len = strlen(cla_addr);
 
 	for (size_t i = 0; i < ARRAY_SIZE(AVAILABLE_CLAS); i++) {

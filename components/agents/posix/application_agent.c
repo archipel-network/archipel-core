@@ -125,6 +125,8 @@ static void application_agent_listener_task(void *const param)
 		}
 		child_config->parent = config;
 		child_config->socket_fd = conn_fd;
+		child_config->last_bundle_timestamp_s = 0;
+		child_config->last_bundle_sequence_number = 0;
 		child_config->task = hal_task_create(
 			application_agent_comm_task,
 			"app_comm_t",
@@ -138,8 +140,6 @@ static void application_agent_listener_task(void *const param)
 			close(conn_fd);
 			free(child_config);
 		}
-		child_config->last_bundle_timestamp_s = 0;
-		child_config->last_bundle_sequence_number = 0;
 	}
 }
 
@@ -163,33 +163,15 @@ static size_t parse_aap(struct aap_parser *parser,
 	return consumed;
 }
 
-struct write_socket_param {
-	int socket_fd;
-	int errno_;
-};
-
-static void write_to_socket(void *const p,
-			    const void *const buffer, const size_t length)
-{
-	struct write_socket_param *const wsp = (struct write_socket_param *)p;
-	ssize_t result;
-
-	if (wsp->errno_)
-		return;
-	result = tcp_send_all(wsp->socket_fd, buffer, length);
-	if (result == -1)
-		wsp->errno_ = errno;
-}
-
 static int send_message(const int socket_fd,
 			const struct aap_message *const msg)
 {
-	struct write_socket_param wsp = {
+	struct tcp_write_to_socket_param wsp = {
 		.socket_fd = socket_fd,
 		.errno_ = 0,
 	};
 
-	aap_serialize(msg, write_to_socket, &wsp, true);
+	aap_serialize(msg, tcp_write_to_socket, &wsp, true);
 	if (wsp.errno_)
 		LOGF("AppAgent: send(): %s", strerror(wsp.errno_));
 	return -wsp.errno_;
