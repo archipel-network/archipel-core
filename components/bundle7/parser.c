@@ -196,12 +196,6 @@ CborError parse_eid(struct bundle7_parser *state, CborValue *it, char **eid,
 	if (err)
 		return err;
 
-	// Allocate zero-copy reference
-	char *eid_ref = strdup(*eid);
-
-	free(*eid);
-	*eid = eid_ref;
-
 	state->next = next;
 	return CborNoError;
 }
