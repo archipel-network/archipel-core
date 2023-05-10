@@ -397,7 +397,7 @@ struct contact_list *contact_list_union(
 }
 
 struct contact_list *contact_list_difference(
-	struct contact_list *a, struct contact_list *b, const int free_b,
+	struct contact_list *a, struct contact_list *b,
 	struct contact_list **modf, struct contact_list **deleted)
 {
 	struct contact_list **cur_slot = &a;
@@ -445,11 +445,7 @@ struct contact_list *contact_list_difference(
 					cur_slot = &((*cur_slot)->next);
 				}
 			}
-			if (free_b)
-				cur_can = contact_list_free_internal(
-					cur_can, 1);
-			else
-				cur_can = cur_can->next;
+			cur_can = cur_can->next;
 		}
 		if (*cur_slot != NULL)
 			cur_slot = &(*cur_slot)->next;

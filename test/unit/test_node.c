@@ -168,7 +168,7 @@ TEST(node, contact_list_difference)
 	struct contact_list *mod = NULL;
 	struct contact_list *del = NULL;
 
-	some_ct1 = contact_list_difference(some_ct1, some_ct2, 1, &mod, &del);
+	some_ct1 = contact_list_difference(some_ct1, some_ct2, &mod, &del);
 	some_ct2 = NULL;
 	TEST_ASSERT_NOT_NULL(some_ct1);
 	TEST_ASSERT_NULL(some_ct1->next);

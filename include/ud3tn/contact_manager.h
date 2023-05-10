@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 struct contact_manager_params {
+	Task_t task;
 	Semaphore_t semaphore;
 	QueueIdentifier_t control_queue;
 };

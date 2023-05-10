@@ -512,6 +512,7 @@ static void application_agent_comm_task(void *const param)
 		}
 	}
 
+	aap_parser_deinit(&parser);
 done:
 	close(config->bundle_pipe_fd[0]);
 	close(config->bundle_pipe_fd[1]);
@@ -519,6 +520,8 @@ pipe_creation_error:
 	deregister_sink(config);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
+	free(config->task);
+	free(config);
 	LOG("AppAgent: Closed connection.");
 }
 

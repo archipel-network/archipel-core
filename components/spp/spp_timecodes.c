@@ -373,7 +373,7 @@ static int serialize_unsegmented(
 	 * octet which can be serialized with the current settings and then
 	 * decrease the shift value by 8 (one octet) on each iteration.
 	 */
-	unsigned int shift = (config->base_unit_octets - 1) * 8;
+	int shift = (config->base_unit_octets - 1) * 8;
 
 	for (uint8_t i = 0; i < config->base_unit_octets; ++i) {
 		*(*out)++ = (seconds >> shift) & 0xff;

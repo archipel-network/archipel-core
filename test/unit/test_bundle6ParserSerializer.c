@@ -108,7 +108,7 @@ static void verify_bundle(struct bundle *b)
 		sizeof(test_payload),
 		b->payload_block->length
 	);
-	TEST_ASSERT_EQUAL_MEMORY(
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
 		test_payload,
 		b->payload_block->data,
 		sizeof(test_payload)

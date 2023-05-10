@@ -32,11 +32,11 @@ static char **restart_args;
 static void exit_handler(int signal)
 {
 	if (signal == SIGHUP)
-		LOG("SIGHUP detected, terminating");
+		fprintf(stderr, "SIGHUP detected, terminating\n");
 	if (signal == SIGINT)
-		LOG("SIGINT detected, terminating");
+		fprintf(stderr, "SIGINT detected, terminating\n");
 	if (signal == SIGTERM)
-		LOG("SIGTERM detected, terminating");
+		fprintf(stderr, "SIGTERM detected, terminating\n");
 
 	exit(EXIT_SUCCESS);
 }
@@ -72,27 +72,15 @@ static void setup_exit_handler(void)
 	signal(SIGPIPE, SIG_IGN);
 }
 
-void hal_platform_led_pin_set(uint8_t led_identifier, int mode)
-{
-	/* not relevant for the POSIX implementation */
-}
-
-
-void hal_platform_led_set(int led_preset)
-{
-	/* not relevant for the POSIX implementation */
-}
-
-void mpu_init(void)
-{
-	/* currently not relevant for the POSIX implementation */
-}
-
-
 void hal_platform_init(int argc, char *argv[])
 {
 	setup_exit_handler();
 
+	hal_io_init();
+	hal_time_init(UINT64_MAX); // required for logging
+	hal_random_init();
+	hal_hash_init();
+	hal_crc_init();
 	restart_args = malloc(sizeof(char *) * argc);
 	if (restart_args) {
 		// Copy all commandline args to the restart argument buffer
@@ -103,21 +91,4 @@ void hal_platform_init(int argc, char *argv[])
 	} else {
 		LOG("Error: Cannot allocate memory for restart buffer");
 	}
-}
-
-__attribute__((noreturn))
-void hal_platform_restart(void)
-{
-	// TODO: Try to close open ports (e.g. TCP)
-	LOG("Restarting!");
-
-	// If restart_args could not be allocated, this is used (no arguments)
-	char *const backup_restart_buf[1] = {NULL};
-
-	if (restart_args)
-		execv("/proc/self/exe", restart_args);
-	else
-		execv("/proc/self/exe", backup_restart_buf);
-
-	__builtin_unreachable();
 }

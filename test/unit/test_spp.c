@@ -19,7 +19,7 @@ TEST_SETUP(spp)
 {
 	ctx = spp_new_context();
 	wmemset((wchar_t *)&buf[0],
-			0xdeadbeef,
+			(wchar_t)0xdeadbeef,
 			ARRAY_SIZE(buf) / sizeof(wchar_t));
 }
 

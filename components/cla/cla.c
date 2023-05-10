@@ -155,7 +155,6 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 				const bool is_rx, const bool is_tx)
 {
 	link->config = config;
-	link->active = true;
 
 	link->cla_addr = cla_addr ? strdup(cla_addr) : NULL;
 
@@ -181,6 +180,13 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 		goto fail_tx_sem;
 	}
 	hal_semaphore_release(link->tx_task_sem);
+
+	link->rx_task_notification = hal_semaphore_init_binary();
+	if (!link->rx_task_notification) {
+		LOG("CLA: Cannot allocate memory for RX notify semaphore!");
+		goto fail_rx_notify_sem;
+	}
+	hal_semaphore_release(link->rx_task_notification);
 
 	if (rx_task_data_init(&link->rx_task_data, config) != UD3TN_OK) {
 		LOG("CLA: Failed to initialize RX task data!");
@@ -240,6 +246,8 @@ fail_tx_queue_sem:
 fail_tx_queue:
 	rx_task_data_deinit(&link->rx_task_data);
 fail_rx_data:
+	hal_semaphore_delete(link->rx_task_notification);
+fail_rx_notify_sem:
 	hal_semaphore_delete(link->tx_task_sem);
 fail_tx_sem:
 	hal_semaphore_delete(link->rx_task_sem);
@@ -249,13 +257,23 @@ fail_rx_sem:
 
 void cla_link_wait_cleanup(struct cla_link *link)
 {
+	cla_link_wait(link);
+	cla_link_cleanup(link);
+}
+
+void cla_link_wait(struct cla_link *link)
+{
 	// Wait for graceful termination of tasks
 	hal_semaphore_take_blocking(link->rx_task_sem);
 	hal_semaphore_take_blocking(link->tx_task_sem);
+}
 
+void cla_link_cleanup(struct cla_link *link)
+{
 	// Clean up semaphores
 	hal_semaphore_delete(link->rx_task_sem);
 	hal_semaphore_delete(link->tx_task_sem);
+	hal_semaphore_delete(link->rx_task_notification);
 
 	// The TX task ensures the queue is locked and empty before terminating
 	QueueIdentifier_t tx_queue_handle = link->tx_queue_handle;
@@ -289,7 +307,7 @@ char *cla_get_connect_addr(const char *cla_addr, const char *cla_name)
 void cla_generic_disconnect_handler(struct cla_link *link)
 {
 	// RX task will delete itself
-	link->active = false;
+	hal_semaphore_try_take(link->rx_task_notification, 0);
 	// Notify dispatcher that the connection was lost
 	const struct bundle_agent_interface *bundle_agent_interface =
 		link->config->bundle_agent_interface;
@@ -306,6 +324,14 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);
 	// The termination of the tasks means cla_link_wait_cleanup returns
 }
+
+#if defined(__GNUC__) && (__GNUC__ >= 8) && (__GNUC__ <= 10)
+#pragma GCC diagnostic push
+// GCC versions 8-10 warn about the line with strncpy on -O3 -Wextra, because
+// result_len depends on strlen of cla_name. Seems it cannot determine that's
+// also the size of the allocated buffer.
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 
 char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 {
@@ -332,6 +358,10 @@ char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 
 	return result;
 }
+
+#if defined(__GNUC__) && (__GNUC__ >= 8) && (__GNUC__ <= 10)
+#pragma GCC diagnostic pop
+#endif
 
 // CLA Instance Management
 

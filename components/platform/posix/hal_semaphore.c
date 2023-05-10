@@ -10,6 +10,7 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_config.h"
 
+#include "ud3tn/common.h"
 #include "ud3tn/result.h"
 
 #include <stdlib.h>
@@ -35,12 +36,17 @@ void hal_semaphore_take_blocking(Semaphore_t sem)
 
 void hal_semaphore_release(Semaphore_t sem)
 {
+	ASSERT(hal_semaphore_is_blocked(sem));
 	sem_post(sem);
 }
 
-void hal_semaphore_poll(Semaphore_t sem)
+bool hal_semaphore_is_blocked(Semaphore_t sem)
 {
-	hal_semaphore_try_take(sem, 0);
+	int rv = 0;
+
+	sem_getvalue(sem, &rv);
+
+	return rv == 0;
 }
 
 void hal_semaphore_delete(Semaphore_t sem)
@@ -52,6 +58,9 @@ void hal_semaphore_delete(Semaphore_t sem)
 enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int timeout_ms)
 {
 	struct timespec ts;
+
+	if (timeout_ms == 0)
+		return sem_trywait(sem) == -1 ? UD3TN_FAIL : UD3TN_OK;
 
 	if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
 		exit(EXIT_FAILURE);

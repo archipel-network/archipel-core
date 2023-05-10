@@ -74,7 +74,7 @@ struct contact_list *contact_list_union(
 	struct contact_list *a, struct contact_list *b,
 	struct contact_list **modified);
 struct contact_list *contact_list_difference(
-	struct contact_list *a, struct contact_list *b, const int free_b,
+	struct contact_list *a, struct contact_list *b,
 	struct contact_list **modified, struct contact_list **deleted);
 
 struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el);

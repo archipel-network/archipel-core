@@ -42,8 +42,11 @@ TEST(bundle6Create, create_bundle)
 	TEST_ASSERT_NOT_NULL(b->payload_block);
 	TEST_ASSERT_EQUAL_PTR(b->payload_block, b->blocks->data);
 
-	TEST_ASSERT_EQUAL_MEMORY(test_payload, b->payload_block->data,
-				 sizeof(test_payload));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		test_payload,
+		b->payload_block->data,
+		sizeof(test_payload)
+	);
 	TEST_ASSERT_EQUAL(BUNDLE_V6_BLOCK_FLAG_LAST_BLOCK,
 			  b->payload_block->flags);
 

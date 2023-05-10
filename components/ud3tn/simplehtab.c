@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define HASHL(key, len) (hashlittle(key, len, 0))
+#define HASHL(key, len) (hashlittle(key, len, 0) & 0xFFFF)
 /* Gets length of string, should be optimized out... */
 #define HASH(key) (HASHL(key, strlen(key)))
 

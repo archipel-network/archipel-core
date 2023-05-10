@@ -80,8 +80,14 @@ enum ud3tn_result validate_local_eid(const char *const eid)
 		// The EID must start with dtn://
 		if (strlen(eid) < 7 || memcmp(eid, "dtn://", 6))
 			return UD3TN_FAIL;
-		// The first-contained slash must be there and terminate the EID
-		if (strchr((char *)&eid[6], '/') - strlen(eid) + 1 == eid)
+
+		const char *const slash_pos = strchr(&eid[6], '/');
+
+		// The first-contained slash must be there...
+		if (!slash_pos)
+			return UD3TN_FAIL;
+		// ...and it must terminate the EID.
+		if (slash_pos - strlen(eid) + 1 == eid)
 			return UD3TN_OK;
 		return UD3TN_FAIL;
 	case EID_SCHEME_IPN:

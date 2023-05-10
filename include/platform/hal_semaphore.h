@@ -15,7 +15,7 @@
 #include "ud3tn/result.h"
 
 /**
- * @brief hal_semaphoreInitBinary Creates a new binary semaphore meaning that
+ * @brief hal_semaphore_init_binary Creates a new binary semaphore meaning that
  *				  only one execution entity can hold at a
  *				  specific moment
  * @return An OS-specific identifier for the created semaphore
@@ -23,22 +23,22 @@
 Semaphore_t hal_semaphore_init_binary(void);
 
 /**
- * @brief hal_semaphoreTake Take a previously initialized semaphore, if the
- *			    semaphore is alread taken, block until it is
+ * @brief hal_semaphore_take_blocking Take a previously initialized semaphore,
+ *			    if the semaphore is alread taken, block until it is
  *			    released
  * @param sem The identifier of the semaphore that should be locked
  */
 void hal_semaphore_take_blocking(Semaphore_t sem);
 
 /**
- * @brief hal_semaphoreTake Poll the semaphore, e.g. check whether it is
+ * @brief hal_semaphore_is_blocked Poll the semaphore, e.g. check whether it is
  *			    available at the specific moment
  * @param sem The identifier of the semaphore that should be polled
  */
-void hal_semaphore_poll(Semaphore_t sem);
+bool hal_semaphore_is_blocked(Semaphore_t sem);
 
 /**
- * @brief hal_semaphoreRelease Release a previously initialized and taken
+ * @brief hal_semaphore_release Release a previously initialized and taken
  *			       semaphore
  * @param sem The identifier of the semaphore that should be freed
  */

@@ -34,7 +34,7 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 		blocks = &(*blocks)->next;
 	}
 
-	const uint8_t dwell_time_ms = hal_time_get_timestamp_ms() -
+	const uint64_t dwell_time_ms = hal_time_get_timestamp_ms() -
 		bundle->reception_timestamp_ms;
 
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
@@ -54,7 +54,7 @@ static void cla_contact_tx_task(void *param)
 	QueueIdentifier_t signaling_queue =
 		link->config->bundle_agent_interface->bundle_signaling_queue;
 
-	while (link->active) {
+	for (;;) {
 		if (hal_queue_receive(link->tx_queue_handle,
 				      &cmd, -1) == UD3TN_FAIL)
 			continue;
@@ -159,17 +159,10 @@ static void cla_contact_tx_task(void *param)
 
 enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 {
-	static uint8_t ctr = 1;
-	static char tname_buf[6];
-
-	tname_buf[0] = 't';
-	tname_buf[1] = 'x';
-	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
-
 	hal_semaphore_take_blocking(link->tx_task_sem);
 	link->tx_task_handle = hal_task_create(
 		cla_contact_tx_task,
-		tname_buf,
+		NULL,
 		CONTACT_TX_TASK_PRIORITY,
 		link,
 		CONTACT_TX_TASK_STACK_SIZE,

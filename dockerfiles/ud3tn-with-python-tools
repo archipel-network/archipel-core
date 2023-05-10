@@ -6,4 +6,4 @@ RUN cd /ud3tn \
     && cp /ud3tn/build/posix/libud3tn.so /usr/local/lib/libud3tn.so -v \
     && make clean
 RUN pip install --no-cache-dir /ud3tn/pyd3tn /ud3tn/python-ud3tn-utils
-ENTRYPOINT [ "stdbuf", "-oL", "ud3tn" ]
+ENTRYPOINT [ "ud3tn" ]

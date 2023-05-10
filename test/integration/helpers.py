@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 import os
+import time
 
 from ud3tn_utils.config import ConfigMessage, RouterCommand
 from pyd3tn.bundle7 import Bundle, CRCType
@@ -75,3 +76,6 @@ def send_delete_gs(conn, serialize_func, gs_iterable):
                 type=RouterCommand.DELETE,
             ))
         ))
+    # Wait for uD3TN to properly process the deletion request to make sure
+    # it is not processed after the next test's configuration is received.
+    time.sleep(1)

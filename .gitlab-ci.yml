@@ -6,7 +6,7 @@ stages:
     - code_quality_test
     - publish
 
-image: buildpack-deps:buster
+image: buildpack-deps:bullseye
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -43,7 +43,10 @@ unit-test-posix-debug:
     stage: unit_test
     when: always
     script:
-        - timeout 60 make run-unittest-posix
+        - apt-get update
+        - apt-get install clang -y
+        - make TOOLCHAIN=clang sanitize-strict=yes unittest-posix
+        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
 unit-test-posix-release:
     stage: unit_test
@@ -56,7 +59,37 @@ integration-test-posix:
     when: always
     image: python:3.7
     script:
-        - make
+        - apt-get update
+        - apt-get install clang -y
+        - make TOOLCHAIN=clang sanitize-strict=yes
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - make virtualenv
+        - source .venv/bin/activate && pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
+
+integration-test-posix-thread-sanitizer:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - apt-get update
+        - apt-get install clang -y
+        - make TOOLCHAIN=clang sanitize=thread sanitize-strict=yes
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - make virtualenv
+        - source .venv/bin/activate && pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
+
+integration-test-posix-release:
+    stage: functional_test
+    when: always
+    image: python:3.7
+    script:
+        - make type=release optimize=yes
         - build/posix/ud3tn --allow-remote-config &
         - make virtualenv
         - source .venv/bin/activate && pytest test/integration
@@ -66,12 +99,17 @@ aap-test:
     when: always
     image: python:3.7
     script:
-        - make
+        - make sanitize-strict=yes
         - make virtualenv
-        - build/posix/ud3tn &
+        - build/posix/ud3tn & UD3TN1_PID=$!
         - source .venv/bin/activate && python tools/aap/aap_test.py
-        - build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 &
+        - build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
         - source .venv/bin/activate && python tools/aap/aap_test.py --tcp '::1' 4242
+        - kill -TERM $UD3TN1_PID
+        - kill -TERM $UD3TN2_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
+        - wait $UD3TN2_PID
 
 ion-bpv6-interoperability-test:
     stage: functional_test
@@ -90,44 +128,57 @@ mtcp-test:
     when: always
     image: python:3.7
     script:
-        - make
-        - build/posix/ud3tn --allow-remote-config &
+        - make sanitize-strict=yes
+        - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - make virtualenv
         - source .venv/bin/activate && python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
-        - source .venv/bin/activate && timeout 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
+        - source .venv/bin/activate && timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
 
 fragment-reassembly-test:
     stage: functional_test
     when: always
     image: python:3.7
     script:
-        - make
+        - make sanitize-strict=yes
         - make virtualenv
-        - build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket &
-        - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket &
+        - build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
+        - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
         - source .venv/bin/activate && python tools/aap/aap_config.py --socket ud3tn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn/ mtcp:localhost:4223
-        - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
-        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED
+        - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED -v
+        - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED --newline -vv
+        - kill -TERM $UD3TN1_PID
+        - kill -TERM $UD3TN2_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
+        - wait $UD3TN2_PID
 
 ipv6-compatibility-test:
     stage: functional_test
     when: always
     image: python:3.7
     script:
-        - make
+        - make sanitize-strict=yes
         - make virtualenv
         # IPv6 and IPv4
-        - build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 &
+        - build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
         # IPv4-only
-        - build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 &
+        - build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
         # Check v6 via AAP to ud3tn1 and via MTCP to ud3tn2
         - source .venv/bin/activate && python tools/aap/aap_config.py --tcp '::1' 4242 --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn/ 'mtcp:[::1]:4223'
         # Check v4 via AAP to ud3tn1
-        - source .venv/bin/activate && python tools/aap/aap_send.py --tcp 127.0.0.1 4242 dtn://ud3tn2.dtn/sink PAYLOAD
+        - source .venv/bin/activate && python tools/aap/aap_send.py --tcp 127.0.0.1 4242 dtn://ud3tn2.dtn/sink PAYLOAD -v
         # Check v4 reception of the correct bundle at ud3tn2
-        - source .venv/bin/activate && timeout 5 python tools/aap/aap_receive.py --tcp 127.0.0.1 4243 --agentid sink --count 1 --verify-pl PAYLOAD
+        - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --tcp 127.0.0.1 4243 --agentid sink --count 1 --verify-pl PAYLOAD --newline -vv
         # Check that v6 does _not_ work on ud3tn2
-        - "source .venv/bin/activate && if timeout 1 python tools/aap/aap_test.py --tcp '::1' 4243; then echo 'Error: Should not be able to connect via IPv6 here.'; false; else true; fi"
+        - "source .venv/bin/activate && if timeout -v 1 python tools/aap/aap_test.py --tcp '::1' 4243; then echo 'Error: Should not be able to connect via IPv6 here.'; false; else true; fi"
+        - kill -TERM $UD3TN1_PID
+        - kill -TERM $UD3TN2_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
+        - wait $UD3TN2_PID
 
 bibe-internal-forwarding-test:
     stage: functional_test

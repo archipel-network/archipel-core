@@ -54,7 +54,7 @@ TEST(bibe_parser, parse_bpdu)
 	TEST_ASSERT_EQUAL_INT(0, err);
 	TEST_ASSERT_EQUAL_UINT64(0, bpdu.transmission_id);
 	TEST_ASSERT_EQUAL_UINT64(0, bpdu.retransmission_time);
-	TEST_ASSERT_EQUAL_MEMORY(
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
 		encapsulated_bundle_bytes,
 		bpdu.encapsulated_bundle,
 		ENC_BUNDLE_LEN

@@ -112,9 +112,11 @@ Task_t hal_task_create(void (*task_function)(void *), const char *task_name,
 	}
 
 #if LINUX_SPECIFIC_API
-	if (pthread_setname_np(thread, task_name)) {
-		LOG("Could not set thread name!");
-		goto fail_attr;
+	if (task_name) {
+		if (pthread_setname_np(thread, task_name)) {
+			LOG("Could not set thread name!");
+			goto fail_attr;
+		}
 	}
 #endif
 
@@ -134,11 +136,13 @@ fail:
 }
 
 
+__attribute__((noreturn))
 void hal_task_start_scheduler(void)
 {
 	/* Put the calling thread (in this case the main thread) to */
 	/* sleep indefinitely */
-	pause();
+	for (;;)
+		pause();
 }
 
 

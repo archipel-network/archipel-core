@@ -434,8 +434,7 @@ size_t bundle_get_last_fragment_min_size(struct bundle *bundle)
 	}
 }
 
-uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle,
-	const uint64_t current_time_s)
+uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle)
 {
 	if (bundle->creation_timestamp_ms != 0)
 		return (bundle->creation_timestamp_ms + bundle->lifetime_ms +
@@ -450,13 +449,16 @@ uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle,
 	    age_block->length))
 		return 0;
 
-	const uint64_t current_time_ms = current_time_s * 1000;
+	if (bundle->lifetime_ms <= bundle_age_ms)
+		return 0;
 
 	// EXP_TIME = CUR_TIME + REMAINING_LIFETIME
 	// REMAINING_LIFETIME = TOTAL_LIFETIME - TOTAL_AGE
 	// TOTAL_AGE = AGE_IN_BLOCK + LOCAL_STORAGE_DURATION
-	return (current_time_ms + bundle->lifetime_ms - bundle_age_ms -
-		(current_time_ms - bundle->reception_timestamp_ms) + 500) / 1000;
+	// LOCAL_STORAGE_DURATION = CUR_TIME - RECEPTION_TIME
+	// Thus: EXP_TIME = TOTAL_LIFETIME - AGE_IN_BLOCK + RECEPTION_TIME
+	return (bundle->lifetime_ms - bundle_age_ms +
+		bundle->reception_timestamp_ms + 500) / 1000;
 }
 
 enum ud3tn_result bundle_age_update(struct bundle *bundle,

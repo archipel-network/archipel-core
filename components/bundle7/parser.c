@@ -91,9 +91,9 @@ CborError bundle_end(struct bundle7_parser *state, CborValue *it)
 {
 	struct bundle *bundle;
 
-	if (*it->ptr != 0xff)
+	if (*it->source.ptr != 0xff)
 		return CborErrorIllegalType;
-	it->ptr++;
+	it->source.ptr++;
 
 	// Transition into "Done" state
 	state->basedata->status = PARSER_STATUS_DONE;
@@ -251,7 +251,7 @@ CborError lifetime(struct bundle7_parser *state, CborValue *it)
 	cbor_value_get_uint64(it, &value);
 	state->bundle->lifetime_ms = value;
 
-	const uint8_t *last_ptr = it->ptr;
+	const uint8_t *last_ptr = it->source.ptr;
 	CborError err = cbor_value_advance_fixed(it);
 
 	if (bundle_is_fragmented(state->bundle))
@@ -263,7 +263,7 @@ CborError lifetime(struct bundle7_parser *state, CborValue *it)
 
 		// -1 Byte infinite array header
 		state->bundle->primary_block_length = state->bundle_size - 1 +
-			(it->ptr - last_ptr);
+			(it->source.ptr - last_ptr);
 	}
 
 	return err;
@@ -295,7 +295,7 @@ CborError total_adu_length(struct bundle7_parser *state, CborValue *it)
 	cbor_value_get_uint64(it, &length);
 	state->bundle->total_adu_length = length;
 
-	const uint8_t *last_ptr = it->ptr;
+	const uint8_t *last_ptr = it->source.ptr;
 	CborError err = cbor_value_advance_fixed(it);
 
 	if (state->bundle->crc_type != BUNDLE_CRC_TYPE_NONE)
@@ -305,7 +305,7 @@ CborError total_adu_length(struct bundle7_parser *state, CborValue *it)
 
 		// -1 Byte infinite array header
 		state->bundle->primary_block_length = state->bundle_size - 1 +
-			(it->ptr - last_ptr);
+			(it->source.ptr - last_ptr);
 	}
 
 	return err;
@@ -341,7 +341,7 @@ CborError primary_block_crc(struct bundle7_parser *state, CborValue *it)
 
 		// Swap from network byte order to native order and clear all
 		// higher bits
-		state->bundle->crc.checksum = cbor_ntohs(crc.checksum) & 0xffff;
+		state->bundle->crc.checksum = cbor_ntohs(crc.checksum & 0xffff);
 
 		crc_verify(state,
 			state->crc16.checksum,
@@ -411,18 +411,24 @@ CborError block_type(struct bundle7_parser *state, CborValue *it)
 
 	cbor_value_get_uint64(it, &type);
 
-	// Create bundle block
-	struct bundle_block *block = bundle_block_create(type);
-
-	if (block == NULL)
-		return CborErrorOutOfMemory;
-
-	// Create bundle block list entry
-	*state->current_block_entry = bundle_block_entry_create(block);
-
 	if (*state->current_block_entry == NULL) {
-		bundle_block_free(block);
-		return CborErrorOutOfMemory;
+		// Create bundle block
+		struct bundle_block *block = bundle_block_create(type);
+
+		if (block == NULL)
+			return CborErrorOutOfMemory;
+
+		// Create bundle block list entry
+		*state->current_block_entry = bundle_block_entry_create(block);
+
+		if (*state->current_block_entry == NULL) {
+			bundle_block_free(block);
+			return CborErrorOutOfMemory;
+		}
+	} else {
+		// Was already created but the last operation failed with a
+		// too-short chunk (CborErrorUnexpectedEOF).
+		ASSERT((*state->current_block_entry)->data->type == type);
 	}
 
 	state->next = block_number;
@@ -520,7 +526,7 @@ CborError block_crc(struct bundle7_parser *state, CborValue *it)
 
 		// Swap from network byte order to native order and clear all
 		// higher bits
-		BLOCK(state)->crc.checksum = cbor_ntohs(crc.checksum) & 0xffff;
+		BLOCK(state)->crc.checksum = cbor_ntohs(crc.checksum & 0xffff);
 
 		crc_verify(state,
 			state->crc16.checksum,
