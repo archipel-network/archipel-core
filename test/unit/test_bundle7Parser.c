@@ -394,7 +394,7 @@ TEST(bundle7Parser, invalid_crc_handling)
 	size_t parsed = bundle7_parser_read(&state, cbor_invalid_crc16,
 		len_invalid_crc16);
 
-	// The bundle must be parsed completly
+	// The bundle must be parsed completely
 	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, state.basedata->status);
 	TEST_ASSERT_EQUAL(parsed, len_invalid_crc16);
 
