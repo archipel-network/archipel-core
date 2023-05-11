@@ -41,7 +41,8 @@ unit-test-posix-debug:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix
+        - cd /ud3tn_build
         - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
 unit-test-posix-release:
@@ -55,7 +56,8 @@ integration-test-posix:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
+        - cd /ud3tn_build
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate && pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
@@ -70,7 +72,8 @@ integration-test-posix-thread-sanitizer:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize=thread sanitize-strict=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize=thread sanitize-strict=yes
+        - cd /ud3tn_build
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate && pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
@@ -85,7 +88,8 @@ integration-test-posix-release:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release optimize=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release optimize=yes
+        - cd /ud3tn_build
         - rm -f ./ud3tn.socket
         - build/posix/ud3tn --allow-remote-config &
         - source /ud3tn_venv/bin/activate && pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
@@ -97,7 +101,8 @@ aap-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate && pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
@@ -157,7 +162,8 @@ mtcp-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate && pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
@@ -174,7 +180,8 @@ fragment-reassembly-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
         - rm -f ./ud3tn1.socket
         - rm -f ./ud3tn2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
@@ -198,7 +205,8 @@ ipv6-compatibility-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes && cd /ud3tn_build
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
         # IPv6 and IPv4
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
         # IPv4-only
