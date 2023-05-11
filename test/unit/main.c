@@ -42,7 +42,7 @@ int main(void)
 
 	init(1, argv);
 
-	hal_task_create(test_task, "test_task", 0, NULL, 0, NULL);
+	hal_task_create(test_task, "test_task", 0, NULL, 0);
 
 	return start_os();
 }

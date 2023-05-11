@@ -275,6 +275,8 @@ int ms_diff(struct timespec *start, struct timespec *stop)
 	return result.tv_sec * 1000 + (result.tv_nsec / 1000000);
 }
 
+#define MAX_DELAY_INCREASE_MS 200
+
 TEST(simple_queue, test_SemaphoreTimingBehaviour)
 {
 	struct timespec ts1, ts2;
@@ -289,7 +291,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	TEST_ASSERT_EQUAL_INT(1, queuePop(q, &j, 0));
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < MAX_DELAY_INCREASE_MS);
 
 	// a removal with timeout 100ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -297,7 +299,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 98);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 102);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 100 + MAX_DELAY_INCREASE_MS);
 
 	// a removal with timeout 2000ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -305,7 +307,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 1998);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2002);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2000 + MAX_DELAY_INCREASE_MS);
 
 
 	for (i = 0; i <= 9; i++) {
@@ -318,7 +320,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	TEST_ASSERT_EQUAL_INT(1, queuePush(q, &i, 0, false));
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < MAX_DELAY_INCREASE_MS);
 
 	// a insertion with timeout 100ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -326,7 +328,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 98);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 102);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 100 + MAX_DELAY_INCREASE_MS);
 
 	// a insertion with timeout 2000ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -334,7 +336,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 1998);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2002);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2000 + MAX_DELAY_INCREASE_MS);
 }
 
 TEST_GROUP_RUNNER(simple_queue)

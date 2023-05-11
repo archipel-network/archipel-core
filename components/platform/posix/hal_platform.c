@@ -11,7 +11,6 @@
 #include "platform/hal_crypto.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
-#include "platform/hal_random.h"
 #include "platform/hal_time.h"
 #include "platform/hal_task.h"
 
@@ -78,7 +77,6 @@ void hal_platform_init(int argc, char *argv[])
 
 	hal_io_init();
 	hal_time_init(UINT64_MAX); // required for logging
-	hal_random_init();
 	hal_hash_init();
 	hal_crc_init();
 	restart_args = malloc(sizeof(char *) * argc);

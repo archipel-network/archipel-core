@@ -26,7 +26,6 @@
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
-#include "ud3tn/task_tags.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -72,8 +71,6 @@ struct tcpclv3_contact_parameters {
 
 	Semaphore_t param_semphr; // for modifying ops on the params struct
 
-	Task_t management_task;
-
 	char *eid;
 	char *cla_addr;
 
@@ -115,7 +112,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 
 	if (tcp_send_all(socket, header, header_len) == -1) {
 		free(header);
-		LOGF("TCPCLv3: Error sending header: %s", strerror(errno));
+		LOGERROR("TCPCLv3", "send(header)", errno);
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
@@ -358,12 +355,8 @@ static void tcpclv3_link_management_task(void *p)
 	tcpclv3_parser_reset(&param->tcpclv3_parser);
 	free(param->eid);
 	free(param->cla_addr);
-
-	Task_t management_task = param->management_task;
-
 	hal_semaphore_delete(param->param_semphr);
 	free(param);
-	hal_task_delete(management_task);
 }
 
 static void launch_connection_management_task(
@@ -447,16 +440,15 @@ static void launch_connection_management_task(
 		}
 	}
 
-	contact_params->management_task = hal_task_create(
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		tcpclv3_link_management_task,
 		"tcpclv3_mgmt_t",
 		CONTACT_MANAGEMENT_TASK_PRIORITY,
 		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_MANAGEMENT_TASK_STACK_SIZE
 	);
 
-	if (!contact_params->management_task) {
+	if (task_creation_result != UD3TN_OK) {
 		LOG("TCPCLv3: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->eid);
@@ -510,6 +502,7 @@ static void tcpclv3_listener_task(void *p)
 		);
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 	}
+
 	// unexpected failure to accept() - exit thread in release mode
 	ASSERT(0);
 }
@@ -520,23 +513,13 @@ static void tcpclv3_listener_task(void *p)
 
 static enum ud3tn_result tcpclv3_launch(struct cla_config *const config)
 {
-	struct cla_tcp_config *const tcp_config = (
-		(struct cla_tcp_config *)config
-	);
-
-	tcp_config->listen_task = hal_task_create(
+	return hal_task_create(
 		tcpclv3_listener_task,
 		"tcpclv3_listen_t",
 		CONTACT_LISTEN_TASK_PRIORITY,
 		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_LISTEN_TASK_STACK_SIZE
 	);
-
-	if (!tcp_config->listen_task)
-		return UD3TN_FAIL;
-
-	return UD3TN_OK;
 }
 
 static const char *tcpclv3_name_get(void)
@@ -787,8 +770,8 @@ static void tcpclv3_begin_packet(struct cla_link *link, size_t length, char *cla
 
 	if (tcp_send_all(param->link.connection_socket,
 			 header_buffer, sdnv_len + 1) == -1) {
-		LOGF("TCPCLv3: Error sending segment header: %s",
-		     strerror(errno));
+		LOGERROR("TCPCLv3", "send(segment_header)",
+			 errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -812,7 +795,7 @@ static void tcpclv3_send_packet_data(
 	ASSERT(param->state == TCPCLV3_ESTABLISHED);
 
 	if (tcp_send_all(param->link.connection_socket, data, length) == -1) {
-		LOGF("TCPCLv3: Error during sending: %s", strerror(errno));
+		LOGERROR("TCPCLv3", "send()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }

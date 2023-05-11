@@ -7,11 +7,12 @@
  *
  */
 
-
 /* enable linux features when linux OS */
 #if linux
 #define _GNU_SOURCE
 #endif
+
+#include "ud3tn/common.h"
 
 #include "platform/hal_config.h"
 #include "platform/hal_io.h"
@@ -42,14 +43,12 @@ static void *execute_pthread_compat(void *task_description)
 	return NULL;
 }
 
-Task_t hal_task_create(void (*task_function)(void *), const char *task_name,
-		       int task_priority, void *task_parameters,
-		       size_t task_stack_size, void *task_tag)
+enum ud3tn_result hal_task_create(
+	void (*task_function)(void *), const char *task_name,
+	int task_priority, void *task_parameters,
+	size_t task_stack_size)
 {
-	pthread_t *thread = malloc(sizeof(pthread_t));
-
-	if (thread == NULL)
-		return NULL;
+	pthread_t thread;
 
 	struct sched_param param;
 	pthread_attr_t tattr;
@@ -103,7 +102,7 @@ Task_t hal_task_create(void (*task_function)(void *), const char *task_name,
 	desc->task_function = task_function;
 	desc->task_parameter = task_parameters;
 
-	error_code = pthread_create(thread, &tattr,
+	error_code = pthread_create(&thread, &tattr,
 				    execute_pthread_compat, desc);
 
 	if (error_code) {
@@ -123,16 +122,15 @@ Task_t hal_task_create(void (*task_function)(void *), const char *task_name,
 	/* destroy the attr-object */
 	pthread_attr_destroy(&tattr);
 
-	return thread;
+	return UD3TN_OK;
 
 fail_attr:
 	/* destroy the attr-object */
 	pthread_attr_destroy(&tattr);
 fail:
-	free(thread);
 	free(desc);
 
-	return NULL;
+	return UD3TN_FAIL;
 }
 
 
@@ -149,11 +147,4 @@ void hal_task_start_scheduler(void)
 void hal_task_delay(int delay)
 {
 	usleep(delay*1000);
-}
-
-
-void hal_task_delete(Task_t task)
-{
-	pthread_cancel(*task);
-	free(task);
 }

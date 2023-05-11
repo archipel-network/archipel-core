@@ -10,6 +10,8 @@
 #ifndef HAL_TASK_H_INCLUDED
 #define HAL_TASK_H_INCLUDED
 
+#include "ud3tn/common.h"
+
 #include "platform/hal_types.h"
 
 #include <stddef.h>
@@ -28,11 +30,12 @@
  *                      as the task's stack
  * @param taskTag Identifier that is assigned to the created task for
  *                debugging/tracing
- * @return a handle for the newly created task
+ * @return a ud3tn_result indicating whether the operation was successful or not
  */
-Task_t hal_task_create(void (*taskFunction)(void *), const char *taskName,
-		      int taskPriority, void *taskParameters,
-		      size_t taskStackSize, void *taskTag);
+enum ud3tn_result hal_task_create(
+	void (*task_function)(void *), const char *task_name,
+	int task_priority, void *task_parameters,
+	size_t task_stack_size);
 
 /**
  * @brief hal_startScheduler Starts the task scheduler of the underlying OS
@@ -45,13 +48,6 @@ void hal_task_start_scheduler(void);
  * @param delay The delay in milliseconds
  */
 void hal_task_delay(int delay);
-
-/**
- * @brief hal_task_delete Kills and deletes the given task
- * @param task The task that should be killed. If parameter is NULL, the
- *	       calling task is killed
- */
-void hal_task_delete(Task_t task);
 
 
 #endif /* HAL_TASK_H_INCLUDED */

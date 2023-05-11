@@ -11,6 +11,5 @@
 
 #define QueueIdentifier_t Queue_t*
 #define Semaphore_t sem_t*
-#define Task_t pthread_t*
 
 #endif // HAL_TYPES_H_INCLUDED

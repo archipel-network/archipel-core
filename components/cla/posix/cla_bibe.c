@@ -27,7 +27,6 @@
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -56,8 +55,6 @@ struct bibe_contact_parameters {
 	struct bibe_config *config;
 
 	Semaphore_t param_semphr; // rw access to params struct
-
-	Task_t management_task;
 
 	char *cla_sock_addr;
 	const char *partner_eid;
@@ -100,7 +97,6 @@ static enum ud3tn_result handle_established_connection(
 
 static void bibe_link_management_task(void *p)
 {
-	Task_t management_task;
 	struct bibe_contact_parameters *const param = p;
 
 	ASSERT(param->cla_sock_addr != NULL);
@@ -166,8 +162,7 @@ static void bibe_link_management_task(void *p)
 				true
 			);
 			if (wsp.errno_) {
-				LOGF("bibe: send(): %s",
-				     strerror(wsp.errno_));
+				LOGERROR("bibe", "send()", wsp.errno_);
 				close(param->socket);
 				if (++param->connect_attempt >
 						CLA_TCP_MAX_RETRY_ATTEMPTS) {
@@ -209,11 +204,8 @@ static void bibe_link_management_task(void *p)
 	free(param->cla_sock_addr);
 
 fail:
-	management_task = param->management_task;
-
 	hal_semaphore_delete(param->param_semphr);
 	free(param);
-	hal_task_delete(management_task);
 }
 
 static void launch_connection_management_task(
@@ -279,16 +271,15 @@ static void launch_connection_management_task(
 		goto fail_sem;
 	}
 
-	contact_params->management_task = hal_task_create(
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		bibe_link_management_task,
 		"bibe_mgmt_t",
 		CONTACT_MANAGEMENT_TASK_PRIORITY,
 		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_MANAGEMENT_TASK_STACK_SIZE
 	);
 
-	if (!contact_params->management_task) {
+	if (task_creation_result != UD3TN_OK) {
 		LOG("bibe: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->cla_sock_addr);

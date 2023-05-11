@@ -62,8 +62,10 @@ integration-test-posix:
         - apt-get update
         - apt-get install clang -y
         - make TOOLCHAIN=clang sanitize-strict=yes
+        - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - make virtualenv
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - source .venv/bin/activate && pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -77,8 +79,10 @@ integration-test-posix-thread-sanitizer:
         - apt-get update
         - apt-get install clang -y
         - make TOOLCHAIN=clang sanitize=thread sanitize-strict=yes
+        - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - make virtualenv
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - source .venv/bin/activate && pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -90,8 +94,10 @@ integration-test-posix-release:
     image: python:3.7
     script:
         - make type=release optimize=yes
+        - rm -f ./ud3tn.socket
         - build/posix/ud3tn --allow-remote-config &
         - make virtualenv
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - source .venv/bin/activate && pytest test/integration
 
 aap-test:
@@ -99,11 +105,16 @@ aap-test:
     when: always
     image: python:3.7
     script:
+        - apt-get update
+        - apt-get install netcat-openbsd -y
         - make sanitize-strict=yes
         - make virtualenv
-        - build/posix/ud3tn & UD3TN1_PID=$!
+        - rm -f ./ud3tn.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - source .venv/bin/activate && python tools/aap/aap_test.py
-        - build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
+        - while ! nc -z localhost 4242; do sleep 0.1; done
         - source .venv/bin/activate && python tools/aap/aap_test.py --tcp '::1' 4242
         - kill -TERM $UD3TN1_PID
         - kill -TERM $UD3TN2_PID
@@ -129,10 +140,13 @@ mtcp-test:
     image: python:3.7
     script:
         - make sanitize-strict=yes
-        - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - rm -f ./ud3tn.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - make virtualenv
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - source .venv/bin/activate && python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - source .venv/bin/activate && timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
+        - sleep 0.2
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN_PID
@@ -142,10 +156,18 @@ fragment-reassembly-test:
     when: always
     image: python:3.7
     script:
+        - apt-get update
+        - apt-get install netcat-openbsd -y
         - make sanitize-strict=yes
+        - rm -f ./ud3tn1.socket
+        - rm -f ./ud3tn2.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
         - make virtualenv
-        - build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
-        - build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
+        - while ! nc -z localhost 4222; do sleep 0.1; done
+        - while ! nc -z localhost 4223; do sleep 0.1; done
+        - while ! [ -r ./ud3tn1.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn2.socket ]; do sleep 0.1; done
         - source .venv/bin/activate && python tools/aap/aap_config.py --socket ud3tn1.socket --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn/ mtcp:localhost:4223
         - source .venv/bin/activate && python tools/aap/aap_send.py --socket ud3tn1.socket dtn://ud3tn2.dtn/sink THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED -v
         - source .venv/bin/activate && timeout -v 5 python tools/aap/aap_receive.py --socket ud3tn2.socket --agentid sink --count 1 --verify-pl THISISAVERYLONGBUNDLEPAYLOADWHICHWILLBEFRAGMENTED --newline -vv
@@ -160,12 +182,19 @@ ipv6-compatibility-test:
     when: always
     image: python:3.7
     script:
+        - apt-get update
+        - apt-get install netcat-openbsd -y
         - make sanitize-strict=yes
-        - make virtualenv
         # IPv6 and IPv4
-        - build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
         # IPv4-only
-        - build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
+        # Create venv and wait for uD3TN ports to be open
+        - make virtualenv
+        - while ! nc -z localhost 4222; do sleep 0.1; done
+        - while ! nc -z localhost 4223; do sleep 0.1; done
+        - while ! nc -z localhost 4242; do sleep 0.1; done
+        - while ! nc -z localhost 4243; do sleep 0.1; done
         # Check v6 via AAP to ud3tn1 and via MTCP to ud3tn2
         - source .venv/bin/activate && python tools/aap/aap_config.py --tcp '::1' 4242 --schedule 2 1 140 --schedule 4 1 140 dtn://ud3tn2.dtn/ 'mtcp:[::1]:4223'
         # Check v4 via AAP to ud3tn1

@@ -8,7 +8,8 @@
 #include "ud3tn/report_manager.h"
 #include "ud3tn/result.h"
 #include "ud3tn/router.h"
-#include "ud3tn/task_tags.h"
+
+#include "agents/config_agent.h"
 
 #include "bundle6/bundle6.h"
 #include "bundle7/bundle_age.h"
@@ -62,8 +63,6 @@ static inline void handle_signal(
 	struct bp_context *const ctx,
 	const struct bundle_processor_signal signal);
 
-static void handle_process_router_command(
-	const struct bp_context *const ctx, struct router_command *cmd);
 static void handle_contact_over(
 	const struct bp_context *const ctx, struct contact *contact);
 
@@ -165,7 +164,8 @@ int bundle_processor_perform_agent_action(
 	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
 	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param),
+	void (*const callback)(struct bundle_adu data, void *param,
+			       const void *bp_context),
 	void *param,
 	bool wait_for_feedback)
 {
@@ -225,6 +225,32 @@ int bundle_processor_perform_agent_action(
 	return -1;
 }
 
+void bundle_processor_handle_router_command(
+	void *const bp_context, struct router_command *cmd)
+{
+	const struct bp_context *const ctx = bp_context;
+
+	hal_semaphore_take_blocking(ctx->cm_param.semaphore);
+
+	// NOTE: May invoke router via bundle_dangling!
+	enum ud3tn_result result = router_process_command(
+		cmd,
+		(struct rescheduling_handle) {
+			.reschedule_func = bundle_resched_func,
+			.reschedule_func_context = ctx,
+		}
+	);
+
+	hal_semaphore_release(ctx->cm_param.semaphore);
+
+	if (result == UD3TN_OK) {
+		wake_up_contact_manager(
+			ctx->cm_param.control_queue,
+			CM_SIGNAL_UPDATE_CONTACT_LIST
+		);
+	}
+}
+
 void bundle_processor_task(void * const param)
 {
 	struct bundle_processor_task_parameters *p =
@@ -269,7 +295,16 @@ void bundle_processor_task(void * const param)
 	ctx.cm_param = contact_manager_start(
 		p->signaling_queue,
 		routing_table_get_raw_contact_list_ptr());
-	ASSERT(ctx.cm_param.control_queue != NULL);
+	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
+		LOG("BundleProcessor: Contact manager could not be initialized!");
+		ASSERT(false);
+	}
+
+	if (config_agent_setup(p->signaling_queue, ctx.local_eid,
+			       p->allow_remote_configuration, &ctx)) {
+		LOG("BundleProcessor: Config agent could not be initialized!");
+		ASSERT(false);
+	}
 
 	LOGF("BundleProcessor: BPA initialized for \"%s\", status reports %s",
 	     p->local_eid, p->status_reporting ? "enabled" : "disabled");
@@ -340,9 +375,6 @@ static inline void handle_signal(
 		// XXX: We do not use the provided CLA address.
 		free(signal.peer_cla_addr);
 		break;
-	case BP_SIGNAL_PROCESS_ROUTER_COMMAND:
-		handle_process_router_command(ctx, signal.router_cmd);
-		break;
 	case BP_SIGNAL_CONTACT_OVER:
 		handle_contact_over(ctx, signal.contact);
 		break;
@@ -350,30 +382,6 @@ static inline void handle_signal(
 		LOGF("BundleProcessor: Invalid signal (%d) detected",
 		     signal.type);
 		break;
-	}
-}
-
-static void handle_process_router_command(
-	const struct bp_context *const ctx, struct router_command *cmd)
-{
-	hal_semaphore_take_blocking(ctx->cm_param.semaphore);
-
-	// NOTE: May invoke router via bundle_dangling!
-	enum ud3tn_result result = router_process_command(
-		cmd,
-		(struct rescheduling_handle) {
-			.reschedule_func = bundle_resched_func,
-			.reschedule_func_context = ctx,
-		}
-	);
-
-	hal_semaphore_release(ctx->cm_param.semaphore);
-
-	if (result == UD3TN_OK) {
-		wake_up_contact_manager(
-			ctx->cm_param.control_queue,
-			CM_SIGNAL_UPDATE_CONTACT_LIST
-		);
 	}
 }
 
@@ -407,6 +415,12 @@ static enum ud3tn_result bundle_dispatch(
 	}
 	/* 5.3-2 */
 	return bundle_forward(ctx, bundle);
+}
+
+enum ud3tn_result bundle_processor_bundle_dispatch(
+	void *bp_context, struct bundle *bundle)
+{
+	return bundle_dispatch(bp_context, bundle);
 }
 
 /* 5.3-1 */
@@ -839,12 +853,14 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
 			     agent_id, adu.length);
-			agent_forward(agent_id, adu);
+			agent_forward(agent_id, adu, ctx);
 		} else if (record != NULL) {
 			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
 			     record->type);
+			bundle_adu_free_members(adu);
 		} else {
 			LOG("BundleProcessor: Received administrative record we cannot parse, discarding.");
+			bundle_adu_free_members(adu);
 		}
 
 		free_administrative_record(record);
@@ -856,7 +872,7 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 	ASSERT(agent_id != NULL);
 	LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
 	     agent_id, adu.length);
-	agent_forward(agent_id, adu);
+	agent_forward(agent_id, adu, ctx);
 }
 
 /* 5.13 (BPv7) */

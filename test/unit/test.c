@@ -3,13 +3,11 @@
 
 void testud3tn(void)
 {
-	RUN_TEST_GROUP(ud3tn);
 	RUN_TEST_GROUP(simplehtab);
 	RUN_TEST_GROUP(sdnv);
 	RUN_TEST_GROUP(node);
 	RUN_TEST_GROUP(routingTable);
 	RUN_TEST_GROUP(eid);
-	RUN_TEST_GROUP(random);
 	RUN_TEST_GROUP(crc);
 	RUN_TEST_GROUP(bundle6Create);
 	RUN_TEST_GROUP(bundle6ParserSerializer);
