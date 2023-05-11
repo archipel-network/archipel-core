@@ -61,7 +61,8 @@ integration-test-posix:
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
@@ -78,7 +79,8 @@ integration-test-posix-thread-sanitizer:
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
@@ -95,7 +97,8 @@ integration-test-posix-release:
         - rm -f ./ud3tn.socket
         - build/posix/ud3tn --allow-remote-config &
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - pytest test/integration
 
@@ -107,7 +110,8 @@ aap-test:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
@@ -171,7 +175,8 @@ mtcp-test:
         - rm -f ./ud3tn.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
@@ -192,7 +197,8 @@ fragment-reassembly-test:
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - while ! nc -z localhost 4222; do sleep 0.1; done
         - while ! nc -z localhost 4223; do sleep 0.1; done
         - while ! [ -r ./ud3tn1.socket ]; do sleep 0.1; done
@@ -219,7 +225,8 @@ ipv6-compatibility-test:
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
         # Create venv and wait for uD3TN ports to be open
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - while ! nc -z localhost 4222; do sleep 0.1; done
         - while ! nc -z localhost 4223; do sleep 0.1; done
         - while ! nc -z localhost 4242; do sleep 0.1; done
@@ -277,7 +284,8 @@ python-stylecheck:
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn" && pip install -e "python-ud3tn-utils"
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
         - pip install -e "python-ud3tn-utils"
         - python -m flake8 pyd3tn python-ud3tn-utils test/integration tools/aap tools/cla --max-complexity=12
 
