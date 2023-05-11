@@ -1,0 +1,22 @@
+# Dockerfile for building a Debian-based container with Python, Clang, and uD3TN
+# Python dependencies for uD3TN's CI
+
+FROM python:3.10-bullseye
+
+RUN apt-get update && \
+    apt-get dist-upgrade -y && \
+    apt-get install -y clang clang-tidy-13 netcat-openbsd && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY ./pyd3tn/requirements.txt /req-pyd3tn.txt
+COPY ./python-ud3tn-utils/requirements.txt /req-utils.txt
+COPY ./test/integration/requirements.txt /req-test.txt
+COPY ./tools/analysis/requirements.txt /req-analysis.txt
+
+RUN python3 -m venv /ud3tn_venv && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U setuptools pip wheel && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-pyd3tn.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-utils.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-test.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-analysis.txt
