@@ -57,27 +57,20 @@ integration-test-mtcp:
 
 # Directory for the virtual Python envionment
 VENV := .venv
-GET_PIP = curl -sS https://bootstrap.pypa.io/get-pip.py | $(VENV)/bin/python
 
 ifeq "$(verbose)" "yes"
-  PIP = $(VENV)/bin/pip
+  PIP = pip
 else
-  PIP = $(VENV)/bin/pip -q
+  PIP = pip -q
   GET_PIP += > /dev/null
 endif
 
 .PHONY: virtualenv
 virtualenv:
 	@echo "Create virtualenv in $(VENV)/ ..."
-	@python3 -m venv --without-pip $(VENV)
-	@echo "Install latest pip package ..."
-	@$(GET_PIP)
-	@echo "Install local dependencies to site-packages..."
-	@$(PIP) install -e ./pyd3tn
-	@$(PIP) install -e ./python-ud3tn-utils
-	@echo "Install additional dependencies ..."
-	@$(PIP) install -U -r ./test/integration/requirements.txt
-	@$(PIP) install -U -r ./tools/analysis/requirements.txt
+	@python3 -m venv $(VENV)
+	@echo "Install/update dependencies..."
+	. $(VENV)/bin/activate && $(MAKE) update-virtualenv
 	@echo
 	@echo "=> To activate the virtualenv, source $(VENV)/bin/activate"
 	@echo "   or use environment-setup tools like"
@@ -87,7 +80,12 @@ virtualenv:
 
 .PHONY: update-virtualenv
 update-virtualenv:
+	@echo "Update setuptools, pip, wheel..."
 	$(PIP) install -U setuptools pip wheel
+	@echo "Install local dependencies to site-packages..."
+	$(PIP) install -e ./pyd3tn
+	$(PIP) install -e ./python-ud3tn-utils
+	@echo "Install additional dependencies ..."
 	$(PIP) install -U -r ./test/integration/requirements.txt
 	$(PIP) install -U -r ./tools/analysis/requirements.txt
 
