@@ -423,22 +423,28 @@ enum ud3tn_result bundle_processor_bundle_dispatch(
 	return bundle_dispatch(bp_context, bundle);
 }
 
+static bool endpoint_is_local(
+	const struct bp_context *const ctx, const char *eid)
+{
+	const size_t local_len = strlen(ctx->local_eid_prefix);
+	const size_t dest_len = strlen(eid);
+
+	/* Compare EID _prefix_ with configured uD3TN EID */
+	return (
+		// For the memcmp to be safe, the tested EID has to be at
+		// least as long as the local EID.
+		dest_len >= local_len &&
+		// The prefix (the local EID) has to match the EID.
+		memcmp(ctx->local_eid_prefix, eid,
+		       local_len) == 0
+	);
+}
+
 /* 5.3-1 */
 static bool bundle_endpoint_is_local(
 	const struct bp_context *const ctx, struct bundle *bundle)
 {
-	const size_t local_len = strlen(ctx->local_eid_prefix);
-	const size_t dest_len = strlen(bundle->destination);
-
-	/* Compare bundle destination EID _prefix_ with configured uD3TN EID */
-	return (
-		// For the memcmp to be safe, the destination EID has to be at
-		// least as long as the local EID.
-		dest_len >= local_len &&
-		// The prefix (the local EID) has to match the bundle dest-EID.
-		memcmp(ctx->local_eid_prefix, bundle->destination,
-		       local_len) == 0
-	);
+	return endpoint_is_local(ctx, bundle->destination);
 }
 
 /* 5.4 */
@@ -951,8 +957,9 @@ static void send_status_report(
 
 	/* If the report-to EID is the null endpoint or uD3TN itself we do */
 	/* not need to create a status report */
-	if (strcmp(bundle->destination, "dtn:none") == 0
-		|| strcmp(bundle->destination, ctx->local_eid) == 0)
+	if (bundle->report_to == NULL ||
+	    strcmp(bundle->report_to, "dtn:none") == 0 ||
+	    endpoint_is_local(ctx, bundle->report_to))
 		return;
 
 	struct bundle_status_report report = {
