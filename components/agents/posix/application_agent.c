@@ -339,7 +339,7 @@ static int16_t process_aap_message(
 				1ULL << 63 | // reserved bit MUST be 1
 				0ULL << 62 | // Format: with-timestamp
 				// 46-bit creation timestamp, see #60
-				(time & 0x00003FFFFFFFFFFFULL) << 16 |
+				(time_ms & 0x00003FFFFFFFFFFFULL) << 16 |
 				(seqnum & 0xFFFF) // 16-bit seqnum
 			);
 		}
