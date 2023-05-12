@@ -357,7 +357,13 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 	case RP_EXPECT_CONTACT_START_TIME:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint64(parser,
-				&(parser->current_contact->data->from));
+				&(parser->current_contact->data->from_ms));
+			if (parser->current_contact->data->from_ms >=
+			    UINT64_MAX / 1000) {
+				parser->basedata->status = PARSER_STATUS_ERROR;
+				break;
+			}
+			parser->current_contact->data->from_ms *= 1000;
 			begin_read_integer(parser);
 			parser->stage = RP_EXPECT_CONTACT_END_TIME;
 		} else if (!read_integer(parser, byte)) {
@@ -367,11 +373,17 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 	case RP_EXPECT_CONTACT_END_TIME:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint64(parser,
-				&(parser->current_contact->data->to));
-			if (parser->current_contact->data->to >
-				parser->current_contact->data->from
-				&& parser->current_contact->data->to >
-				hal_time_get_timestamp_s()
+				&(parser->current_contact->data->to_ms));
+			if (parser->current_contact->data->to_ms >=
+			    UINT64_MAX / 1000) {
+				parser->basedata->status = PARSER_STATUS_ERROR;
+				break;
+			}
+			parser->current_contact->data->to_ms *= 1000;
+			if (parser->current_contact->data->to_ms >
+				parser->current_contact->data->from_ms
+				&& parser->current_contact->data->to_ms >
+				hal_time_get_timestamp_ms()
 			) {
 				begin_read_integer(parser);
 				parser->stage = RP_EXPECT_CONTACT_BITRATE;
@@ -384,13 +396,13 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 		break;
 	case RP_EXPECT_CONTACT_BITRATE:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
-			end_read_uint32(parser,
-				&(parser->current_contact->data->bitrate));
+			end_read_uint32(parser, &(parser->current_contact->data
+						  ->bitrate_bytes_per_s));
 			parser->stage
 				= RP_EXPECT_CONTACT_NODE_LIST_START_DELIMITER;
 		} else if (byte == OBJECT_END_DELIMITER) {
-			end_read_uint32(parser,
-				&(parser->current_contact->data->bitrate));
+			end_read_uint32(parser, &(parser->current_contact->data
+						  ->bitrate_bytes_per_s));
 			parser->stage = RP_EXPECT_CONTACT_SEPARATOR;
 		} else if (!read_integer(parser, byte)) {
 			parser->basedata->status = PARSER_STATUS_ERROR;

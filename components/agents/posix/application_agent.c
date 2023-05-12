@@ -46,7 +46,7 @@ struct application_agent_config {
 	const struct bundle_agent_interface *bundle_agent_interface;
 
 	uint8_t bp_version;
-	uint64_t lifetime;
+	uint64_t lifetime_ms;
 
 	int listen_socket;
 };
@@ -56,7 +56,7 @@ struct application_agent_comm_config {
 	int socket_fd;
 	int bundle_pipe_fd[2];
 	char *registered_agent_id;
-	uint64_t last_bundle_timestamp_s;
+	uint64_t last_bundle_timestamp_ms;
 	uint64_t last_bundle_sequence_number;
 };
 
@@ -123,7 +123,7 @@ static void application_agent_listener_task(void *const param)
 		}
 		child_config->parent = config;
 		child_config->socket_fd = conn_fd;
-		child_config->last_bundle_timestamp_s = 0;
+		child_config->last_bundle_timestamp_ms = 0;
 		child_config->last_bundle_sequence_number = 0;
 
 		const enum ud3tn_result task_creation_result = hal_task_create(
@@ -230,12 +230,12 @@ static void deregister_sink(struct application_agent_comm_config *config)
 
 static uint64_t allocate_sequence_number(
 	struct application_agent_comm_config *const config,
-	const uint64_t time_s)
+	const uint64_t time_ms)
 {
-	if (config->last_bundle_timestamp_s == time_s)
+	if (config->last_bundle_timestamp_ms == time_ms)
 		return ++config->last_bundle_sequence_number;
 
-	config->last_bundle_timestamp_s = time_s;
+	config->last_bundle_timestamp_ms = time_ms;
 	config->last_bundle_sequence_number = 1;
 
 	return 1;
@@ -305,19 +305,19 @@ static int16_t process_aap_message(
 			msg.payload_length = ar_size;
 		}
 
-		const uint64_t time = hal_time_get_timestamp_s();
+		const uint64_t time_ms = hal_time_get_timestamp_ms();
 		const uint64_t seqnum = allocate_sequence_number(
 			config,
-			time
+			time_ms
 		);
 		struct bundle *bundle = agent_create_forward_bundle(
 			config->parent->bundle_agent_interface,
 			config->parent->bp_version,
 			config->registered_agent_id,
 			msg.eid,
-			time,
+			time_ms,
 			seqnum,
-			config->parent->lifetime,
+			config->parent->lifetime_ms,
 			msg.payload,
 			msg.payload_length,
 			(
@@ -556,7 +556,7 @@ struct application_agent_config *application_agent_setup(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const char *socket_path,
 	const char *node, const char *service,
-	const uint8_t bp_version, uint64_t lifetime)
+	const uint8_t bp_version, uint64_t lifetime_ms)
 {
 	struct application_agent_config *const config = malloc(
 		sizeof(struct application_agent_config)
@@ -593,7 +593,7 @@ struct application_agent_config *application_agent_setup(
 
 	config->bundle_agent_interface = bundle_agent_interface;
 	config->bp_version = bp_version;
-	config->lifetime = lifetime;
+	config->lifetime_ms = lifetime_ms;
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		application_agent_listener_task,

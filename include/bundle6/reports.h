@@ -16,7 +16,7 @@ struct bundle *bundle6_generate_status_report(
 	const struct bundle * const bundle,
 	const struct bundle_status_report *report,
 	const char *local_eid,
-	const uint64_t timestamp_s);
+	const uint64_t timestamp_ms);
 
 
 /**
@@ -28,7 +28,7 @@ struct bundle *bundle6_generate_custody_signal(
 	const struct bundle * const bundle,
 	const struct bundle_custody_signal *signal,
 	const char *local_eid,
-	const uint64_t timestamp_s);
+	const uint64_t timestamp_ms);
 
 
 /**

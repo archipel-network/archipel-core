@@ -33,7 +33,7 @@ static const int IS_DEBUG_BUILD;
 /* BP version used for generated bundles */
 #define DEFAULT_BUNDLE_VERSION 7
 /* Default lifetime, in seconds, of bundles sent via AAP */
-#define DEFAULT_BUNDLE_LIFETIME 86400
+#define DEFAULT_BUNDLE_LIFETIME_S 86400
 /* Default CRC type
  * BUNDLE_CRC_TYPE_NONE = 0,
  * BUNDLE_CRC_TYPE_16   = 1,
@@ -74,9 +74,6 @@ enum failed_forwarding_policy {
 /* Agent ID for the config agent */
 #define AGENT_ID_CONFIG_DTN "config"
 #define AGENT_ID_CONFIG_IPN "9000"
-/* Agent ID for the management agent */
-#define AGENT_ID_MANAGEMENT_DTN "management"
-#define AGENT_ID_MANAGEMENT_IPN "9001"
 /* Agent ID for the echo agent */
 #define AGENT_ID_ECHO_DTN "echo"
 #define AGENT_ID_ECHO_IPN "9002"

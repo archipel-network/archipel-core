@@ -37,7 +37,7 @@ struct contact_info {
 struct contact_manager_context {
 	struct contact_info current_contacts[MAX_CONCURRENT_CONTACTS];
 	int8_t current_contact_count;
-	uint64_t next_contact_time;
+	uint64_t next_contact_time_ms;
 };
 
 static bool contact_active(
@@ -55,14 +55,15 @@ static bool contact_active(
 
 static int8_t remove_expired_contacts(
 	struct contact_manager_context *const ctx,
-	const uint64_t current_timestamp, struct contact_info list[])
+	const uint64_t current_timestamp_ms, struct contact_info list[])
 {
 	/* Check for ending contacts */
 	/* We do this first as it frees space in the list */
 	int8_t i, c, removed = 0;
 
 	for (i = ctx->current_contact_count - 1; i >= 0; i--) {
-		if (ctx->current_contacts[i].contact->to <= current_timestamp) {
+		if (ctx->current_contacts[i].contact->to_ms <=
+		    current_timestamp_ms) {
 			ASSERT(i <= MAX_CONCURRENT_CONTACTS);
 			/* Unset "active" constraint */
 			ctx->current_contacts[i].contact->active = 0;
@@ -123,30 +124,34 @@ static uint8_t check_upcoming(
 
 static int8_t process_upcoming_list(
 	struct contact_manager_context *const ctx,
-	struct contact_list *contact_list, const uint64_t current_timestamp,
+	struct contact_list *contact_list, const uint64_t current_timestamp_ms,
 	struct contact_info list[])
 {
 	int8_t added = 0;
 	struct contact_list *cur_entry;
 
-	ctx->next_contact_time = UINT64_MAX;
+	ctx->next_contact_time_ms = UINT64_MAX;
 	cur_entry = contact_list;
 	while (cur_entry != NULL) {
-		if (cur_entry->data->from <= current_timestamp) {
-			if (cur_entry->data->to > current_timestamp) {
+		if (cur_entry->data->from_ms <= current_timestamp_ms) {
+			if (cur_entry->data->to_ms > current_timestamp_ms) {
 				added += check_upcoming(
 					ctx,
 					cur_entry->data,
 					list,
 					added
 				);
-				if (cur_entry->data->to < ctx->next_contact_time)
-					ctx->next_contact_time =
-						cur_entry->data->to;
+				if (cur_entry->data->to_ms <
+				    ctx->next_contact_time_ms)
+					ctx->next_contact_time_ms =
+						cur_entry->data->to_ms;
 			}
 		} else {
-			if (cur_entry->data->from < ctx->next_contact_time)
-				ctx->next_contact_time = cur_entry->data->from;
+			if (cur_entry->data->from_ms <
+			    ctx->next_contact_time_ms)
+				ctx->next_contact_time_ms = (
+					cur_entry->data->from_ms
+				);
 			/* As our contact_list is sorted ascending by */
 			/* from-time we can stop checking here */
 			break;
@@ -259,16 +264,16 @@ static uint8_t check_for_contacts(
 {
 	int8_t i;
 	static struct contact_info added_contacts[MAX_CONCURRENT_CONTACTS];
-	uint64_t current_timestamp = hal_time_get_timestamp_s();
-	int8_t removed_count = remove_expired_contacts(
+	const uint64_t current_timestamp_ms = hal_time_get_timestamp_ms();
+	const int8_t removed_count = remove_expired_contacts(
 		ctx,
-		current_timestamp,
+		current_timestamp_ms,
 		removed_contacts
 	);
-	int8_t added_count = process_upcoming_list(
+	const int8_t added_count = process_upcoming_list(
 		ctx,
 		contact_list,
-		current_timestamp,
+		current_timestamp_ms,
 		added_contacts
 	);
 
@@ -363,11 +368,11 @@ static void contact_manager_task(void *cm_parameters)
 	struct contact_manager_task_parameters *parameters
 		= (struct contact_manager_task_parameters *)cm_parameters;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
-	uint64_t cur_time, next_time;
-	int32_t delay;
+	uint64_t cur_time_ms, next_time_ms;
+	int32_t delay_ms;
 	struct contact_manager_context ctx = {
 		.current_contact_count = 0,
-		.next_contact_time = UINT64_MAX,
+		.next_contact_time_ms = UINT64_MAX,
 	};
 
 	if (!parameters) {
@@ -386,19 +391,19 @@ static void contact_manager_task(void *cm_parameters)
 			);
 		}
 		signal = CM_SIGNAL_UNKNOWN;
-		cur_time = hal_time_get_timestamp_ms();
-		delay = -1; // infinite blocking on queue
-		if (ctx.next_contact_time < UINT64_MAX / 1000) {
-			next_time = ctx.next_contact_time * 1000;
-			if (next_time <= cur_time)
+		cur_time_ms = hal_time_get_timestamp_ms();
+		delay_ms = -1; // infinite blocking on queue
+		if (ctx.next_contact_time_ms < UINT64_MAX) {
+			next_time_ms = ctx.next_contact_time_ms;
+			if (next_time_ms <= cur_time_ms)
 				continue;
-			if (next_time - cur_time < (uint64_t)INT32_MAX)
-				delay = next_time - cur_time + 1;
+			if (next_time_ms - cur_time_ms < (uint64_t)INT32_MAX)
+				delay_ms = next_time_ms - cur_time_ms + 1;
 		}
 		hal_queue_receive(
 			parameters->control_queue,
 			&signal,
-			delay
+			delay_ms
 		);
 	}
 }

@@ -14,6 +14,6 @@ struct application_agent_config *application_agent_setup(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const char *socket_path,
 	const char *node, const char *service,
-	const uint8_t bp_version, uint64_t lifetime);
+	const uint8_t bp_version, uint64_t lifetime_ms);
 
 #endif /* APPLICATIONAGENT_H_INCLUDED */

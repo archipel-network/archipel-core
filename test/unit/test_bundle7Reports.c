@@ -87,12 +87,12 @@ TEST(bundle7Reports, generate_status_reports)
 	};
 
 	struct bundle *record = bundle7_generate_status_report(bundle,
-		&report, "dtn:test", 300);
+		&report, "dtn:test", 300000);
 
 	TEST_ASSERT_NULL(record); // already expired
 
 	record = bundle7_generate_status_report(bundle,
-		&report, "dtn:test", 299);
+		&report, "dtn:test", 299999);
 
 	TEST_ASSERT_NOT_NULL(record);
 

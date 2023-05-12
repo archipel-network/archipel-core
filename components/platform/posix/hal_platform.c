@@ -71,12 +71,14 @@ static void setup_exit_handler(void)
 	signal(SIGPIPE, SIG_IGN);
 }
 
+void hal_time_init(void); // not declared in public header
+
 void hal_platform_init(int argc, char *argv[])
 {
 	setup_exit_handler();
 
 	hal_io_init();
-	hal_time_init(UINT64_MAX); // required for logging
+	hal_time_init(); // required for logging
 	hal_hash_init();
 	hal_crc_init();
 	restart_args = malloc(sizeof(char *) * argc);

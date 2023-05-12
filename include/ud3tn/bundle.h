@@ -387,6 +387,10 @@ static inline bool bundle_block_must_be_replicated(
 }
 
 /**
+ * Get the approximate latest expiration time of the bundle in milliseconds.
+ */
+uint64_t bundle_get_expiration_time_ms(const struct bundle *const bundle);
+/**
  * Get the approximate latest expiration time of the bundle in seconds.
  */
 uint64_t bundle_get_expiration_time_s(const struct bundle *bundle);

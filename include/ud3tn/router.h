@@ -36,7 +36,7 @@ struct router_result {
 
 #define ROUTER_BUNDLE_PRIORITY(bundle) (bundle_get_routing_priority(bundle))
 #define ROUTER_CONTACT_CAPACITY(contact, prio) \
-	(contact_get_cur_remaining_capacity(contact, prio))
+	(contact_get_cur_remaining_capacity_bytes(contact, prio))
 
 struct router_config router_get_config(void);
 void router_update_config(struct router_config config);

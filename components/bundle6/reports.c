@@ -19,12 +19,12 @@
 static struct bundle *encapsulate_record(
 	const struct bundle * const bundle,
 	const char *source_eid, const char *dest_eid,
-	uint8_t *payload, const int payload_len, const uint64_t timestamp_s)
+	uint8_t *payload, const int payload_len, const uint64_t timestamp_ms)
 {
 	// Lifetime
-	const uint64_t exp_time_s = bundle_get_expiration_time_s(bundle);
+	const uint64_t exp_time_ms = bundle_get_expiration_time_ms(bundle);
 
-	if (exp_time_s <= timestamp_s) {
+	if (exp_time_ms <= timestamp_ms) {
 		// NOTE: payload is freed by the create function
 		return NULL;
 	}
@@ -32,8 +32,8 @@ static struct bundle *encapsulate_record(
 	struct bundle *result = bundle6_create_local(
 		payload, payload_len,
 		source_eid, dest_eid,
-		timestamp_s, 1,
-		exp_time_s - timestamp_s, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
+		timestamp_ms, 1,
+		exp_time_ms - timestamp_ms, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 
 	if (result == NULL) {
 		// NOTE: payload is freed by the create function
@@ -63,13 +63,12 @@ static struct bundle *generate_record(
 		const struct bundle * const bundle, const char *source_eid,
 		const char *dest_eid, const bool is_custody_signal,
 		const uint8_t prefix_1, const uint8_t prefix_2,
-		const uint64_t timestamp_s)
+		const uint64_t timestamp_ms)
 {
 	uint8_t *buffer = (uint8_t *)malloc(ADMINISTRATVE_RECORD_MAX_SIZE);
 	uint8_t *cur = buffer;
 	bool fragment;
 	uint16_t eid_length, cur_length;
-	uint64_t millitime;
 	struct bundle *ret;
 
 	if (buffer == NULL)
@@ -86,11 +85,9 @@ static struct bundle *generate_record(
 		cur += sdnv_write_u32(cur, bundle->fragment_offset);
 		cur += sdnv_write_u32(cur, bundle->payload_block->length);
 	}
-	/* Use the current time as generation time, append bundle times */
-	millitime = timestamp_s * 1000;
 	/* Add a "DTN time": 1) TS, 2) Nanoseconds since start of cur. second */
-	cur += sdnv_write_u64(cur, (millitime / 1000));
-	cur += sdnv_write_u32(cur, (millitime % 1000) * 1000); /* "ns" */
+	cur += sdnv_write_u64(cur, (timestamp_ms / 1000));
+	cur += sdnv_write_u32(cur, (timestamp_ms % 1000) * 1000); /* "ns" */
 	/* Copy bundle data */
 	cur += sdnv_write_u64(cur, bundle->creation_timestamp_ms / 1000);
 	cur += sdnv_write_u64(cur, bundle->sequence_number);
@@ -109,7 +106,7 @@ static struct bundle *generate_record(
 		dest_eid,
 		buffer,
 		cur - buffer,
-		timestamp_s
+		timestamp_ms
 	);
 	if (ret == NULL)
 		free(buffer);
@@ -139,7 +136,7 @@ struct bundle *bundle6_generate_custody_signal(
 	const struct bundle * const bundle,
 	const struct bundle_custody_signal *signal,
 	const char *local_eid,
-	const uint64_t timestamp_s)
+	const uint64_t timestamp_ms)
 {
 	return generate_record(
 		bundle,
@@ -150,7 +147,7 @@ struct bundle *bundle6_generate_custody_signal(
 			| ((signal->type == BUNDLE_CS_TYPE_ACCEPTANCE)
 				? 0x80 : 0x00),
 		0,
-		timestamp_s
+		timestamp_ms
 	);
 }
 
