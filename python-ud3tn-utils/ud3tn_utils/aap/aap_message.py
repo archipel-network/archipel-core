@@ -79,6 +79,15 @@ class AAPMessage:
         return b"".join(msg)
 
     def decode_bundle_id(self):
+        """Decode the contained bundle ID to timestamp and sequence number.
+
+        If the used bundle ID format is with timestamp, this function returns
+        a tuple of the milliseconds elapsed since the DTN epoch and the
+        sequence number. If the format without timestamp is used, a tuple
+        containing only the sequence number is returned. If an invalid
+        bundle ID (e.g. by an old uD3TN version) is provided, a ValueError
+        is raised.
+        """
         # If the Bundle ID has a format including the timestamp or sequence
         # number, we can decode these values from it.
         if (self.bundle_id & (1 << 63)) == 0:
@@ -160,12 +169,20 @@ class AAPMessage:
         return AAPMessage(msg_type, eid, payload, bundle_id)
 
     @staticmethod
-    def encode_bundle_id(timestamp=None, seqnum=0):
-        if timestamp is not None:
+    def encode_bundle_id(timestamp_ms=None, seqnum=0):
+        """Encode the provided values into the uD3TN bundle ID format.
+
+        Args:
+            timestamp_ms: A DTN time in milliseconds to be encoded into the
+                bundle ID. If None, the bundle ID format without timestamp
+                will be used.
+            seqnum: The sequence number to be encoded into the bundle ID.
+        """
+        if timestamp_ms is not None:
             # with-timestamp
             return (
                 (2 << 62) |
-                ((timestamp & 0x00003FFFFFFFFFFF) << 16) |
+                ((timestamp_ms & 0x00003FFFFFFFFFFF) << 16) |
                 (seqnum & 0xFFFF)
             )
         else:
