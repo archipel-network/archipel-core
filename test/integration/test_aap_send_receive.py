@@ -3,7 +3,12 @@ import pytest
 import time
 
 from pyd3tn.helpers import UNIX_TO_DTN_OFFSET
-from ud3tn_utils.aap import AAPUnixClient, AAPTCPClient, AAPMessageType
+from ud3tn_utils.aap import (
+    AAPUnixClient,
+    AAPTCPClient,
+    AAPMessage,
+    AAPMessageType,
+)
 
 from .helpers import (
     AAP_USE_TCP,
@@ -40,6 +45,10 @@ def do_aap_test(aap_client):
         cur_dtn_ts_ms,
     ))
     assert abs(bundle_id[0] - cur_dtn_ts_ms) < 10
+    assert reply.bundle_id == AAPMessage.encode_bundle_id(
+        bundle_id[0],
+        bundle_id[1],
+    )
 
     msg_bdl = aap_client.receive()
     assert msg_bdl.msg_type == AAPMessageType.RECVBUNDLE
