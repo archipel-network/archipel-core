@@ -263,6 +263,12 @@ static int parse_bpv7(FILE *const fp)
 		return 1;
 	}
 
+	if (bpv7_parser.basedata->flags & PARSER_FLAG_CRC_INVALID) {
+		ASSERT(result == NULL);
+		fprintf(stderr, "BPv7 bundle seems valid, but CRC is invalid.\n");
+		return 1;
+	}
+
 	// if parse_until_done returned UD3TN_OK there must be some result...
 	ASSERT(result != NULL);
 	if (!result) {
