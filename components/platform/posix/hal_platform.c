@@ -8,7 +8,6 @@
  */
 
 #include "platform/hal_config.h"
-#include "platform/hal_crypto.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
 #include "platform/hal_time.h"
@@ -79,8 +78,6 @@ void hal_platform_init(int argc, char *argv[])
 
 	hal_io_init();
 	hal_time_init(); // required for logging
-	hal_hash_init();
-	hal_crc_init();
 	restart_args = malloc(sizeof(char *) * argc);
 	if (restart_args) {
 		// Copy all commandline args to the restart argument buffer
