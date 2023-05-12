@@ -25,6 +25,11 @@ run-unittest-posix: unittest-posix
 	build/posix/testud3tn
 
 
+.PHONY: run-unittest-posix-with-coverage
+run-unittest-posix-with-coverage:
+	$(MAKE) run-unittest-posix coverage=yes && geninfo build/posix -b . -o ./coverage1.info && genhtml coverage1.info -o build/coverage && echo "Coverage report has been generated in 'file://$$(pwd)/build/coverage/index.html'"
+
+
 ###############################################################################
 # Tools
 ###############################################################################
@@ -174,6 +179,10 @@ else
       endif
     endif
   endif
+endif
+
+ifeq "$(coverage)" "yes"
+  ARCH_FLAGS += --coverage
 endif
 
 -include config.mk
