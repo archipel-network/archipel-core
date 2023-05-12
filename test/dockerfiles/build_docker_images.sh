@@ -14,6 +14,7 @@ fi
 docker build -f test/dockerfiles/ion-interop --build-arg ION_FILE=ion-open-source-3.7.4.tar.gz -t ud3tn-ion-interop:3.7.4 .
 docker build -f test/dockerfiles/ion-interop --build-arg ION_FILE=ion-open-source-4.0.1.tar.gz -t ud3tn-ion-interop:4.0.1 .
 #docker build -f test/dockerfiles/ion-interop -t ud3tn-ion-interop:latest .
+docker build -f test/dockerfiles/ione-interop --build-arg ION_FILE=ione-1.0.1.tar.gz -t ud3tn-ione-interop:1.0.1
 docker build -f test/dockerfiles/ci-python-clang -t ci-python-clang:3.10-bullseye .
 
 echo "You may now push the images to the registry:"
