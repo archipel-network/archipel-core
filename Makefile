@@ -146,6 +146,36 @@ ifneq "$(verbose)" "yes"
   MAKEFLAGS += --no-print-directory
 endif
 
+ifeq "$(sanitize-strict)" "yes"
+  sanitize ?= yes
+  ARCH_FLAGS += -fno-sanitize-recover=address,undefined
+  ifeq "$(TOOLCHAIN)" "clang"
+    ARCH_FLAGS += -fno-sanitize-recover=unsigned-integer-overflow,implicit-conversion,local-bounds
+  endif
+endif
+
+ifeq "$(sanitize)" "yes"
+  ARCH_FLAGS += -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
+  ifeq "$(TOOLCHAIN)" "clang"
+    ARCH_FLAGS += -fsanitize=unsigned-integer-overflow,implicit-conversion,local-bounds
+  endif
+else
+  ifeq "$(TOOLCHAIN)" "clang"
+    ifeq "$(sanitize)" "memory"
+      ARCH_FLAGS += -fsanitize=memory -fsanitize-memory-track-origins
+      ifeq "$(sanitize-strict)" "yes"
+        ARCH_FLAGS += -fno-sanitize-recover=memory
+      endif
+    endif
+    ifeq "$(sanitize)" "thread"
+      ARCH_FLAGS += -fsanitize=thread
+      ifeq "$(sanitize-strict)" "yes"
+        ARCH_FLAGS += -fno-sanitize-recover=thread
+      endif
+    endif
+  endif
+endif
+
 -include config.mk
 
 ###############################################################################

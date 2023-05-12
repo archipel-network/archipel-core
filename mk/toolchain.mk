@@ -6,13 +6,14 @@ ifeq ($(TOOLCHAIN),clang)
   CLANG  ?= $(CLANG_PREFIX)clang
   CC     := $(CLANG)
   CXX    := $(CLANG)
+  LD     := $(CLANG)
 else
   CC     := $(GCC_TOOLCHAIN_PREFIX)gcc
   CXX    := $(GCC_TOOLCHAIN_PREFIX)g++
+  LD     := $(GCC_TOOLCHAIN_PREFIX)gcc
 endif
 
 AS       := $(GCC_TOOLCHAIN_PREFIX)gcc
-LD       := $(GCC_TOOLCHAIN_PREFIX)gcc
 AR       := $(GCC_TOOLCHAIN_PREFIX)ar
 RANLIB   := $(GCC_TOOLCHAIN_PREFIX)ranlib
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objdump
