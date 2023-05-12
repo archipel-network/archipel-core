@@ -78,6 +78,23 @@ class AAPMessage:
 
         return b"".join(msg)
 
+    def decode_bundle_id(self):
+        # If the Bundle ID has a format including the timestamp or sequence
+        # number, we can decode these values from it.
+        if (self.bundle_id & (1 << 63)) == 0:
+            raise ValueError("reserved bit not set to 1 (old uD3TN version?)")
+        if (self.bundle_id & (1 << 62)) == 0:
+            # with-timestamp
+            return (
+                (self.bundle_id & 0x3FFFFFFFFFFF0000) >> 16,
+                (self.bundle_id & 0xFFFF),
+            )
+        else:
+            # without-timestamp
+            return (
+                self.bundle_id & 0x3FFFFFFFFFFFFFFF,
+            )
+
     def __bytes__(self):
         return self.serialize()
 
@@ -141,3 +158,16 @@ class AAPMessage:
             index += 8
 
         return AAPMessage(msg_type, eid, payload, bundle_id)
+
+    @staticmethod
+    def encode_bundle_id(timestamp=None, seqnum=0):
+        if timestamp is not None:
+            # with-timestamp
+            return (
+                (2 << 62) |
+                ((timestamp & 0x00003FFFFFFFFFFF) << 16) |
+                (seqnum & 0xFFFF)
+            )
+        else:
+            # without-timestamp
+            return (3 << 62) | (seqnum & 0x3FFFFFFFFFFFFFFF)

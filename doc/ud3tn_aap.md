@@ -108,6 +108,28 @@ The *SENDCONFIRM* message communicates that a bundle was accepted and queued for
 +--------+--------+--------+--------+--------+--------+--------+--------+--------+
 ```
 
+Starting with µD3TN v0.12.0, the bundle identifier has the following format:
+
+- The most-significant bit is reserved `R` and always needs to be set to `1`. In most cases this allows us to differentiate from the previous formats where either a monotonically-increasing integer or a pointer value was returned. Note that it is not guaranteed that the bit was always zero beforehand, but it MUST be one for the returned value to be treated as one of the below-mentioned formats.
+
+- If the 64-bit-field has its second-most significant bit (`X`) set to zero, the remainder consists of a 46-bit creation time (DTN time in milliseconds), plus a 16-bit sequence number. Both represent the least significant bits of the internal 64-bit values. A client has to take care of inferring the most significant bits if it needs them. (This is possible: The most significant bits of the time can probably be hard-coded if needed at all. The most significant bits of the sequence number that are relevant if more than 65536 bundles are created per millisecond simply wrap around and should always start at zero with a given transmission request from a given application.)
+
+```
++--+------+--------+--------+--------+--------+--------+--------+--------+
+|RX| Time (46)                                         |      SN (16)    |
++--+------+--------+--------+--------+--------+--------+--------+--------+
+```
+
+- If the 64-bit-field has its second-most significant bit (`X`) set to one, the remainder consists of a 62-bit sequence number.
+
+```
++--+------+--------+--------+--------+--------+--------+--------+--------+
+|RX| SN (62)                                                             |
++--+------+--------+--------+--------+--------+--------+--------+--------+
+```
+
+Note that µD3TN currently always returns the first format, with an included timestamp.
+
 ### Bundle cancellation request (CANCELBUNDLE)
 
 This message requests cancellation of a queued bundle. It can only be sent by the client (the application) and is encoded as follows:

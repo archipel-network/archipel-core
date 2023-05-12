@@ -335,7 +335,13 @@ static int16_t process_aap_message(
 		} else {
 			LOGF("AppAgent: Injected new bundle %p.", bundle);
 			response.type = AAP_MESSAGE_SENDCONFIRM;
-			response.bundle_id = (uint64_t)(uintptr_t)bundle;
+			response.bundle_id = (
+				1ULL << 63 | // reserved bit MUST be 1
+				0ULL << 62 | // Format: with-timestamp
+				// 46-bit creation timestamp, see #60
+				(time & 0x00003FFFFFFFFFFFULL) << 16 |
+				(seqnum & 0xFFFF) // 16-bit seqnum
+			);
 		}
 
 		break;
