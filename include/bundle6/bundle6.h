@@ -8,15 +8,15 @@
 #include <stdint.h>
 
 struct bundle6_eid_reference {
-	uint16_t scheme_offset;
-	uint16_t ssp_offset;
+	uint64_t scheme_offset;
+	uint64_t ssp_offset;
 };
 
 struct bundle6_eid_info {
 	const char *str_ptr;
 	const char *ssp_ptr;
-	uint16_t dict_scheme_offset;
-	uint16_t dict_ssp_offset;
+	uint64_t dict_scheme_offset;
+	uint64_t dict_ssp_offset;
 };
 
 struct bundle6_dict_descriptor {
