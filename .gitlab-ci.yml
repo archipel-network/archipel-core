@@ -36,6 +36,20 @@ build-clang-posix-release:
     script:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
+build-posix-arm64-debug:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    script:
+        - make werror=yes verbose=yes
+
+build-posix-arm64-release:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    script:
+        - make -j4 type=release optimize=yes werror=yes verbose=yes
+
 unit-test-posix-debug:
     stage: functional_test
     when: always
