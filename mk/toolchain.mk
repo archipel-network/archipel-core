@@ -53,6 +53,9 @@ cmd_cc_o_s         = "$(AS)" -o "$@" $(ASFLAGS) -c "$<"
 quiet_cmd_ar       = AR      $@
 cmd_ar             = "$(AR)" rcs "$@" $(OBJECTS)
 
+quiet_cmd_arcat    = AR_CAT  $@
+cmd_arcat          = "$(AR)" rcT "$@" $(LIBS)
+
 quiet_cmd_link     = LINK    $@
 cmd_link           = "$(LD)" -o "$@" "-Wl,-Map=$@.map" \
                      -Wl,--whole-archive -Wl,--start-group \

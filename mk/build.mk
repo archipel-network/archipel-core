@@ -46,6 +46,12 @@ build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
 build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
 	$(call cmd,link)
 
+# STATIC LIB
+
+build/$(PLATFORM)/libud3tn.a: LIBS = $(LIBS_libud3tn.so)
+build/$(PLATFORM)/libud3tn.a: $(LIBS_libud3tn.so) | build/$(PLATFORM)
+	$(call cmd,arcat)
+
 # EXECUTABLE
 
 $(eval $(call addComponent,ud3tn,components/daemon))
