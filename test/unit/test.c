@@ -25,6 +25,7 @@ void testud3tn(void)
 	RUN_TEST_GROUP(bibe_header_encoder);
 	RUN_TEST_GROUP(bibe_parser);
 	RUN_TEST_GROUP(bibe_validation);
+	RUN_TEST_GROUP(bundle);
 #ifdef PLATFORM_POSIX
 	RUN_TEST_GROUP(simple_queue);
 #endif // PLATFORM_POSIX
