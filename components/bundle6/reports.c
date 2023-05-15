@@ -344,7 +344,7 @@ static void record_parser_read_byte(struct record_parser *parser, uint8_t byte)
 			[parser->current_index] = '\0';
 			parser->status = PARSER_STATUS_DONE;
 		}
-		fallthrough;
+		fallthrough_ok;
 	default:
 		parser->status = PARSER_STATUS_ERROR;
 		break;

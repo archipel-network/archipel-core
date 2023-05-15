@@ -7,10 +7,11 @@
 #include "ud3tn/common.h"
 #include "ud3tn/report_manager.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define SHORT_BPDU_LEN  96

@@ -20,6 +20,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif // NI_MAXHOST
+
+#ifndef NI_MAXSERV
+#define NI_MAXSERV 32
+#endif // NI_MAXSERV
 
 char *cla_tcp_sockaddr_to_cla_addr(struct sockaddr *const sockaddr,
 				   const socklen_t sockaddr_len)

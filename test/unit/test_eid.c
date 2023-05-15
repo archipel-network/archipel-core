@@ -2,7 +2,7 @@
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdlib.h>
 #include <string.h>

@@ -277,6 +277,8 @@ static uint8_t check_for_contacts(
 		added_contacts
 	);
 
+	ASSERT(ctx->next_contact_time_ms > current_timestamp_ms);
+
 	for (i = 0; i < added_count; i++) {
 		LOGF("ContactManager: Scheduled contact with \"%s\" started (%p).",
 		     added_contacts[i].eid,
@@ -369,7 +371,7 @@ static void contact_manager_task(void *cm_parameters)
 		= (struct contact_manager_task_parameters *)cm_parameters;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
 	uint64_t cur_time_ms, next_time_ms;
-	int32_t delay_ms;
+	int64_t delay_ms;
 	struct contact_manager_context ctx = {
 		.current_contact_count = 0,
 		.next_contact_time_ms = UINT64_MAX,
@@ -397,8 +399,15 @@ static void contact_manager_task(void *cm_parameters)
 			next_time_ms = ctx.next_contact_time_ms;
 			if (next_time_ms <= cur_time_ms)
 				continue;
-			if (next_time_ms - cur_time_ms < (uint64_t)INT32_MAX)
-				delay_ms = next_time_ms - cur_time_ms + 1;
+
+			const uint64_t udelay = next_time_ms - cur_time_ms + 1;
+
+			// The queue implementation does not support to wait
+			// longer than 292 years due to a conversion to
+			// nanoseconds. Block indefinitely in this case.
+			if (udelay < HAL_QUEUE_MAX_DELAY_MS &&
+					udelay <= (uint64_t)INT64_MAX)
+				delay_ms = udelay;
 		}
 		hal_queue_receive(
 			parameters->control_queue,

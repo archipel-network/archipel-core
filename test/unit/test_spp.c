@@ -4,7 +4,7 @@
 
 #include "ud3tn/common.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdint.h>
 #include <stddef.h>
