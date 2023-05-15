@@ -3,8 +3,6 @@
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
 
-#include "platform/hal_time.h"
-
 #include "util/llsort.h"
 
 #include "unity_fixture.h"
@@ -129,6 +127,11 @@ TEST_TEAR_DOWN(routingTable)
 
 TEST(routingTable, routing_table_invalid_cla)
 {
+	// This is normally done by `router_task`
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node1_no_cla1, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node1_no_cla2, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node11, 0));
+
 	TEST_ASSERT_FALSE(routing_table_add_node(node1_no_cla1, rescheduler));
 	TEST_ASSERT_FALSE(routing_table_replace_node(node1_no_cla2, rescheduler));
 	TEST_ASSERT_FALSE(routing_table_delete_node(node11, rescheduler));
@@ -137,6 +140,15 @@ TEST(routingTable, routing_table_invalid_cla)
 TEST(routingTable, routing_table_add_delete)
 {
 	struct node_table_entry *nti;
+
+	// This is normally done by `router_task`
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node11, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node12, 0));
+	TEST_ASSERT_EQUAL(0, node_prepare_and_verify(node13, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node14, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node2, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node3, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node4, 0));
 
 	TEST_ASSERT_TRUE(routing_table_add_node(node11, rescheduler));
 	TEST_ASSERT_TRUE(routing_table_add_node(node2, rescheduler));
@@ -181,8 +193,6 @@ TEST(routingTable, routing_table_add_delete)
 	nti = routing_table_lookup_eid("node6");
 	TEST_ASSERT_NULL(nti);
 	/* delete */
-	LLSORT(struct contact_list, data->from_ms, node13->contacts);
-	TEST_ASSERT_FALSE(routing_table_delete_node(node13, rescheduler));
 	TEST_ASSERT_TRUE(routing_table_delete_node(node14, rescheduler));
 	nti = routing_table_lookup_eid("node1");
 	TEST_ASSERT_NOT_NULL(nti);
@@ -239,8 +249,12 @@ TEST(routingTable, routing_table_replace)
 {
 	struct node_table_entry *nti;
 
-	LLSORT(struct contact_list, data->from_ms, node13->contacts);
-	TEST_ASSERT_FALSE(routing_table_add_node(node13, rescheduler));
+	// This is normally done by `router_task`
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node11, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node12, 0));
+	TEST_ASSERT_EQUAL(0, node_prepare_and_verify(node13, 0));
+	TEST_ASSERT_EQUAL(1, node_prepare_and_verify(node14, 0));
+
 	TEST_ASSERT_TRUE(routing_table_add_node(node14, rescheduler));
 	nti = routing_table_lookup_eid("node3");
 	TEST_ASSERT_EQUAL_UINT16(3, nti->ref_count);

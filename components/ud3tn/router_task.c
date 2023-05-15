@@ -46,6 +46,15 @@ enum ud3tn_result router_process_command(
 	struct rescheduling_handle rescheduler)
 {
 	bool success = true;
+	const uint64_t cur_time_s = hal_time_get_timestamp_s();
+
+	if (!node_prepare_and_verify(command->data, cur_time_s)) {
+		free_node(command->data);
+		LOGF("Router: Command (T = %c) is invalid!",
+			command->type);
+		free(command);
+		return UD3TN_FAIL;
+	}
 
 	success = process_router_command(
 		command,

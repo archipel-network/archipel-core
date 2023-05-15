@@ -471,7 +471,7 @@ struct endpoint_list *endpoint_list_strip_and_sort(struct endpoint_list *el)
 	return el;
 }
 
-int node_prepare_and_verify(struct node *node)
+int node_prepare_and_verify(struct node *node, uint64_t min_end_time_s)
 {
 	struct contact_list *cl, *i;
 
@@ -484,6 +484,8 @@ int node_prepare_and_verify(struct node *node)
 	node->endpoints = endpoint_list_strip_and_sort(node->endpoints);
 	while (cl != NULL) {
 		if (cl->data->from_ms >= cl->data->to_ms)
+			return 0;
+		if (min_end_time_s && cl->data->to_ms <= min_end_time_s * 1000)
 			return 0;
 		cl->data->contact_endpoints = endpoint_list_strip_and_sort(
 			cl->data->contact_endpoints);

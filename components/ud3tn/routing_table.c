@@ -144,11 +144,6 @@ bool routing_table_add_node(
 	struct node *cur_node;
 	struct contact_list *cap_modified = NULL, *cur_contact, *next;
 
-	if (!node_prepare_and_verify(new_node)) {
-		free_node(new_node);
-		return false;
-	}
-
 	entry = get_node_entry_by_eid(new_node->eid);
 
 	if (entry == NULL)
@@ -205,11 +200,6 @@ bool routing_table_replace_node(
 {
 	struct node_list *entry;
 
-	if (!node_prepare_and_verify(node)) {
-		free_node(node);
-		return false;
-	}
-
 	entry = get_node_entry_by_eid(node->eid);
 
 	if (entry == NULL)
@@ -249,11 +239,6 @@ bool routing_table_delete_node(
 	struct node_list **entry_ptr, *old_node_entry;
 	struct node *cur_node;
 	struct contact_list *modified = NULL, *deleted = NULL, *next, *tmp;
-
-	if (!node_prepare_and_verify(new_node)) {
-		free_node(new_node);
-		return false;
-	}
 
 	entry_ptr = get_node_entry_ptr_by_eid(new_node->eid);
 	if (entry_ptr != NULL) {

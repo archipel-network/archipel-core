@@ -380,16 +380,8 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 				break;
 			}
 			parser->current_contact->data->to_ms *= 1000;
-			if (parser->current_contact->data->to_ms >
-				parser->current_contact->data->from_ms
-				&& parser->current_contact->data->to_ms >
-				hal_time_get_timestamp_ms()
-			) {
-				begin_read_integer(parser);
-				parser->stage = RP_EXPECT_CONTACT_BITRATE;
-			} else {
-				parser->basedata->status = PARSER_STATUS_ERROR;
-			}
+			begin_read_integer(parser);
+			parser->stage = RP_EXPECT_CONTACT_BITRATE;
 		} else if (!read_integer(parser, byte)) {
 			parser->basedata->status = PARSER_STATUS_ERROR;
 		}
