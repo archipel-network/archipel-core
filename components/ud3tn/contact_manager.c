@@ -405,7 +405,8 @@ static void contact_manager_task(void *cm_parameters)
 			// The queue implementation does not support to wait
 			// longer than 292 years due to a conversion to
 			// nanoseconds. Block indefinitely in this case.
-			if (udelay < HAL_QUEUE_MAX_DELAY_MS)
+			if (udelay < HAL_QUEUE_MAX_DELAY_MS &&
+					udelay <= (uint64_t)INT64_MAX)
 				delay_ms = udelay;
 		}
 		hal_queue_receive(
