@@ -164,6 +164,7 @@ struct bundle *bundle_dup(const struct bundle *bundle)
 			dup->payload_block = cur_block->data;
 			break;
 		}
+		cur_block = cur_block->next;
 	}
 
 	return dup;
