@@ -158,6 +158,9 @@ CborError eid_parse_dtn(CborValue *it, char **eid)
 	err = cbor_value_copy_text_string(it, *eid + 4, &length, it);
 	if (err) {
 		free(*eid);
+		// Ensure that the pointer is not used afterwards.
+		// Otherwise a parser reset might try to double-free it.
+		*eid = NULL;
 		return err;
 	}
 

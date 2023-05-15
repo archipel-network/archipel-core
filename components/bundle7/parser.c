@@ -96,6 +96,11 @@ CborError bundle_end(struct bundle7_parser *state, CborValue *it)
 	it->source.ptr++;
 
 	// Transition into "Done" state
+	// NOTE that it is expected that a transition to "DONE" also occurs if
+	// the CRC is invalid. In this case, however, the "send" callback
+	// is not called. The caller may check for this case by examining the
+	// parser flags for `PARSER_FLAG_CRC_INVALID` when the `status` is
+	// `PARSER_STATUS_DONE`.
 	state->basedata->status = PARSER_STATUS_DONE;
 
 	// Clear bundle reference
@@ -195,12 +200,6 @@ CborError parse_eid(struct bundle7_parser *state, CborValue *it, char **eid,
 
 	if (err)
 		return err;
-
-	// Allocate zero-copy reference
-	char *eid_ref = strdup(*eid);
-
-	free(*eid);
-	*eid = eid_ref;
 
 	state->next = next;
 	return CborNoError;
