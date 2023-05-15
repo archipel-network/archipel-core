@@ -34,16 +34,9 @@ $(eval $(call addComponentWithRules,external/util/src))
 $(eval $(call generateComponentRules,components/daemon))
 $(eval $(call generateComponentRules,test/unit))
 
-ifeq ($(EXPECT_MACOS_LINKER),1)
-build/$(PLATFORM)/libud3tn.so: LDFLAGS += $(LDFLAGS_LIB)
-build/$(PLATFORM)/libud3tn.so: LDFLAGS_PRE += -Wl,-all_load
-else
-build/$(PLATFORM)/libud3tn.so: LDFLAGS += $(LDFLAGS_LIB) -Wl,--no-whole-archive
-build/$(PLATFORM)/libud3tn.so: LDFLAGS_PRE += -Wl,--whole-archive
-endif
 build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
 build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
-	$(call cmd,link)
+	$(call cmd,linklib)
 
 # STATIC LIB
 
@@ -55,7 +48,6 @@ build/$(PLATFORM)/libud3tn.a: $(LIBS_libud3tn.so) | build/$(PLATFORM)
 
 $(eval $(call addComponent,ud3tn,components/daemon))
 
-build/$(PLATFORM)/ud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
 build/$(PLATFORM)/ud3tn: LIBS = $(LIBS_ud3tn)
 build/$(PLATFORM)/ud3tn: $(LIBS_ud3tn) | build/$(PLATFORM)
 	$(call cmd,link)

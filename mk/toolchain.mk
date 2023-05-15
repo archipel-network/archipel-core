@@ -38,17 +38,21 @@ CXXFLAGS += -fno-exceptions -fno-rtti
 
 ASFLAGS += $(ARCH_FLAGS)
 
+ifeq ($(EXPECT_MACOS_LINKER),1)
+  LDFLAGS_PRE_LIB += -Wl,-all_load
+else
+  LDFLAGS_PRE += -Wl,--start-group
+  LDFLAGS += -Wl,--end-group
+  LDFLAGS_PRE_LIB += -Wl,--whole-archive
+  LDFLAGS_LIB += -Wl,--no-whole-archive
+endif
+
 LDFLAGS += $(ARCH_FLAGS) -lc -lm
 
 ifeq ($(TOOLCHAIN),clang)
   ifneq ($(CLANG_SYSROOT),)
     CPPFLAGS += --sysroot $(CLANG_SYSROOT)
   endif
-endif
-
-ifneq ($(EXPECT_MACOS_LINKER),1)
-  LDFLAGS_PRE += -Wl,--start-group
-  LDFLAGS += -Wl,--end-group
 endif
 
 # COMMANDS
@@ -75,7 +79,13 @@ quiet_cmd_link     = LINK    $@
 cmd_link           = "$(LD)" -o "$@" \
                      $(LDFLAGS_PRE) \
                      $(OBJECTS) $(LIBS) \
-                     $(LDFLAGS)
+                     $(LDFLAGS_EXECUTABLE) $(LDFLAGS)
+
+quiet_cmd_linklib  = LINK    $@
+cmd_linklib        = "$(LD)" -o "$@" \
+                     $(LDFLAGS_PRE) $(LDFLAGS_PRE_LIB) \
+                     $(OBJECTS) $(LIBS) \
+                     $(LDFLAGS_LIB) $(LDFLAGS)
 
 quiet_cmd_mkdir    = MKDIR   $@
 cmd_mkdir          = mkdir -p "$@"
