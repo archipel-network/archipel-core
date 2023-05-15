@@ -62,7 +62,8 @@ enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int64_t timeout_ms)
 {
 	// Infinite blocking in invalid value range. 9223372036854 is
 	// floor(INT64_MAX / 1000000), so we can convert to nanoseconds.
-	if (timeout_ms < 0 || timeout_ms > 9223372036854) {
+	if (timeout_ms < 0 ||
+			(uint64_t)timeout_ms > HAL_SEMAPHORE_MAX_DELAY_MS) {
 		hal_semaphore_take_blocking(sem);
 		return UD3TN_OK;
 	}
@@ -120,7 +121,8 @@ enum ud3tn_result hal_semaphore_try_take(Semaphore_t sem, int64_t timeout_ms)
 {
 	// Infinite blocking in invalid value range. 9223372036854 is
 	// floor(INT64_MAX / 1000000), so we can convert to nanoseconds.
-	if (timeout_ms < 0 || timeout_ms > 9223372036854) {
+	if (timeout_ms < 0 ||
+			(uint64_t)timeout_ms > HAL_SEMAPHORE_MAX_DELAY_MS) {
 		hal_semaphore_take_blocking(sem);
 		return UD3TN_OK;
 	}
