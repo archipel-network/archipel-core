@@ -1,10 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 
-#ifdef __APPLE__
-// MSG_DONTWAIT
-#define _DARWIN_C_SOURCE
-#endif // __APPLE__
-
 #include "aap/aap.h"
 #include "aap/aap_parser.h"
 #include "aap/aap_serializer.h"
@@ -399,7 +394,7 @@ static ssize_t receive_from_socket(
 		config->socket_fd,
 		rx_buffer + bytes_available,
 		APPLICATION_AGENT_RX_BUFFER_SIZE - bytes_available,
-		MSG_DONTWAIT
+		0
 	);
 	if (recv_result <= 0) {
 		if (recv_result < 0)
