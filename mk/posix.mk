@@ -14,7 +14,10 @@ CPPFLAGS += -DPLATFORM_POSIX -pipe -fPIC
 ifdef ARCH
   CPPFLAGS += -march=$(ARCH)
 else
-  CPPFLAGS += -march=native
+  UNAME_M := $(shell uname -m)
+  ifneq ($(strip $(filter %86 %86_64,$(UNAME_M))),)
+    CPPFLAGS += -march=native
+  endif
 endif
 
 LDFLAGS += -lpthread
