@@ -50,6 +50,22 @@ build-posix-arm64-release:
     script:
         - make -j4 type=release optimize=yes werror=yes verbose=yes
 
+build-clang-posix-arm64-debug:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    script:
+        - make werror=yes verbose=yes TOOLCHAIN=clang
+
+build-clang-posix-arm64-release:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    script:
+        - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
+
 unit-test-posix-debug:
     stage: functional_test
     when: always
