@@ -77,7 +77,8 @@ There are several integration test scenarios which check µD3TN's behavior. For 
 Start µD3TN in a dedicated terminal:
 
 ```
-make run-posix
+make posix
+build/posix/ud3tn -R
 ```
 
 Start the integration tests in a separate terminal:
