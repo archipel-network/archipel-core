@@ -256,8 +256,6 @@ static int parse_bpv7(FILE *const fp)
 		&bpv7_parser
 	);
 
-	bundle7_parser_deinit(&bpv7_parser);
-
 	if (rc != UD3TN_OK) {
 		fprintf(stderr, "Failed parsing file as BPv7 bundle.\n");
 		return 1;
@@ -268,6 +266,8 @@ static int parse_bpv7(FILE *const fp)
 		fprintf(stderr, "BPv7 bundle seems valid, but CRC is invalid.\n");
 		return 1;
 	}
+
+	bundle7_parser_deinit(&bpv7_parser);
 
 	// if parse_until_done returned UD3TN_OK there must be some result...
 	ASSERT(result != NULL);
