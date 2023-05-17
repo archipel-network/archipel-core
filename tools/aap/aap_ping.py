@@ -20,7 +20,7 @@ from helpers import add_common_parser_arguments, initialize_logger
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
-def _send_pings(aap_client, destination, interval, count, stop_event):
+def _send_pings(aap_client, destination, interval, count, stop_event, timeout):
 
     counter = 0
     while counter < count or not count:
@@ -55,7 +55,7 @@ def _send_pings(aap_client, destination, interval, count, stop_event):
     # for the interval to pass _again_ but do not send an additional bundle
     # during that period. Note that the receiver might trigger the stop event
     # if the last bundle has been received already.
-    if stop_event.wait(timeout=interval):
+    if stop_event.wait(timeout=timeout or interval):
         # We were requested to stop -> no need to signal the main thread
         return
 
@@ -109,7 +109,7 @@ def _try_receive_ping(aap_client, logger):
     return True, counter_at_src
 
 
-def run_aap_ping(aap_client, destination, interval, count, logger):
+def run_aap_ping(aap_client, destination, interval, count, logger, timeout):
 
     start_time = time.time()  # remember to calculate how many bdl. we expected
 
@@ -124,7 +124,7 @@ def run_aap_ping(aap_client, destination, interval, count, logger):
     stop_event = threading.Event()  # for clean termination
     send_worker = threading.Thread(
         target=_send_pings,
-        args=(aap_client, destination, interval, count, stop_event),
+        args=(aap_client, destination, interval, count, stop_event, timeout),
     )
     send_worker.start()
 
@@ -185,6 +185,15 @@ if __name__ == "__main__":
             "(default: 0 = infinite)"
         ),
     )
+    parser.add_argument(
+        "-t", "--timeout",
+        type=int,
+        default=0,
+        help=(
+            "stop waiting for response after timeout"
+            "(default: 0 = don't wait mor"
+        ),
+    )
 
     args = parser.parse_args()
     logger = initialize_logger(args.verbosity + 1)  # log INFO by default
@@ -194,9 +203,9 @@ if __name__ == "__main__":
         with AAPTCPClient(address=addr) as aap_client:
             aap_client.register(args.agentid)
             run_aap_ping(aap_client, args.destination, args.interval,
-                         args.count, logger)
+                         args.count, logger, args.timeout)
     else:
         with AAPUnixClient(address=args.socket) as aap_client:
             aap_client.register(args.agentid)
             run_aap_ping(aap_client, args.destination, args.interval,
-                         args.count, logger)
+                         args.count, logger, args.timeout)
