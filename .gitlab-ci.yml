@@ -54,6 +54,20 @@ build-clang-posix-arm64-release:
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
 
+build-posix-macos-debug:
+    extends: build-posix-debug
+    tags: ["macos"]
+
+build-posix-macos-release:
+    extends: build-posix-release
+    tags: ["macos"]
+
+build-freebsd:
+    extends: build-posix-debug
+    tags: ["freebsd"]
+    script:
+        - gmake
+
 unit-test-posix-debug:
     stage: functional_test
     when: always
@@ -84,6 +98,22 @@ unit-test-posix-arm64:
     extends: unit-test-posix-debug
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+
+unit-test-posix-macos:
+    stage: functional_test
+    when: always
+    tags: ["macos"]
+    script:
+        - make unittest-posix sanitize-strict=yes
+        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 gtimeout 60 build/posix/testud3tn
+
+unit-test-posix-freebsd:
+    stage: functional_test
+    when: always
+    tags: ["freebsd"]
+    script:
+        - gmake unittest-posix sanitize-strict=yes
+        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
 integration-test-posix:
     stage: functional_test
