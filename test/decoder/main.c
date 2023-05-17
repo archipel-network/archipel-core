@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "bundle7/parser.h"
+#include "bundle6/parser.h"
 
 #include "cla/cla.h"
 #include "cla/cla_contact_rx_task.h"
@@ -282,6 +283,54 @@ static int parse_bpv7(FILE *const fp)
 	return 0;
 }
 
+// BPv6
+
+static size_t invoke_bpv6_parser(
+	void *const parser,
+	const uint8_t *const buffer, const size_t length)
+{
+	struct bundle6_parser *bpv6_parser = (struct bundle6_parser *)parser;
+
+	return bundle6_parser_read(bpv6_parser, buffer, length);
+}
+
+static int parse_bpv6(FILE *const fp)
+{
+	struct bundle6_parser bpv6_parser = {};
+	struct bundle *result = NULL;
+
+	if (!bundle6_parser_init(&bpv6_parser, send_bundle, &result)) {
+		fprintf(stderr, "Failed to initialize parser.\n");
+		return 1;
+	}
+
+	enum ud3tn_result rc = parse_until_done(
+		fp,
+		bpv6_parser.basedata,
+		invoke_bpv6_parser,
+		&bpv6_parser
+	);
+
+	bundle6_parser_deinit(&bpv6_parser);
+
+	if (rc != UD3TN_OK) {
+		fprintf(stderr, "Failed parsing file as BPv6 bundle.\n");
+		return 1;
+	}
+
+	// if parse_until_done returned UD3TN_OK there must be some result...
+	ASSERT(result != NULL);
+	if (!result) {
+		fprintf(stderr, "Parser did not return a result, aborting.\n");
+		return 1;
+	}
+
+	print_bundle(result);
+	bundle_free(result);
+
+	return 0;
+}
+
 // MAIN LOGIC
 
 static void usage(void)
@@ -327,6 +376,9 @@ int main(const int argc, char *argv[])
 		break;
 	case '7':
 		rc = parse_bpv7(fp);
+		break;
+	case '6':
+		rc = parse_bpv6(fp);
 		break;
 	// TODO: All other data types listed in `usage()`
 	}
