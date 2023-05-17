@@ -36,6 +36,36 @@ build-clang-posix-release:
     script:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
+build-posix-arm64-debug:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    script:
+        - make werror=yes verbose=yes
+
+build-posix-arm64-release:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    script:
+        - make -j4 type=release optimize=yes werror=yes verbose=yes
+
+build-clang-posix-arm64-debug:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    script:
+        - make werror=yes verbose=yes TOOLCHAIN=clang
+
+build-clang-posix-arm64-release:
+    stage: builds
+    when: always
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    script:
+        - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
+
 unit-test-posix-debug:
     stage: functional_test
     when: always
@@ -61,6 +91,16 @@ unit-test-posix-release:
             coverage_report:
                 coverage_format: cobertura
                 path: coverage.xml
+
+unit-test-posix-arm64:
+    stage: functional_test
+    when: always
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix
+        - cd /ud3tn_build
+        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
 integration-test-posix:
     stage: functional_test
@@ -112,6 +152,25 @@ integration-test-posix-release:
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - pytest test/integration
+
+integration-test-posix-arm64:
+    stage: functional_test
+    when: always
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
+        - cd /ud3tn_build
+        - rm -f ./ud3tn.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
 
 aap-test:
     stage: functional_test
