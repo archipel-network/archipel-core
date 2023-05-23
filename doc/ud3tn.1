@@ -1,4 +1,4 @@
-.TH "uD3TN" "1" "February 28, 2022" "TOOL" ""
+.TH "uD3TN" "1" "May 23, 2023" "TOOL" ""
 .hy
 .SH NAME
 .PP
@@ -26,18 +26,18 @@ provides parameters to the available CLA subsystem according to the
 syntax documented below
 .TP
 -e, --eid EID
-the EID which is used by the started ud3tn instance itself
+the EID (node ID) which is used by the started ud3tn instance itself
 .TP
 -h, --help
-display this help and exit
+display help and exit
 .TP
 -l, --lifetime SECONDS
-used lifetime of a bundle created via AAP q
+lifetime of a bundle created via AAP
 .TP
 -m, --max-bundle-size BYTES
 threshold used to determine if a bundle has to be fragmented
 .TP
--p, --ap-port PORT
+-p, --aap-port PORT
 PORT specifies the port number to which the application agent service
 should be bound
 .TP
@@ -45,7 +45,7 @@ should be bound
 enable status reporting
 .TP
 -R, --allow-remote-config
-allow configuration via bundles received from CLAs
+allow configuration via bundles received through CLAs
 .TP
 -s, --aap-socket PATH
 path to the UNIX domain socket of the application agent service
@@ -70,9 +70,9 @@ CLA_OPTIONS should be used:
 \[dq]tcpclv3:127.0.0.1,4000\[dq]
 .PP
 To for example use tcpspp in passive mode listening on 127.0.0.1 port
-5000, the following CLA_OPTIONS should be used:
+5000 with APID 123, the following CLA_OPTIONS should be used:
 .PP
-\[dq]tcpspp:127.0.0.1,5000,false\[dq]
+\[dq]tcpspp:127.0.0.1,5000,false,123\[dq]
 .PP
 The following default CLA_OPTIONS are applied:
 .PP
