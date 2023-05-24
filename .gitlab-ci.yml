@@ -37,34 +37,22 @@ build-clang-posix-release:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
 build-posix-arm64-debug:
-    stage: builds
-    when: always
+    extends: build-posix-debug
     tags: ["arm64"]
-    script:
-        - make werror=yes verbose=yes
 
 build-posix-arm64-release:
-    stage: builds
-    when: always
+    extends: build-posix-release
     tags: ["arm64"]
-    script:
-        - make -j4 type=release optimize=yes werror=yes verbose=yes
 
 build-clang-posix-arm64-debug:
-    stage: builds
-    when: always
+    extends: build-clang-posix-debug
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
-    script:
-        - make werror=yes verbose=yes TOOLCHAIN=clang
 
 build-clang-posix-arm64-release:
-    stage: builds
-    when: always
+    extends: build-clang-posix-release
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
-    script:
-        - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
 unit-test-posix-debug:
     stage: functional_test
@@ -93,14 +81,9 @@ unit-test-posix-release:
                 path: coverage.xml
 
 unit-test-posix-arm64:
-    stage: functional_test
-    when: always
+    extends: unit-test-posix-debug
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix
-        - cd /ud3tn_build
-        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
 integration-test-posix:
     stage: functional_test
@@ -154,23 +137,9 @@ integration-test-posix-release:
         - pytest test/integration
 
 integration-test-posix-arm64:
-    stage: functional_test
-    when: always
+    extends: integration-test-posix
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
-        - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
-        - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn"
-        - pip install -e "python-ud3tn-utils"
-        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
-        - pytest test/integration
-        - kill -TERM $UD3TN_PID
-        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
-        - wait $UD3TN_PID
 
 aap-test:
     stage: functional_test
@@ -216,14 +185,8 @@ ion-ipn-bpv7-interoperability-test:
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
 
 ione-ipn-bpv7-interoperability-test:
-    stage: functional_test
-    when: always
+    extends: ion-ipn-bpv7-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
-        - cd /ud3tn_build
-        - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
 
 ion-dtn-bpv6-interoperability-test:
     stage: functional_test
@@ -246,14 +209,8 @@ ion-dtn-bpv7-interoperability-test:
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 dtn
 
 ione-dtn-bpv7-interoperability-test:
-    stage: functional_test
-    when: always
+    extends: ion-dtn-bpv7-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
-        - cd /ud3tn_build
-        - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 dtn
 
 mtcp-test:
     stage: functional_test
@@ -356,14 +313,8 @@ ion-bibe-interoperability-test:
         - bash test/ion_interoperability/bibe_forwarding_test/run.sh
 
 ione-bibe-interoperability-test:
-    stage: functional_test
-    when: always
+    extends: ion-bibe-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
-        - cd /ud3tn_build
-        - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/bibe_forwarding_test/run.sh
 
 license-check:
     stage: code_quality_test
