@@ -316,6 +316,14 @@ ione-bibe-interoperability-test:
     extends: ion-bibe-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
 
+cppcheck-static-analyzer:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - apt-get update && apt-get install -y cppcheck
+        - cppcheck --enable=warning --error-exitcode=2 -I include -I external/tinycbor/src -I external/util/include components
+
 license-check:
     stage: code_quality_test
     when: always
