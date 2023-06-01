@@ -26,6 +26,14 @@ install-posix: posix
 	cd pyd3tn && python3 setup.py install
 	cd python-ud3tn-utils && python3 setup.py install
 
+.PHONY: install-linked-posix
+install-linked-posix: posix
+	ln -f -s "$(shell pwd)/ud3tn.service" /etc/systemd/system/ud3tn.service
+	ln -f -s "$(shell pwd)/user-ud3tn.service" /etc/systemd/user/ud3tn.service
+	ln -f -s "$(shell pwd)/build/posix/ud3tn" /usr/bin/ud3tn
+	cd pyd3tn && python3 setup.py install
+	cd python-ud3tn-utils && python3 setup.py install
+
 ###############################################################################
 # Execution and Deployment
 ###############################################################################
