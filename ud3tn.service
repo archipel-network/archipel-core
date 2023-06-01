@@ -3,7 +3,7 @@ Description=µD3TN
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/ud3tn
+ExecStart=/usr/bin/ud3tn -s "/var/run/ud3tn.socket"
 Type=simple
 
 [Install]
