@@ -225,7 +225,11 @@ struct filecla_queue_folder {
 
 static void eid_to_filename(char* eid){
 	for(size_t i = 0; i<strlen(eid); i++){
-		if(eid[i] == '/' || eid[i] == '\\' || eid[i] == '.'){
+		if(!((eid[i] >= 'a' && eid[i] <= 'z') ||
+			 (eid[i] >= 'A' && eid[i] <= 'Z') ||
+			 (eid[i] >= '0' && eid[i] <= '9') ||
+			 eid[i] == '_' || eid[i] == '.' || eid[i] == '-'
+		 )){
 			eid[i] = '-';
 		}
 	}
