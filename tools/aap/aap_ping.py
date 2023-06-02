@@ -55,7 +55,7 @@ def _send_pings(aap_client, destination, interval, count, stop_event, timeout):
     # for the interval to pass _again_ but do not send an additional bundle
     # during that period. Note that the receiver might trigger the stop event
     # if the last bundle has been received already.
-    if stop_event.wait(timeout=timeout or interval):
+    if timeout and stop_event.wait(timeout=timeout):
         # We were requested to stop -> no need to signal the main thread
         return
 
@@ -190,8 +190,8 @@ if __name__ == "__main__":
         type=int,
         default=0,
         help=(
-            "stop waiting for response after timeout"
-            "(default: 0 = don't wait mor"
+            "add a waiting time after sending all ping bundles "
+            "(default: 0 = program terminates after sending all bundles)"
         ),
     )
 
