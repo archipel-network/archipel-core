@@ -277,6 +277,7 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		= router_lookup_destination(bundle->destination);
 
 	res.fragments = 0;
+	res.preemption_improved = 0;
 	if (contacts == NULL) {
 		LOGF("Router: Could not determine a node over which the destination \"%s\" for bundle %p is reachable",
 		     bundle->destination, bundle);
