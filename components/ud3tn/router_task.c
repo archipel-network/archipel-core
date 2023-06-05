@@ -220,7 +220,6 @@ enum router_result_status router_route_bundle(struct bundle *b)
 	// fragmentation.
 	struct bundle *const b_old_ptr = b;
 
-	b = NULL;
 	if (IS_DEBUG_BUILD)
 		LOGF(
 			"Router: Bundle %p [ %s ] [ frag = %d ]",
