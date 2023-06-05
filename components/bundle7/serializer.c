@@ -57,6 +57,7 @@ static CborError write_crc(
 		crc->feed_eof(crc);
 
 		// Swap to network byte order
+		// cppcheck-suppress selfAssignment
 		crc->checksum = cbor_htonl(crc->checksum);
 
 		return cbor_encode_byte_string(encoder, crc->bytes, 4);
@@ -70,6 +71,7 @@ static CborError write_crc(
 		crc->feed_eof(crc);
 
 		// Swap to network byte order
+		// cppcheck-suppress selfAssignment
 		crc->checksum = cbor_htons(crc->checksum);
 
 		// We skip the first two (empty) bytes of the checksum here
