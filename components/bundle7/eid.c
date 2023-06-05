@@ -381,6 +381,9 @@ uint8_t *bundle7_eid_serialize_alloc(const char *eid, size_t *length)
 
 	// Something went south during realloc, clear buffer and abort
 	if (compress == NULL) {
+		// False positive in some versions of cppcheck. It is correct
+		// to free here as `realloc` failed and does not free.
+		// cppcheck-suppress doubleFree
 		free(buffer);
 		return NULL;
 	}
