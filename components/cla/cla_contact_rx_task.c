@@ -482,7 +482,8 @@ enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
 
 	tname_buf[0] = 'r';
 	tname_buf[1] = 'x';
-	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
+	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr);
+	ctr++;
 
 	hal_semaphore_take_blocking(link->rx_task_sem);
 
