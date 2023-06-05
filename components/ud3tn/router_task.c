@@ -156,8 +156,6 @@ static struct bundle_processing_result apply_fragmentation(
 		/* Determine minimal fragmented bundle size */
 		if (f == 0)
 			size = bundle_get_first_fragment_min_size(bundle);
-		else if (f == fragments - 1)
-			size = bundle_get_last_fragment_min_size(bundle);
 		else
 			size = bundle_get_mid_fragment_min_size(bundle);
 
