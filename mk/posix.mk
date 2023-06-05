@@ -20,15 +20,33 @@ else
   endif
 endif
 
+# OS DETECTION
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+  EXPECT_MACOS_LINKER ?= 1
+else
+  EXPECT_MACOS_LINKER ?= 0
+endif
+
+# PLATFORM-SPECIFIC FLAGS
+
 LDFLAGS += -lpthread
-LDFLAGS_EXECUTABLE += -pie
 LDFLAGS_LIB += -shared
+
+ifneq ($(EXPECT_MACOS_LINKER),1)
+  LDFLAGS_EXECUTABLE += -pie
+endif
 
 ifeq "$(type)" "release"
   CPPFLAGS += -ffunction-sections -fdata-sections \
               -D_FORTIFY_SOURCE=2 -fstack-protector-strong \
               --param ssp-buffer-size=4 -Wstack-protector \
               -fno-plt
-  LDFLAGS += -flto -Wl,-z,relro,-z,now,-z,noexecstack
-  LDFLAGS_EXECUTABLE += -Wl,--gc-sections,--sort-common,--as-needed
+  LDFLAGS += -flto
+  ifneq ($(EXPECT_MACOS_LINKER),1)
+    LDFLAGS += -Wl,-z,relro,-z,now,-z,noexecstack
+    LDFLAGS_EXECUTABLE += -Wl,--gc-sections,--sort-common,--as-needed
+  endif
 endif
