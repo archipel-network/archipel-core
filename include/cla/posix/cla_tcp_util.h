@@ -3,6 +3,7 @@
 #define CLA_TCP_UTIL_H_INCLUDED
 
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 
 #include <stdbool.h>
