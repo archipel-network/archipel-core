@@ -90,16 +90,17 @@ Use the `--recursive` option if you `git clone` the project or run
 #### POSIX-compliant operating systems
 
 1. Install or unpack the build toolchain
-   - Install `make`, `gcc` and `binutils`.
+   - Install GNU `make`, `gcc` and `binutils`.
    - For building with Clang, additionally install a recent version of `clang` and `llvm`.
 
-2. Configure the local build toolchain in `config.mk` (optional)
+2. Configure the local build toolchain in `config.mk` (optional for most systems)
    - Copy `config.mk.example` to `config.mk`.
    - Adjust `TOOLCHAIN` if you want to build with Clang.
    - Adjust `TOOLCHAIN_POSIX` if your toolchain installation is not included in your `$PATH`
 
 3. Run `make run-posix` to build and execute µD3TN on your local machine.
    You can find the µD3TN binary file in `build/posix/ud3tn`. To just build it, you can also run `make posix` or `make` (the latter building the library files as well).
+   Note that on some systems, such as BSD flavors, you may need to explicitly call GNU Make using the `gmake` command. In this case, just substitute all calls to `make` in the documentation by `gmake`.
 
 #### Library
 
