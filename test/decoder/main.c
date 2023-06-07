@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "bundle7/parser.h"
 #include "bundle6/parser.h"
+#include "spp/spp_parser.h"
 
 #include "cla/cla.h"
 #include "cla/cla_contact_rx_task.h"
@@ -311,12 +312,17 @@ static int parse_bpv6(FILE *const fp)
 		&bpv6_parser
 	);
 
-	bundle6_parser_deinit(&bpv6_parser);
-
 	if (rc != UD3TN_OK) {
 		fprintf(stderr, "Failed parsing file as BPv6 bundle.\n");
 		return 1;
 	}
+
+	if (result == NULL) {
+		fprintf(stderr, "BPv6 bundle seems to not have a payload block and is therefore invalid.\n");
+		return 1;
+	}
+
+	bundle6_parser_deinit(&bpv6_parser);
 
 	// if parse_until_done returned UD3TN_OK there must be some result...
 	ASSERT(result != NULL);
@@ -331,6 +337,78 @@ static int parse_bpv6(FILE *const fp)
 	return 0;
 }
 
+// SPP
+
+static struct spp_meta_t spp_result;
+
+static size_t invoke_spp_parser(
+	void *const parser,
+	const uint8_t *const buffer, const size_t length)
+{
+	struct spp_parser *bundleSPP_parser = (struct spp_parser *)parser;
+	const size_t spp_read = spp_parser_read(bundleSPP_parser, buffer, length);
+
+	if (bundleSPP_parser->state == SPP_PARSER_STATE_DATA_SUBPARSER) {
+		bundleSPP_parser->base.status = PARSER_STATUS_DONE;
+		ASSERT(spp_parser_get_meta(bundleSPP_parser, &spp_result));
+	} else if (bundleSPP_parser->state == SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER) {
+		bundleSPP_parser->base.status = PARSER_STATUS_ERROR;
+	}
+
+	return spp_read;
+}
+
+static int parse_spp(FILE *const fp)
+{
+	struct spp_parser bundleSPP_parser = {};
+	struct spp_context_t *context_spp = spp_new_context();
+
+	// check should fail in any case if the parser has not touched the bundle:
+	spp_result.segment_status = (enum spp_segment_status_t) 789;
+
+	if (!spp_parser_init(&bundleSPP_parser, context_spp)) {
+		fprintf(stderr, "Failed to initialize parser.\n");
+		return 1;
+	}
+
+	enum ud3tn_result rc = parse_until_done(
+		fp,
+		&bundleSPP_parser.base,
+		invoke_spp_parser,
+		&bundleSPP_parser
+	);
+
+	if (rc != UD3TN_OK) {
+		fprintf(stderr, "Failed parsing file as SPP bundle.\n");
+		return 1;
+	}
+
+	// if parse_until_done returned UD3TN_OK, spp_result should be within the valid range of values
+	ASSERT(spp_result.segment_status == SPP_SEGMENT_CONTINUATION ||
+	spp_result.segment_status == SPP_SEGMENT_FIRST ||
+	spp_result.segment_status == SPP_SEGMENT_LAST ||
+	spp_result.segment_status == SPP_SEGMENT_UNSEGMENTED
+	);
+
+	spp_free_context(context_spp);
+	printf((
+			"SPP packet\n"
+			"  - apid: %" PRIu16 "\n"
+			"  - segment number: %" PRIu16 "\n"
+			"  - dtn timestamp:   %" PRIu64 "\n"
+			"  - dtn counter: %" PRIu32 "\n"
+			"  - segment status:  %04x\n"
+		),
+		spp_result.apid,
+		spp_result.segment_number,
+		spp_result.dtn_timestamp,
+		spp_result.dtn_counter,
+		spp_result.segment_status
+	);
+
+	return 0;
+}
+
 // MAIN LOGIC
 
 static void usage(void)
@@ -340,7 +418,6 @@ static void usage(void)
 		"    -6 - parse the input file as BPv6 (RFC 5050) bundle\n"
 		"    -7 - parse the input file as BPv7 (RFC 9171) bundle\n"
 		"    -a - parse the input file as AAP packet\n"
-		"    -c - parse the input file as uD3TN configuration message\n"
 		"    -s - parse the input file as SPP packet\n";
 
 	fprintf(stderr, "%s", usage_text);
@@ -379,6 +456,9 @@ int main(const int argc, char *argv[])
 		break;
 	case '6':
 		rc = parse_bpv6(fp);
+		break;
+	case 's':
+		rc = parse_spp(fp);
 		break;
 	// TODO: All other data types listed in `usage()`
 	}
