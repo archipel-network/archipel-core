@@ -125,7 +125,8 @@ TEST(eid, validate_ipn_eid)
 	));
 	TEST_ASSERT_EQUAL_UINT64(18446744073709551615ULL, node);
 	TEST_ASSERT_EQUAL_UINT64(18446744073709551615ULL, service);
-	node = service = 0;
+	node = 0;
+	service = 0;
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_ipn_eid(
 		"ipn:18446744073709551616.18446744073709551616",
 		&node, &service

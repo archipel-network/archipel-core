@@ -246,8 +246,8 @@ void cla_tcp_disconnect_handler(struct cla_link *link)
 
 void cla_tcp_single_disconnect_handler(struct cla_link *link)
 {
-	struct cla_tcp_single_config *tcp_config
-		= (struct cla_tcp_single_config *)link->config;
+	struct cla_tcp_single_config *tcp_config =
+		(struct cla_tcp_single_config *)link->config;
 
 	cla_tcp_disconnect_handler(link);
 	tcp_config->link = NULL;
@@ -386,8 +386,8 @@ struct cla_tx_queue cla_tcp_single_get_tx_queue(
 enum ud3tn_result cla_tcp_single_start_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
-	struct cla_tcp_single_config *tcp_config
-		= (struct cla_tcp_single_config *)config;
+	struct cla_tcp_single_config *tcp_config =
+		(struct cla_tcp_single_config *)config;
 
 	// If we are the first contact (in parallel), start the connection!
 	if (tcp_config->num_active_contacts == 0)
@@ -404,8 +404,8 @@ enum ud3tn_result cla_tcp_single_start_scheduled_contact(
 enum ud3tn_result cla_tcp_single_end_scheduled_contact(
 	struct cla_config *config, const char *eid, const char *cla_addr)
 {
-	struct cla_tcp_single_config *tcp_config
-		= (struct cla_tcp_single_config *)config;
+	struct cla_tcp_single_config *tcp_config =
+		(struct cla_tcp_single_config *)config;
 
 	tcp_config->num_active_contacts--;
 	// Block the link creation task from retrying.

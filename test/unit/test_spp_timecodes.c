@@ -10,12 +10,10 @@ TEST_GROUP(spp_timecodes);
 
 TEST_SETUP(spp_timecodes)
 {
-
 }
 
 TEST_TEAR_DOWN(spp_timecodes)
 {
-
 }
 
 TEST(spp_timecodes, parse_unsegmented_without_p_no_fractional)
@@ -104,17 +102,16 @@ TEST(spp_timecodes, parse_unsegmented_with_p_fractional)
 					  "p field");
 	}
 
-	for (unsigned int i = 1; i < ARRAY_SIZE(bytes)-1; ++i) {
+	for (unsigned int i = 1; i < ARRAY_SIZE(bytes) - 1; ++i) {
 		int result = spp_tc_parser_feed(&parser, bytes[i]);
 
 		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
 					  "tc data");
 	}
 
-	int result = spp_tc_parser_feed(&parser, bytes[ARRAY_SIZE(bytes)-1]);
+	int result = spp_tc_parser_feed(&parser, bytes[ARRAY_SIZE(bytes) - 1]);
 
-	TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_DONE, result,
-				  "last octet");
+	TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_DONE, result, "last octet");
 
 	const uint64_t dtn_timestamp = spp_tc_get_dtn_timestamp(&parser);
 
@@ -140,28 +137,24 @@ TEST(spp_timecodes, parse_unsegmented_with_useless_second_p)
 	{
 		int result = spp_tc_parser_feed(&parser, bytes[0]);
 
-		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
-					  "p field 1");
+		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result, "p field 1");
 	}
 
 	{
 		int result = spp_tc_parser_feed(&parser, bytes[1]);
 
-		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
-					  "p field 2");
+		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result, "p field 2");
 	}
 
-	for (unsigned int i = 2; i < ARRAY_SIZE(bytes)-1; ++i) {
+	for (unsigned int i = 2; i < ARRAY_SIZE(bytes) - 1; ++i) {
 		int result = spp_tc_parser_feed(&parser, bytes[i]);
 
-		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
-					  "tc data");
+		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result, "tc data");
 	}
 
-	int result = spp_tc_parser_feed(&parser, bytes[ARRAY_SIZE(bytes)-1]);
+	int result = spp_tc_parser_feed(&parser, bytes[ARRAY_SIZE(bytes) - 1]);
 
-	TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_DONE, result,
-				  "last octet");
+	TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_DONE, result, "last octet");
 
 	const uint64_t dtn_timestamp = spp_tc_get_dtn_timestamp(&parser);
 
@@ -188,28 +181,24 @@ TEST(spp_timecodes, parse_unsegmented_with_second_p)
 	{
 		int result = spp_tc_parser_feed(&parser, bytes[0]);
 
-		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
-					  "p field 1");
+		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result, "p field 1");
 	}
 
 	{
 		int result = spp_tc_parser_feed(&parser, bytes[1]);
 
-		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
-					  "p field 2");
+		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result, "p field 2");
 	}
 
-	for (unsigned int i = 2; i < ARRAY_SIZE(bytes)-1; ++i) {
+	for (unsigned int i = 2; i < ARRAY_SIZE(bytes) - 1; ++i) {
 		int result = spp_tc_parser_feed(&parser, bytes[i]);
 
-		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result,
-					  "tc data");
+		TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_GOOD, result, "tc data");
 	}
 
-	int result = spp_tc_parser_feed(&parser, bytes[ARRAY_SIZE(bytes)-1]);
+	int result = spp_tc_parser_feed(&parser, bytes[ARRAY_SIZE(bytes) - 1]);
 
-	TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_DONE, result,
-				  "last octet");
+	TEST_ASSERT_EQUAL_MESSAGE(SPP_TC_PARSER_DONE, result, "last octet");
 
 	const uint64_t dtn_timestamp = spp_tc_get_dtn_timestamp(&parser);
 
@@ -291,8 +280,7 @@ TEST(spp_timecodes, serialize_unsegmented_with_p_wide)
 	const size_t nwritten = dest - &buffer[0];
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(reference_bytes), nwritten);
-	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0],
-			nwritten);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0], nwritten);
 }
 
 TEST(spp_timecodes, serialize_unsegmented_without_p_narrow)
@@ -321,8 +309,7 @@ TEST(spp_timecodes, serialize_unsegmented_without_p_narrow)
 	const size_t nwritten = dest - &buffer[0];
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(reference_bytes), nwritten);
-	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0],
-			nwritten);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0], nwritten);
 }
 
 TEST(spp_timecodes, serialize_unsegmented_without_p_wide)
@@ -351,8 +338,7 @@ TEST(spp_timecodes, serialize_unsegmented_without_p_wide)
 	const size_t nwritten = dest - &buffer[0];
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(reference_bytes), nwritten);
-	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0],
-			nwritten);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0], nwritten);
 }
 
 TEST(spp_timecodes, serialize_unsegmented_without_p_nofrac)
@@ -381,8 +367,7 @@ TEST(spp_timecodes, serialize_unsegmented_without_p_nofrac)
 	const size_t nwritten = dest - &buffer[0];
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(reference_bytes), nwritten);
-	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0],
-			nwritten);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(&reference_bytes[0], &buffer[0], nwritten);
 }
 
 TEST(spp_timecodes, get_size_unsegmented_with_p_nofrac)

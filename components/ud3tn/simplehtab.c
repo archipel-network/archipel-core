@@ -106,8 +106,8 @@ static struct htab_entrylist **get_elist_ptr_by_hash(
 		}
 	} else {
 		while (*cur_elem != NULL) {
-			if ((*cur_elem)->key == key
-					|| strcmp((*cur_elem)->key, key) == 0)
+			if ((*cur_elem)->key == key ||
+			    strcmp((*cur_elem)->key, key) == 0)
 				break;
 			cur_elem = &((*cur_elem)->next);
 		}

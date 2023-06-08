@@ -181,8 +181,7 @@ static inline void router_get_first_route_nonfrag(
 	struct bundle *bundle, uint32_t bundle_size,
 	uint64_t expiration_time_ms)
 {
-	res->fragment_results[0].payload_size
-		= bundle->payload_block->length;
+	res->fragment_results[0].payload_size = bundle->payload_block->length;
 	/* Determine route */
 	if (router_calculate_fragment_route(
 		&res->fragment_results[0], bundle_size,
@@ -190,8 +189,7 @@ static inline void router_get_first_route_nonfrag(
 		NULL, 0)
 	) {
 		res->fragments = 1;
-		res->preemption_improved
-			= res->fragment_results[0].preemption_improved;
+		res->preemption_improved = res->fragment_results[0].preemption_improved;
 	}
 }
 
@@ -225,14 +223,12 @@ static inline void router_get_first_route_frag(
 		}
 		if (remaining_pay <= max_frag_sz - last_frag_sz) {
 			/* Last fragment */
-			res->fragment_results[res->fragments++].payload_size
-				= remaining_pay;
+			res->fragment_results[res->fragments++].payload_size = remaining_pay;
 			remaining_pay = 0;
 		} else {
 			/* Another fragment */
 			max_pay = MIN((int32_t)remaining_pay, max_pay);
-			res->fragment_results[res->fragments++].payload_size
-				= max_pay;
+			res->fragment_results[res->fragments++].payload_size = max_pay;
 			remaining_pay -= max_pay;
 			next_frag_sz = mid_frag_sz;
 		}
@@ -258,8 +254,8 @@ static inline void router_get_first_route_frag(
 			&res->fragment_results[index], bundle_size,
 			contacts, processed_sz, ROUTER_BUNDLE_PRIORITY(bundle),
 			expiration_time_ms, NULL, 0);
-		res->preemption_improved
-			+= res->fragment_results[index].preemption_improved;
+		res->preemption_improved +=
+			res->fragment_results[index].preemption_improved;
 		processed_sz += bundle_size;
 	}
 	if (success != res->fragments)
@@ -273,8 +269,8 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		bundle
 	);
 	struct router_result res;
-	struct contact_list *contacts
-		= router_lookup_destination(bundle->destination);
+	struct contact_list *contacts =
+		router_lookup_destination(bundle->destination);
 
 	res.fragments = 0;
 	res.preemption_improved = 0;
@@ -359,11 +355,9 @@ struct router_result router_try_reuse(
 		size = bundle_get_serialized_size(bundle);
 		fr = &route.fragment_results[0];
 		fr->payload_size = remaining_pay;
-		if (fr->contact->to_ms <= time_ms
-			|| fr->contact->to_ms > expiration_time_ms
-			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
-				< (int32_t)size
-		)
+		if (fr->contact->to_ms <= time_ms ||
+		    fr->contact->to_ms > expiration_time_ms ||
+		    ROUTER_CONTACT_CAPACITY(fr->contact, 0) < (int32_t)size)
 			route.fragments = 0;
 		return route;
 	}
@@ -378,11 +372,10 @@ struct router_result router_try_reuse(
 			size = bundle_get_mid_fragment_min_size(bundle);
 		fr = &route.fragment_results[f];
 		min_cap = UINT32_MAX;
-		if (fr->contact->to_ms <= time_ms
-			|| fr->contact->to_ms > expiration_time_ms
-			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
-				< (int32_t)(size + RC.fragment_min_payload)
-		) {
+		if (fr->contact->to_ms <= time_ms ||
+		    fr->contact->to_ms > expiration_time_ms ||
+		    (ROUTER_CONTACT_CAPACITY(fr->contact, 0) <
+		     (int32_t)(size + RC.fragment_min_payload))) {
 			route.fragments = 0;
 			return route;
 		}
@@ -475,8 +468,7 @@ enum ud3tn_result router_remove_bundle_from_contact(
 			if (prio > BUNDLE_RPRIO_LOW) {
 				contact->remaining_capacity_p1 += bundle_size;
 				if (prio != BUNDLE_RPRIO_NORMAL)
-					contact->remaining_capacity_p2
-						+= bundle_size;
+					contact->remaining_capacity_p2 += bundle_size;
 			}
 			return UD3TN_OK;
 		}

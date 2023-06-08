@@ -39,10 +39,9 @@ static inline size_t record_get_last_fields_size(const struct bundle *bundle)
 
 	// Fragment information
 	if (bundle_is_fragmented(bundle)) {
-		payload_size
-			+= bundle7_cbor_uint_sizeof(bundle->fragment_offset)
-			+ bundle7_cbor_uint_sizeof(
-				bundle->payload_block->length);
+		payload_size +=
+			bundle7_cbor_uint_sizeof(bundle->fragment_offset)
+			+ bundle7_cbor_uint_sizeof(bundle->payload_block->length);
 	}
 
 	return payload_size;
@@ -110,9 +109,7 @@ static void serialize_status_info(
 	// Set assertion "true"
 	if (HAS_FLAG(report->status, flag)) {
 		// Times are reported
-		if (HAS_FLAG(bundle->proc_flags,
-			BUNDLE_FLAG_REPORT_STATUS_TIME)) {
-
+		if (HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_REPORT_STATUS_TIME)) {
 			cbor_encoder_create_array(encoder, &recursed, 2);
 			cbor_encode_boolean(&recursed, true);
 
@@ -135,25 +132,22 @@ static void serialize_status_info(
 				break;
 			}
 			cbor_encode_uint(&recursed, time);
-		}
 		// Times are not reported
-		else {
+		} else {
 			cbor_encoder_create_array(encoder, &recursed, 1);
 			cbor_encode_boolean(&recursed, true);
 		}
-	}
 	// Set assertion "false"
-	else {
+	} else {
 		cbor_encoder_create_array(encoder, &recursed, 1);
 		cbor_encode_boolean(&recursed, false);
 	}
 	cbor_encoder_close_container(encoder, &recursed);
-
 }
 
 
 struct bundle *bundle7_generate_status_report(
-	const struct bundle * const bundle,
+	const struct bundle *const bundle,
 	const struct bundle_status_report *prototype,
 	const char *source,
 	const uint64_t timestamp_ms)
@@ -344,7 +338,7 @@ error_t administrative_record(struct record_parser *state, CborValue *it)
 		return ERROR_UNKNOWN_RECORD_TYPE;
 	}
 
-	// An error occured, abort
+	// An error occurred, abort
 	if (err)
 		return err;
 

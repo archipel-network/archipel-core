@@ -51,7 +51,7 @@ size_t bundle7_eid_get_max_serialized_size(const char *eid);
 
 /**
  * Creates a CBOR encoded EID from given string representation.
- * If any error occure NULL will be returned.
+ * If any error occurred NULL will be returned.
  *
  * @param eid EID string
  * @param length Final CBOR length

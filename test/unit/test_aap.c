@@ -87,7 +87,7 @@ TEST(aap, validate_message)
 	struct aap_message msg_invalid_eid = {
 		.type = AAP_MESSAGE_WELCOME,
 		.eid_length = strlen(DEFAULT_EID1) + 1,
-		.eid = DEFAULT_EID1"\0", // EID longer than strlen
+		.eid = DEFAULT_EID1 "\0", // EID longer than strlen
 	};
 	struct aap_message msg_eid_null = {
 		.type = AAP_MESSAGE_REGISTER,

@@ -4,7 +4,7 @@
 
 #include "ud3tn/common.h"
 
-#include "compilersupport_p.h"  // Private TinyCBOR header, used for endianess
+#include "compilersupport_p.h" // Private TinyCBOR header, used for endianness
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -109,8 +109,8 @@ CborError bundle_end(struct bundle7_parser *state, CborValue *it)
 
 	// Call "send" callback if set and all CRCs passed, otherwise discard
 	// parsed bundle silently
-	if (state->send_callback == NULL
-		|| state->basedata->flags & PARSER_FLAG_CRC_INVALID)
+	if (state->send_callback == NULL ||
+	    state->basedata->flags & PARSER_FLAG_CRC_INVALID)
 		bundle_free(bundle);
 	else
 		state->send_callback(bundle, state->send_param);
@@ -163,7 +163,7 @@ CborError primary_proc_flags(struct bundle7_parser *state, CborValue *it)
 
 	cbor_value_get_uint64(it, &flags);
 
-	state->bundle->proc_flags = (uint32_t) flags & BP_V7_FLAGS;
+	state->bundle->proc_flags = (uint32_t)flags & BP_V7_FLAGS;
 	state->next = crc_type;
 	return cbor_value_advance_fixed(it);
 }
@@ -253,11 +253,11 @@ CborError lifetime(struct bundle7_parser *state, CborValue *it)
 	const uint8_t *last_ptr = it->source.ptr;
 	CborError err = cbor_value_advance_fixed(it);
 
-	if (bundle_is_fragmented(state->bundle))
+	if (bundle_is_fragmented(state->bundle)) {
 		state->next = fragment_offset;
-	else if (state->bundle->crc_type != BUNDLE_CRC_TYPE_NONE)
+	} else if (state->bundle->crc_type != BUNDLE_CRC_TYPE_NONE) {
 		state->next = primary_block_crc;
-	else {
+	} else {
 		state->next = block_start;
 
 		// -1 Byte infinite array header
@@ -297,9 +297,9 @@ CborError total_adu_length(struct bundle7_parser *state, CborValue *it)
 	const uint8_t *last_ptr = it->source.ptr;
 	CborError err = cbor_value_advance_fixed(it);
 
-	if (state->bundle->crc_type != BUNDLE_CRC_TYPE_NONE)
+	if (state->bundle->crc_type != BUNDLE_CRC_TYPE_NONE) {
 		state->next = primary_block_crc;
-	else {
+	} else {
 		state->next = block_start;
 
 		// -1 Byte infinite array header
@@ -347,8 +347,7 @@ CborError primary_block_crc(struct bundle7_parser *state, CborValue *it)
 			state->bundle->crc.checksum);
 
 		// -1 Byte infinite array header + 3 Bytes CRC field
-		state->bundle->primary_block_length
-				= state->bundle_size - 1 + 3;
+		state->bundle->primary_block_length = state->bundle_size - 1 + 3;
 	} else {
 		// Ensure correct CRC 32 length
 		if (len != 4)
@@ -370,8 +369,7 @@ CborError primary_block_crc(struct bundle7_parser *state, CborValue *it)
 			state->bundle->crc.checksum);
 
 		// -1 Byte infinite array header + 5 Bytes CRC field
-		state->bundle->primary_block_length
-				= state->bundle_size - 1 + 5;
+		state->bundle->primary_block_length = state->bundle_size - 1 + 5;
 	}
 
 	state->next = block_start;
@@ -459,7 +457,7 @@ CborError block_proc_flags(struct bundle7_parser *state, CborValue *it)
 
 	cbor_value_get_uint64(it, &flags);
 
-	BLOCK(state)->flags = (((uint8_t) flags) & (
+	BLOCK(state)->flags = (((uint8_t)flags) & (
 		BUNDLE_BLOCK_FLAG_MUST_BE_REPLICATED |
 		BUNDLE_BLOCK_FLAG_DISCARD_IF_UNPROC |
 		BUNDLE_BLOCK_FLAG_REPORT_IF_UNPROC |
@@ -676,8 +674,8 @@ struct parser *bundle7_parser_init(struct bundle7_parser *state,
 
 enum ud3tn_result bundle7_parser_reset(struct bundle7_parser *state)
 {
-	if (state->basedata->status == PARSER_STATUS_GOOD
-		&& state->next == bundle_start)
+	if (state->basedata->status == PARSER_STATUS_GOOD &&
+	    state->next == bundle_start)
 		return UD3TN_OK;
 
 	state->basedata->status = PARSER_STATUS_GOOD;
@@ -732,8 +730,7 @@ size_t bundle7_parser_read(struct bundle7_parser *state,
 		return 0;
 	}
 
-	while (parsed < length
-			&& state->basedata->status == PARSER_STATUS_GOOD) {
+	while (parsed < length && state->basedata->status == PARSER_STATUS_GOOD) {
 		// For arbitrarily-long data such as block payload data, a
 		// "BULK_READ" operation is requested, normally to be handled
 		// by the RX task. Though, sometimes we can handle this on our

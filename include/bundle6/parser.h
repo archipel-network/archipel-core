@@ -55,7 +55,7 @@ enum bundle6_parser_block {
 };
 
 /**
- * Detailed cause of an error, if one occured (see `enum parser_status`)
+ * Detailed cause of an error, if one occurred (see `enum parser_status`)
  */
 enum bundle6_parser_error {
 	PARSER_ERROR_NONE,

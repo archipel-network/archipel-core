@@ -63,9 +63,8 @@ size_t bundle7_eid_sizeof(const char *eid)
 			// String
 			+ bundle7_cbor_uint_sizeof(length)
 			+ length;
-	}
 	// ipn:
-	else {
+	} else {
 		uint64_t node, service;
 
 		if (validate_ipn_eid(eid, &node, &service) != UD3TN_OK)

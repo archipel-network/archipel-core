@@ -175,18 +175,15 @@ enum bundle_routing_priority bundle_get_routing_priority(
 {
 	// If there are any retention constaints for the bundle or the bundle
 	// has expedited priority (RFC 5050-only)
-	if (HAS_FLAG(bundle->ret_constraints,
-			BUNDLE_RET_CONSTRAINT_FLAG_OWN)
-		|| HAS_FLAG(bundle->ret_constraints,
-			BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED)
-		|| (bundle->protocol_version == 6
-			&& HAS_FLAG(bundle->proc_flags,
-				BUNDLE_V6_FLAG_EXPEDITED_PRIORITY)))
+	if (HAS_FLAG(bundle->ret_constraints, BUNDLE_RET_CONSTRAINT_FLAG_OWN) ||
+	    HAS_FLAG(bundle->ret_constraints, BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED) ||
+	    (bundle->protocol_version == 6 &&
+	     HAS_FLAG(bundle->proc_flags, BUNDLE_V6_FLAG_EXPEDITED_PRIORITY)))
 		return BUNDLE_RPRIO_HIGH;
 	// BPv7-bis bundles without retention constraints are routed with
 	// normal priority
-	else if (bundle->protocol_version == 7
-		|| HAS_FLAG(bundle->proc_flags, BUNDLE_V6_FLAG_NORMAL_PRIORITY))
+	else if (bundle->protocol_version == 7 ||
+		 HAS_FLAG(bundle->proc_flags, BUNDLE_V6_FLAG_NORMAL_PRIORITY))
 		return BUNDLE_RPRIO_NORMAL;
 	else
 		return BUNDLE_RPRIO_LOW;

@@ -36,13 +36,13 @@ struct bundle *bundle6_fragment_bundle(
 		return NULL;
 	/* Set total ADU length if not already fragmented */
 	if (!bundle_is_fragmented(working_bundle))
-		working_bundle->total_adu_length
-			= working_bundle->payload_block->length;
+		working_bundle->total_adu_length =
+			working_bundle->payload_block->length;
 	/* Set the payload block's properties */
-	remainder->payload_block->length
-		= working_bundle->payload_block->length - first_payload_length;
-	remainder->payload_block->data
-		= malloc(remainder->payload_block->length);
+	remainder->payload_block->length =
+		working_bundle->payload_block->length - first_payload_length;
+	remainder->payload_block->data =
+		malloc(remainder->payload_block->length);
 	if (remainder->payload_block->data == NULL) {
 		bundle_free(remainder);
 		return NULL;
@@ -67,22 +67,22 @@ struct bundle *bundle6_fragment_bundle(
 		cur_block = cur_block->next;
 	}
 	/* Shorten first fragment's PL block */
-	working_bundle->payload_block->data
-		= realloc(working_bundle->payload_block->data,
-			first_payload_length);
+	working_bundle->payload_block->data = realloc(
+		working_bundle->payload_block->data,
+		first_payload_length
+	);
 	ASSERT(working_bundle->payload_block->data != NULL);
 	/* Set correct lengths and offsets */
 	working_bundle->payload_block->length = first_payload_length;
-	remainder->fragment_offset
-		= working_bundle->fragment_offset + first_payload_length;
+	remainder->fragment_offset =
+		working_bundle->fragment_offset + first_payload_length;
 	/* Handle blocks that must be replicated in every fragment */
 	replicate_blocks(working_bundle, remainder);
 	/* Set fragment flag */
 	working_bundle->proc_flags |= BUNDLE_FLAG_IS_FRAGMENT;
 	/* Recalc sizes */
 	if (bundle_recalculate_header_length(working_bundle) == UD3TN_FAIL ||
-			bundle_recalculate_header_length(remainder) ==
-			UD3TN_FAIL)
+	    bundle_recalculate_header_length(remainder) == UD3TN_FAIL)
 		return NULL;
 	/* Return created fragment */
 	return remainder;
@@ -102,10 +102,8 @@ static enum ud3tn_result replicate_blocks(
 	item = &list;
 	entry = first->blocks;
 	while (entry != NULL) {
-		if (
-			bundle_block_must_be_replicated(entry->data)
-			&& entry->data->type != BUNDLE_BLOCK_TYPE_PAYLOAD
-		) {
+		if (bundle_block_must_be_replicated(entry->data) &&
+		    entry->data->type != BUNDLE_BLOCK_TYPE_PAYLOAD) {
 			*item = bundle_block_entry_dup(entry);
 			if (*item == NULL) {
 				while (list != NULL)
@@ -128,10 +126,8 @@ static enum ud3tn_result replicate_blocks(
 	list = NULL;
 	item = &list;
 	while (entry != NULL) {
-		if (
-			bundle_block_must_be_replicated(entry->data)
-			&& entry->data->type != BUNDLE_BLOCK_TYPE_PAYLOAD
-		) {
+		if (bundle_block_must_be_replicated(entry->data) &&
+		    entry->data->type != BUNDLE_BLOCK_TYPE_PAYLOAD) {
 			*item = bundle_block_entry_dup(entry);
 			if (*item == NULL) {
 				while (list != NULL)

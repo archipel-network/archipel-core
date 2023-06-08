@@ -43,7 +43,7 @@ TEST(simple_queue, test_createQueue)
 	TEST_ASSERT_EQUAL_PTR(q->abs_start, q->current_start);
 	TEST_ASSERT_EQUAL_PTR(q->abs_start, q->current_end);
 
-	TEST_ASSERT_EQUAL_PTR(q->abs_end, q->abs_start+8);
+	TEST_ASSERT_EQUAL_PTR(q->abs_end, q->abs_start + 8);
 }
 
 TEST(simple_queue, test_PushPopBasic)
@@ -124,7 +124,6 @@ TEST(simple_queue, test_PushEndPopEnd)
 		// the removed values should have the correct order
 		TEST_ASSERT_EQUAL_INT(i, j);
 	}
-
 }
 
 TEST(simple_queue, test_CircularBehaviour)
@@ -136,7 +135,7 @@ TEST(simple_queue, test_CircularBehaviour)
 
 	// test for two circular rounds with two elements
 	for (i = 0; i <= 19; i += 2) {
-		j = i+1;
+		j = i + 1;
 		TEST_ASSERT_EQUAL_INT(0, queuePush(q, &i, 0, false));
 		TEST_ASSERT_EQUAL_INT(0, queuePush(q, &j, 0, false));
 
@@ -207,7 +206,6 @@ TEST(simple_queue, test_ResetQueue)
 	TEST_ASSERT_EQUAL_INT(0, value_pop);
 	TEST_ASSERT_EQUAL_INT(10, value_push);
 #endif //__APPLE__
-
 }
 
 TEST(simple_queue, test_NrOfWaitingElements)
@@ -246,7 +244,6 @@ TEST(simple_queue, test_NrOfWaitingElements)
 	sem_getvalue(&q->sem_pop->sem, &value);
 	TEST_ASSERT_EQUAL_UINT(0, value);
 #endif //__APPLE__
-
 }
 
 TEST(simple_queue, test_ForcePush)

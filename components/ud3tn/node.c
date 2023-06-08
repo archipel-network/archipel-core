@@ -407,13 +407,11 @@ struct contact_list *contact_list_difference(
 	if (a == NULL || b == NULL)
 		return a;
 	while (*cur_slot != NULL) {
-		while (*cur_slot != NULL
-			&& cur_can != NULL && cur_can->data->from_ms
-				<= (*cur_slot)->data->from_ms
-		) {
-			if (cur_can->data->from_ms == (*cur_slot)->data->from_ms
-			    && cur_can->data->to_ms == (*cur_slot)->data->to_ms
-			) {
+		while (*cur_slot != NULL &&
+		       cur_can != NULL &&
+		       cur_can->data->from_ms <= (*cur_slot)->data->from_ms) {
+			if (cur_can->data->from_ms == (*cur_slot)->data->from_ms &&
+			    cur_can->data->to_ms == (*cur_slot)->data->to_ms) {
 				if (cur_can->data->contact_endpoints == NULL) {
 					/* Add to "deleted" list and rm */
 					if (deleted != NULL) {
@@ -426,21 +424,21 @@ struct contact_list *contact_list_difference(
 						*cur_slot = l->next;
 						free(l);
 					} else {
-						*cur_slot
-						= contact_list_free_internal(
-							*cur_slot, 1);
+						*cur_slot = contact_list_free_internal(
+							*cur_slot,
+							1
+						);
 					}
 				} else {
 					/* Calculate contact difference */
 					(*cur_slot)->data->contact_endpoints =
 						endpoint_list_difference(
-						(*cur_slot)->data
-							->contact_endpoints,
-						cur_can->data
-							->contact_endpoints, 0);
+							(*cur_slot)->data->contact_endpoints,
+							cur_can->data->contact_endpoints,
+							0
+						);
 					/* Add to "modified" list */
-					add_to_modified_list(
-						(*cur_slot)->data, modf);
+					add_to_modified_list((*cur_slot)->data, modf);
 					cur_slot = &((*cur_slot)->next);
 				}
 			}
