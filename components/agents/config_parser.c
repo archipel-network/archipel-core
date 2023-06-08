@@ -12,26 +12,26 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-static char const EID_START_DELIMITER = '(';
-static char const EID_END_DELIMITER = ')';
-static char const CLA_ADDR_START_DELIMITER = '(';
-static char const CLA_ADDR_END_DELIMITER = ')';
-static char const NODE_CONF_RELIABILITY_SEPARATOR = ',';
-static char const NODE_CONF_CLA_ADDR_SEPARATOR = ':';
-static char const CLA_ADDR_NODES_SEPARATOR = ':';
-static char const LIST_START_DELIMITER = '[';
-static char const LIST_END_DELIMITER = ']';
-static char const LIST_ELEMENT_SEPARATOR = ',';
-static char const OBJECT_START_DELIMITER = '{';
-static char const OBJECT_END_DELIMITER = '}';
-static char const OBJECT_ELEMENT_SEPARATOR = ',';
-static char const NODES_CONTACTS_SEPARATOR = ':';
+static const char EID_START_DELIMITER = '(';
+static const char EID_END_DELIMITER = ')';
+static const char CLA_ADDR_START_DELIMITER = '(';
+static const char CLA_ADDR_END_DELIMITER = ')';
+static const char NODE_CONF_RELIABILITY_SEPARATOR = ',';
+static const char NODE_CONF_CLA_ADDR_SEPARATOR = ':';
+static const char CLA_ADDR_NODES_SEPARATOR = ':';
+static const char LIST_START_DELIMITER = '[';
+static const char LIST_END_DELIMITER = ']';
+static const char LIST_ELEMENT_SEPARATOR = ',';
+static const char OBJECT_START_DELIMITER = '{';
+static const char OBJECT_END_DELIMITER = '}';
+static const char OBJECT_ELEMENT_SEPARATOR = ',';
+static const char NODES_CONTACTS_SEPARATOR = ':';
 
-static uint8_t const COMMAND_END_MARKER = ';';
+static const uint8_t COMMAND_END_MARKER = ';';
 
-static uint8_t const DEFAULT_EID_BUFFER_SIZE = 16;
-static uint8_t const DEFAULT_CLA_ADDR_BUFFER_SIZE = 21;
-static uint8_t const DEFAULT_INT_BUFFER_SIZE = 16;
+static const uint8_t DEFAULT_EID_BUFFER_SIZE = 16;
+static const uint8_t DEFAULT_CLA_ADDR_BUFFER_SIZE = 21;
+static const uint8_t DEFAULT_INT_BUFFER_SIZE = 16;
 
 static void send_router_command(struct config_parser *parser);
 
