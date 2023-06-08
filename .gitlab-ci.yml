@@ -361,7 +361,6 @@ cppcheck-static-analyzer:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
-        - apt-get update && apt-get install -y cppcheck
         - cppcheck --enable=warning --error-exitcode=2 --inline-suppr -I include -I external/tinycbor/src -I external/util/include components
 
 publish-docker-image:
