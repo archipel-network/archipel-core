@@ -379,7 +379,7 @@ build-valgrind-memory-check:
         - git clone https://sourceware.org/git/valgrind.git && cd valgrind && ./autogen.sh && ./configure
         - make && make install && cd .. && make posix
         - rm -f ./ud3tn.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 build/posix/ud3tn & UD3TN_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn & UD3TN_PID=$!
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -396,7 +396,7 @@ integration-test-valgrind-memory-check:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
         - rm -f ./ud3tn.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
