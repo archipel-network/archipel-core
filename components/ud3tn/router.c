@@ -329,7 +329,12 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		     bundle, bundle->destination, bundle_size);
 
 finish:
-	list_free(contacts);
+	while (contacts) {
+		struct contact_list *const tmp = contacts->next;
+
+		free(contacts);
+		contacts = tmp;
+	}
 	return res;
 }
 
