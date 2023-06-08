@@ -19,6 +19,7 @@
 #include "platform/hal_task.h"
 #include "platform/hal_time.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -146,5 +147,18 @@ void hal_task_start_scheduler(void)
 
 void hal_task_delay(int delay)
 {
-	usleep(delay*1000);
+	if (delay < 0)
+		return;
+
+	struct timespec req = {
+		.tv_sec = delay / 1000,
+		.tv_nsec = (delay % 1000) * 1000000
+	};
+	struct timespec rem;
+
+	while (nanosleep(&req, &rem)) {
+		if (errno != EINTR)
+			break;
+		req = rem;
+	}
 }
