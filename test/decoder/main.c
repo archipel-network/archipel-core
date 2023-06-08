@@ -2,6 +2,7 @@
 #include "bundle7/parser.h"
 #include "bundle6/parser.h"
 #include "spp/spp_parser.h"
+#include "aap/aap_parser.h"
 
 #include "cla/cla.h"
 #include "cla/cla_contact_rx_task.h"
@@ -345,14 +346,14 @@ static size_t invoke_spp_parser(
 	void *const parser,
 	const uint8_t *const buffer, const size_t length)
 {
-	struct spp_parser *bundleSPP_parser = (struct spp_parser *)parser;
-	const size_t spp_read = spp_parser_read(bundleSPP_parser, buffer, length);
+	struct spp_parser *packetSPP_parser = (struct spp_parser *)parser;
+	const size_t spp_read = spp_parser_read(packetSPP_parser, buffer, length);
 
-	if (bundleSPP_parser->state == SPP_PARSER_STATE_DATA_SUBPARSER) {
-		bundleSPP_parser->base.status = PARSER_STATUS_DONE;
-		ASSERT(spp_parser_get_meta(bundleSPP_parser, &spp_result));
-	} else if (bundleSPP_parser->state == SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER) {
-		bundleSPP_parser->base.status = PARSER_STATUS_ERROR;
+	if (packetSPP_parser->state == SPP_PARSER_STATE_DATA_SUBPARSER) {
+		packetSPP_parser->base.status = PARSER_STATUS_DONE;
+		ASSERT(spp_parser_get_meta(packetSPP_parser, &spp_result));
+	} else if (packetSPP_parser->state == SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER) {
+		packetSPP_parser->base.status = PARSER_STATUS_ERROR;
 	}
 
 	return spp_read;
@@ -360,26 +361,26 @@ static size_t invoke_spp_parser(
 
 static int parse_spp(FILE *const fp)
 {
-	struct spp_parser bundleSPP_parser = {};
+	struct spp_parser packetSPP_parser = {};
 	struct spp_context_t *context_spp = spp_new_context();
 
-	// check should fail in any case if the parser has not touched the bundle:
+	// check should fail in any case if the parser has not touched the packet:
 	spp_result.segment_status = (enum spp_segment_status_t) 789;
 
-	if (!spp_parser_init(&bundleSPP_parser, context_spp)) {
+	if (!spp_parser_init(&packetSPP_parser, context_spp)) {
 		fprintf(stderr, "Failed to initialize parser.\n");
 		return 1;
 	}
 
 	enum ud3tn_result rc = parse_until_done(
 		fp,
-		&bundleSPP_parser.base,
+		&packetSPP_parser.base,
 		invoke_spp_parser,
-		&bundleSPP_parser
+		&packetSPP_parser
 	);
 
 	if (rc != UD3TN_OK) {
-		fprintf(stderr, "Failed parsing file as SPP bundle.\n");
+		fprintf(stderr, "Failed parsing file as SPP packet.\n");
 		return 1;
 	}
 
@@ -405,6 +406,51 @@ static int parse_spp(FILE *const fp)
 		spp_result.dtn_counter,
 		spp_result.segment_status
 	);
+
+	return 0;
+}
+
+// AAP
+
+static size_t invoke_aap_parser(
+	void *const parser,
+	const uint8_t *const buffer, const size_t length)
+{
+	struct aap_parser *packetAAP_parser = (struct aap_parser *)parser;
+
+	return aap_parser_read(packetAAP_parser, buffer, length);
+}
+
+static int parse_aap(FILE *const fp)
+{
+	struct aap_parser packetAAP_parser = {};
+	struct bundle *result = NULL;
+
+	aap_parser_init(&packetAAP_parser);
+
+	enum ud3tn_result rc = parse_until_done(
+		fp,
+		packetAAP_parser.basedata,
+		invoke_aap_parser,
+		&packetAAP_parser
+	);
+
+	if (rc != UD3TN_OK) {
+		fprintf(stderr, "Failed parsing file as AAP packet.\n");
+		return 1;
+	}
+
+	aap_parser_deinit(&packetAAP_parser);
+
+	// if parse_until_done returned UD3TN_OK there must be some result...
+	ASSERT(result != NULL);
+	if (!result) {
+		fprintf(stderr, "Parser did not return a result, aborting.\n");
+		return 1;
+	}
+
+	print_bundle(result);
+	bundle_free(result);
 
 	return 0;
 }
@@ -459,6 +505,9 @@ int main(const int argc, char *argv[])
 		break;
 	case 's':
 		rc = parse_spp(fp);
+		break;
+	case 'a':
+		rc = parse_aap(fp);
 		break;
 	// TODO: All other data types listed in `usage()`
 	}
