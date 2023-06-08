@@ -95,10 +95,10 @@ static size_t aap_parse_eid_length(
 	parser->remaining = parser->message.eid_length;
 
 	parser->message.eid = malloc(parser->message.eid_length + 1);
-	parser->message.eid[parser->message.eid_length] = '\0';
 	if (parser->message.eid) {
 		if (!parser->message.eid_length)
 			parser->status = PARSER_STATUS_DONE;
+		parser->message.eid[parser->message.eid_length] = '\0';
 		parser->parse = aap_parse_eid;
 	} else {
 		parser->status = PARSER_STATUS_ERROR;

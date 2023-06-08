@@ -121,7 +121,8 @@
 			 * and q has too */ \
 			_p = _q; \
 		} \
-		_tail->next = NULL; \
+		if (_tail) \
+			_tail->next = NULL; \
 		/* If we have done only one merge, we're finished. */ \
 		if (_nmerges <= 1) { \
 			/* allow for nmerges == 0, the empty list case */ \

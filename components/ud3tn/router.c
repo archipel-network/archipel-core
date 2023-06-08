@@ -101,11 +101,17 @@ static inline struct max_fragment_size_result {
 		);
 
 		// Contact of "infinite" capacity -> max. frag. size == MBS
-		if (c_capacity >= INT32_MAX)
+		if (c_capacity >= INT32_MAX) {
+			const uint32_t max_fragment_size = MIN(
+				(uint32_t)INT32_MAX,
+				c_mbs
+			);
+
 			return (struct max_fragment_size_result){
-				MIN((uint32_t)INT32_MAX, c_mbs),
+				max_fragment_size,
 				payload_size,
 			};
+		}
 
 		c_pay_capacity = c_capacity - max_fragment_min_size;
 		if (c_pay_capacity > RC.fragment_min_payload) {
@@ -271,6 +277,7 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		= router_lookup_destination(bundle->destination);
 
 	res.fragments = 0;
+	res.preemption_improved = 0;
 	if (contacts == NULL) {
 		LOGF("Router: Could not determine a node over which the destination \"%s\" for bundle %p is reachable",
 		     bundle->destination, bundle);

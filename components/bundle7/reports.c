@@ -227,9 +227,18 @@ struct bundle *bundle7_generate_status_report(
 
 	// Compress payload memory
 	size_t written = cbor_encoder_get_buffer_size(&container, payload);
+
+	if (written == 0) {
+		free(payload);
+		return NULL;
+	}
+
 	uint8_t *compress = realloc(payload, written);
 
 	if (compress == NULL) {
+		// False positive in some versions of cppcheck. It is correct
+		// to free here as `realloc` failed and does not free.
+		// cppcheck-suppress doubleFree
 		free(payload);
 		return NULL;
 	}

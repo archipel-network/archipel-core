@@ -156,8 +156,6 @@ static struct bundle_processing_result apply_fragmentation(
 		/* Determine minimal fragmented bundle size */
 		if (f == 0)
 			size = bundle_get_first_fragment_min_size(bundle);
-		else if (f == fragments - 1)
-			size = bundle_get_last_fragment_min_size(bundle);
 		else
 			size = bundle_get_mid_fragment_min_size(bundle);
 
@@ -222,7 +220,6 @@ enum router_result_status router_route_bundle(struct bundle *b)
 	// fragmentation.
 	struct bundle *const b_old_ptr = b;
 
-	b = NULL;
 	if (IS_DEBUG_BUILD)
 		LOGF(
 			"Router: Bundle %p [ %s ] [ frag = %d ]",
