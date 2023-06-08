@@ -12,13 +12,13 @@
 /**
  * Shortcut access to current bundle block
  */
-#define BLOCK(state) ((*(state->current_block_entry))->data)
+#define BLOCK(state) ((*((state)->current_block_entry))->data)
 
 
 /**
  * Shortcut to transition into error state
  */
-#define FAIL(state) (state->basedata->status = PARSER_STATUS_ERROR)
+#define FAIL(state) ((state)->basedata->status = PARSER_STATUS_ERROR)
 
 
 // -----------------------------

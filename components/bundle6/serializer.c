@@ -9,12 +9,18 @@
 
 #define write_bytes(bytes, data) \
 	write(cla_obj, data, bytes)
-#define serialize_u16(buffer, value) \
-	write_bytes(sdnv_write_u16(buffer, value), buffer)
-#define serialize_u32(buffer, value) \
-	write_bytes(sdnv_write_u32(buffer, value), buffer)
-#define serialize_u64(buffer, value) \
-	write_bytes(sdnv_write_u64(buffer, value), buffer)
+#define serialize_u16(buffer, value) do { \
+	__typeof__(buffer) *_buffer = &(buffer); \
+	write_bytes(sdnv_write_u16(*_buffer, value), *_buffer); \
+} while (0)
+#define serialize_u32(buffer, value) do { \
+	__typeof__(buffer) *_buffer = &(buffer); \
+	write_bytes(sdnv_write_u32(*_buffer, value), *_buffer); \
+} while (0)
+#define serialize_u64(buffer, value) do { \
+	__typeof__(buffer) *_buffer = &(buffer); \
+	write_bytes(sdnv_write_u64(*_buffer, value), *_buffer); \
+} while (0)
 
 struct eid_reference {
 	uint16_t scheme_offset;

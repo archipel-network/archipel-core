@@ -8,9 +8,11 @@
 #include <string.h>
 
 #define TEST_ASSERT_EQUAL_ASTRING(a, b) do { \
-		TEST_ASSERT_EQUAL_STRING(a, b); \
-		free(b); \
-	} while (0)
+	__typeof__(a) _a = (a); \
+	__typeof__(b) _b = (b); \
+	TEST_ASSERT_EQUAL_STRING(_a, _b); \
+	free(_b); \
+} while (0)
 
 TEST_GROUP(eid);
 
