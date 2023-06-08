@@ -31,7 +31,7 @@
 	_b > _a ? _b : _a; \
 })
 
-#define HAS_FLAG(value, flag) ((value & flag) != 0)
+#define HAS_FLAG(value, flag) (((value) & (flag)) != 0)
 
 #define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define ARRAY_SIZE ARRAY_LENGTH
