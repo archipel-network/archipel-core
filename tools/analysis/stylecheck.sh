@@ -6,7 +6,10 @@ CHECKPATCH_FLAGS="--no-tree --terse --show-types --ignore AVOID_EXTERNS \
 --ignore SPDX_LICENSE_TAG --ignore PREFER_DEFINED_ATTRIBUTE_MACRO --ignore REPEATED_WORD \
 --ignore PREFER_KERNEL_TYPES --ignore LONG_LINE_STRING --ignore CAMELCASE \
 --typedefsfile ./tools/analysis/stylecheck_typedefs.txt --emacs --file \
---max-line-length=100"
+--max-line-length=100 \
+--strict --ignore OPEN_ENDED_LINE --ignore PARENTHESIS_ALIGNMENT \
+--ignore LINE_SPACING --ignore COMPARISON_TO_NULL --ignore BIT_MACRO \
+--ignore UNNECESSARY_PARENTHESES"
 
 S=0
 
