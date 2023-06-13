@@ -172,9 +172,9 @@ static struct bundle_processing_result apply_fragmentation(
 			// that may lead to fewer actual fragments here.
 			// Just update the count accordingly and do not schedule
 			// the rest.
-			route.fragments = f + 1;
 			fragments = f + 1;
-			frags[f + 1] = NULL;
+			route.fragments = fragments;
+			frags[fragments] = NULL;
 			break;
 		}
 	}
