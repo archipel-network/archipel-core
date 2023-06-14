@@ -210,8 +210,8 @@ static void print_bundle(const struct bundle *const bundle)
 	while (blocks) {
 		printf((
 				"  - block no. %d of type = %d (%s)\n"
-				"    - flags:  0x%04x\n"
-				"    - length: %" PRIu32 "\n"
+				"  - flags:  0x%04x\n"
+				"  - length: %" PRIu32 "\n"
 			),
 			blocks->data->number,
 			blocks->data->type,
@@ -412,6 +412,8 @@ static int parse_spp(FILE *const fp)
 
 // AAP
 
+struct aap_message msg;
+
 static size_t invoke_aap_parser(
 	void *const parser,
 	const uint8_t *const buffer, const size_t length)
@@ -424,7 +426,6 @@ static size_t invoke_aap_parser(
 static int parse_aap(FILE *const fp)
 {
 	struct aap_parser packetAAP_parser = {};
-	struct bundle *result = NULL;
 
 	aap_parser_init(&packetAAP_parser);
 
@@ -440,17 +441,32 @@ static int parse_aap(FILE *const fp)
 		return 1;
 	}
 
+	msg = aap_parser_extract_message(&packetAAP_parser);
 	aap_parser_deinit(&packetAAP_parser);
 
-	// if parse_until_done returned UD3TN_OK there must be some result...
-	ASSERT(result != NULL);
-	if (!result) {
-		fprintf(stderr, "Parser did not return a result, aborting.\n");
-		return 1;
-	}
+	printf("AAP packet\n");
+	printf("  - message type: %04x\n", msg.type);
 
-	print_bundle(result);
-	bundle_free(result);
+	switch (msg.type) {
+	case AAP_MESSAGE_SENDBUNDLE:
+	{
+		printf("  - eid: %s\n", msg.eid);
+		printf("  - payload length: %zu\n", msg.payload_length);
+		break;
+	}
+	case AAP_MESSAGE_SENDCONFIRM:
+	{
+		printf("  - bundle id: %" PRIu64 "\n", msg.bundle_id);
+		break;
+	}
+	case AAP_MESSAGE_WELCOME:
+	{
+		printf("  - eid: %s\n", msg.eid);
+		break;
+	}
+	default:
+		break;
+	}
 
 	return 0;
 }
