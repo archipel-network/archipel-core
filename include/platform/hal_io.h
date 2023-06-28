@@ -18,17 +18,64 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define LOGF(f_, ...) ({ \
-	hal_time_print_log_time_string(); \
-	hal_io_message_printf( \
-		f_ " [%s:%d]\n", \
-		__VA_ARGS__, \
-		__FILE__, (int)(__LINE__) \
-	); \
-	fflush(stderr); \
+extern uint8_t LOG_LEVEL;
+
+#define LOGF(f_, ...) \
+({ \
+	if (LOG_LEVEL >= 2) { \
+		hal_time_print_log_time_string(); \
+		hal_io_message_printf( \
+			f_ " [%s:%d]\n", \
+			__VA_ARGS__, \
+			__FILE__, (int)(__LINE__) \
+		); \
+		fflush(stderr); \
+	} \
+})
+
+#define LOGF_DEBUG(f_, ...) \
+({ \
+	if (LOG_LEVEL >= 3) { \
+		hal_time_print_log_time_string(); \
+		hal_io_message_printf( \
+			f_ " [%s:%d]\n", \
+			__VA_ARGS__, \
+			__FILE__, (int)(__LINE__) \
+		); \
+		fflush(stderr); \
+	} \
+})
+
+#define LOGF_INFO(f_, ...) \
+({ \
+	if (LOG_LEVEL >= 2) { \
+		hal_time_print_log_time_string(); \
+		hal_io_message_printf( \
+			f_ " [%s:%d]\n", \
+			__VA_ARGS__, \
+			__FILE__, (int)(__LINE__) \
+		); \
+		fflush(stderr); \
+	} \
+})
+
+#define LOGF_WARN(f_, ...) \
+({ \
+	if (LOG_LEVEL >= 1) { \
+		hal_time_print_log_time_string(); \
+		hal_io_message_printf( \
+			f_ " [%s:%d]\n", \
+			__VA_ARGS__, \
+			__FILE__, (int)(__LINE__) \
+		); \
+		fflush(stderr); \
+	} \
 })
 
 #define LOG(message) LOGF("%s", message)
+#define LOG_DEBUG(message) LOGF_DEBUG("%s", message)
+#define LOG_INFO(message) LOGF_INFO("%s", message)
+#define LOG_WARN(message) LOGF_WARN("%s", message)
 #define LOGI(message, itemid) LOGA(message, 0xFF, itemid)
 #define LOGA(message, actionid, itemid) \
 	LOGF("%s (a = %d, i = %d)", message, actionid, itemid)

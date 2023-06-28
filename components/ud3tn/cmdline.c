@@ -18,7 +18,7 @@
 #define STR(s) QUOTE(s)
 
 static struct ud3tn_cmdline_options global_cmd_opts;
-
+uint8_t LOG_LEVEL = DEFAULT_LOG_LEVEL;
 /**
  * Helper function for parsing a 64-bit unsigned integer from a given C-string.
  */
@@ -66,7 +66,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		goto finish;
 
 	shorten_long_cli_options(argc, argv);
-	while ((opt = getopt(argc, argv, ":a:b:c:e:l:m:p:s:rRhu")) != -1) {
+	while ((opt = getopt(argc, argv, ":a:b:c:e:l:L:m:p:s:rRhu")) != -1) {
 		switch (opt) {
 		case 'a':
 			if (!optarg || strlen(optarg) < 1) {
@@ -108,6 +108,15 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 				LOG("Invalid lifetime provided!");
 				return NULL;
 			}
+			break;
+		case 'L':
+			if (!optarg || strlen(optarg) != 1 || (
+					optarg[0] != '1' && optarg[0] != '2' && optarg[0] != '3'
+					&& optarg[0] != '4')) {
+				LOG("Invalid log level provided!");
+				return NULL;
+			}
+			LOG_LEVEL = optarg[0] - '0';
 			break;
 		case 'm':
 			if (parse_uint64(optarg, &result->mbs)
@@ -214,6 +223,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--status-reports", "-r"},
 		{"--allow-remote-config", "-R"},
 		{"--usage", "-u"},
+		{"--log-level", "-L"},
 	};
 
 	const unsigned long aliases_count = sizeof(aliases) / sizeof(*aliases);
@@ -236,6 +246,7 @@ static void print_usage_text(void)
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
 		"    [-R, --allow-remote-config]\n"
+		"    [-L 1|2|3|4, --log-level 1|2|3|4]\n"
 		"    [-s PATH --aap-socket PATH] [-u, --usage]\n";
 
 	hal_io_message_printf(usage_text);
@@ -257,6 +268,7 @@ static void print_help_text(void)
 		"  -p, --aap-port PORT         port number of the application agent service\n"
 		"  -r, --status-reports        enable status reporting\n"
 		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
+		"  -L, --log-level             higher or lower log level 4/3/2/1 specifies more or less detailed output\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
 		"  -u, --usage                 print usage summary and exit\n"
 		"\n"
@@ -265,6 +277,7 @@ static void print_help_text(void)
 		"  -c " STR(DEFAULT_CLA_OPTIONS) " \\\n"
 		"  -e " DEFAULT_EID " \\\n"
 		"  -l " STR(DEFAULT_BUNDLE_LIFETIME) " \\\n"
+		"  -L " STR(DEFAULT_LOG_LEVEL) " \\\n"
 		"  -m %lu \\\n"
 		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\n"
 		"\n"

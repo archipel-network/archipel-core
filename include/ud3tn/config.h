@@ -40,7 +40,13 @@ static const int IS_DEBUG_BUILD;
  * BUNDLE_CRC_TYPE_32   = 2
  */
 #define DEFAULT_CRC_TYPE BUNDLE_CRC_TYPE_16
-
+/* Default log level
+ * LOG_ERROR = 1,
+ * LOG_WARN  = 2,
+ * LOG_INFO  = 3,
+ * LOG_DEBUG = 4
+ */
+#define DEFAULT_LOG_LEVEL 3
 
 /*
  * [GENERAL] general configuration options
