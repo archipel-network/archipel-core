@@ -51,12 +51,18 @@ static inline const char *get_log_level_name(const uint8_t level)
 #define LOGF(...) LOGF_GENERIC(3, __VA_ARGS__)
 #define LOGF_ERROR(...) LOGF_GENERIC(1, __VA_ARGS__)
 #define LOGF_WARN(...) LOGF_GENERIC(2, __VA_ARGS__)
-#define LOGF_DEBUG(...) LOGF_GENERIC(4, __VA_ARGS__)
 
 #define LOG(message) LOGF("%s", message)
 #define LOG_ERROR(message) LOGF_ERROR("%s", message)
 #define LOG_WARN(message) LOGF_WARN("%s", message)
+
+#ifdef DEBUG
+#define LOGF_DEBUG(...) LOGF_GENERIC(4, __VA_ARGS__)
 #define LOG_DEBUG(message) LOGF_DEBUG("%s", message)
+#else /* DEBUG */
+#define LOGF_DEBUG(...) ((void)0)
+#define LOG_DEBUG(message) ((void)0)
+#endif /* DEBUG */
 
 #define LOGI(message, itemid) LOGA(message, 0xFF, itemid)
 #define LOGA(message, actionid, itemid) \
