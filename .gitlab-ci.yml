@@ -360,6 +360,45 @@ data-decoder-test:
         - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_sendconfirm_packet.bin
         - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_welcome_packet.bin
 
+unit-test-valgrind:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - make unittest-posix
+        - valgrind --leak-check=no --error-exitcode=1 build/posix/testud3tn
+
+build-valgrind-memory-check:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - make posix
+        - rm -f ./ud3tn.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn & UD3TN_PID=$!
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
+
+integration-test-valgrind-memory-check:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - rm -f ./ud3tn.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
+
 license-check:
     stage: code_quality_test
     when: always

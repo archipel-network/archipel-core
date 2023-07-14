@@ -542,14 +542,20 @@ bool bundle_is_equal_parent(
 
 struct bundle_adu bundle_adu_init(const struct bundle *bundle)
 {
-	return (struct bundle_adu){
-		.protocol_version = bundle->protocol_version,
-		.proc_flags = bundle->proc_flags & ~BUNDLE_FLAG_IS_FRAGMENT,
-		.source = strdup(bundle->source),
-		.destination = strdup(bundle->destination),
-		.payload = NULL,
-		.length = 0
-	};
+	struct bundle_adu bundle_adu;
+
+	// Force initialize also the alignment gaps in the structure
+	// so we can safely pass it via pipe queue
+	memset(&bundle_adu, 0, sizeof(struct bundle_adu));
+
+	bundle_adu.protocol_version = bundle->protocol_version;
+	bundle_adu.proc_flags = bundle->proc_flags & ~BUNDLE_FLAG_IS_FRAGMENT;
+	bundle_adu.source = strdup(bundle->source);
+	bundle_adu.destination = strdup(bundle->destination);
+	bundle_adu.payload = NULL;
+	bundle_adu.length = 0;
+
+	return bundle_adu;
 }
 
 struct bundle_adu bundle_to_adu(struct bundle *bundle)

@@ -126,6 +126,14 @@ static void application_agent_listener_task(void *const param)
 		child_config->socket_fd = conn_fd;
 		child_config->last_bundle_timestamp_ms = 0;
 		child_config->last_bundle_sequence_number = 0;
+		child_config->registered_agent_id = NULL;
+
+		if (pipe(child_config->bundle_pipe_fd) == -1) {
+			LOGERROR("AppAgent", "pipe()", errno);
+			close(conn_fd);
+			free(child_config);
+			continue;
+		}
 
 		const enum ud3tn_result task_creation_result = hal_task_create(
 			application_agent_comm_task,
@@ -451,13 +459,6 @@ static void application_agent_comm_task(void *const param)
 		(struct application_agent_comm_config *)param
 	);
 
-	config->registered_agent_id = NULL;
-
-	if (pipe(config->bundle_pipe_fd) == -1) {
-		LOGERROR("AppAgent", "pipe()", errno);
-		goto pipe_creation_error;
-	}
-
 	char *local_eid = config->parent->bundle_agent_interface->local_eid;
 	const struct aap_message welcome = {
 		.type = AAP_MESSAGE_WELCOME,
@@ -525,7 +526,6 @@ static void application_agent_comm_task(void *const param)
 done:
 	close(config->bundle_pipe_fd[0]);
 	close(config->bundle_pipe_fd[1]);
-pipe_creation_error:
 	deregister_sink(config);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
