@@ -10,7 +10,7 @@ S=0
 
 CHECKPATCH=./external/checkpatch/checkpatch.pl
 
-check_dirs=(include components test/unit)
+check_dirs=(include components test/unit test/decoder)
 
 for check_dir in "${check_dirs[@]}"; do
 	sub_dirs="$(find "$check_dir" -type d)"

@@ -252,6 +252,8 @@ size_t aap_parser_read(
 		consumed += delta;
 	}
 
+	parser->basedata->status = parser->status;
+
 	return consumed;
 }
 

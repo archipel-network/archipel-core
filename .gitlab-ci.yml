@@ -346,6 +346,20 @@ ione-bibe-interoperability-test:
     extends: ion-bibe-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
 
+data-decoder-test:
+    stage: functional_test
+    when: always
+    script:
+        - make clean
+        - make data-decoder
+        - build/posix/ud3tndecode -7 test/decoder/examples/bpv7_test/bpv7_1.bin
+        - build/posix/ud3tndecode -6 test/decoder/examples/bpv6_test/bpv6_1.bin
+        - build/posix/ud3tndecode -s test/decoder/examples/spp_test/spp_1.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_ping_packet.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_sendbundle_packet.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_sendconfirm_packet.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_welcome_packet.bin
+
 license-check:
     stage: code_quality_test
     when: always

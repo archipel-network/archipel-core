@@ -49,3 +49,6 @@ __pycache__
 
 # uD3TN Socket
 *.socket
+
+# directories created by fuzzer
+/outdata 

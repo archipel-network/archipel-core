@@ -163,6 +163,7 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
 			link->config->vtable->cla_rx_task_reset_parsers(
 				link
 			);
+			break;
 		} else if (HAS_FLAG(rx_data->cur_parser->flags,
 				    PARSER_FLAG_BULK_READ)) {
 			/* Bulk read requested - not handled by us. */
@@ -195,7 +196,7 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
  * @return Pointer to the position up to the input buffer is consumed after the
  *         operation.
  */
-static uint8_t *bulk_read(struct cla_link *link)
+uint8_t *rx_bulk_read(struct cla_link *link)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 	uint8_t *parsed;
@@ -348,7 +349,7 @@ static uint8_t *bulk_read(struct cla_link *link)
  *
  * @return Number of bytes remaining in the input buffer after the operation.
  */
-static uint8_t *chunk_read(struct cla_link *link)
+uint8_t *rx_chunk_read(struct cla_link *link)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 	// Receive Step - Receive data from I/O system into buffer
@@ -409,9 +410,9 @@ static void cla_contact_rx_task(void *const param)
 
 	while (!hal_semaphore_is_blocked(link->rx_task_notification)) {
 		if (HAS_FLAG(rx_data->cur_parser->flags, PARSER_FLAG_BULK_READ))
-			parsed = bulk_read(link);
+			parsed = rx_bulk_read(link);
 		else
-			parsed = chunk_read(link);
+			parsed = rx_chunk_read(link);
 
 		/* The whole input buffer was consumed, reset it. */
 		if (parsed == rx_data->input_buffer.end) {
