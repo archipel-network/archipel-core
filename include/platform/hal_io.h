@@ -20,12 +20,27 @@
 
 extern uint8_t LOG_LEVEL;
 
+static inline const char *get_log_level_name(const uint8_t level)
+{
+	switch (level) {
+	case 1:
+		return "ERROR";
+	case 2:
+		return "WARNING";
+	case 3:
+		return "INFO";
+	default:
+		return "DEBUG";
+	}
+}
+
 #define LOGF_GENERIC(level, f_, ...) \
 ({ \
 	if (level <= LOG_LEVEL) { \
 		hal_time_print_log_time_string(); \
 		hal_io_message_printf( \
-			f_ " [%s:%d]\n", \
+			"[%s] " f_ " [%s:%d]\n", \
+			get_log_level_name(level), \
 			__VA_ARGS__, \
 			__FILE__, (int)(__LINE__) \
 		); \

@@ -18,7 +18,7 @@
 #define STR(s) QUOTE(s)
 
 static struct ud3tn_cmdline_options global_cmd_opts;
-uint8_t LOG_LEVEL = DEFAULT_LOG_LEVEL;
+
 /**
  * Helper function for parsing a 64-bit unsigned integer from a given C-string.
  */
@@ -55,6 +55,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->allow_remote_configuration = false;
 	result->exit_immediately = false;
 	result->lifetime_s = DEFAULT_BUNDLE_LIFETIME_S;
+	result->log_level = DEFAULT_LOG_LEVEL;
 	// The following values cannot be 0
 	result->mbs = 0;
 	// The strings are set afterwards if not provided as an option
@@ -116,6 +117,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 				LOG("Invalid log level provided!");
 				return NULL;
 			}
+			result->log_level = optarg[0] - '0';
 			LOG_LEVEL = optarg[0] - '0';
 			break;
 		case 'm':
