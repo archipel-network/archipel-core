@@ -18,6 +18,7 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_store.h"
 
 #include "cbor.h"
 
@@ -465,10 +466,25 @@ static void bundle_forwarding_contraindicated(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
-	/* 5.4.1-1: For now, we declare forwarding failure everytime */
-	bundle_forwarding_failed(ctx, bundle, reason);
-	/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
-	/* 5.4.1-2 (b): Will not be handled */
+	if(reason == BUNDLE_SR_REASON_NO_KNOWN_ROUTE){
+
+		LOGF("BundleProcessor: No route found for %s, persisting bundle %p...", bundle->destination, bundle);
+
+		enum ud3tn_result result = hal_store_bundle(bundle);
+		if(result != UD3TN_OK) {
+			LOGF("BundleProcessor: Failed to persist bundle %p", bundle);
+			bundle_forwarding_failed(ctx, bundle, reason);
+		} else {
+			bundle_free(bundle);
+		}
+
+	} else {
+		
+		bundle_forwarding_failed(ctx, bundle, reason);
+		/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
+		/* 5.4.1-2 (b): Will not be handled */
+	
+	}	
 }
 
 /* 5.4.2 */
