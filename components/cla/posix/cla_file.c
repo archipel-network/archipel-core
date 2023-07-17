@@ -496,7 +496,7 @@ static enum ud3tn_result filecla_end_scheduled_contact(
 	);
 
 	hal_semaphore_take_blocking(file_config->contacts_semaphore);
-	struct filecla_contact* contact =  htab_remove(&file_config->contacts, eid); // TODO Fix that
+	struct filecla_contact* contact =  htab_remove(&file_config->contacts, eid);
 	hal_semaphore_release(file_config->contacts_semaphore);
 
 	if(contact->queue.tx_queue_handle != NULL){
