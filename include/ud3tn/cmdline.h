@@ -12,6 +12,7 @@ struct ud3tn_cmdline_options {
 	char *aap_node; // e.g.: 127.0.0.1
 	char *aap_service; // e.g.: 4242
 	uint8_t bundle_version;
+	uint8_t log_level;
 	bool status_reporting;
 	bool allow_remote_configuration;
 	bool exit_immediately; // after parsing --help or --usage etc.

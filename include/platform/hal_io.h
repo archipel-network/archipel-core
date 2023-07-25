@@ -18,17 +18,52 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define LOGF(f_, ...) ({ \
-	hal_time_print_log_time_string(); \
-	hal_io_message_printf( \
-		f_ " [%s:%d]\n", \
-		__VA_ARGS__, \
-		__FILE__, (int)(__LINE__) \
-	); \
-	fflush(stderr); \
+extern uint8_t LOG_LEVEL;
+
+static inline const char *get_log_level_name(const uint8_t level)
+{
+	switch (level) {
+	case 1:
+		return "ERROR";
+	case 2:
+		return "WARNING";
+	case 3:
+		return "INFO";
+	default:
+		return "DEBUG";
+	}
+}
+
+#define LOGF_GENERIC(level, f_, ...) \
+({ \
+	if (level <= LOG_LEVEL) { \
+		hal_time_print_log_time_string(); \
+		hal_io_message_printf( \
+			"[%s] " f_ " [%s:%d]\n", \
+			get_log_level_name(level), \
+			__VA_ARGS__, \
+			__FILE__, (int)(__LINE__) \
+		); \
+		fflush(stderr); \
+	} \
 })
 
+#define LOGF(...) LOGF_GENERIC(3, __VA_ARGS__)
+#define LOGF_ERROR(...) LOGF_GENERIC(1, __VA_ARGS__)
+#define LOGF_WARN(...) LOGF_GENERIC(2, __VA_ARGS__)
+
 #define LOG(message) LOGF("%s", message)
+#define LOG_ERROR(message) LOGF_ERROR("%s", message)
+#define LOG_WARN(message) LOGF_WARN("%s", message)
+
+#ifdef DEBUG
+#define LOGF_DEBUG(...) LOGF_GENERIC(4, __VA_ARGS__)
+#define LOG_DEBUG(message) LOGF_DEBUG("%s", message)
+#else /* DEBUG */
+#define LOGF_DEBUG(...) ((void)0)
+#define LOG_DEBUG(message) ((void)0)
+#endif /* DEBUG */
+
 #define LOGI(message, itemid) LOGA(message, 0xFF, itemid)
 #define LOGA(message, actionid, itemid) \
 	LOGF("%s (a = %d, i = %d)", message, actionid, itemid)

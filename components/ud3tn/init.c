@@ -22,6 +22,7 @@
 #include <string.h>
 
 static struct bundle_agent_interface bundle_agent_interface;
+uint8_t LOG_LEVEL = DEFAULT_LOG_LEVEL;
 
 // Reference kept for program runtime
 static struct application_agent_config *aa_cfg;
@@ -41,6 +42,8 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	if (opt->exit_immediately)
 		exit(EXIT_SUCCESS);
+
+	LOG_LEVEL = opt->log_level;
 
 	LOGF("INIT: Configured to use EID \"%s\" and BPv%d",
 	     opt->eid, opt->bundle_version);
