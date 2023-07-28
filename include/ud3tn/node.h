@@ -49,10 +49,13 @@ struct node_list {
 	struct node_list *next;
 };
 
-#define CONTACT_CAPACITY(contact, p) \
-	(p == 1 ? contact->remaining_capacity_p1 : \
-	(p == 2 ? contact->remaining_capacity_p2 : \
-	contact->remaining_capacity_p0))
+#define CONTACT_CAPACITY(contact, p) ({ \
+	__typeof__(contact) _c = (contact); \
+	__typeof__(p) _p = (p); \
+	(_p == 1 ? _c->remaining_capacity_p1 : \
+	(_p == 2 ? _c->remaining_capacity_p2 : \
+	_c->remaining_capacity_p0)); \
+})
 
 struct node *node_create(char *eid);
 struct contact *contact_create(struct node *node);

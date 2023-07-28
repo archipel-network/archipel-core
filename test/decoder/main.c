@@ -365,7 +365,7 @@ static int parse_spp(FILE *const fp)
 	struct spp_context_t *context_spp = spp_new_context();
 
 	// check should fail in any case if the parser has not touched the packet:
-	spp_result.segment_status = (enum spp_segment_status_t) 789;
+	spp_result.segment_status = (enum spp_segment_status_t)789;
 
 	if (!spp_parser_init(&packetSPP_parser, context_spp)) {
 		fprintf(stderr, "Failed to initialize parser.\n");
@@ -384,7 +384,8 @@ static int parse_spp(FILE *const fp)
 		return 1;
 	}
 
-	// if parse_until_done returned UD3TN_OK, spp_result should be within the valid range of values
+	// if parse_until_done returned UD3TN_OK, spp_result should be within
+	// the valid range of values
 	ASSERT(spp_result.segment_status == SPP_SEGMENT_CONTINUATION ||
 	spp_result.segment_status == SPP_SEGMENT_FIRST ||
 	spp_result.segment_status == SPP_SEGMENT_LAST ||

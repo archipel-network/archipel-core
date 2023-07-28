@@ -105,8 +105,7 @@ static void parse_bundle_chunked(const size_t chunk_size)
 	size_t read = 0;
 	size_t chunk = chunk_size;
 
-	while (read < len_simple_bundle
-			&& state.basedata->status == PARSER_STATUS_GOOD) {
+	while (read < len_simple_bundle && state.basedata->status == PARSER_STATUS_GOOD) {
 		if (state.basedata->flags & PARSER_FLAG_BULK_READ) {
 			TEST_ASSERT_TRUE(read + state.basedata->next_bytes
 				< len_simple_bundle);

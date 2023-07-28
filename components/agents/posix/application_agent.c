@@ -262,7 +262,6 @@ static int16_t process_aap_message(
 		return result;
 
 	switch (msg.type) {
-
 	case AAP_MESSAGE_REGISTER:
 		LOGF("AppAgent: Received registration request for ID \"%s\".",
 		     msg.eid);

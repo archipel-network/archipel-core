@@ -319,7 +319,7 @@ static int spp_tc_serialize_preamble(const struct spp_tc_config_t *format,
 			/* set maximum value */
 			byte |= 0x0c;
 		} else {
-			byte |= (format->unsegmented.base_unit_octets-1) << 2;
+			byte |= (format->unsegmented.base_unit_octets - 1) << 2;
 		}
 
 		if (fractional_wide) {

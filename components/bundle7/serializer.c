@@ -3,7 +3,7 @@
 #include "bundle7/serializer.h"
 
 #include "cbor.h"
-#include "compilersupport_p.h" // Private TinyCBOR header, used for endianess
+#include "compilersupport_p.h" // Private TinyCBOR header, used for endianness
 
 #include <inttypes.h>
 #include <stddef.h>
@@ -61,9 +61,8 @@ static CborError write_crc(
 		crc->checksum = cbor_htonl(crc->checksum);
 
 		return cbor_encode_byte_string(encoder, crc->bytes, 4);
-	}
 	// CRC-16
-	else {
+	} else {
 		// Feed the "zero" CRC checksum
 		crc->feed(crc, 0x42);
 		crc->feed(crc, 0x00);

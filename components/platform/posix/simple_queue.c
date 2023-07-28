@@ -26,7 +26,6 @@
 static char *increment(
 	char *current, char *abs_start, char *abs_end, unsigned int item_size)
 {
-
 	char *val = current + item_size;
 
 	if (val > abs_end)
@@ -38,7 +37,6 @@ static char *increment(
 static char *decrement(
 	char *current, char *abs_start, char *abs_end, unsigned int item_size)
 {
-
 	char *val = current - item_size;
 
 	if (val < abs_start)
@@ -55,7 +53,7 @@ Queue_t *queueCreate(unsigned int queue_length, unsigned int item_size)
 		exit(EXIT_FAILURE);
 	}
 
-	// allocate memory to store managment data
+	// allocate memory to store management data
 	Queue_t *queue = malloc(sizeof(Queue_t));
 
 	// initialise the queue's semaphore
@@ -91,7 +89,7 @@ void queueDelete(Queue_t *queue)
 	// destroy the semaphore
 	hal_semaphore_delete(queue->semaphore);
 
-	// free the memory ressources for the management data
+	// free the memory resources for the management data
 	free(queue);
 }
 

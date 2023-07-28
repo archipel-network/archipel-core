@@ -73,7 +73,7 @@ static int8_t remove_expired_contacts(
 			if (i != ctx->current_contact_count - 1) {
 				for (c = i; c < ctx->current_contact_count; c++)
 					ctx->current_contacts[c] =
-						ctx->current_contacts[c+1];
+						ctx->current_contacts[c + 1];
 			}
 			ctx->current_contact_count--;
 		}
@@ -367,8 +367,8 @@ static void manage_contacts(
 
 static void contact_manager_task(void *cm_parameters)
 {
-	struct contact_manager_task_parameters *parameters
-		= (struct contact_manager_task_parameters *)cm_parameters;
+	struct contact_manager_task_parameters *parameters =
+		(struct contact_manager_task_parameters *)cm_parameters;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
 	uint64_t cur_time_ms, next_time_ms;
 	int64_t delay_ms;

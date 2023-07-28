@@ -382,8 +382,8 @@ static void tcpspp_send_packet_data(
 	struct cla_link *link, const void *data, const size_t length)
 {
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
-	struct tcpspp_config *tcpspp_config_
-		= (struct tcpspp_config *)link->config;
+	struct tcpspp_config *tcpspp_config_ =
+		(struct tcpspp_config *)link->config;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
 		LOG("tcpspp: Error during sending. Data discarded.");

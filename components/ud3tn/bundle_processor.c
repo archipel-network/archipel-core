@@ -173,8 +173,8 @@ int bundle_processor_perform_agent_action(
 	QueueIdentifier_t feedback_queue;
 	int result;
 
-	ASSERT((type == BP_SIGNAL_AGENT_REGISTER && callback)
-		|| type == BP_SIGNAL_AGENT_DEREGISTER);
+	ASSERT((type == BP_SIGNAL_AGENT_REGISTER && callback) ||
+	       type == BP_SIGNAL_AGENT_DEREGISTER);
 	ASSERT(sink_identifier);
 
 	aaps = malloc(sizeof(struct agent_manager_parameters));
@@ -571,7 +571,6 @@ static void bundle_receive(struct bp_context *const ctx, struct bundle *bundle)
 				*e = bundle_block_entry_free(*e);
 				break;
 			}
-
 		}
 		if (*e != NULL)
 			e = &(*e)->next;
@@ -832,11 +831,13 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 		);
 
 		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL) {
-			LOGF("BundleProcessor: Received administrative record of type %u", record->type);
+			LOGF("BundleProcessor: Received administrative record of type %u",
+			     record->type);
 			bundle_handle_custody_signal(record);
 			bundle_adu_free_members(adu);
 		} else if (record != NULL &&
-				  (record->type == BUNDLE_AR_BPDU || record->type == BUNDLE_AR_BPDU_COMPAT)) {
+			   (record->type == BUNDLE_AR_BPDU ||
+			    record->type == BUNDLE_AR_BPDU_COMPAT)) {
 			ASSERT(record->start_of_record_ptr != NULL);
 			ASSERT(record->start_of_record_ptr <
 			       adu.payload + adu.length);
@@ -855,7 +856,11 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 			);
 			adu.proc_flags = BUNDLE_FLAG_ADMINISTRATIVE_RECORD;
 
-			const char *agent_id = get_eid_scheme(ctx->local_eid) == EID_SCHEME_DTN ? "bibe" : "2925";
+			const char *agent_id = (
+				get_eid_scheme(ctx->local_eid) == EID_SCHEME_DTN
+				? "bibe"
+				: "2925"
+			);
 
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",

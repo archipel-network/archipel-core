@@ -187,10 +187,14 @@ struct bundle_unique_identifier {
 };
 
 enum bundle_administrative_record_type {
-	BUNDLE_AR_STATUS_REPORT  = 1,	// administrative record is a status report
-	BUNDLE_AR_CUSTODY_SIGNAL = 2,	// administrative record is a custody signal
-	BUNDLE_AR_BPDU = 3,				// administrative record is a BPDU as defined in the most recent BIBE draft
-	BUNDLE_AR_BPDU_COMPAT = 7,		// administrative record is a BPDU as defined in the first BIBE draft
+	// administrative record is a status report
+	BUNDLE_AR_STATUS_REPORT  = 1,
+	// administrative record is a custody signal
+	BUNDLE_AR_CUSTODY_SIGNAL = 2,
+	// administrative record is a BPDU as defined in the most recent BIBE draft
+	BUNDLE_AR_BPDU = 3,
+	// administrative record is a BPDU as defined in the first BIBE draft
+	BUNDLE_AR_BPDU_COMPAT = 7,
 };
 
 enum bundle_administrative_record_flags {
@@ -257,7 +261,8 @@ struct bibe_protocol_data_unit {
 	// requested SHALL be the current value of the local node's custodial
 	// transmission count, plus 1.
 	//
-	// Retransmission time (i.e. the time by which custody disposition for this BPDU is expected)
+	// Retransmission time (i.e. the time by which custody disposition for this BPDU is
+	// expected)
 	//
 	// Retransmission time for a BPDU for which custody transfer is NOT requested SHALL be
 	// zero. Retransmission time for a BPDU for which custody transfer IS
@@ -266,8 +271,8 @@ struct bibe_protocol_data_unit {
 	//
 	// Encapsulated Bundle
 	//
-	// A single BP bundle, termed the "encapsulated bundle". Represented here as a pointer to
-	// the location of the bundle byte string in memory.
+	// A single BP bundle, termed the "encapsulated bundle". Represented here as a pointer
+	// to the location of the bundle byte string in memory.
 
 	uint64_t transmission_id;
 	uint64_t retransmission_time;

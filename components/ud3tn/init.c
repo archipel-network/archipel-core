@@ -60,16 +60,17 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_agent_interface.local_eid = opt->eid;
 
 	/* Initialize queues to communicate with the subsystems */
-	bundle_agent_interface.bundle_signaling_queue
-			= hal_queue_create(BUNDLE_QUEUE_LENGTH,
-				sizeof(struct bundle_processor_signal));
+	bundle_agent_interface.bundle_signaling_queue = hal_queue_create(
+		BUNDLE_QUEUE_LENGTH,
+		sizeof(struct bundle_processor_signal)
+	);
 	if (!bundle_agent_interface.bundle_signaling_queue) {
 		LOG("INIT: Allocation of `bundle_signaling_queue` failed");
 		exit(EXIT_FAILURE);
 	}
 
-	struct bundle_processor_task_parameters *bundle_processor_task_params
-		= malloc(sizeof(struct bundle_processor_task_parameters));
+	struct bundle_processor_task_parameters *bundle_processor_task_params =
+		malloc(sizeof(struct bundle_processor_task_parameters));
 
 	if (!bundle_processor_task_params) {
 		LOG("INIT: Allocation of `bundle_processor_task_params` failed");

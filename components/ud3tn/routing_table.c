@@ -46,8 +46,7 @@ void routing_table_free(void)
 
 /* LOOKUP */
 
-static struct node_list **get_node_entry_ptr_by_eid(
-	const char *eid)
+static struct node_list **get_node_entry_ptr_by_eid(const char *eid)
 {
 	struct node_list **cur = &node_list;
 
@@ -62,11 +61,9 @@ static struct node_list **get_node_entry_ptr_by_eid(
 	return NULL;
 }
 
-static struct node_list *get_node_entry_by_eid(
-	const char *eid)
+static struct node_list *get_node_entry_by_eid(const char *eid)
 {
-	struct node_list **entry_ptr
-		= get_node_entry_ptr_by_eid(eid);
+	struct node_list **entry_ptr = get_node_entry_ptr_by_eid(eid);
 
 	if (entry_ptr == NULL)
 		return NULL;

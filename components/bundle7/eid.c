@@ -139,7 +139,7 @@ CborError eid_parse_dtn(CborValue *it, char **eid)
 		return err;
 
 	// Remaining bytes are not sufficient
-	if ((size_t) (it->parser->source.end - it->source.ptr) < length)
+	if ((size_t)(it->parser->source.end - it->source.ptr) < length)
 		return CborErrorUnexpectedEOF;
 
 	// The number of bytes written to the buffer will be written to the
@@ -232,7 +232,7 @@ CborError eid_parse_ipn(CborValue *it, char **eid)
 	// We use snprintf() because sprintf() would use a different
 	// malloc() memory allocator then the bundle7 library.
 	ASSERT(
-		snprintf(*eid, length, "ipn:%"PRIu64".%"PRIu64,
+		snprintf(*eid, length, "ipn:%" PRIu64 ".%" PRIu64,
 			 nodenum, servicenum) + 1 == (ssize_t)length
 	);
 
@@ -388,7 +388,7 @@ uint8_t *bundle7_eid_serialize_alloc(const char *eid, size_t *length)
 		return NULL;
 	}
 
-	*length = (size_t) written;
+	*length = (size_t)written;
 	return compress;
 }
 
@@ -419,7 +419,7 @@ int bundle7_eid_serialize(const char *eid, uint8_t *buffer, size_t buffer_size)
 	cbor_encoder_init(&encoder, buffer, buffer_size, 0);
 	err = bundle7_eid_serialize_cbor(eid, &encoder);
 
-	// A non-recoverable error occured
+	// A non-recoverable error occurred
 	if (err != CborNoError && err != CborErrorOutOfMemory)
 		return -1;
 

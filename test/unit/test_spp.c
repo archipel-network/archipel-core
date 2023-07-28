@@ -13,7 +13,7 @@
 TEST_GROUP(spp);
 
 static struct spp_context_t *ctx;
-static uint8_t buf[sizeof(wchar_t)*512];
+static uint8_t buf[sizeof(wchar_t) * 512];
 
 TEST_SETUP(spp)
 {

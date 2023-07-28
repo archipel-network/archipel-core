@@ -12,26 +12,26 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-static char const EID_START_DELIMITER = '(';
-static char const EID_END_DELIMITER = ')';
-static char const CLA_ADDR_START_DELIMITER = '(';
-static char const CLA_ADDR_END_DELIMITER = ')';
-static char const NODE_CONF_RELIABILITY_SEPARATOR = ',';
-static char const NODE_CONF_CLA_ADDR_SEPARATOR = ':';
-static char const CLA_ADDR_NODES_SEPARATOR = ':';
-static char const LIST_START_DELIMITER = '[';
-static char const LIST_END_DELIMITER = ']';
-static char const LIST_ELEMENT_SEPARATOR = ',';
-static char const OBJECT_START_DELIMITER = '{';
-static char const OBJECT_END_DELIMITER = '}';
-static char const OBJECT_ELEMENT_SEPARATOR = ',';
-static char const NODES_CONTACTS_SEPARATOR = ':';
+static const char EID_START_DELIMITER = '(';
+static const char EID_END_DELIMITER = ')';
+static const char CLA_ADDR_START_DELIMITER = '(';
+static const char CLA_ADDR_END_DELIMITER = ')';
+static const char NODE_CONF_RELIABILITY_SEPARATOR = ',';
+static const char NODE_CONF_CLA_ADDR_SEPARATOR = ':';
+static const char CLA_ADDR_NODES_SEPARATOR = ':';
+static const char LIST_START_DELIMITER = '[';
+static const char LIST_END_DELIMITER = ']';
+static const char LIST_ELEMENT_SEPARATOR = ',';
+static const char OBJECT_START_DELIMITER = '{';
+static const char OBJECT_END_DELIMITER = '}';
+static const char OBJECT_ELEMENT_SEPARATOR = ',';
+static const char NODES_CONTACTS_SEPARATOR = ':';
 
-static uint8_t const COMMAND_END_MARKER = ';';
+static const uint8_t COMMAND_END_MARKER = ';';
 
-static uint8_t const DEFAULT_EID_BUFFER_SIZE = 16;
-static uint8_t const DEFAULT_CLA_ADDR_BUFFER_SIZE = 21;
-static uint8_t const DEFAULT_INT_BUFFER_SIZE = 16;
+static const uint8_t DEFAULT_EID_BUFFER_SIZE = 16;
+static const uint8_t DEFAULT_CLA_ADDR_BUFFER_SIZE = 21;
+static const uint8_t DEFAULT_INT_BUFFER_SIZE = 16;
 
 static void send_router_command(struct config_parser *parser);
 
@@ -150,8 +150,8 @@ static void begin_read_contact(struct config_parser *parser)
 
 static void begin_read_integer(struct config_parser *parser)
 {
-	parser->current_int_data
-		= malloc(DEFAULT_INT_BUFFER_SIZE * sizeof(char));
+	parser->current_int_data =
+		malloc(DEFAULT_INT_BUFFER_SIZE * sizeof(char));
 	parser->current_index = 0;
 }
 
@@ -236,8 +236,8 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 		}
 		break;
 	case RP_EXPECT_NODE_CONF_RELIABILITY:
-		if (byte == NODE_CONF_CLA_ADDR_SEPARATOR
-			|| byte == COMMAND_END_MARKER
+		if (byte == NODE_CONF_CLA_ADDR_SEPARATOR ||
+		    byte == COMMAND_END_MARKER
 		) {
 			end_read_uint16(parser, &tmp);
 			if (tmp < 100 || tmp > 1000) {
@@ -390,8 +390,8 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint32(parser, &(parser->current_contact->data
 						  ->bitrate_bytes_per_s));
-			parser->stage
-				= RP_EXPECT_CONTACT_NODE_LIST_START_DELIMITER;
+			parser->stage =
+				RP_EXPECT_CONTACT_NODE_LIST_START_DELIMITER;
 		} else if (byte == OBJECT_END_DELIMITER) {
 			end_read_uint32(parser, &(parser->current_contact->data
 						  ->bitrate_bytes_per_s));
@@ -465,14 +465,11 @@ static void config_parser_read_byte(struct config_parser *parser, uint8_t byte)
 
 	if (parser->stage == RP_EXPECT_COMMAND_TYPE) {
 		parser->stage = RP_EXPECT_NODE_CONF_START_DELIMITER;
-		if (byte >= (uint8_t)ROUTER_COMMAND_ADD
-			&& byte <= (uint8_t)ROUTER_COMMAND_QUERY
-		) {
-			parser->router_command->type
-				= (enum router_command_type)byte;
-		} else {
+		if (byte >= (uint8_t)ROUTER_COMMAND_ADD &&
+		    byte <= (uint8_t)ROUTER_COMMAND_QUERY)
+			parser->router_command->type = (enum router_command_type)byte;
+		else
 			parser->basedata->status = PARSER_STATUS_ERROR;
-		}
 	} else {
 		read_command(parser, *(char *)(&byte));
 	}
@@ -488,8 +485,8 @@ size_t config_parser_read(struct config_parser *parser,
 
 	while (i < length) {
 		config_parser_read_byte(parser, buffer[i]);
-		if (parser->basedata->status != PARSER_STATUS_GOOD
-		    && parser->basedata->status != PARSER_STATUS_DONE) {
+		if (parser->basedata->status != PARSER_STATUS_GOOD &&
+		    parser->basedata->status != PARSER_STATUS_DONE) {
 			LOGF("ConfigAgentParser: parser status was not good at %d ('%c') -> reset parser",
 			     i, buffer[i]);
 			config_parser_reset(parser);

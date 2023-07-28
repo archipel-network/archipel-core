@@ -233,8 +233,8 @@ struct bundle6_dict_descriptor *bundle6_recalculate_header_length_internal(
 {
 	struct bundle6_dict_descriptor *ddesc = bundle6_calculate_dict(bundle);
 
-	bundle->primary_block_length
-		= 1
+	bundle->primary_block_length =
+		1
 		+ sdnv_get_size_u32(bundle->proc_flags)
 		+ sdnv_get_size_u32(bundle->primary_block_length)
 		+ sdnv_get_size_u32(

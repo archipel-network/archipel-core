@@ -12,26 +12,6 @@
 
 /* COMMON FUNCTIONS */
 
-#define count_list_next_length(list, cnt) do { \
-	if (list != NULL) \
-		cnt = 1; \
-	iterate_list_next(list) { ++cnt; } \
-} while (0)
-
-#define iterate_list_next(list) \
-	for (; list; list = (list)->next)
-
-#define list_element_free(list) do { \
-	void *e = list->next; \
-	free(list); \
-	list = e; \
-} while (0)
-
-#define list_free(list) { \
-while (list != NULL) { \
-	list_element_free(list); \
-} }
-
 #ifdef MIN
 #undef MIN
 #endif
@@ -51,7 +31,7 @@ while (list != NULL) { \
 	_b > _a ? _b : _a; \
 })
 
-#define HAS_FLAG(value, flag) ((value & flag) != 0)
+#define HAS_FLAG(value, flag) (((value) & (flag)) != 0)
 
 #define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define ARRAY_SIZE ARRAY_LENGTH

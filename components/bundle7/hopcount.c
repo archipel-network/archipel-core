@@ -27,7 +27,7 @@ bool bundle7_hop_count_parse(struct bundle_hop_count *hop_count,
 		return false;
 
 	cbor_value_get_uint64(&it, &number);
-	hop_count->limit = (uint16_t) number;
+	hop_count->limit = (uint16_t)number;
 
 	// next item
 	err = cbor_value_advance_fixed(&it);
@@ -41,7 +41,7 @@ bool bundle7_hop_count_parse(struct bundle_hop_count *hop_count,
 		return false;
 
 	cbor_value_get_uint64(&it, &number);
-	hop_count->count = (uint16_t) number;
+	hop_count->count = (uint16_t)number;
 
 	return true;
 }

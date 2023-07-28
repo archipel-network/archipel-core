@@ -180,7 +180,7 @@ static char *bundle6_create_eid_cbhe(const struct bundle6_eid_reference ref)
 	if (eid == NULL)
 		return NULL;
 
-	snprintf(eid, length, "ipn:%"PRIu64".%"PRIu64,
+	snprintf(eid, length, "ipn:%" PRIu64 ".%" PRIu64,
 		 ref.scheme_offset, ref.ssp_offset);
 
 	return eid;
@@ -301,8 +301,7 @@ static inline void bundle6_parser_next(struct bundle6_parser *state)
 			// We ensure that the dict is zero-terminated
 			state->dict = malloc(state->cur_bytes_remaining + 1);
 			if (state->dict == NULL)
-				state->basedata->status
-					= PARSER_STATUS_ERROR;
+				state->basedata->status = PARSER_STATUS_ERROR;
 			else
 				state->dict[state->cur_bytes_remaining] = 0;
 		}
@@ -393,9 +392,8 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 	uint8_t byte)
 {
 	if (state->current_block == PARSER_BLOCK_PRIMARY) {
-		if (bundle6_parser_length_known(state)
-			&& (state->primary_bytes_remaining == 0)
-		) {
+		if (bundle6_parser_length_known(state) &&
+		    state->primary_bytes_remaining == 0) {
 			state->basedata->status = PARSER_STATUS_ERROR;
 			state->error = PARSER_ERROR_BLOCK_LENGTH_EXHAUSTED;
 			return;
@@ -412,15 +410,15 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 	case PARSER_STAGE_PROC_FLAGS:
 		ASSERT(sizeof(state->bundle->proc_flags) == sizeof(uint32_t));
 		sdnv_read_u32(&state->sdnv_state,
-			(uint32_t *)&state->bundle->proc_flags, byte);
+			      (uint32_t *)&state->bundle->proc_flags, byte);
 		bundle6_parser_wait_for_sdnv(
 				state, PARSER_STAGE_BLOCK_LENGTH);
 		break;
 	case PARSER_STAGE_BLOCK_LENGTH:
 		sdnv_read_u16(&state->sdnv_state,
-				&state->bundle->primary_block_length, byte);
-			bundle6_parser_wait_for_sdnv(
-				state, PARSER_STAGE_DESTINATION_EID_SCHEME);
+			      &state->bundle->primary_block_length, byte);
+		bundle6_parser_wait_for_sdnv(
+			state, PARSER_STAGE_DESTINATION_EID_SCHEME);
 		break;
 	case PARSER_STAGE_DESTINATION_EID_SCHEME:
 		sdnv_read_u64(&state->sdnv_state,
@@ -529,10 +527,9 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 				state->custodian_eidref
 			);
 			if (state->bundle->source == NULL ||
-					state->bundle->destination == NULL ||
-					state->bundle->report_to == NULL ||
-					state->bundle->current_custodian == NULL
-			) {
+			    state->bundle->destination == NULL ||
+			    state->bundle->report_to == NULL ||
+			    state->bundle->current_custodian == NULL) {
 				state->basedata->status = PARSER_STATUS_ERROR;
 				break;
 			}
@@ -568,18 +565,18 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 	case PARSER_STAGE_BLOCK_FLAGS:
 		sdnv_read_u8(
 			&state->sdnv_state,
-			(uint8_t *)&(*state->current_block_entry)
-				->data->flags, byte);
-		if (bundle6_parser_wait_for_sdnv(
-			state, PARSER_STAGE_BLOCK_DATA_LENGTH)) {
+			(uint8_t *)&(*state->current_block_entry)->data->flags,
+			byte
+		);
+		if (bundle6_parser_wait_for_sdnv(state,
+						 PARSER_STAGE_BLOCK_DATA_LENGTH)) {
 			enum bundle_block_flags flags =
-				(*state->current_block_entry)
-					->data->flags;
-			state->last_block = HAS_FLAG(flags,
-				BUNDLE_V6_BLOCK_FLAG_LAST_BLOCK);
-			if (HAS_FLAG(flags,
-				BUNDLE_V6_BLOCK_FLAG_HAS_EID_REF_FIELD)
-			) {
+				(*state->current_block_entry)->data->flags;
+			state->last_block = HAS_FLAG(
+				flags,
+				BUNDLE_V6_BLOCK_FLAG_LAST_BLOCK
+			);
+			if (HAS_FLAG(flags, BUNDLE_V6_BLOCK_FLAG_HAS_EID_REF_FIELD)) {
 				state->next_stage =
 					PARSER_STAGE_BLOCK_EID_REF_CNT;
 			}
@@ -590,10 +587,8 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 		if (bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_BLOCK_EID_REF_SCH)) {
 			state->current_index = 0;
-			if (state->current_size == 0) {
-				state->next_stage
-					= PARSER_STAGE_BLOCK_DATA_LENGTH;
-			}
+			if (state->current_size == 0)
+				state->next_stage = PARSER_STAGE_BLOCK_DATA_LENGTH;
 		}
 		break;
 	case PARSER_STAGE_BLOCK_EID_REF_SCH:

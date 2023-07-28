@@ -112,8 +112,8 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			break;
 		case 'L':
 			if (!optarg || strlen(optarg) != 1 || (
-					optarg[0] != '1' && optarg[0] != '2' && optarg[0] != '3'
-					&& optarg[0] != '4')) {
+					optarg[0] != '1' && optarg[0] != '2' &&
+					optarg[0] != '3' && optarg[0] != '4')) {
 				LOG("Invalid log level provided!");
 				return NULL;
 			}
@@ -167,20 +167,19 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 
 finish:
 	// use Unix domain socket by default
-	if (!result->aap_socket &&
-	    !result->aap_node &&
-	    !result->aap_service)
+	if (!result->aap_socket && !result->aap_node && !result->aap_service) {
 		result->aap_socket = strdup("./" DEFAULT_AAP_SOCKET_FILENAME);
 	// prefere Unix domain socket over TCP
-	else if (result->aap_socket &&
-		(result->aap_node || result->aap_service))
-		result->aap_node = result->aap_service = NULL;
+	} else if (result->aap_socket && (result->aap_node || result->aap_service)) {
+		result->aap_node = NULL;
+		result->aap_service = NULL;
 	// set default TCP sevice port
-	else if (result->aap_node && !result->aap_service)
+	} else if (result->aap_node && !result->aap_service) {
 		result->aap_service = strdup(DEFAULT_AAP_SERVICE);
 	// set default TCP node IP
-	else if (!result->aap_node && result->aap_service)
+	} else if (!result->aap_node && result->aap_service) {
 		result->aap_node = strdup(DEFAULT_AAP_NODE);
+	}
 
 	if (!result->eid)
 		result->eid = strdup(DEFAULT_EID);
@@ -230,7 +229,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 
 	const unsigned long aliases_count = sizeof(aliases) / sizeof(*aliases);
 
-	for (unsigned long i = 1; i < (unsigned long) argc; i++) {
+	for (unsigned long i = 1; i < (unsigned long)argc; i++) {
 		for (unsigned long j = 0; j < aliases_count; j++) {
 			if (strcmp(aliases[j].long_form, argv[i]) == 0) {
 				argv[i] = aliases[j].short_form;

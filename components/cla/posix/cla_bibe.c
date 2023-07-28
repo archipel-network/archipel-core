@@ -147,7 +147,11 @@ static void bibe_link_management_task(void *p)
 
 			const struct aap_message register_bibe = {
 				.type = AAP_MESSAGE_REGISTER,
-				.eid = get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN ? "2925" : "bibe",
+				.eid = (
+					get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN
+					? "2925"
+					: "bibe"
+				),
 				.eid_length = 4,
 			};
 			struct tcp_write_to_socket_param wsp = {
