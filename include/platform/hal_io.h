@@ -36,11 +36,12 @@ static inline const char *get_log_level_name(const uint8_t level)
 
 #define LOGF_GENERIC(level, f_, ...) \
 ({ \
-	if (level <= LOG_LEVEL) { \
+	__typeof__(level) _level = (level); \
+	if (_level <= LOG_LEVEL) { \
 		hal_time_print_log_time_string(); \
 		hal_io_message_printf( \
 			"[%s] " f_ " [%s:%d]\n", \
-			get_log_level_name(level), \
+			get_log_level_name(_level), \
 			__VA_ARGS__, \
 			__FILE__, (int)(__LINE__) \
 		); \
