@@ -112,8 +112,8 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			break;
 		case 'L':
 			if (!optarg || strlen(optarg) != 1 || (
-					optarg[0] != '1' && optarg[0] != '2' && optarg[0] != '3'
-					&& optarg[0] != '4')) {
+					optarg[0] != '1' && optarg[0] != '2' &&
+					optarg[0] != '3' && optarg[0] != '4')) {
 				LOG("Invalid log level provided!");
 				return NULL;
 			}
