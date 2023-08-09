@@ -2,10 +2,13 @@ include mk/toolchain.mk
 
 # COMPONENTS
 
-EXTERNAL_INCLUDES += -Iexternal/tinycbor/src \
-                     -Iexternal/util/include
+EXTERNAL_INCLUDES += -Iexternal/nanopb \
+                     -Iexternal/tinycbor/src \
+                     -Iexternal/util/include \
+                     -Igenerated/components
 
 $(eval $(call addComponentWithRules,components/aap))
+$(eval $(call addComponentWithRules,components/aap2))
 $(eval $(call addComponentWithRules,components/agents))
 $(eval $(call addComponentWithRules,components/agents/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/bundle6))
@@ -15,6 +18,13 @@ $(eval $(call addComponentWithRules,components/cla/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/platform/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/spp))
 $(eval $(call addComponentWithRules,components/ud3tn))
+
+NANOPB_SOURCES := \
+	pb_common.c \
+	pb_encode.c \
+	pb_decode.c
+
+$(eval $(call addComponentWithRules,external/nanopb,$(NANOPB_SOURCES)))
 
 TINYCBOR_SOURCES := \
 	cborerrorstrings.c \
@@ -28,6 +38,8 @@ TINYCBOR_SOURCES := \
 
 $(eval $(call addComponentWithRules,external/tinycbor/src,$(TINYCBOR_SOURCES)))
 $(eval $(call addComponentWithRules,external/util/src))
+
+$(eval $(call addComponentWithRules,generated/components/aap2))
 
 # LIB
 

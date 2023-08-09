@@ -38,6 +38,9 @@ run-unittest-posix-with-coverage:
 gdb-posix: posix
 	$(TOOLCHAIN_POSIX)gdb build/posix/ud3tn
 
+.PHONY: aap2-proto-headers
+aap2-proto-headers:
+	python3 external/nanopb/generator/nanopb_generator.py --strip-path --output-dir=generated components/aap2/aap2.proto
 
 ###############################################################################
 # Tests
@@ -93,6 +96,7 @@ update-virtualenv:
 	@echo "Install additional dependencies ..."
 	$(PIP) install -U -r ./test/integration/requirements.txt
 	$(PIP) install -U -r ./tools/analysis/requirements.txt
+	$(PIP) install -U -r ./external/nanopb/extra/requirements.txt
 
 ###############################################################################
 # Code Quality Tests (and Release Tool)

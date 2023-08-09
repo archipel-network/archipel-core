@@ -153,6 +153,7 @@ Contributions in any form (e.g., bug reports, feature, or merge requests) are ve
 ├── components             C source code
 ├── include                C header files
 ├── external               3rd party source code
+├── generated              generated source code (e.g. for Protobuf)
 ├── test                   various test routines
 ├── doc                    documentation
 ├── mk                     make scripts
