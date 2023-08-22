@@ -8,6 +8,7 @@ RuntimeDirectory=archipel-core
 ExecStart=/usr/bin/ud3tn -s "/run/archipel-core/archipel-core.socket" -c "tcpclv3:*,4556;file:"
 Type=simple
 UMask=0007
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
