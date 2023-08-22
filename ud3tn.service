@@ -4,7 +4,8 @@ After=network.target
 
 [Service]
 User=archipel
-ExecStart=/usr/bin/ud3tn -s "/var/run/archipel-core/archipel-core.socket" -c "tcpclv3:*,4556;file:"
+RuntimeDirectory=archipel-core
+ExecStart=/usr/bin/ud3tn -s "/run/archipel-core/archipel-core.socket" -c "tcpclv3:*,4556;file:"
 Type=simple
 UMask=0007
 
