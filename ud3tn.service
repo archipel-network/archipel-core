@@ -3,7 +3,7 @@ Description=µD3TN
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/ud3tn -s "/var/run/ud3tn.socket"
+ExecStart=/usr/bin/ud3tn -s "/var/run/archipel-core.socket" -c "tcpclv3:*,4556;file:"
 Type=simple
 
 [Install]
