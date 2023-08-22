@@ -23,6 +23,9 @@ install-posix: posix
 	chown archipel:archipel /var/run/archipel-core
 	chmod 775 /var/run/archipel-core
 	mkdir -p /usr/share/ud3tn
+	rm -f /usr/share/ud3tn/ud3tn
+	rm -f /etc/systemd/system/ud3tn.service
+	rm -f /etc/systemd/user/ud3tn.service
 	cp -f build/posix/ud3tn /usr/share/ud3tn/
 	cp -f ud3tn.service /etc/systemd/system/
 	cp -f user-ud3tn.service /etc/systemd/user/ud3tn.service
@@ -36,6 +39,9 @@ install-linked-posix: posix
 	mkdir -p /var/run/archipel-core
 	chown archipel:archipel /var/run/archipel-core
 	chmod 775 /var/run/archipel-core
+	rm -f /usr/share/ud3tn/ud3tn
+	rm -f /etc/systemd/system/ud3tn.service
+	rm -f /etc/systemd/user/ud3tn.service/ud3tn.service
 	ln -f -s "$(shell pwd)/ud3tn.service" /etc/systemd/system/ud3tn.service
 	ln -f -s "$(shell pwd)/user-ud3tn.service" /etc/systemd/user/ud3tn.service
 	ln -f -s "$(shell pwd)/build/posix/ud3tn" /usr/bin/ud3tn
