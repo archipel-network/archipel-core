@@ -1,0 +1,27 @@
+# HDTN Dockerfile that contains the Python dependencies for interoperability tests
+
+FROM buildpack-deps:bullseye
+
+RUN apt-get update && \
+    apt-get dist-upgrade -y && \
+    apt-get install cmake build-essential openssl libssl-dev libboost-dev libboost-all-dev libzmq3-dev python3-zmq python3-venv python3-pip -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/nasa/HDTN.git
+ARG SW_DIR=/HDTN
+ENV HDTN_SOURCE_ROOT=${SW_DIR}
+RUN cd $HDTN_SOURCE_ROOT && mkdir build && cd build && cmake .. && make -j8
+
+COPY ./pyd3tn/requirements.txt /req-pyd3tn.txt
+COPY ./python-ud3tn-utils/requirements.txt /req-utils.txt
+COPY ./test/integration/requirements.txt /req-test.txt
+COPY ./tools/analysis/requirements.txt /req-analysis.txt
+
+RUN python3 -m venv /ud3tn_venv && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U setuptools pip wheel && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-pyd3tn.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-utils.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-test.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-analysis.txt
+
