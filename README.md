@@ -1,3 +1,5 @@
+![Archipel core logo : 3 spikes above a wave](./doc/logo_banner.svg)
+
 # Archipel Core - An experimental µD3TN fork
 
 *Exploring Delay Tolerant Networks*
