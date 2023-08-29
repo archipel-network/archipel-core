@@ -27,7 +27,7 @@ install-posix: posix
 	rm -f /usr/share/archipel-core/archipel-core
 	rm -f /etc/systemd/system/archipel-core.service
 	rm -f /etc/systemd/user/archipel-core.service
-	cp -f build/posix/ud3tn /usr/share/archipel-core/
+	cp -f build/posix/ud3tn /usr/share/archipel-core/archipel-core
 	cp -f archipel-core.service /etc/systemd/system/
 	cp -f user-archipel-core.service /etc/systemd/user/archipel-core.service
 	ln -f -s /usr/share/archipel-core/archipel-core /usr/bin/archipel-core
