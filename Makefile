@@ -18,19 +18,35 @@ clean::
 
 .PHONY: install-posix
 install-posix: posix
-	mkdir -p /usr/share/ud3tn
-	cp -f build/posix/ud3tn /usr/share/ud3tn/
-	cp -f ud3tn.service /etc/systemd/system/
-	cp -f user-ud3tn.service /etc/systemd/user/ud3tn.service
-	ln -f -s /usr/share/ud3tn/ud3tn /usr/bin/ud3tn
+	-useradd -r archipel
+	mkdir -p /var/run/archipel-core
+	chown archipel:archipel /var/run/archipel-core
+	chmod 775 /var/run/archipel-core
+	mkdir -p /usr/share/archipel-core
+	mkdir -p /etc/archipel-core
+	rm -f /usr/share/archipel-core/archipel-core
+	rm -f /etc/systemd/system/archipel-core.service
+	rm -f /etc/systemd/user/archipel-core.service
+	cp -f build/posix/ud3tn /usr/share/archipel-core/archipel-core
+	cp -f archipel-core.service /etc/systemd/system/
+	cp -f user-archipel-core.service /etc/systemd/user/archipel-core.service
+	ln -f -s /usr/share/archipel-core/archipel-core /usr/bin/archipel-core
 	cd pyd3tn && python3 setup.py install
 	cd python-ud3tn-utils && python3 setup.py install
 
 .PHONY: install-linked-posix
 install-linked-posix: posix
-	ln -f -s "$(shell pwd)/ud3tn.service" /etc/systemd/system/ud3tn.service
-	ln -f -s "$(shell pwd)/user-ud3tn.service" /etc/systemd/user/ud3tn.service
-	ln -f -s "$(shell pwd)/build/posix/ud3tn" /usr/bin/ud3tn
+	-useradd -r archipel
+	mkdir -p /var/run/archipel-core
+	chown archipel:archipel /var/run/archipel-core
+	chmod 775 /var/run/archipel-core
+	mkdir -p /etc/archipel-core
+	rm -f /usr/share/archipel-core/archipel-core
+	rm -f /etc/systemd/system/archipel-core.service
+	rm -f /etc/systemd/user/archipel-core.service/archipel-core.service
+	ln -f -s "$(shell pwd)/archipel-core.service" /etc/systemd/system/archipel-core.service
+	ln -f -s "$(shell pwd)/user-archipel-core.service" /etc/systemd/user/archipel-core.service
+	ln -f -s "$(shell pwd)/build/posix/ud3tn" /usr/bin/archipel-core
 	cd pyd3tn && python3 setup.py install
 	cd python-ud3tn-utils && python3 setup.py install
 

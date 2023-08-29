@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/posix/ud3tn",
-            "args": ["-e", "dtn://dev.dtn/"],
+            "args": ["-e", "dtn://dev.dtn/", "-c", "tcpclv3:*,0"],
             "environment": [{ "name": "config", "value": "Debug" }],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Make posix"
