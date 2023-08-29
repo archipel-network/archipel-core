@@ -50,8 +50,8 @@ exit_handler() {
     echo
 }
 
-rm -f hdtn_payload.bin
-rm -f /tmp/hdtn*log /tmp/ud3tn*.log
+rm -f hdtn_payload.txt received_payload.txt
+rm -f /tmp/hdtn*log /tmp/ud3tn*.log /tmp/hdtn_payload.txt
 
 # uD3TN1 -> HDTN -> uD3TN2 Test
 # Start first uD3TN instance (uD3TN1)
@@ -78,29 +78,45 @@ python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --ag
 
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
 
+echo $PAYLOAD > hdtn_payload.txt
+
 # HDTN_bpgen -> HDTN -> uD3TN2 Test
 # Start HDTN_bpgen and aap_receiver on uD3TN2
-$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpgen-async --my-uri-eid="$BPGEN_EID" --bundle-size=10000 --bundle-rate=15 --dest-uri-eid="$SINK_EID" --outducts-config-file=$HDTN_BPGEN_CONFIG --duration=1 &
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 15 -vv -o $UD3TN_DIR/hdtn_payload.bin
+$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpgen-async --my-uri-eid="$BPGEN_EID" --bundle-size=10000 --bundle-rate=10 --dest-uri-eid="$SINK_EID" --outducts-config-file=$HDTN_BPGEN_CONFIG --duration=1 &
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 10 -vv
 
-# Payload of HDTN_bpgen bundles is written in `hdtn_payload.bin`
-
+# Send `hdtn_payload.txt` to uD3TN aap_receiver so we could send it back
+$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpsendfile --file-or-folder-path=hdtn_payload.txt --my-uri-eid="$BPGEN_EID" --dest-uri-eid="$SINK_EID" --use-bp-version-7 --outducts-config-file=$HDTN_BPGEN_CONFIG &
+HDTNSENDFILE_PID=$!
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 -vv -o received_payload.txt
 sleep 3
 
-# Terminate uD3TN2 so that HDTN_bpsink could start
+# Terminate uD3TN2 so that HDTN_ could start
 echo "Terminating uD3TN_2..." && kill -2 $UD3TN2_PID
+echo "Termintaing HDTN_BPsendfile..." && kill -2 $HDTNSENDFILE_PID
 sleep 0.5
 wait $UD3TN2_PID
 
-# uD3TN1 -> HDTN -> HDTN_bpsink Test
-# Start HDTN_bpsink
-$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpsink-async --my-uri-eid="$SINK_EID" --inducts-config-file=$HDTN_BPSINK_CONFIG &
+# uD3TN1 -> HDTN -> HDTN_bpreceivefile Test
+# Start HDTN_bpreceivefile
+$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpreceivefile --save-directory=/tmp --inducts-config-file=$HDTN_BPSINK_CONFIG --my-uri-eid="$SINK_EID" &
 HDTNSINK_PID=$!
-sleep 0.5
 
-# Configure contact to HDTN in uD3TN1 which allows to reach HDTN_bpsink
-python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "$UD3TN2_EID" "$HDTN_EID" tcpclv3:127.0.0.1:4556
+# Configure contact to HDTN in uD3TN1 which allows to reach HDTN_bpreceivefile
+(sleep 2 && python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "$UD3TN2_EID" "$HDTN_EID" tcpclv3:127.0.0.1:4556)&
 
-# Send bundle which contains `hdtn_payload.bin` to HDTN_bpsink
-cat $UD3TN_DIR/hdtn_payload.bin | python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID"
-sleep 0.5
+# Send bundle which contains `hdtn_payload.txt` to HDTN_bpreceivefile
+(sleep 3 && (cat $UD3TN_DIR/received_payload.txt | python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID"))&
+
+inotifywait /tmp -e create |
+        while read -r directory action file; do
+            if [[ "$file" =~ payload.txt$ ]]; then
+                RECEIVED_PAYLOAD="$(cat /tmp/hdtn_payload.txt)"
+                echo "Payload was received successfully."
+                if [[ "$RECEIVED_PAYLOAD" != "$PAYLOAD" ]]; then
+                    echo "Received payload does not match: $RECEIVED_PAYLOAD"
+                    exit 1
+                fi
+                exit;
+            fi
+        done
