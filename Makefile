@@ -41,6 +41,7 @@ gdb-posix: posix
 .PHONY: aap2-proto-headers
 aap2-proto-headers:
 	python3 external/nanopb/generator/nanopb_generator.py -Icomponents --output-dir=generated --error-on-unmatched aap2/aap2.proto
+	protoc -Icomponents/aap2 --python_out=python-ud3tn-utils/ud3tn_utils/aap2/generated/ aap2.proto
 
 ###############################################################################
 # Tests
