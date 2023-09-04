@@ -173,7 +173,9 @@ int bundle_processor_perform_agent_action(
 	int result;
 
 	ASSERT((type == BP_SIGNAL_AGENT_REGISTER && callback) ||
-	       type == BP_SIGNAL_AGENT_DEREGISTER);
+	       type == BP_SIGNAL_AGENT_DEREGISTER ||
+	       (type == BP_SIGNAL_AGENT_REGISTER_RPC) ||
+	       type == BP_SIGNAL_AGENT_DEREGISTER_RPC);
 	ASSERT(sink_identifier);
 
 	aaps = malloc(sizeof(struct agent_manager_parameters));
@@ -348,15 +350,40 @@ static inline void handle_signal(
 		break;
 	case BP_SIGNAL_AGENT_REGISTER:
 		aaps = signal.agent_manager_params;
-		feedback = agent_register(aaps->agent.sink_identifier,
-			aaps->agent.callback, aaps->agent.param);
+		feedback = agent_register(
+			aaps->agent.sink_identifier,
+			true,
+			aaps->agent.callback,
+			aaps->agent.param
+		);
 		if (aaps->feedback_queue)
 			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
 		free(aaps);
 		break;
 	case BP_SIGNAL_AGENT_DEREGISTER:
 		aaps = signal.agent_manager_params;
-		feedback = agent_deregister(aaps->agent.sink_identifier);
+		feedback = agent_deregister(aaps->agent.sink_identifier, true);
+		if (aaps->feedback_queue)
+			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
+		free(aaps);
+		break;
+	case BP_SIGNAL_AGENT_REGISTER_RPC:
+		aaps = signal.agent_manager_params;
+		ASSERT(aaps->agent.callback == NULL);
+		ASSERT(aaps->agent.param == NULL);
+		feedback = agent_register(
+			aaps->agent.sink_identifier,
+			false,
+			NULL,
+			NULL
+		);
+		if (aaps->feedback_queue)
+			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
+		free(aaps);
+		break;
+	case BP_SIGNAL_AGENT_DEREGISTER_RPC:
+		aaps = signal.agent_manager_params;
+		feedback = agent_deregister(aaps->agent.sink_identifier, false);
 		if (aaps->feedback_queue)
 			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
 		free(aaps);

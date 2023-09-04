@@ -36,6 +36,8 @@ enum bundle_processor_signal_type {
 	BP_SIGNAL_NEW_LINK_ESTABLISHED,
 	BP_SIGNAL_LINK_DOWN,
 	BP_SIGNAL_CONTACT_OVER,
+	BP_SIGNAL_AGENT_REGISTER_RPC,
+	BP_SIGNAL_AGENT_DEREGISTER_RPC,
 };
 
 // for performing (de)register operations
