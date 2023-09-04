@@ -375,6 +375,8 @@ struct bundle_adu {
 	char *destination;
 	uint8_t *payload;
 	size_t length;
+	uint64_t bundle_creation_timestamp_ms;
+	uint64_t bundle_sequence_number;
 };
 
 

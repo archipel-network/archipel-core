@@ -550,6 +550,8 @@ struct bundle_adu bundle_adu_init(const struct bundle *bundle)
 	bundle_adu.destination = strdup(bundle->destination);
 	bundle_adu.payload = NULL;
 	bundle_adu.length = 0;
+	bundle_adu.bundle_creation_timestamp_ms = bundle->creation_timestamp_ms;
+	bundle_adu.bundle_sequence_number = bundle->sequence_number;
 
 	return bundle_adu;
 }
