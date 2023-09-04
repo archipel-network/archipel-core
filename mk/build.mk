@@ -24,6 +24,10 @@ NANOPB_SOURCES := \
 	pb_encode.c \
 	pb_decode.c
 
+# Allow nanopb to do malloc(). We use pointer-based strings and lists; see
+# also components/aap2/aap2.options.
+CPPFLAGS += -DPB_ENABLE_MALLOC
+
 $(eval $(call addComponentWithRules,external/nanopb,$(NANOPB_SOURCES)))
 
 TINYCBOR_SOURCES := \

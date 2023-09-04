@@ -50,6 +50,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->aap_socket = NULL;
 	result->aap_node = NULL;
 	result->aap_service = NULL;
+	result->aap2_socket = NULL;
 	result->bundle_version = DEFAULT_BUNDLE_VERSION;
 	result->status_reporting = false;
 	result->allow_remote_configuration = false;
@@ -67,7 +68,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		goto finish;
 
 	shorten_long_cli_options(argc, argv);
-	while ((opt = getopt(argc, argv, ":a:b:c:e:l:L:m:p:s:rRhu")) != -1) {
+	while ((opt = getopt(argc, argv, ":a:b:c:e:l:L:m:p:s:S:rRhu")) != -1) {
 		switch (opt) {
 		case 'a':
 			if (!optarg || strlen(optarg) < 1) {
@@ -147,6 +148,13 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			}
 			result->aap_socket = strdup(optarg);
 			break;
+		case 'S':
+			if (!optarg || strlen(optarg) < 1) {
+				LOG("Invalid AAP 2.0 unix domain socket provided!");
+				return NULL;
+			}
+			result->aap2_socket = strdup(optarg);
+			break;
 		case 'u':
 			print_usage_text();
 			result->exit_immediately = true;
@@ -166,6 +174,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	}
 
 finish:
+	// AAP 1.0
 	// use Unix domain socket by default
 	if (!result->aap_socket && !result->aap_node && !result->aap_service) {
 		result->aap_socket = strdup("./" DEFAULT_AAP_SOCKET_FILENAME);
@@ -180,6 +189,10 @@ finish:
 	} else if (!result->aap_node && result->aap_service) {
 		result->aap_node = strdup(DEFAULT_AAP_NODE);
 	}
+
+	// AAP 2.0
+	if (!result->aap2_socket)
+		result->aap2_socket = strdup("./" DEFAULT_AAP2_SOCKET_FILENAME);
 
 	if (!result->eid)
 		result->eid = strdup(DEFAULT_EID);
@@ -215,6 +228,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--aap-host", "-a"},
 		{"--aap-port", "-p"},
 		{"--aap-socket", "-s"},
+		{"--aap2-socket", "-S"},
 		{"--bp-version", "-b"},
 		{"--cla", "-c"},
 		{"--eid", "-e"},
@@ -246,9 +260,9 @@ static void print_usage_text(void)
 		"    [-b 6|7, --bp-version 6|7] [-c CLA_OPTIONS, --cla CLA_OPTIONS]\n"
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
-		"    [-R, --allow-remote-config]\n"
-		"    [-L 1|2|3|4, --log-level 1|2|3|4]\n"
-		"    [-s PATH --aap-socket PATH] [-u, --usage]\n";
+		"    [-R, --allow-remote-config] [-L 1|2|3|4, --log-level 1|2|3|4]\n"
+		"    [-s PATH --aap-socket PATH] [-S PATH --aap2-socket PATH]\n"
+		"    [-u, --usage]\n";
 
 	hal_io_message_printf(usage_text);
 }
@@ -271,6 +285,7 @@ static void print_help_text(void)
 		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
 		"  -L, --log-level             higher or lower log level 4/3/2/1 specifies more or less detailed output\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
+		"  -S, --aap2-socket PATH      path to the UNIX domain socket of the AAP 2.0 service\n"
 		"  -u, --usage                 print usage summary and exit\n"
 		"\n"
 		"Default invocation: ud3tn \\\n"
@@ -281,6 +296,7 @@ static void print_help_text(void)
 		"  -L " STR(DEFAULT_LOG_LEVEL) " \\\n"
 		"  -m %lu \\\n"
 		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\n"
+		"  -S $PWD/" DEFAULT_AAP2_SOCKET_FILENAME "\n"
 		"\n"
 		"Please report bugs to <contact@d3tn.com>.\n";
 

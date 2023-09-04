@@ -1,6 +1,304 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 
+// This file defines the µD3TN Application Agent Protocol version 2.0.
+// For an in-depth description of the protocol, the motivation and vision behind
+// it, and usage examples, refer to the AAP 2.0 documentation.
+
 syntax = "proto3";
 
+package aap2;
+
+// -----------------------------------------------------------------------------
+// Message (unsolicited - Info/Request/Call)
+// -----------------------------------------------------------------------------
+
+// The outer AAP 2.0 message type that is always sent by the initiator (the
+// client if configured with `is_subscriber == false`, otherwise the server).
 message AAPMessage {
+  oneof msg {
+    // Message sent by the Server at the start of a connection to
+    // communicate basic parameters.
+    Welcome welcome = 1;
+
+    // Message sent by the Client to authenticate itself and configure the
+    // connection.
+    ConnectionConfig config = 2;
+
+    // Message transmitting a bundle ADU into either direction.
+    BundleADU adu = 3;
+
+    // Message informing a BDM Client about a received or newly-created
+    // bundle.
+    Bundle bundle = 4;
+
+    // Message for initiating or informing about CLA link status changes.
+    Link link = 5;
+
+    // Message for informing a FIB-authorized Client of the FIB contents.
+    FIBInfo fib_info = 6;
+
+    // Call issued regularly to ensure the connection is still alive.
+    Keepalive keepalive = 7;
+  }
+}
+
+// Message sent by the Server at the start of a connection to
+// communicate basic parameters.
+message Welcome {
+  // The local node ID, i.e., the (primary) EID identifying the local node.
+  // This may become a repeated element in the future.
+  // This value shall be used for deriving the (requested) application EIDs.
+  string node_id = 1;
+}
+
+// The type of actions requested to be enabled for an AAP 2.0 connection.
+enum AuthType {
+  // Only allow to register free endpoints or agent IDs for which the same
+  // secret can be provided.
+  AUTH_TYPE_DEFAULT = 0;
+
+  // Allow for changing the FIB (non-sub) or receiving FIB updates (sub).
+  AUTH_TYPE_FIB_CONTROL = 1;
+
+  // Allow for dispatching bundles (sub) or sending bundles from arbitrary
+  // source endpoints (non-sub).
+  AUTH_TYPE_BUNDLE_DISPATCH = 2;
+
+  // Allow for receiving FIB updates and dispatching bundles.
+  AUTH_TYPE_FIB_AND_DISPATCH = 3;
+
+  // NOTE: FUTURE EXTENSION: Allow registering for all agent IDs. Leave
+  // `agent_id` empty to receive everything.
+  // AUTH_TYPE_ALL_ENDPOINTS = 4;
+}
+
+// Message sent by the Client to authenticate itself and configure the
+// connection.
+message ConnectionConfig {
+  // If `true`, the direction of control is switched after positive
+  // confirmation, i.e., the server becomes the initiator of all following
+  // communication and also takes over sending the Keepalive messages.
+  bool is_subscriber = 1;
+
+  // Controls the actions allowed and data provided over the connection.
+  AuthType auth_type = 2;
+
+  // A secret to authorize the configuration. Required for already-registered
+  // endpoints and if `auth_type != 0`. When creating a new registration, this
+  // field is optional, but only if it is set, the same registration can be
+  // claimed by other connections (that need to specify the same secret).
+  // If `auth_type != 0`, the secret must be equal to the configured
+  // pre-shared key for allowing the requested access.
+  string secret = 3;
+
+  // The endpoint to be registered for the app. This is required to be a full
+  // EID as the local node may have multiple node IDs that can be used for
+  // registering applications. Optional when `auth_type != 0` and the app.
+  // only intends to control the FIB or dispatch bundles.
+  string endpoint_id = 4;
+
+  // NOTE: FUTURE EXTENSION: Multiple endpoints per connection can be allowed
+  // as future extension. This, however, requires to specify the EID to be
+  // used in every ADU message.
+  // repeated string endpoint_id = 4;
+
+  // The maximum time interval between messages, should be zero, or between
+  // 30 sec and 600 sec. The Initiator SHALL send `KEEPALIVE` messages after
+  // this amount of time has elapsed. 0 disables the feature (see RFC 9174),
+  // which is useful e.g. for local sockets. Default = 60 seconds.
+  uint32 keepalive_seconds = 5;
+
+  // NOTE: FUTURE EXTENSION: Whether or not to subscribe to payload data as
+  // well. Default = true.
+  // bool deliver_bundle_payload = 6;
+}
+
+// Flags defining specific behavior for the bundle ADU, e.g., for BIBE.
+enum BundleADUFlags {
+  // No flags set - normal transmission request.
+  BUNDLE_ADU_NORMAL = 0;
+
+  // The bundle ADU is a BIBE protocol data unit - request BIBE transmission.
+  BUNDLE_ADU_BPDU = 1;
+}
+
+// Message transmitting a bundle ADU into either direction.
+message BundleADU {
+  // The bundle source EID. Optional when sending the bundle from the only
+  // registered endpoint associated with the connection.
+  // NOTE: FUTURE EXTENSION: Specifies the used local endpoint if multiple
+  // endpoints can be registered (and have been registered).
+  string src_eid = 1;
+  // The bundle destination EID.
+  string dst_eid = 2;
+
+  // The bundle creation time in milliseconds since the DTN epoch as defined
+  // in RFC 9171. Optional when sending bundles (will be assigned by uD3TN).
+  uint64 creation_timestamp_ms = 3;
+  // The bundle sequence number as defined in RFC 9171.
+  // Optional when sending bundles (will be assigned by uD3TN).
+  uint64 sequence_number = 4;
+
+  // The number of bytes contained in the bundle payload, which MUST be
+  // enclosed immediately _after_ the Protobuf message.
+  uint64 payload_length = 5;
+
+  // Flags defining specific behavior for the bundle ADU, e.g., for BIBE.
+  BundleADUFlags adu_flags = 6;
+}
+
+// Message informing a BDM Client about a received or newly-created
+// bundle.
+message Bundle {
+  // The bundle source EID.
+  string src_eid = 1;
+  // The bundle destination EID.
+  string dst_eid = 2;
+
+  // The bundle creation time in milliseconds since the DTN epoch as defined
+  // in RFC 9171.
+  uint64 creation_timestamp_ms = 3;
+  // The bundle sequence number as defined in RFC 9171.
+  uint64 sequence_number = 4;
+
+  // The payload length as defined in RFC 9171.
+  uint64 payload_length = 5;
+
+  // The fragment offset as defined in RFC 9171.
+  // Only set if the bundle is a fragment.
+  uint64 fragment_offset = 6;
+  // The total ADU length as defined in RFC 9171.
+  // Only set if the bundle is a fragment.
+  uint64 total_adu_length = 7;
+
+  // NOTE: FUTURE EXTENSION: Further bundle metadata fields, potentially
+  // extension blocks.
+}
+
+// The intended or currently-recorded status of a Link in the FIB.
+enum LinkStatus {
+  // Do not change the status. Invalid in a response/information.
+  LINK_STATUS_UNSPECIFIED = 0;
+
+  // The link has been requested (e.g., via AAP) but the CLA has not yet
+  // confirmed a connection.
+  LINK_STATUS_PENDING = 1;
+
+  // The link is present and available for forwarding bundles.
+  LINK_STATUS_ACTIVE = 2;
+
+  // The link has been detected by a CLA but insufficient information exists
+  // to use the associated FIB entry.
+  LINK_STATUS_OPPORTUNISTIC = 3;
+
+  // Deletion of the link is requested.
+  LINK_STATUS_TEARDOWN = 4;
+}
+
+// Message for initiating or informing about CLA link status changes.
+message Link {
+  // The intended or detected link status.
+  LinkStatus status = 1;
+
+  // An EID representing the next-hop node ID.
+  string peer_node_id = 2;
+
+  // The identification of a CLA plus CLA-specific address to reach the
+  // next-hop bundle node.
+  string peer_cla_addr = 3;
+
+  // NOTE: FUTURE EXTENSION: Allow for multiple CLA addresses for peers
+  // reachable via multiple interfaces. In the meantime, this is represented
+  // using multiple Links.
+  // repeated string peer_cla_addr = 3;
+
+  // NOTE: FUTURE EXTENSION: Store the expected remaining volume transferrable
+  // via the Link, to enable e.g. fragmentation.
+  // uint64 remaining_volume_bytes = 4;
+}
+
+// Message for informing a FIB-authorized Client of the FIB contents.
+message FIBInfo {
+  // Message representing one line (entry) in the FIB.
+  message FIBEntry {
+    // The node ID (as defined in RFC 9171) of the other peer.
+    string peer_node_id = 1;
+
+    // The recorded Links for the given peer including their status.
+    // Note that this list also contains Links that are not (yet) active.
+    repeated Link peer_links = 2;
+  }
+
+  // The list of all current FIB entries (lines).
+  repeated FIBEntry fib_entries = 1;
+}
+
+// A message that should be regularly sent by the current initiator and must be
+// acknowledged with an `AAPResponse` specifying the result `RPC_RESULT_ACK`.
+message Keepalive {
+}
+
+// -----------------------------------------------------------------------------
+// Response
+// -----------------------------------------------------------------------------
+
+// The response to every AAPMessage, sent by the peer that received the message.
+message AAPResponse {
+  // The result of the received call/request represented as a single value.
+  ResponseStatus response_status = 1;
+
+  // Set the next hops for a bundle. Only valid in response to a Bundle
+  // message sent to a BDM by the server (µD3TN).
+  DispatchResult dispatch_result = 2;
+
+  // Headers of the created bundle (present when sending a bundle).
+  Bundle bundle_headers = 3;
+}
+
+// Definition of the status codes for an AAPResponse to be associated with.
+enum ResponseStatus {
+  // Invalid.
+  RESPONSE_STATUS_UNSPECIFIED = 0;
+
+  // Success.
+  RESPONSE_STATUS_SUCCESS = 1;
+
+  // Data received (neither success nor failure can be indicated).
+  RESPONSE_STATUS_ACK = 2;
+
+  // Failure status: all values >= 8.
+  // An unspecified failure.
+  RESPONSE_STATUS_ERROR = 8;
+
+  // A timeout occurred when performing the requested action.
+  RESPONSE_STATUS_TIMEOUT = 9;
+
+  // The received request is considered invalid and, thus, is not processed.
+  RESPONSE_STATUS_INVALID_REQUEST = 10;
+
+  // A resource required for processing the request was not found.
+  RESPONSE_STATUS_NOT_FOUND = 11;
+}
+
+// Representation of a result of a Bundle Dispatcher Module (BDM).
+message DispatchResult {
+  // Representation of an entry in the list of next hops of a DispatchResult.
+  message NextHopEntry {
+    // The next-hop node ID for the bundle. May be an ID such as "ud3tn:storage"
+    // that resolve to a special CLA.
+    string node_id = 1;
+  }
+
+  // The next hop node for the bundle, which must be directly connected.
+  // If more than one next hop is specified, the bundle will be replicated
+  // among all of those nodes.
+  // If empty, the bundle will be dropped as the BPA is not expected to have
+  // any storage by itself (see the storage concepts discussion below).
+  // This way, we also do not need an "action list" as described for the
+  // "Generic Bundle Forwarding Interface" paper previously, because all
+  // actions can either be represented as forwarding to a specific set of
+  // nodes or _not_ forwarding, i.e., the deletion of the bundle.
+  // Note that proactive fragmentation is expected to be a feature of the
+  // storage for now. Later, maximum link capacities may be added (see above).
+  repeated NextHopEntry next_hops = 1;
 }
