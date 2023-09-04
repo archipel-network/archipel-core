@@ -5,7 +5,7 @@ include mk/toolchain.mk
 EXTERNAL_INCLUDES += -Iexternal/nanopb \
                      -Iexternal/tinycbor/src \
                      -Iexternal/util/include \
-                     -Igenerated/components
+                     -Igenerated
 
 $(eval $(call addComponentWithRules,components/aap))
 $(eval $(call addComponentWithRules,components/aap2))
@@ -39,7 +39,7 @@ TINYCBOR_SOURCES := \
 $(eval $(call addComponentWithRules,external/tinycbor/src,$(TINYCBOR_SOURCES)))
 $(eval $(call addComponentWithRules,external/util/src))
 
-$(eval $(call addComponentWithRules,generated/components/aap2))
+$(eval $(call addComponentWithRules,generated/aap2))
 
 # LIB
 

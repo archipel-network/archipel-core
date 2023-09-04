@@ -40,7 +40,7 @@ gdb-posix: posix
 
 .PHONY: aap2-proto-headers
 aap2-proto-headers:
-	python3 external/nanopb/generator/nanopb_generator.py --strip-path --output-dir=generated components/aap2/aap2.proto
+	python3 external/nanopb/generator/nanopb_generator.py -Icomponents --output-dir=generated --error-on-unmatched aap2/aap2.proto
 
 ###############################################################################
 # Tests
