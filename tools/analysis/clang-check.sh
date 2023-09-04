@@ -7,6 +7,7 @@ set -o pipefail
 
 DIRS=(
     components/aap
+    components/aap2
     components/agents
     components/bundle6
     components/bundle7
