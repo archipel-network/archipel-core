@@ -27,9 +27,9 @@ message AAPMessage {
     // Message transmitting a bundle ADU into either direction.
     BundleADU adu = 3;
 
-    // Message informing a BDM Client about a received or newly-created
-    // bundle.
-    Bundle bundle = 4;
+    // Message informing a BDM Client about a bundle that needs to be
+    // dispatched.
+    DispatchRequest dispatch_request = 4;
 
     // Message for initiating or informing about CLA link status changes.
     Link link = 5;
@@ -173,6 +173,33 @@ message Bundle {
 
   // NOTE: FUTURE EXTENSION: Further bundle metadata fields, potentially
   // extension blocks.
+}
+
+// The reason why a DispatchRequest was sent.
+enum DispatchReason {
+  // Invalid.
+  DISPATCH_REASON_UNSPECIFIED = 0;
+
+  // Destination EID was not found in FIB.
+  DISPATCH_REASON_NO_FIB_ENTRY = 1;
+
+  // The link that should be used is currently not active or unusable.
+  DISPATCH_REASON_LINK_INACTIVE = 2;
+
+  // The CLA subsystem responded negatively to the next-hop request.
+  DISPATCH_REASON_CLA_LOOKUP_FAILED = 3;
+
+  // The transmission was attempted but failed.
+  DISPATCH_REASON_TX_FAILED = 4;
+}
+
+// Message informing a BDM Client about a bundle that needs to be dispatched.
+message DispatchRequest {
+  // The bundle to dispatch.
+  Bundle bundle = 1;
+
+  // Specifies why the BDM was triggered this time.
+  DispatchReason reason = 2;
 }
 
 // The intended or currently-recorded status of a Link in the FIB.

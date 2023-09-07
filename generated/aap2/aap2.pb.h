@@ -32,6 +32,20 @@ typedef enum _aap2_BundleADUFlags {
     aap2_BundleADUFlags_BUNDLE_ADU_BPDU = 1
 } aap2_BundleADUFlags;
 
+/* The reason why a DispatchRequest was sent. */
+typedef enum _aap2_DispatchReason {
+    /* Invalid. */
+    aap2_DispatchReason_DISPATCH_REASON_UNSPECIFIED = 0,
+    /* Destination EID was not found in FIB. */
+    aap2_DispatchReason_DISPATCH_REASON_NO_FIB_ENTRY = 1,
+    /* The link that should be used is currently not active or unusable. */
+    aap2_DispatchReason_DISPATCH_REASON_LINK_INACTIVE = 2,
+    /* The CLA subsystem responded negatively to the next-hop request. */
+    aap2_DispatchReason_DISPATCH_REASON_CLA_LOOKUP_FAILED = 3,
+    /* The transmission was attempted but failed. */
+    aap2_DispatchReason_DISPATCH_REASON_TX_FAILED = 4
+} aap2_DispatchReason;
+
 /* The intended or currently-recorded status of a Link in the FIB. */
 typedef enum _aap2_LinkStatus {
     /* Do not change the status. Invalid in a response/information. */
@@ -149,6 +163,15 @@ typedef struct _aap2_Bundle {
     uint64_t total_adu_length;
 } aap2_Bundle;
 
+/* Message informing a BDM Client about a bundle that needs to be dispatched. */
+typedef struct _aap2_DispatchRequest {
+    /* The bundle to dispatch. */
+    bool has_bundle;
+    aap2_Bundle bundle;
+    /* Specifies why the BDM was triggered this time. */
+    aap2_DispatchReason reason;
+} aap2_DispatchRequest;
+
 /* Message for initiating or informing about CLA link status changes. */
 typedef struct _aap2_Link {
     /* The intended or detected link status. */
@@ -196,9 +219,9 @@ typedef struct _aap2_AAPMessage {
         aap2_ConnectionConfig config;
         /* Message transmitting a bundle ADU into either direction. */
         aap2_BundleADU adu;
-        /* Message informing a BDM Client about a received or newly-created
-     bundle. */
-        aap2_Bundle bundle;
+        /* Message informing a BDM Client about a bundle that needs to be
+     dispatched. */
+        aap2_DispatchRequest dispatch_request;
         /* Message for initiating or informing about CLA link status changes. */
         aap2_Link link;
         /* Message for informing a FIB-authorized Client of the FIB contents. */
@@ -259,6 +282,10 @@ extern "C" {
 #define _aap2_BundleADUFlags_MAX aap2_BundleADUFlags_BUNDLE_ADU_BPDU
 #define _aap2_BundleADUFlags_ARRAYSIZE ((aap2_BundleADUFlags)(aap2_BundleADUFlags_BUNDLE_ADU_BPDU+1))
 
+#define _aap2_DispatchReason_MIN aap2_DispatchReason_DISPATCH_REASON_UNSPECIFIED
+#define _aap2_DispatchReason_MAX aap2_DispatchReason_DISPATCH_REASON_TX_FAILED
+#define _aap2_DispatchReason_ARRAYSIZE ((aap2_DispatchReason)(aap2_DispatchReason_DISPATCH_REASON_TX_FAILED+1))
+
 #define _aap2_LinkStatus_MIN aap2_LinkStatus_LINK_STATUS_UNSPECIFIED
 #define _aap2_LinkStatus_MAX aap2_LinkStatus_LINK_STATUS_TEARDOWN
 #define _aap2_LinkStatus_ARRAYSIZE ((aap2_LinkStatus)(aap2_LinkStatus_LINK_STATUS_TEARDOWN+1))
@@ -273,6 +300,8 @@ extern "C" {
 
 #define aap2_BundleADU_adu_flags_ENUMTYPE aap2_BundleADUFlags
 
+
+#define aap2_DispatchRequest_reason_ENUMTYPE aap2_DispatchReason
 
 #define aap2_Link_status_ENUMTYPE aap2_LinkStatus
 
@@ -290,6 +319,7 @@ extern "C" {
 #define aap2_ConnectionConfig_init_default       {0, _aap2_AuthType_MIN, NULL, NULL, 0}
 #define aap2_BundleADU_init_default              {NULL, NULL, 0, 0, 0, _aap2_BundleADUFlags_MIN}
 #define aap2_Bundle_init_default                 {NULL, NULL, 0, 0, 0, 0, 0}
+#define aap2_DispatchRequest_init_default        {false, aap2_Bundle_init_default, _aap2_DispatchReason_MIN}
 #define aap2_Link_init_default                   {_aap2_LinkStatus_MIN, NULL, NULL}
 #define aap2_FIBInfo_init_default                {0, NULL}
 #define aap2_FIBInfo_FIBEntry_init_default       {NULL, 0, NULL}
@@ -302,6 +332,7 @@ extern "C" {
 #define aap2_ConnectionConfig_init_zero          {0, _aap2_AuthType_MIN, NULL, NULL, 0}
 #define aap2_BundleADU_init_zero                 {NULL, NULL, 0, 0, 0, _aap2_BundleADUFlags_MIN}
 #define aap2_Bundle_init_zero                    {NULL, NULL, 0, 0, 0, 0, 0}
+#define aap2_DispatchRequest_init_zero           {false, aap2_Bundle_init_zero, _aap2_DispatchReason_MIN}
 #define aap2_Link_init_zero                      {_aap2_LinkStatus_MIN, NULL, NULL}
 #define aap2_FIBInfo_init_zero                   {0, NULL}
 #define aap2_FIBInfo_FIBEntry_init_zero          {NULL, 0, NULL}
@@ -330,6 +361,8 @@ extern "C" {
 #define aap2_Bundle_payload_length_tag           5
 #define aap2_Bundle_fragment_offset_tag          6
 #define aap2_Bundle_total_adu_length_tag         7
+#define aap2_DispatchRequest_bundle_tag          1
+#define aap2_DispatchRequest_reason_tag          2
 #define aap2_Link_status_tag                     1
 #define aap2_Link_peer_node_id_tag               2
 #define aap2_Link_peer_cla_addr_tag              3
@@ -339,7 +372,7 @@ extern "C" {
 #define aap2_AAPMessage_welcome_tag              1
 #define aap2_AAPMessage_config_tag               2
 #define aap2_AAPMessage_adu_tag                  3
-#define aap2_AAPMessage_bundle_tag               4
+#define aap2_AAPMessage_dispatch_request_tag     4
 #define aap2_AAPMessage_link_tag                 5
 #define aap2_AAPMessage_fib_info_tag             6
 #define aap2_AAPMessage_keepalive_tag            7
@@ -354,7 +387,7 @@ extern "C" {
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,welcome,msg.welcome),   1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,config,msg.config),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,adu,msg.adu),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (msg,bundle,msg.bundle),   4) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (msg,dispatch_request,msg.dispatch_request),   4) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,link,msg.link),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,fib_info,msg.fib_info),   6) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,keepalive,msg.keepalive),   7)
@@ -363,7 +396,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (msg,keepalive,msg.keepalive),   7)
 #define aap2_AAPMessage_msg_welcome_MSGTYPE aap2_Welcome
 #define aap2_AAPMessage_msg_config_MSGTYPE aap2_ConnectionConfig
 #define aap2_AAPMessage_msg_adu_MSGTYPE aap2_BundleADU
-#define aap2_AAPMessage_msg_bundle_MSGTYPE aap2_Bundle
+#define aap2_AAPMessage_msg_dispatch_request_MSGTYPE aap2_DispatchRequest
 #define aap2_AAPMessage_msg_link_MSGTYPE aap2_Link
 #define aap2_AAPMessage_msg_fib_info_MSGTYPE aap2_FIBInfo
 #define aap2_AAPMessage_msg_keepalive_MSGTYPE aap2_Keepalive
@@ -402,6 +435,13 @@ X(a, STATIC,   SINGULAR, UINT64,   fragment_offset,   6) \
 X(a, STATIC,   SINGULAR, UINT64,   total_adu_length,   7)
 #define aap2_Bundle_CALLBACK NULL
 #define aap2_Bundle_DEFAULT NULL
+
+#define aap2_DispatchRequest_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  bundle,            1) \
+X(a, STATIC,   SINGULAR, UENUM,    reason,            2)
+#define aap2_DispatchRequest_CALLBACK NULL
+#define aap2_DispatchRequest_DEFAULT NULL
+#define aap2_DispatchRequest_bundle_MSGTYPE aap2_Bundle
 
 #define aap2_Link_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    status,            1) \
@@ -453,6 +493,7 @@ extern const pb_msgdesc_t aap2_Welcome_msg;
 extern const pb_msgdesc_t aap2_ConnectionConfig_msg;
 extern const pb_msgdesc_t aap2_BundleADU_msg;
 extern const pb_msgdesc_t aap2_Bundle_msg;
+extern const pb_msgdesc_t aap2_DispatchRequest_msg;
 extern const pb_msgdesc_t aap2_Link_msg;
 extern const pb_msgdesc_t aap2_FIBInfo_msg;
 extern const pb_msgdesc_t aap2_FIBInfo_FIBEntry_msg;
@@ -467,6 +508,7 @@ extern const pb_msgdesc_t aap2_DispatchResult_NextHopEntry_msg;
 #define aap2_ConnectionConfig_fields &aap2_ConnectionConfig_msg
 #define aap2_BundleADU_fields &aap2_BundleADU_msg
 #define aap2_Bundle_fields &aap2_Bundle_msg
+#define aap2_DispatchRequest_fields &aap2_DispatchRequest_msg
 #define aap2_Link_fields &aap2_Link_msg
 #define aap2_FIBInfo_fields &aap2_FIBInfo_msg
 #define aap2_FIBInfo_FIBEntry_fields &aap2_FIBInfo_FIBEntry_msg
@@ -481,6 +523,7 @@ extern const pb_msgdesc_t aap2_DispatchResult_NextHopEntry_msg;
 /* aap2_ConnectionConfig_size depends on runtime parameters */
 /* aap2_BundleADU_size depends on runtime parameters */
 /* aap2_Bundle_size depends on runtime parameters */
+/* aap2_DispatchRequest_size depends on runtime parameters */
 /* aap2_Link_size depends on runtime parameters */
 /* aap2_FIBInfo_size depends on runtime parameters */
 /* aap2_FIBInfo_FIBEntry_size depends on runtime parameters */

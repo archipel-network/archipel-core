@@ -21,6 +21,9 @@ PB_BIND(aap2_BundleADU, aap2_BundleADU, AUTO)
 PB_BIND(aap2_Bundle, aap2_Bundle, AUTO)
 
 
+PB_BIND(aap2_DispatchRequest, aap2_DispatchRequest, AUTO)
+
+
 PB_BIND(aap2_Link, aap2_Link, AUTO)
 
 
@@ -40,6 +43,7 @@ PB_BIND(aap2_DispatchResult, aap2_DispatchResult, AUTO)
 
 
 PB_BIND(aap2_DispatchResult_NextHopEntry, aap2_DispatchResult_NextHopEntry, AUTO)
+
 
 
 
