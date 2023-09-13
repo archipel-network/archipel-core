@@ -33,10 +33,27 @@ exit_handler() {
     cd "$UD3TN_DIR"
 
     kill -TERM $UD3TN1_PID
-    kill -TERM $HDTNSINK_PID
+    kill -2 $HDTNSINK_PID
     kill -2 $HDTN_PID
+
+    if ps -p $UD3TN2_PID > /dev/null
+    then
+        kill -TERM $UD3TN2_PID
+        echo "Waiting for the second uD3TN node to exit gracefully"
+        wait $UD3TN2_PID
+        echo ">>> uD3TN1 LOGFILE"
+        cat "/tmp/ud3tn2.log" || true
+        echo
+    fi
+    if ps -p $HDTNSENDFILE_PID > /dev/null
+    then
+        kill -TERM $HDTNSENDFILE_PID
+        echo "Waiting for HDTN_BPsendfile to exit gracefully"
+        wait $HDTNSENDFILE_PID
+    fi
+
     echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
-    echo "Waiting for HDTN and HDTN_bpsink to exit gracefully..."
+    echo "Waiting for HDTN and HDTN_bpsink to exit gracefully"
     wait $UD3TN1_PID
     wait $HDTNSINK_PID
     wait $HDTN_PID
@@ -48,10 +65,12 @@ exit_handler() {
     echo ">>> uD3TN1 LOGFILE"
     cat "/tmp/ud3tn1.log" || true
     echo
+
+    rm -f -r $TMPDIR
 }
 
 rm -f hdtn_payload.txt received_payload.txt
-rm -f /tmp/hdtn*log /tmp/ud3tn*.log /tmp/hdtn_payload.txt
+rm -f /tmp/hdtn*log /tmp/ud3tn*.log
 
 # uD3TN1 -> HDTN -> uD3TN2 Test
 # Start first uD3TN instance (uD3TN1)
@@ -92,14 +111,16 @@ timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3
 sleep 3
 
 # Terminate uD3TN2 so that HDTN_ could start
-echo "Terminating uD3TN_2..." && kill -2 $UD3TN2_PID
+echo "Terminating uD3TN_2..." && kill -TERM $UD3TN2_PID
 echo "Termintaing HDTN_BPsendfile..." && kill -2 $HDTNSENDFILE_PID
 sleep 0.5
 wait $UD3TN2_PID
 
+# Create temporary directory
+TMPDIR="$(mktemp -d)"
 # uD3TN1 -> HDTN -> HDTN_bpreceivefile Test
 # Start HDTN_bpreceivefile
-$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpreceivefile --save-directory=/tmp --inducts-config-file=$HDTN_BPSINK_CONFIG --my-uri-eid="$SINK_EID" &
+$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpreceivefile --save-directory=$TMPDIR --inducts-config-file=$HDTN_BPSINK_CONFIG --my-uri-eid="$SINK_EID" &
 HDTNSINK_PID=$!
 
 # Configure contact to HDTN in uD3TN1 which allows to reach HDTN_bpreceivefile
@@ -108,10 +129,10 @@ HDTNSINK_PID=$!
 # Send bundle which contains `hdtn_payload.txt` to HDTN_bpreceivefile
 (sleep 3 && (cat $UD3TN_DIR/received_payload.txt | python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID"))&
 
-inotifywait /tmp -e create |
+inotifywait $TMPDIR -t 30 -e create |
         while read -r directory action file; do
-            if [[ "$file" =~ payload.txt$ ]]; then
-                RECEIVED_PAYLOAD="$(cat /tmp/hdtn_payload.txt)"
+            if [[ "$file" == "hdtn_payload.txt" ]]; then
+                RECEIVED_PAYLOAD="$(cat $TMPDIR/hdtn_payload.txt)"
                 echo "Payload was received successfully."
                 if [[ "$RECEIVED_PAYLOAD" != "$PAYLOAD" ]]; then
                     echo "Received payload does not match: $RECEIVED_PAYLOAD"
