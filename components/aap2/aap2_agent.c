@@ -58,6 +58,8 @@ struct aap2_agent_config {
 struct aap2_agent_comm_config {
 	struct aap2_agent_config *parent;
 	int socket_fd;
+	pb_istream_t pb_istream;
+
 	int bundle_pipe_fd[2];
 
 	bool is_subscriber;
@@ -71,6 +73,23 @@ struct aap2_agent_comm_config {
 
 // forward declaration
 static void aap2_agent_comm_task(void *const param);
+
+static bool pb_recv_callback(pb_istream_t *stream, uint8_t *buf, size_t count)
+{
+	if (count == 0)
+		return true;
+
+	const int sock = (intptr_t)stream->state;
+	ssize_t recvd = tcp_recv_all(sock, buf, count);
+
+	// EOF?
+	if (!recvd)
+		stream->bytes_left = 0;
+	else if (recvd < 0)
+		LOGERROR("AAP2Agent", "recv()", errno);
+
+	return (size_t)recvd == count;
+}
 
 static void aap2_agent_listener_task(void *const param)
 {
@@ -136,6 +155,13 @@ static void aap2_agent_listener_task(void *const param)
 		child_config->last_bundle_sequence_number = 0;
 		child_config->is_subscriber = false;
 		child_config->registered_eid = NULL;
+
+		child_config->pb_istream = (pb_istream_t){
+			&pb_recv_callback,
+			(void *)(intptr_t)conn_fd,
+			SIZE_MAX,
+			NULL,
+		};
 
 		if (pipe(child_config->bundle_pipe_fd) == -1) {
 			LOGERROR("AAP2Agent", "pipe()", errno);
@@ -605,12 +631,6 @@ static void aap2_agent_comm_task(void *const param)
 		goto done;
 	// NOTE: We do not "release" msg as there is nothing to deallocate here.
 
-	pb_istream_t stream = {
-		&pb_recv_callback,
-		(void *)(intptr_t)config->socket_fd,
-		SIZE_MAX,
-		NULL,
-	};
 	aap2_AAPMessage request;
 	struct pollfd pollfd[2];
 
@@ -660,7 +680,7 @@ static void aap2_agent_comm_task(void *const param)
 			// TODO: poll() beforehand to detect closure of socket
 			// so that NanoPB does not return "io error".
 			bool success = pb_decode_ex(
-				&stream,
+				&config->pb_istream,
 				aap2_AAPMessage_fields,
 				&request,
 				PB_DECODE_DELIMITED
@@ -668,7 +688,7 @@ static void aap2_agent_comm_task(void *const param)
 
 			if (!success) {
 				LOGF("AAP2Agent: Protobuf decode error: %s",
-				     PB_GET_ERROR(&stream));
+				     PB_GET_ERROR(&config->pb_istream));
 				break;
 			}
 
@@ -683,17 +703,20 @@ static void aap2_agent_comm_task(void *const param)
 					payload = malloc(
 						request.msg.adu.payload_length
 					);
-					if (!payload)
+					if (!payload) {
 						LOG("AAP2Agent: Payload alloc error!");
-					success = pb_read(
-						&stream,
-						payload,
-						request.msg.adu.payload_length
-					);
-					if (!success) {
-						free(payload);
-						payload = NULL;
-						LOG("AAP2Agent: Payload read error!");
+					} else {
+						success = pb_read(
+							&config->pb_istream,
+							payload,
+							request.msg.adu.
+								payload_length
+						);
+						if (!success) {
+							free(payload);
+							payload = NULL;
+							LOG("AAP2Agent: Payload read error!");
+						}
 					}
 				} else {
 					LOG("AAP2Agent: Payload too large!");
