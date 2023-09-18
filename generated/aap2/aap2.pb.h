@@ -161,6 +161,8 @@ typedef struct _aap2_Bundle {
     /* The total ADU length as defined in RFC 9171.
  Only set if the bundle is a fragment. */
     uint64_t total_adu_length;
+    /* The bundle lifetime as defined in RFC 9171. */
+    uint64_t lifetime_ms;
 } aap2_Bundle;
 
 /* Message informing a BDM Client about a bundle that needs to be dispatched. */
@@ -299,7 +301,7 @@ extern "C" {
 #define aap2_Welcome_init_default                {NULL}
 #define aap2_ConnectionConfig_init_default       {0, _aap2_AuthType_MIN, NULL, NULL, 0}
 #define aap2_BundleADU_init_default              {NULL, NULL, 0, 0, 0, _aap2_BundleADUFlags_MIN}
-#define aap2_Bundle_init_default                 {NULL, NULL, 0, 0, 0, 0, 0}
+#define aap2_Bundle_init_default                 {NULL, NULL, 0, 0, 0, 0, 0, 0}
 #define aap2_DispatchRequest_init_default        {false, aap2_Bundle_init_default, _aap2_DispatchReason_MIN}
 #define aap2_Link_init_default                   {_aap2_LinkStatus_MIN, NULL, NULL}
 #define aap2_Keepalive_init_default              {0}
@@ -310,7 +312,7 @@ extern "C" {
 #define aap2_Welcome_init_zero                   {NULL}
 #define aap2_ConnectionConfig_init_zero          {0, _aap2_AuthType_MIN, NULL, NULL, 0}
 #define aap2_BundleADU_init_zero                 {NULL, NULL, 0, 0, 0, _aap2_BundleADUFlags_MIN}
-#define aap2_Bundle_init_zero                    {NULL, NULL, 0, 0, 0, 0, 0}
+#define aap2_Bundle_init_zero                    {NULL, NULL, 0, 0, 0, 0, 0, 0}
 #define aap2_DispatchRequest_init_zero           {false, aap2_Bundle_init_zero, _aap2_DispatchReason_MIN}
 #define aap2_Link_init_zero                      {_aap2_LinkStatus_MIN, NULL, NULL}
 #define aap2_Keepalive_init_zero                 {0}
@@ -338,6 +340,7 @@ extern "C" {
 #define aap2_Bundle_payload_length_tag           5
 #define aap2_Bundle_fragment_offset_tag          6
 #define aap2_Bundle_total_adu_length_tag         7
+#define aap2_Bundle_lifetime_ms_tag              8
 #define aap2_DispatchRequest_bundle_tag          1
 #define aap2_DispatchRequest_reason_tag          2
 #define aap2_Link_status_tag                     1
@@ -403,7 +406,8 @@ X(a, STATIC,   SINGULAR, UINT64,   creation_timestamp_ms,   3) \
 X(a, STATIC,   SINGULAR, UINT64,   sequence_number,   4) \
 X(a, STATIC,   SINGULAR, UINT64,   payload_length,    5) \
 X(a, STATIC,   SINGULAR, UINT64,   fragment_offset,   6) \
-X(a, STATIC,   SINGULAR, UINT64,   total_adu_length,   7)
+X(a, STATIC,   SINGULAR, UINT64,   total_adu_length,   7) \
+X(a, STATIC,   SINGULAR, UINT64,   lifetime_ms,       8)
 #define aap2_Bundle_CALLBACK NULL
 #define aap2_Bundle_DEFAULT NULL
 
