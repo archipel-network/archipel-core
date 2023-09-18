@@ -668,6 +668,26 @@ done:
 	return send_result;
 }
 
+static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
+{
+	struct bundle_adu data;
+
+	while (poll_recv_timeout(bundle_pipe_fd[0], 0)) {
+		if (pipeq_read_all(bundle_pipe_fd[0],
+				   &data, sizeof(struct bundle_adu)) <= 0) {
+			LOGERROR("AAP2Agent", "read()", errno);
+			break;
+		}
+
+		LOGF("AAP2Agent: Dropping unsent bundle from '%s'.",
+		     data.source);
+		bundle_adu_free_members(data);
+	}
+
+	close(bundle_pipe_fd[0]);
+	close(bundle_pipe_fd[1]);
+}
+
 static void aap2_agent_comm_task(void *const param)
 {
 	struct aap2_agent_comm_config *const config = (
@@ -795,9 +815,8 @@ static void aap2_agent_comm_task(void *const param)
 	}
 
 done:
-	close(config->bundle_pipe_fd[0]);
-	close(config->bundle_pipe_fd[1]);
 	deregister_sink(config);
+	shutdown_bundle_pipe(config->bundle_pipe_fd);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
 	free(config);
