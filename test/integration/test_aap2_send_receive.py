@@ -65,7 +65,9 @@ def do_aap2_test(rpc_client, sub_client):
     assert msg is not None
     assert msg.WhichOneof("msg") == "adu"
     adu_msg, bundle_data = sub_client.receive_adu(msg.adu)
-    # TODO: Reply with ACK here!
+    sub_client.send_response_status(
+        ResponseStatus.RESPONSE_STATUS_SUCCESS
+    )
     print("Bundle received from {}, payload = {}".format(
         adu_msg.src_eid, bundle_data
     ))

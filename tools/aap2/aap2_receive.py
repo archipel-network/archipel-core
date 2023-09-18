@@ -12,6 +12,7 @@ from ud3tn_utils.aap2 import (
     AAP2UnixClient,
     AAP2TCPClient,
     BundleADUFlags,
+    ResponseStatus,
 )
 from helpers import add_common_parser_arguments, initialize_logger
 
@@ -31,7 +32,9 @@ def run_aap_recv(aap2_client, max_count, output, verify_pl, newline):
             continue
 
         adu_msg, bundle_data = aap2_client.receive_adu(msg.adu)
-        # TODO: Send ACK to uD3TN here!
+        aap2_client.send_response_status(
+            ResponseStatus.RESPONSE_STATUS_SUCCESS
+        )
 
         enc = False
         err = False

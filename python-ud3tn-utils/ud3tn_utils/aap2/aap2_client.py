@@ -215,6 +215,11 @@ class AAP2Client(abc.ABC):
         self.send(aap2_pb2.AAPMessage(adu=adu_msg))
         self.socket.send(bundle_data)
 
+    def send_response_status(self, status):
+        """Send an AAPResponse with the specified status code."""
+        response = aap2_pb2.AAPResponse(response_status=status)
+        self.send(response)
+
 
 class AAP2UnixClient(AAP2Client):
     """A context manager class for connecting to the AAP Unix socket of a uD3TN

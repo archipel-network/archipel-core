@@ -521,6 +521,38 @@ static int process_aap_message(
 	return result;
 }
 
+static bool poll_recv_timeout(const int socket_fd, const int timeout)
+{
+	struct pollfd pollfd[1];
+
+	pollfd[0].events = POLLIN;
+	pollfd[0].fd = socket_fd;
+
+	for (;;) {
+		if (poll(pollfd, ARRAY_LENGTH(pollfd), timeout) == -1) {
+			const int err = errno;
+
+			// Try again if interrupted by a signal.
+			if (err == EINTR)
+				continue;
+
+			LOGERROR("AAP2Agent", "poll()", err);
+			return false;
+		}
+		if ((pollfd[0].revents & POLLERR)) {
+			LOG("AAP2Agent: Socket error (e.g. TCP RST) detected.");
+			return false;
+		}
+		if (pollfd[0].revents & POLLHUP) {
+			LOG("AAP2Agent: The peer closed the connection.");
+			return false;
+		}
+		if (pollfd[0].revents & POLLIN)
+			return true;
+		return false;
+	}
+}
+
 // NOTE: Callback-style serialization would be use a function as follows:
 // static bool write_string(pb_ostream_t *stream, const pb_field_iter_t *field,
 //                          void *const *arg)
@@ -533,8 +565,16 @@ static int process_aap_message(
 //         return pb_encode_string(stream, (uint8_t *)str, strlen(str));
 // }
 
-static int send_bundle(const int socket_fd, struct bundle_adu data)
+static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 {
+	struct bundle_adu data;
+
+	if (pipeq_read_all(config->bundle_pipe_fd[0],
+			   &data, sizeof(struct bundle_adu)) <= 0) {
+		LOGERROR("AAP2Agent", "read()", errno);
+		return -1;
+	}
+
 	aap2_AAPMessage msg = aap2_AAPMessage_init_default;
 
 	msg.which_msg = aap2_AAPMessage_adu_tag;
@@ -550,6 +590,7 @@ static int send_bundle(const int socket_fd, struct bundle_adu data)
 	if (data.proc_flags == BUNDLE_FLAG_ADMINISTRATIVE_RECORD)
 		msg.msg.adu.adu_flags = aap2_BundleADUFlags_BUNDLE_ADU_BPDU;
 
+	const int socket_fd = config->socket_fd;
 	int send_result = send_message(
 		socket_fd,
 		aap2_AAPMessage_fields,
@@ -558,53 +599,73 @@ static int send_bundle(const int socket_fd, struct bundle_adu data)
 
 	// NOTE: We do not "release" msg as there is nothing to deallocate here.
 
-	if (send_result >= 0) {
-		struct tcp_write_to_socket_param wsp = {
-			.socket_fd = socket_fd,
-			.errno_ = 0,
-		};
-		pb_ostream_t stream = {
-			&write_callback,
-			&wsp,
-			SIZE_MAX,
-			0,
-			NULL,
-		};
-
-		const bool ret = pb_write(&stream, data.payload, data.length);
-
-		if (wsp.errno_) {
-			LOGERROR("AAP2Agent", "send()", wsp.errno_);
-			send_result = -1;
-		} else if (!ret) {
-			LOGF("AAP2Agent: pb_write() error: %s",
-			     PB_GET_ERROR(&stream));
-			send_result = -1;
-		}
+	if (send_result < 0) {
+		bundle_adu_free_members(data);
+		return send_result;
 	}
 
+	struct tcp_write_to_socket_param wsp = {
+		.socket_fd = socket_fd,
+		.errno_ = 0,
+	};
+	pb_ostream_t stream = {
+		&write_callback,
+		&wsp,
+		SIZE_MAX,
+		0,
+		NULL,
+	};
+
+	const bool ret = pb_write(&stream, data.payload, data.length);
+
+	if (wsp.errno_) {
+		LOGERROR("AAP2Agent", "send()", wsp.errno_);
+		send_result = -1;
+	} else if (!ret) {
+		LOGF("AAP2Agent: pb_write() error: %s",
+			PB_GET_ERROR(&stream));
+		send_result = -1;
+	}
+
+	if (send_result < 0) {
+		bundle_adu_free_members(data);
+		return send_result;
+	}
+
+	// Receive status from client.
+	aap2_AAPResponse response = aap2_AAPResponse_init_default;
+
+	if (!poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS)) {
+		LOG("AAP2Agent: Client did not respond, closing connection.");
+		send_result = -1;
+		goto done;
+	}
+
+	const bool success = pb_decode_ex(
+		&config->pb_istream,
+		aap2_AAPResponse_fields,
+		&response,
+		PB_DECODE_DELIMITED
+	);
+
+	if (!success) {
+		LOGF("AAP2Agent: Protobuf decode error: %s",
+		     PB_GET_ERROR(&config->pb_istream));
+		send_result = -1;
+		goto done;
+	}
+
+	if (response.response_status !=
+	    aap2_ResponseStatus_RESPONSE_STATUS_SUCCESS) {
+		// TODO: Implement configurable policy to re-route/keep somehow.
+		LOG("AAP2Agent: Client reported error for bundle, dropping.");
+		// NOTE: Do not return -1 here as this would close the socket.
+	}
+
+done:
+	pb_release(aap2_AAPResponse_fields, &response);
 	bundle_adu_free_members(data);
-
-	// TODO: Receive ACK from client here!
-
 	return send_result;
-}
-
-static bool pb_recv_callback(pb_istream_t *stream, uint8_t *buf, size_t count)
-{
-	if (count == 0)
-		return true;
-
-	const int sock = (intptr_t)stream->state;
-	ssize_t recvd = tcp_recv_all(sock, buf, count);
-
-	// EOF?
-	if (!recvd)
-		stream->bytes_left = 0;
-	else if (recvd < 0)
-		LOGERROR("AAP2Agent", "recv()", errno);
-
-	return (size_t)recvd == count;
 }
 
 static void aap2_agent_comm_task(void *const param)
@@ -641,8 +702,6 @@ static void aap2_agent_comm_task(void *const param)
 
 	for (;;) {
 		if (config->is_subscriber) {
-			struct bundle_adu data;
-
 			// TODO: Timeout & send keepalive messages!
 			if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {
 				const int err = errno;
@@ -666,16 +725,9 @@ static void aap2_agent_comm_task(void *const param)
 				LOG("AAP2Agent: Unexpected data on socket, terminating.");
 				break;
 			}
-			if (!(pollfd[1].revents & POLLIN))
-				continue;
-			if (pipeq_read_all(config->bundle_pipe_fd[0],
-					   &data,
-					   sizeof(struct bundle_adu)) <= 0) {
-				LOGERROR("AAP2Agent", "read()", errno);
-				break;
-			}
-			if (send_bundle(config->socket_fd, data) < 0)
-				break;
+			if (pollfd[1].revents & POLLIN)
+				if (send_bundle_from_pipe(config) < 0)
+					break;
 		} else {
 			// TODO: poll() beforehand to detect closure of socket
 			// so that NanoPB does not return "io error".

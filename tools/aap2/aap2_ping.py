@@ -90,7 +90,9 @@ def _try_receive_ping(aap2_client, logger):
         return False, None
 
     adu_msg, bundle_data = aap2_client.receive_adu(msg.adu)
-    # TODO: Send ACK to uD3TN here!
+    aap2_client.send_response_status(
+        ResponseStatus.RESPONSE_STATUS_SUCCESS
+    )
 
     if bundle_data[0:4] != b"PING":
         # Just show we got something we do not want

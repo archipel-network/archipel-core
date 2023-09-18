@@ -10,6 +10,9 @@
 
 #define AAP2_AGENT_BACKLOG 2
 
+// Timeout for expecting a response from the Client.
+#define AAP2_AGENT_TIMEOUT_MS 1000
+
 struct aap2_agent_config *aap2_agent_setup(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const char *socket_path,
