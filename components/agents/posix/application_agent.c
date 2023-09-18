@@ -452,6 +452,58 @@ static int send_bundle(const int socket_fd, struct bundle_adu data)
 	return send_result;
 }
 
+static bool poll_recv_timeout(const int socket_fd, const int timeout)
+{
+	struct pollfd pollfd[1];
+
+	pollfd[0].events = POLLIN;
+	pollfd[0].fd = socket_fd;
+
+	for (;;) {
+		if (poll(pollfd, ARRAY_LENGTH(pollfd), timeout) == -1) {
+			const int err = errno;
+
+			// Try again if interrupted by a signal.
+			if (err == EINTR)
+				continue;
+
+			LOGERROR("AppAgent", "poll()", err);
+			return false;
+		}
+		if ((pollfd[0].revents & POLLERR)) {
+			LOG("AppAgent: Socket error (e.g. TCP RST) detected.");
+			return false;
+		}
+		if (pollfd[0].revents & POLLHUP) {
+			LOG("AppAgent: The peer closed the connection.");
+			return false;
+		}
+		if (pollfd[0].revents & POLLIN)
+			return true;
+		return false;
+	}
+}
+
+static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
+{
+	struct bundle_adu data;
+
+	while (poll_recv_timeout(bundle_pipe_fd[0], 0)) {
+		if (pipeq_read_all(bundle_pipe_fd[0],
+				   &data, sizeof(struct bundle_adu)) <= 0) {
+			LOGERROR("AppAgent", "read()", errno);
+			break;
+		}
+
+		LOGF("AppAgent: Dropping unsent bundle from '%s'.",
+		     data.source);
+		bundle_adu_free_members(data);
+	}
+
+	close(bundle_pipe_fd[0]);
+	close(bundle_pipe_fd[1]);
+}
+
 static void application_agent_comm_task(void *const param)
 {
 	struct application_agent_comm_config *const config = (
@@ -523,9 +575,8 @@ static void application_agent_comm_task(void *const param)
 
 	aap_parser_deinit(&parser);
 done:
-	close(config->bundle_pipe_fd[0]);
-	close(config->bundle_pipe_fd[1]);
 	deregister_sink(config);
+	shutdown_bundle_pipe(config->bundle_pipe_fd);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
 	free(config);
