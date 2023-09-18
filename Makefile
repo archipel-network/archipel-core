@@ -3,7 +3,7 @@
 ###############################################################################
 
 .PHONY: all
-all: posix-all
+all: posix
 
 .PHONY: ud3tn
 ud3tn: posix
