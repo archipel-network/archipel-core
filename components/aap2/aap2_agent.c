@@ -749,8 +749,9 @@ static void aap2_agent_comm_task(void *const param)
 				if (send_bundle_from_pipe(config) < 0)
 					break;
 		} else {
-			// TODO: poll() beforehand to detect closure of socket
-			// so that NanoPB does not return "io error".
+			if (!poll_recv_timeout(config->socket_fd, -1))
+				break;
+
 			bool success = pb_decode_ex(
 				&config->pb_istream,
 				aap2_AAPMessage_fields,
