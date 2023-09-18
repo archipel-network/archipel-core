@@ -793,13 +793,6 @@ static void aap2_agent_comm_task(void *const param)
 				} else {
 					LOG("AAP2Agent: Payload too large!");
 				}
-				if (!payload) {
-					pb_release(
-						aap2_AAPMessage_fields,
-						&request
-					);
-					break;
-				}
 			}
 
 			success = !process_aap_message(
