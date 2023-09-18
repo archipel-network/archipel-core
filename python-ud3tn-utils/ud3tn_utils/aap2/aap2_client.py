@@ -110,7 +110,8 @@ class AAP2Client(abc.ABC):
             )  # UINT32_MAX for maximum compatibility
         return None
 
-    def configure(self, agent_id=None, subscribe=False, secret=None):
+    def configure(self, agent_id=None, subscribe=False, secret=None,
+                  auth_type=aap2_pb2.AuthType.AUTH_TYPE_DEFAULT):
         """Attempt to configure the connection as specified.
 
         Args:
@@ -127,6 +128,7 @@ class AAP2Client(abc.ABC):
         )
         self.secret = secret or str(uuid.uuid4())
         config_msg = aap2_pb2.ConnectionConfig(
+            auth_type=auth_type,
             is_subscriber=subscribe,
             endpoint_id=eid,
             secret=self.secret,
