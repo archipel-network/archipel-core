@@ -32,13 +32,16 @@ message AAPMessage {
     DispatchRequest dispatch_request = 4;
 
     // Message for initiating or informing about CLA link status changes.
+    // This message is also issued multiple times by µD3TN at the start of a
+    // connection to a FIB-authorized subscriber to transmit the current FIB.
     Link link = 5;
 
-    // Message for informing a FIB-authorized Client of the FIB contents.
-    FIBInfo fib_info = 6;
-
     // Call issued regularly to ensure the connection is still alive.
-    Keepalive keepalive = 7;
+    Keepalive keepalive = 6;
+
+    // NOTE: FUTURE EXTENSION: Message for informing a FIB-authorized Client
+    // of the FIB contents in a "bulk manner".
+    // FIBInfo fib_info = 7;
   }
 }
 
@@ -133,10 +136,10 @@ message BundleADU {
   string dst_eid = 2;
 
   // The bundle creation time in milliseconds since the DTN epoch as defined
-  // in RFC 9171. Optional when sending bundles (will be assigned by uD3TN).
+  // in RFC 9171. Optional when sending bundles (will be assigned by µD3TN).
   uint64 creation_timestamp_ms = 3;
   // The bundle sequence number as defined in RFC 9171.
-  // Optional when sending bundles (will be assigned by uD3TN).
+  // Optional when sending bundles (will be assigned by µD3TN).
   uint64 sequence_number = 4;
 
   // The number of bytes contained in the bundle payload, which MUST be
@@ -244,7 +247,9 @@ message Link {
   // uint64 remaining_volume_bytes = 4;
 }
 
+// NOTE: FUTURE EXTENSION:
 // Message for informing a FIB-authorized Client of the FIB contents.
+/*
 message FIBInfo {
   // Message representing one line (entry) in the FIB.
   message FIBEntry {
@@ -259,6 +264,7 @@ message FIBInfo {
   // The list of all current FIB entries (lines).
   repeated FIBEntry fib_entries = 1;
 }
+*/
 
 // A message that should be regularly sent by the current initiator and must be
 // acknowledged with an `AAPResponse` specifying the result `RPC_RESULT_ACK`.

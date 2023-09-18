@@ -129,10 +129,10 @@ typedef struct _aap2_BundleADU {
     /* The bundle destination EID. */
     char *dst_eid;
     /* The bundle creation time in milliseconds since the DTN epoch as defined
- in RFC 9171. Optional when sending bundles (will be assigned by uD3TN). */
+ in RFC 9171. Optional when sending bundles (will be assigned by µD3TN). */
     uint64_t creation_timestamp_ms;
     /* The bundle sequence number as defined in RFC 9171.
- Optional when sending bundles (will be assigned by uD3TN). */
+ Optional when sending bundles (will be assigned by µD3TN). */
     uint64_t sequence_number;
     /* The number of bytes contained in the bundle payload, which MUST be
  enclosed immediately _after_ the Protobuf message. */
@@ -183,23 +183,6 @@ typedef struct _aap2_Link {
     char *peer_cla_addr;
 } aap2_Link;
 
-/* Message for informing a FIB-authorized Client of the FIB contents. */
-typedef struct _aap2_FIBInfo {
-    /* The list of all current FIB entries (lines). */
-    pb_size_t fib_entries_count;
-    struct _aap2_FIBInfo_FIBEntry *fib_entries;
-} aap2_FIBInfo;
-
-/* Message representing one line (entry) in the FIB. */
-typedef struct _aap2_FIBInfo_FIBEntry {
-    /* The node ID (as defined in RFC 9171) of the other peer. */
-    char *peer_node_id;
-    /* The recorded Links for the given peer including their status.
- Note that this list also contains Links that are not (yet) active. */
-    pb_size_t peer_links_count;
-    struct _aap2_Link *peer_links;
-} aap2_FIBInfo_FIBEntry;
-
 /* A message that should be regularly sent by the current initiator and must be
  acknowledged with an `AAPResponse` specifying the result `RPC_RESULT_ACK`. */
 typedef struct _aap2_Keepalive {
@@ -222,10 +205,10 @@ typedef struct _aap2_AAPMessage {
         /* Message informing a BDM Client about a bundle that needs to be
      dispatched. */
         aap2_DispatchRequest dispatch_request;
-        /* Message for initiating or informing about CLA link status changes. */
+        /* Message for initiating or informing about CLA link status changes.
+     This message is also issued multiple times by µD3TN at the start of a
+     connection to a FIB-authorized subscriber to transmit the current FIB. */
         aap2_Link link;
-        /* Message for informing a FIB-authorized Client of the FIB contents. */
-        aap2_FIBInfo fib_info;
         /* Call issued regularly to ensure the connection is still alive. */
         aap2_Keepalive keepalive;
     } msg;
@@ -306,8 +289,6 @@ extern "C" {
 #define aap2_Link_status_ENUMTYPE aap2_LinkStatus
 
 
-
-
 #define aap2_AAPResponse_response_status_ENUMTYPE aap2_ResponseStatus
 
 
@@ -321,8 +302,6 @@ extern "C" {
 #define aap2_Bundle_init_default                 {NULL, NULL, 0, 0, 0, 0, 0}
 #define aap2_DispatchRequest_init_default        {false, aap2_Bundle_init_default, _aap2_DispatchReason_MIN}
 #define aap2_Link_init_default                   {_aap2_LinkStatus_MIN, NULL, NULL}
-#define aap2_FIBInfo_init_default                {0, NULL}
-#define aap2_FIBInfo_FIBEntry_init_default       {NULL, 0, NULL}
 #define aap2_Keepalive_init_default              {0}
 #define aap2_AAPResponse_init_default            {_aap2_ResponseStatus_MIN, false, aap2_DispatchResult_init_default, false, aap2_Bundle_init_default}
 #define aap2_DispatchResult_init_default         {0, NULL}
@@ -334,8 +313,6 @@ extern "C" {
 #define aap2_Bundle_init_zero                    {NULL, NULL, 0, 0, 0, 0, 0}
 #define aap2_DispatchRequest_init_zero           {false, aap2_Bundle_init_zero, _aap2_DispatchReason_MIN}
 #define aap2_Link_init_zero                      {_aap2_LinkStatus_MIN, NULL, NULL}
-#define aap2_FIBInfo_init_zero                   {0, NULL}
-#define aap2_FIBInfo_FIBEntry_init_zero          {NULL, 0, NULL}
 #define aap2_Keepalive_init_zero                 {0}
 #define aap2_AAPResponse_init_zero               {_aap2_ResponseStatus_MIN, false, aap2_DispatchResult_init_zero, false, aap2_Bundle_init_zero}
 #define aap2_DispatchResult_init_zero            {0, NULL}
@@ -366,16 +343,12 @@ extern "C" {
 #define aap2_Link_status_tag                     1
 #define aap2_Link_peer_node_id_tag               2
 #define aap2_Link_peer_cla_addr_tag              3
-#define aap2_FIBInfo_fib_entries_tag             1
-#define aap2_FIBInfo_FIBEntry_peer_node_id_tag   1
-#define aap2_FIBInfo_FIBEntry_peer_links_tag     2
 #define aap2_AAPMessage_welcome_tag              1
 #define aap2_AAPMessage_config_tag               2
 #define aap2_AAPMessage_adu_tag                  3
 #define aap2_AAPMessage_dispatch_request_tag     4
 #define aap2_AAPMessage_link_tag                 5
-#define aap2_AAPMessage_fib_info_tag             6
-#define aap2_AAPMessage_keepalive_tag            7
+#define aap2_AAPMessage_keepalive_tag            6
 #define aap2_DispatchResult_next_hops_tag        1
 #define aap2_AAPResponse_response_status_tag     1
 #define aap2_AAPResponse_dispatch_result_tag     2
@@ -389,8 +362,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (msg,config,msg.config),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,adu,msg.adu),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,dispatch_request,msg.dispatch_request),   4) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (msg,link,msg.link),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (msg,fib_info,msg.fib_info),   6) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (msg,keepalive,msg.keepalive),   7)
+X(a, STATIC,   ONEOF,    MESSAGE,  (msg,keepalive,msg.keepalive),   6)
 #define aap2_AAPMessage_CALLBACK NULL
 #define aap2_AAPMessage_DEFAULT NULL
 #define aap2_AAPMessage_msg_welcome_MSGTYPE aap2_Welcome
@@ -398,7 +370,6 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (msg,keepalive,msg.keepalive),   7)
 #define aap2_AAPMessage_msg_adu_MSGTYPE aap2_BundleADU
 #define aap2_AAPMessage_msg_dispatch_request_MSGTYPE aap2_DispatchRequest
 #define aap2_AAPMessage_msg_link_MSGTYPE aap2_Link
-#define aap2_AAPMessage_msg_fib_info_MSGTYPE aap2_FIBInfo
 #define aap2_AAPMessage_msg_keepalive_MSGTYPE aap2_Keepalive
 
 #define aap2_Welcome_FIELDLIST(X, a) \
@@ -450,19 +421,6 @@ X(a, POINTER,  SINGULAR, STRING,   peer_cla_addr,     3)
 #define aap2_Link_CALLBACK NULL
 #define aap2_Link_DEFAULT NULL
 
-#define aap2_FIBInfo_FIELDLIST(X, a) \
-X(a, POINTER,  REPEATED, MESSAGE,  fib_entries,       1)
-#define aap2_FIBInfo_CALLBACK NULL
-#define aap2_FIBInfo_DEFAULT NULL
-#define aap2_FIBInfo_fib_entries_MSGTYPE aap2_FIBInfo_FIBEntry
-
-#define aap2_FIBInfo_FIBEntry_FIELDLIST(X, a) \
-X(a, POINTER,  SINGULAR, STRING,   peer_node_id,      1) \
-X(a, POINTER,  REPEATED, MESSAGE,  peer_links,        2)
-#define aap2_FIBInfo_FIBEntry_CALLBACK NULL
-#define aap2_FIBInfo_FIBEntry_DEFAULT NULL
-#define aap2_FIBInfo_FIBEntry_peer_links_MSGTYPE aap2_Link
-
 #define aap2_Keepalive_FIELDLIST(X, a) \
 
 #define aap2_Keepalive_CALLBACK NULL
@@ -495,8 +453,6 @@ extern const pb_msgdesc_t aap2_BundleADU_msg;
 extern const pb_msgdesc_t aap2_Bundle_msg;
 extern const pb_msgdesc_t aap2_DispatchRequest_msg;
 extern const pb_msgdesc_t aap2_Link_msg;
-extern const pb_msgdesc_t aap2_FIBInfo_msg;
-extern const pb_msgdesc_t aap2_FIBInfo_FIBEntry_msg;
 extern const pb_msgdesc_t aap2_Keepalive_msg;
 extern const pb_msgdesc_t aap2_AAPResponse_msg;
 extern const pb_msgdesc_t aap2_DispatchResult_msg;
@@ -510,8 +466,6 @@ extern const pb_msgdesc_t aap2_DispatchResult_NextHopEntry_msg;
 #define aap2_Bundle_fields &aap2_Bundle_msg
 #define aap2_DispatchRequest_fields &aap2_DispatchRequest_msg
 #define aap2_Link_fields &aap2_Link_msg
-#define aap2_FIBInfo_fields &aap2_FIBInfo_msg
-#define aap2_FIBInfo_FIBEntry_fields &aap2_FIBInfo_FIBEntry_msg
 #define aap2_Keepalive_fields &aap2_Keepalive_msg
 #define aap2_AAPResponse_fields &aap2_AAPResponse_msg
 #define aap2_DispatchResult_fields &aap2_DispatchResult_msg
@@ -525,8 +479,6 @@ extern const pb_msgdesc_t aap2_DispatchResult_NextHopEntry_msg;
 /* aap2_Bundle_size depends on runtime parameters */
 /* aap2_DispatchRequest_size depends on runtime parameters */
 /* aap2_Link_size depends on runtime parameters */
-/* aap2_FIBInfo_size depends on runtime parameters */
-/* aap2_FIBInfo_FIBEntry_size depends on runtime parameters */
 /* aap2_AAPResponse_size depends on runtime parameters */
 /* aap2_DispatchResult_size depends on runtime parameters */
 /* aap2_DispatchResult_NextHopEntry_size depends on runtime parameters */

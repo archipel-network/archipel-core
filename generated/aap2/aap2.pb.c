@@ -27,12 +27,6 @@ PB_BIND(aap2_DispatchRequest, aap2_DispatchRequest, AUTO)
 PB_BIND(aap2_Link, aap2_Link, AUTO)
 
 
-PB_BIND(aap2_FIBInfo, aap2_FIBInfo, AUTO)
-
-
-PB_BIND(aap2_FIBInfo_FIBEntry, aap2_FIBInfo_FIBEntry, AUTO)
-
-
 PB_BIND(aap2_Keepalive, aap2_Keepalive, AUTO)
 
 
