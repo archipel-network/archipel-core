@@ -553,6 +553,32 @@ static bool poll_recv_timeout(const int socket_fd, const int timeout)
 	}
 }
 
+static uint8_t *receive_payload(pb_istream_t *istream, size_t payload_length)
+{
+	if (payload_length > BUNDLE_MAX_SIZE) {
+		LOG("AAP2Agent: Payload too large!");
+		return NULL;
+	}
+
+	uint8_t *payload = malloc(payload_length);
+
+	if (!payload) {
+		LOG("AAP2Agent: Payload alloc error!");
+		return NULL;
+	}
+
+
+	const bool success = pb_read(istream, payload, payload_length);
+
+	if (!success) {
+		free(payload);
+		payload = NULL;
+		LOG("AAP2Agent: Payload read error!");
+	}
+
+	return payload;
+}
+
 // NOTE: Callback-style serialization would be use a function as follows:
 // static bool write_string(pb_ostream_t *stream, const pb_field_iter_t *field,
 //                          void *const *arg)
@@ -771,29 +797,10 @@ static void aap2_agent_comm_task(void *const param)
 			// fails we process the message with payload == NULL, to
 			// send a proper response.
 			if (request.which_msg == aap2_AAPMessage_adu_tag) {
-				if (request.msg.adu.payload_length <=
-				    BUNDLE_MAX_SIZE) {
-					payload = malloc(
-						request.msg.adu.payload_length
-					);
-					if (!payload) {
-						LOG("AAP2Agent: Payload alloc error!");
-					} else {
-						success = pb_read(
-							&config->pb_istream,
-							payload,
-							request.msg.adu.
-								payload_length
-						);
-						if (!success) {
-							free(payload);
-							payload = NULL;
-							LOG("AAP2Agent: Payload read error!");
-						}
-					}
-				} else {
-					LOG("AAP2Agent: Payload too large!");
-				}
+				payload = receive_payload(
+					&config->pb_istream,
+					request.msg.adu.payload_length
+				);
 			}
 
 			success = !process_aap_message(
