@@ -8,7 +8,7 @@
 
 #include "platform/hal_time.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@ TEST_SETUP(bundle6ParserSerializer)
 		sizeof(test_payload),
 		"dtn:sourceeid",
 		"dtn:desteid",
-		creation_timestamp_s, 1, 42,
+		creation_timestamp_s * 1000, 1, 42 * 1000,
 		BUNDLE_FLAG_REPORT_DELIVERY |
 		BUNDLE_V6_FLAG_CUSTODY_TRANSFER_REQUESTED
 	);
@@ -108,7 +108,7 @@ static void verify_bundle(struct bundle *b)
 		sizeof(test_payload),
 		b->payload_block->length
 	);
-	TEST_ASSERT_EQUAL_MEMORY(
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
 		test_payload,
 		b->payload_block->data,
 		sizeof(test_payload)
@@ -186,7 +186,126 @@ TEST(bundle6ParserSerializer, parse_and_serialize)
 	free(serializebuffer);
 }
 
+// Bundle sourced and captured from ION v3.7.4, see #7 for details
+static uint8_t ION_TEST_BUNDLE_IPN_CBHE[] = {
+	// Primary Block
+	// Version
+	0x06,
+	// Processing Flags
+	0x81, 0x14,
+	// Length
+	0x11,
+	// Destination: ipn:3.1 (CBHE)
+	0x03, 0x01,
+	// Source: dtn:none (CBHE)
+	0x00, 0x00,
+	// Report-to: dtn:none (CBHE)
+	0x00, 0x00,
+	// Custodian: dtn:none (CBHE)
+	0x00, 0x00,
+	// Timestamp
+	0x82, 0xDC, 0xAE, 0xC7, 0x2A,
+	// Seqnum
+	0x01,
+	// Lifetime
+	0x82, 0x2C,
+	// Dict. Length
+	0x00,
+
+	// 2nd Block (type 5)
+	0x05,
+	// Flags: discard if unproc
+	0x10,
+	// Length: 8 bytes
+	0x08,
+	// Data
+	0x69, 0x70, 0x6E, 0x00, 0x31, 0x2E, 0x30, 0x00,
+
+	// 3rd block (type 20)
+	0x14,
+	// Flags: replicate in every fragment
+	0x01,
+	// Length: 1 byte
+	0x01,
+	// Data
+	0x00,
+
+	// Payload Block (type 1)
+	0x01,
+	// Flags: "last block", "must be replicated"
+	0x09,
+	// Length: 10 bytes
+	0x0A,
+	// "hallo welt"
+	0x68, 0x61, 0x6C, 0x6C, 0x6F, 0x20, 0x77, 0x65, 0x6C, 0x74
+};
+
+static void verify_and_free_ipn_cbhe_bundle(struct bundle *b, void *param)
+{
+	(void)param;
+
+	TEST_ASSERT_NOT_NULL(b);
+	TEST_ASSERT_NOT_NULL(b->payload_block);
+	TEST_ASSERT_NOT_NULL(b->blocks);
+	TEST_ASSERT_NOT_NULL(b->blocks->data);
+	TEST_ASSERT_NOT_NULL(b->blocks->next);
+	TEST_ASSERT_NOT_NULL(b->blocks->next->data);
+	TEST_ASSERT_NOT_NULL(b->blocks->next->next);
+	TEST_ASSERT_NOT_NULL(b->blocks->next->next->data);
+	TEST_ASSERT_NULL(b->blocks->next->next->next);
+
+	TEST_ASSERT_EQUAL(6, b->protocol_version);
+	TEST_ASSERT_EQUAL(
+		BUNDLE_V6_FLAG_SINGLETON_ENDPOINT |
+		BUNDLE_FLAG_MUST_NOT_BE_FRAGMENTED |
+		BUNDLE_V6_FLAG_NORMAL_PRIORITY,
+		b->proc_flags
+	);
+	TEST_ASSERT_EQUAL(1, b->sequence_number);
+	TEST_ASSERT_EQUAL(300000, b->lifetime_ms);
+	TEST_ASSERT_NOT_EQUAL(10, b->primary_block_length);
+
+	TEST_ASSERT_EQUAL_STRING("ipn:3.1", b->destination);
+	TEST_ASSERT_EQUAL_STRING("dtn:none", b->source);
+	TEST_ASSERT_EQUAL_STRING("dtn:none", b->report_to);
+	TEST_ASSERT_EQUAL_STRING("dtn:none", b->current_custodian);
+
+	TEST_ASSERT_EQUAL_PTR(b->payload_block, b->blocks->next->next->data);
+
+	TEST_ASSERT_EQUAL(BUNDLE_BLOCK_TYPE_PAYLOAD, b->payload_block->type);
+	TEST_ASSERT_EQUAL(
+		BUNDLE_BLOCK_FLAG_MUST_BE_REPLICATED |
+		BUNDLE_V6_BLOCK_FLAG_LAST_BLOCK,
+		b->payload_block->flags
+	);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY("hallo welt", b->payload_block->data, 10);
+
+	// other blocks
+	TEST_ASSERT_EQUAL(
+		BUNDLE_BLOCK_FLAG_DISCARD_IF_UNPROC,
+		b->blocks->data->flags
+	);
+
+	bundle_free(b);
+}
+
+TEST(bundle6ParserSerializer, parse_cbhe)
+{
+	struct bundle6_parser p;
+
+	bundle6_parser_init(&p, verify_and_free_ipn_cbhe_bundle, NULL);
+	bundle6_parser_read(
+		&p,
+		ION_TEST_BUNDLE_IPN_CBHE,
+		sizeof(ION_TEST_BUNDLE_IPN_CBHE)
+	);
+	TEST_ASSERT_EQUAL(PARSER_STATUS_DONE, p.basedata->status);
+	bundle6_parser_reset(&p);
+	TEST_ASSERT_EQUAL(PARSER_STATUS_GOOD, p.basedata->status);
+}
+
 TEST_GROUP_RUNNER(bundle6ParserSerializer)
 {
 	RUN_TEST_CASE(bundle6ParserSerializer, parse_and_serialize);
+	RUN_TEST_CASE(bundle6ParserSerializer, parse_cbhe);
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/simplehtab.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -27,7 +27,8 @@ void agent_manager_init(const char *const ud3tn_local_eid)
 }
 
 int agent_register(const char *sink_identifier,
-		   void (*const callback)(struct bundle_adu data, void *param),
+		   void (*const callback)(struct bundle_adu data, void *param,
+					  const void *bp_context),
 		   void *param)
 {
 	struct agent *ag_ptr;
@@ -94,7 +95,8 @@ int agent_deregister(const char *sink_identifier)
 	return 0;
 }
 
-int agent_forward(const char *sink_identifier, struct bundle_adu data)
+int agent_forward(const char *sink_identifier, struct bundle_adu data,
+		  const void *bp_context)
 {
 	struct agent *ag_ptr = agent_search(sink_identifier);
 
@@ -112,7 +114,7 @@ int agent_forward(const char *sink_identifier, struct bundle_adu data)
 		bundle_adu_free_members(data);
 		return -1;
 	}
-	ag_ptr->callback(data, ag_ptr->param);
+	ag_ptr->callback(data, ag_ptr->param, bp_context);
 
 	return 0;
 }

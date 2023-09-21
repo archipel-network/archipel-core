@@ -4,7 +4,6 @@
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
-#include "ud3tn/task_tags.h"
 
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
@@ -38,7 +37,7 @@ struct contact_info {
 struct contact_manager_context {
 	struct contact_info current_contacts[MAX_CONCURRENT_CONTACTS];
 	int8_t current_contact_count;
-	uint64_t next_contact_time;
+	uint64_t next_contact_time_ms;
 };
 
 static bool contact_active(
@@ -56,14 +55,15 @@ static bool contact_active(
 
 static int8_t remove_expired_contacts(
 	struct contact_manager_context *const ctx,
-	const uint64_t current_timestamp, struct contact_info list[])
+	const uint64_t current_timestamp_ms, struct contact_info list[])
 {
 	/* Check for ending contacts */
 	/* We do this first as it frees space in the list */
 	int8_t i, c, removed = 0;
 
 	for (i = ctx->current_contact_count - 1; i >= 0; i--) {
-		if (ctx->current_contacts[i].contact->to <= current_timestamp) {
+		if (ctx->current_contacts[i].contact->to_ms <=
+		    current_timestamp_ms) {
 			ASSERT(i <= MAX_CONCURRENT_CONTACTS);
 			/* Unset "active" constraint */
 			ctx->current_contacts[i].contact->active = 0;
@@ -124,30 +124,34 @@ static uint8_t check_upcoming(
 
 static int8_t process_upcoming_list(
 	struct contact_manager_context *const ctx,
-	struct contact_list *contact_list, const uint64_t current_timestamp,
+	struct contact_list *contact_list, const uint64_t current_timestamp_ms,
 	struct contact_info list[])
 {
 	int8_t added = 0;
 	struct contact_list *cur_entry;
 
-	ctx->next_contact_time = UINT64_MAX;
+	ctx->next_contact_time_ms = UINT64_MAX;
 	cur_entry = contact_list;
 	while (cur_entry != NULL) {
-		if (cur_entry->data->from <= current_timestamp) {
-			if (cur_entry->data->to > current_timestamp) {
+		if (cur_entry->data->from_ms <= current_timestamp_ms) {
+			if (cur_entry->data->to_ms > current_timestamp_ms) {
 				added += check_upcoming(
 					ctx,
 					cur_entry->data,
 					list,
 					added
 				);
-				if (cur_entry->data->to < ctx->next_contact_time)
-					ctx->next_contact_time =
-						cur_entry->data->to;
+				if (cur_entry->data->to_ms <
+				    ctx->next_contact_time_ms)
+					ctx->next_contact_time_ms =
+						cur_entry->data->to_ms;
 			}
 		} else {
-			if (cur_entry->data->from < ctx->next_contact_time)
-				ctx->next_contact_time = cur_entry->data->from;
+			if (cur_entry->data->from_ms <
+			    ctx->next_contact_time_ms)
+				ctx->next_contact_time_ms = (
+					cur_entry->data->from_ms
+				);
 			/* As our contact_list is sorted ascending by */
 			/* from-time we can stop checking here */
 			break;
@@ -260,18 +264,20 @@ static uint8_t check_for_contacts(
 {
 	int8_t i;
 	static struct contact_info added_contacts[MAX_CONCURRENT_CONTACTS];
-	uint64_t current_timestamp = hal_time_get_timestamp_s();
-	int8_t removed_count = remove_expired_contacts(
+	const uint64_t current_timestamp_ms = hal_time_get_timestamp_ms();
+	const int8_t removed_count = remove_expired_contacts(
 		ctx,
-		current_timestamp,
+		current_timestamp_ms,
 		removed_contacts
 	);
-	int8_t added_count = process_upcoming_list(
+	const int8_t added_count = process_upcoming_list(
 		ctx,
 		contact_list,
-		current_timestamp,
+		current_timestamp_ms,
 		added_contacts
 	);
+
+	ASSERT(ctx->next_contact_time_ms > current_timestamp_ms);
 
 	for (i = 0; i < added_count; i++) {
 		LOGF("ContactManager: Scheduled contact with \"%s\" started (%p).",
@@ -363,18 +369,20 @@ static void contact_manager_task(void *cm_parameters)
 {
 	struct contact_manager_task_parameters *parameters
 		= (struct contact_manager_task_parameters *)cm_parameters;
-	int8_t led_state = 0;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
-	uint64_t cur_time, next_time, delay;
+	uint64_t cur_time_ms, next_time_ms;
+	int64_t delay_ms;
 	struct contact_manager_context ctx = {
 		.current_contact_count = 0,
-		.next_contact_time = UINT64_MAX,
+		.next_contact_time_ms = UINT64_MAX,
 	};
 
-	ASSERT(parameters != NULL);
+	if (!parameters) {
+		LOG("ContactManager: Cannot start, parameters not defined");
+		ASSERT(false);
+		return;
+	}
 	for (;;) {
-		hal_platform_led_set((led_state = 1 - led_state) + 3);
-
 		if (signal != CM_SIGNAL_NONE) {
 			manage_contacts(
 				&ctx,
@@ -385,19 +393,26 @@ static void contact_manager_task(void *cm_parameters)
 			);
 		}
 		signal = CM_SIGNAL_UNKNOWN;
-		cur_time = hal_time_get_timestamp_ms();
+		cur_time_ms = hal_time_get_timestamp_ms();
+		delay_ms = -1; // infinite blocking on queue
+		if (ctx.next_contact_time_ms < UINT64_MAX) {
+			next_time_ms = ctx.next_contact_time_ms;
+			if (next_time_ms <= cur_time_ms)
+				continue;
 
-		next_time = MIN(UINT64_MAX, ctx.next_contact_time * 1000);
-		if (next_time > (cur_time + CONTACT_CHECKING_MAX_PERIOD))
-			delay = CONTACT_CHECKING_MAX_PERIOD;
-		else if (next_time <= cur_time)
-			continue;
-		else
-			delay = next_time - cur_time;
+			const uint64_t udelay = next_time_ms - cur_time_ms + 1;
+
+			// The queue implementation does not support to wait
+			// longer than 292 years due to a conversion to
+			// nanoseconds. Block indefinitely in this case.
+			if (udelay < HAL_QUEUE_MAX_DELAY_MS &&
+					udelay <= (uint64_t)INT64_MAX)
+				delay_ms = udelay;
+		}
 		hal_queue_receive(
 			parameters->control_queue,
 			&signal,
-			delay + 1
+			delay_ms
 		);
 	}
 }
@@ -407,6 +422,7 @@ struct contact_manager_params contact_manager_start(
 	struct contact_list **clistptr)
 {
 	struct contact_manager_params ret = {
+		.task_creation_result = UD3TN_FAIL,
 		.semaphore = NULL,
 		.control_queue = NULL,
 	};
@@ -432,13 +448,19 @@ struct contact_manager_params contact_manager_start(
 	cmt_params->control_queue = queue;
 	cmt_params->bp_queue = bp_queue;
 	cmt_params->contact_list_ptr = clistptr;
-	hal_task_create(contact_manager_task,
-			"cont_man_t",
-			CONTACT_MANAGER_TASK_PRIORITY,
-			cmt_params,
-			CONTACT_MANAGER_TASK_STACK_SIZE,
-			(void *)CONTACT_MANAGER_TASK_TAG);
-	ret.semaphore = semaphore;
-	ret.control_queue = queue;
+	ret.task_creation_result = hal_task_create(
+		contact_manager_task,
+		"cont_man_t",
+		CONTACT_MANAGER_TASK_PRIORITY,
+		cmt_params,
+		CONTACT_MANAGER_TASK_STACK_SIZE
+	);
+	if (ret.task_creation_result == UD3TN_OK) {
+		ret.semaphore = semaphore;
+		ret.control_queue = queue;
+	} else {
+		hal_semaphore_delete(semaphore);
+		hal_queue_delete(queue);
+	}
 	return ret;
 }

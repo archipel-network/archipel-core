@@ -3,7 +3,7 @@
 
 #include "platform/hal_time.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -20,9 +20,9 @@ static struct contact *createct(uint64_t from, uint64_t to, uint16_t bitrate,
 {
 	struct contact *c = contact_create(NULL);
 
-	c->from = from;
-	c->to = to;
-	c->bitrate = bitrate;
+	c->from_ms = from;
+	c->to_ms = to;
+	c->bitrate_bytes_per_s = bitrate;
 	c->node = node_create(eid);
 	recalculate_contact_capacity(c);
 	return c;
@@ -54,16 +54,14 @@ TEST_SETUP(node)
 	some_eids2 = endpoint_list_strip_and_sort(some_eids2);
 	/* contacts */
 	some_ct1 = malloc(sizeof(struct contact_list));
-	some_ct1->data = createct(1, 3, 300, "ipn:1.0");
+	some_ct1->data = createct(1000, 3000, 300, "ipn:1.0");
 	some_ct1->next = malloc(sizeof(struct contact_list));
-	some_ct1->next->data = createct(0x100000000, 0x100000001, 500,
+	some_ct1->next->data = createct(16000000, 16001000, 500,
 					"ipn:1.0");
 	some_ct1->next->next = NULL;
 	some_ct2 = malloc(sizeof(struct contact_list));
-	some_ct2->data = createct(0x100000000, 0x100000001, 600, "ipn:1.0");
+	some_ct2->data = createct(16000000, 16001000, 600, "ipn:1.0");
 	some_ct2->next = NULL;
-	/* time */
-	hal_time_init(0);
 }
 
 TEST_TEAR_DOWN(node)
@@ -81,25 +79,24 @@ TEST_TEAR_DOWN(node)
 TEST(node, contact)
 {
 	/* capacity */
-	TEST_ASSERT_EQUAL_UINT32(500, some_ct1->next->data->total_capacity);
+	TEST_ASSERT_EQUAL_UINT32(500,
+				 some_ct1->next->data->total_capacity_bytes);
 	TEST_ASSERT_EQUAL_INT32(500,
 		some_ct1->next->data->remaining_capacity_p0);
 	/* re-calculation accuracy */
 	recalculate_contact_capacity(some_ct1->next->data);
 	recalculate_contact_capacity(some_ct1->next->data);
-	TEST_ASSERT_EQUAL_UINT32(500, some_ct1->next->data->total_capacity);
+	TEST_ASSERT_EQUAL_UINT32(500,
+				 some_ct1->next->data->total_capacity_bytes);
 	TEST_ASSERT_EQUAL_INT32(500,
 		some_ct1->next->data->remaining_capacity_p0);
 	/* remaining cap */
-	hal_time_init(0);
 	TEST_ASSERT_EQUAL_INT32(600,
-		contact_get_cur_remaining_capacity(some_ct1->data, 0));
-	hal_time_init(2);
+		contact_get_remaining_capacity_bytes(some_ct1->data, 0, 0));
 	TEST_ASSERT_EQUAL_INT32(300,
-		contact_get_cur_remaining_capacity(some_ct1->data, 0));
-	hal_time_init(3);
+		contact_get_remaining_capacity_bytes(some_ct1->data, 0, 2000));
 	TEST_ASSERT_EQUAL_INT32(0,
-		contact_get_cur_remaining_capacity(some_ct1->data, 0));
+		contact_get_remaining_capacity_bytes(some_ct1->data, 0, 3000));
 }
 
 static void assert_in_eidlist(char *eid, struct endpoint_list *l)
@@ -145,16 +142,18 @@ TEST(node, contact_list_union)
 	TEST_ASSERT_NOT_NULL(some_ct1);
 	TEST_ASSERT_NOT_NULL(some_ct1->next);
 	TEST_ASSERT_NULL(some_ct1->next->next);
-	TEST_ASSERT_EQUAL_UINT64(1, some_ct1->data->from);
-	TEST_ASSERT_EQUAL_UINT64(3, some_ct1->data->to);
-	TEST_ASSERT_EQUAL_UINT16(300, some_ct1->data->bitrate);
-	TEST_ASSERT_EQUAL_UINT32(600, some_ct1->data->total_capacity);
+	TEST_ASSERT_EQUAL_UINT64(1000, some_ct1->data->from_ms);
+	TEST_ASSERT_EQUAL_UINT64(3000, some_ct1->data->to_ms);
+	TEST_ASSERT_EQUAL_UINT16(300, some_ct1->data->bitrate_bytes_per_s);
+	TEST_ASSERT_EQUAL_UINT32(600, some_ct1->data->total_capacity_bytes);
 	TEST_ASSERT_EQUAL_INT32(
 		600, some_ct1->data->remaining_capacity_p0);
-	TEST_ASSERT_EQUAL_HEX64(0x100000000, some_ct1->next->data->from);
-	TEST_ASSERT_EQUAL_HEX64(0x100000001, some_ct1->next->data->to);
-	TEST_ASSERT_EQUAL_UINT16(600, some_ct1->next->data->bitrate);
-	TEST_ASSERT_EQUAL_UINT32(600, some_ct1->next->data->total_capacity);
+	TEST_ASSERT_EQUAL_HEX64(16000000, some_ct1->next->data->from_ms);
+	TEST_ASSERT_EQUAL_HEX64(16001000, some_ct1->next->data->to_ms);
+	TEST_ASSERT_EQUAL_UINT16(600,
+				 some_ct1->next->data->bitrate_bytes_per_s);
+	TEST_ASSERT_EQUAL_UINT32(600,
+				 some_ct1->next->data->total_capacity_bytes);
 	TEST_ASSERT_EQUAL_INT32(600,
 		some_ct1->next->data->remaining_capacity_p0);
 	TEST_ASSERT_NOT_NULL(mod);
@@ -168,22 +167,22 @@ TEST(node, contact_list_difference)
 	struct contact_list *mod = NULL;
 	struct contact_list *del = NULL;
 
-	some_ct1 = contact_list_difference(some_ct1, some_ct2, 1, &mod, &del);
+	some_ct1 = contact_list_difference(some_ct1, some_ct2, &mod, &del);
 	some_ct2 = NULL;
 	TEST_ASSERT_NOT_NULL(some_ct1);
 	TEST_ASSERT_NULL(some_ct1->next);
-	TEST_ASSERT_EQUAL_UINT64(1, some_ct1->data->from);
-	TEST_ASSERT_EQUAL_UINT64(3, some_ct1->data->to);
-	TEST_ASSERT_EQUAL_UINT16(300, some_ct1->data->bitrate);
-	TEST_ASSERT_EQUAL_UINT32(600, some_ct1->data->total_capacity);
+	TEST_ASSERT_EQUAL_UINT64(1000, some_ct1->data->from_ms);
+	TEST_ASSERT_EQUAL_UINT64(3000, some_ct1->data->to_ms);
+	TEST_ASSERT_EQUAL_UINT16(300, some_ct1->data->bitrate_bytes_per_s);
+	TEST_ASSERT_EQUAL_UINT32(600, some_ct1->data->total_capacity_bytes);
 	TEST_ASSERT_EQUAL_INT32(600, some_ct1->data->remaining_capacity_p0);
 	TEST_ASSERT_NULL(mod);
 	TEST_ASSERT_NOT_NULL(del);
 	TEST_ASSERT_NULL(del->next);
-	TEST_ASSERT_EQUAL_HEX64(0x100000000, del->data->from);
-	TEST_ASSERT_EQUAL_HEX64(0x100000001, del->data->to);
-	TEST_ASSERT_EQUAL_UINT16(500, del->data->bitrate);
-	TEST_ASSERT_EQUAL_UINT32(500, del->data->total_capacity);
+	TEST_ASSERT_EQUAL_HEX64(16000000, del->data->from_ms);
+	TEST_ASSERT_EQUAL_HEX64(16001000, del->data->to_ms);
+	TEST_ASSERT_EQUAL_UINT16(500, del->data->bitrate_bytes_per_s);
+	TEST_ASSERT_EQUAL_UINT32(500, del->data->total_capacity_bytes);
 	TEST_ASSERT_EQUAL_INT32(500, del->data->remaining_capacity_p0);
 	del = contact_list_free(del);
 	TEST_ASSERT_NULL(del);

@@ -42,7 +42,6 @@ struct contact_list *router_lookup_destination(char *const dest)
 	if (!dest_node_eid || !e)
 		e = routing_table_lookup_eid(dest);
 
-	uint16_t results = 0;
 	struct contact_list *result = NULL;
 
 	if (e != NULL) {
@@ -50,7 +49,6 @@ struct contact_list *router_lookup_destination(char *const dest)
 
 		while (cur != NULL) {
 			add_contact_to_ordered_list(&result, cur->data, 0);
-			results++;
 			cur = cur->next;
 		}
 	}
@@ -80,7 +78,7 @@ static inline struct max_fragment_size_result {
 	while (contacts != NULL && payload_capacity < payload_size) {
 		c = contacts->data;
 		contacts = contacts->next;
-		//if (c->to > exp_time)
+		//if (c->to_s > exp_time)
 		//	break;
 		c_capacity = ROUTER_CONTACT_CAPACITY(c, priority);
 		if (c_capacity < min_capacity)
@@ -126,15 +124,15 @@ static inline struct max_fragment_size_result {
 uint8_t router_calculate_fragment_route(
 	struct fragment_route *res, uint32_t size,
 	struct contact_list *contacts, uint32_t preprocessed_size,
-	enum bundle_routing_priority priority, uint64_t exp_time,
+	enum bundle_routing_priority priority, uint64_t exp_time_ms,
 	struct contact **excluded_contacts, uint8_t excluded_contacts_count)
 {
-	uint64_t time = hal_time_get_timestamp_s();
+	const uint64_t time_ms = hal_time_get_timestamp_ms();
 	uint32_t cap;
 	uint8_t d, i;
 	struct contact *c;
 
-	(void)exp_time;
+	res->contact = NULL;
 	res->preemption_improved = 0;
 	while (contacts != NULL) {
 		c = contacts->data;
@@ -145,9 +143,9 @@ uint8_t router_calculate_fragment_route(
 				d = 1;
 		if (d)
 			continue;
-		if (c->from >= exp_time)
+		if (c->from_ms >= exp_time_ms)
 			continue; // Ignore -- NOTE: List is ordered by c->to
-		if (c->to <= time)
+		if (c->to_ms <= time_ms)
 			continue;
 		cap = ROUTER_CONTACT_CAPACITY(c, 0);
 		if (preprocessed_size != 0) {
@@ -165,8 +163,6 @@ uint8_t router_calculate_fragment_route(
 				res->preemption_improved++;
 			preprocessed_size = 0;
 			continue;
-		} else {
-			preprocessed_size = 0;
 		}
 		res->contact = c;
 		break;
@@ -176,14 +172,15 @@ uint8_t router_calculate_fragment_route(
 
 static inline void router_get_first_route_nonfrag(
 	struct router_result *res, struct contact_list *contacts,
-	struct bundle *bundle, uint32_t bundle_size, uint64_t expiration_time)
+	struct bundle *bundle, uint32_t bundle_size,
+	uint64_t expiration_time_ms)
 {
 	res->fragment_results[0].payload_size
 		= bundle->payload_block->length;
 	/* Determine route */
 	if (router_calculate_fragment_route(
 		&res->fragment_results[0], bundle_size,
-		contacts, 0, ROUTER_BUNDLE_PRIORITY(bundle), expiration_time,
+		contacts, 0, ROUTER_BUNDLE_PRIORITY(bundle), expiration_time_ms,
 		NULL, 0)
 	) {
 		res->fragments = 1;
@@ -194,7 +191,8 @@ static inline void router_get_first_route_nonfrag(
 
 static inline void router_get_first_route_frag(
 	struct router_result *res, struct contact_list *contacts,
-	struct bundle *bundle, uint32_t bundle_size, uint64_t expiration_time,
+	struct bundle *bundle, uint32_t bundle_size,
+	uint64_t expiration_time_ms,
 	uint32_t max_frag_sz, uint32_t first_frag_sz, uint32_t last_frag_sz)
 {
 	uint32_t mid_frag_sz, next_frag_sz, remaining_pay, processed_sz;
@@ -253,7 +251,7 @@ static inline void router_get_first_route_frag(
 		success += router_calculate_fragment_route(
 			&res->fragment_results[index], bundle_size,
 			contacts, processed_sz, ROUTER_BUNDLE_PRIORITY(bundle),
-			expiration_time, NULL, 0);
+			expiration_time_ms, NULL, 0);
 		res->preemption_improved
 			+= res->fragment_results[index].preemption_improved;
 		processed_sz += bundle_size;
@@ -265,7 +263,9 @@ static inline void router_get_first_route_frag(
 /* max. ~200 bytes on stack */
 struct router_result router_get_first_route(struct bundle *bundle)
 {
-	const uint64_t expiration_time = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
+	const uint64_t expiration_time_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 	struct router_result res;
 	struct contact_list *contacts
 		= router_lookup_destination(bundle->destination);
@@ -290,7 +290,7 @@ struct router_result router_get_first_route(struct bundle *bundle)
 			MAX(first_frag_sz, last_frag_sz),
 			bundle->payload_block->length,
 			ROUTER_BUNDLE_PRIORITY(bundle),
-			expiration_time
+			expiration_time_ms
 		);
 
 	if (mrfs.max_fragment_size == 0) {
@@ -311,10 +311,10 @@ struct router_result router_get_first_route(struct bundle *bundle)
 	if (bundle_must_not_fragment(bundle) ||
 			bundle_size <= mrfs.max_fragment_size)
 		router_get_first_route_nonfrag(&res,
-			contacts, bundle, bundle_size, expiration_time);
+			contacts, bundle, bundle_size, expiration_time_ms);
 	else
 		router_get_first_route_frag(&res,
-			contacts, bundle, bundle_size, expiration_time,
+			contacts, bundle, bundle_size, expiration_time_ms,
 			mrfs.max_fragment_size, first_frag_sz, last_frag_sz);
 
 	if (!res.fragments)
@@ -330,8 +330,10 @@ finish:
 struct router_result router_try_reuse(
 	struct router_result route, struct bundle *bundle)
 {
-	uint64_t time = hal_time_get_timestamp_s();
-	uint64_t expiration_time = bundle_get_expiration_time_s(bundle, time);
+	const uint64_t time_ms = hal_time_get_timestamp_ms();
+	const uint64_t expiration_time_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 	uint32_t remaining_pay = bundle->payload_block->length;
 	uint32_t size, min_cap;
 	struct fragment_route *fr;
@@ -345,8 +347,8 @@ struct router_result router_try_reuse(
 		size = bundle_get_serialized_size(bundle);
 		fr = &route.fragment_results[0];
 		fr->payload_size = remaining_pay;
-		if (fr->contact->to <= time
-			|| fr->contact->to > expiration_time
+		if (fr->contact->to_ms <= time_ms
+			|| fr->contact->to_ms > expiration_time_ms
 			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
 				< (int32_t)size
 		)
@@ -364,8 +366,8 @@ struct router_result router_try_reuse(
 			size = bundle_get_mid_fragment_min_size(bundle);
 		fr = &route.fragment_results[f];
 		min_cap = UINT32_MAX;
-		if (fr->contact->to <= time
-			|| fr->contact->to > expiration_time
+		if (fr->contact->to_ms <= time_ms
+			|| fr->contact->to_ms > expiration_time_ms
 			|| ROUTER_CONTACT_CAPACITY(fr->contact, 0)
 				< (int32_t)(size + RC.fragment_min_payload)
 		) {
@@ -395,7 +397,10 @@ enum ud3tn_result router_add_bundle_to_contact(
 
 	ASSERT(contact != NULL);
 	ASSERT(b != NULL);
+	if (!contact || !b)
+		return UD3TN_FAIL;
 	ASSERT(contact->remaining_capacity_p0 > 0);
+
 	new_entry = malloc(sizeof(struct routed_bundle_list));
 	if (new_entry == NULL)
 		return UD3TN_FAIL;
@@ -405,10 +410,13 @@ enum ud3tn_result router_add_bundle_to_contact(
 	/* Go to end of list (=> FIFO) */
 	while (*cur_entry != NULL) {
 		ASSERT((*cur_entry)->data != b);
+		if ((*cur_entry)->data == b) {
+			free(new_entry);
+			return UD3TN_FAIL;
+		}
 		cur_entry = &(*cur_entry)->next;
 	}
 	*cur_entry = new_entry;
-	contact->bundle_count++;
 	// This contact is of infinite capacity, just return "OK".
 	if (contact->remaining_capacity_p0 == INT32_MAX)
 		return UD3TN_OK;
@@ -432,6 +440,8 @@ enum ud3tn_result router_remove_bundle_from_contact(
 	struct routed_bundle_list **cur_entry, *tmp;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return UD3TN_FAIL;
 	cur_entry = &contact->contact_bundles;
 	/* Find bundle */
 	while (*cur_entry != NULL) {
@@ -440,7 +450,6 @@ enum ud3tn_result router_remove_bundle_from_contact(
 			tmp = *cur_entry;
 			*cur_entry = (*cur_entry)->next;
 			free(tmp);
-			contact->bundle_count--;
 			// This contact is of infinite capacity, do nothing.
 			if (contact->remaining_capacity_p0 == INT32_MAX)
 				continue;

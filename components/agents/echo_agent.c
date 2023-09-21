@@ -15,8 +15,8 @@
 
 struct echo_agent_params {
 	bool is_ipn;
-	struct bundle_agent_interface *bai;
-	uint64_t lifetime_s;
+	const char *local_eid;
+	uint64_t lifetime_ms;
 
 	uint64_t last_bundle_timestamp_s;
 	uint64_t last_bundle_sequence_number;
@@ -35,24 +35,25 @@ static uint64_t allocate_sequence_number(
 	return 1;
 }
 
-static void callback(struct bundle_adu data, void *p)
+static void callback(struct bundle_adu data, void *p, const void *bp_context)
 {
 	struct echo_agent_params *const params = p;
 
-	const uint64_t time = hal_time_get_timestamp_s();
+	const uint64_t time_ms = hal_time_get_timestamp_ms();
 	const uint64_t seqnum = allocate_sequence_number(
 		params,
-		time
+		time_ms
 	);
 
-	agent_create_forward_bundle(
-		params->bai,
+	agent_create_forward_bundle_direct(
+		bp_context,
+		params->local_eid,
 		data.protocol_version,
 		params->is_ipn ? AGENT_ID_ECHO_IPN : AGENT_ID_ECHO_DTN,
 		data.source,
-		time,
+		time_ms,
 		seqnum,
-		params->lifetime_s,
+		params->lifetime_ms,
 		data.payload,
 		data.length,
 		0
@@ -64,15 +65,15 @@ static void callback(struct bundle_adu data, void *p)
 }
 
 int echo_agent_setup(struct bundle_agent_interface *const bai,
-		     const uint64_t lifetime_s)
+		     const uint64_t lifetime_ms)
 {
 	struct echo_agent_params *params = malloc(
 		sizeof(struct echo_agent_params)
 	);
 
 	params->is_ipn = get_eid_scheme(bai->local_eid) == EID_SCHEME_IPN;
-	params->bai = bai;
-	params->lifetime_s = lifetime_s;
+	params->local_eid = bai->local_eid;
+	params->lifetime_ms = lifetime_ms;
 	params->last_bundle_timestamp_s = 0;
 	params->last_bundle_sequence_number = 0;
 

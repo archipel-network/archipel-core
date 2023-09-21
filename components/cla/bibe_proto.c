@@ -80,20 +80,26 @@ size_t bibe_parser_parse(const uint8_t *const buffer,
 	size_t bundle_str_len;
 	enum CborError retval;
 
-	cbor_value_get_string_length(&report, &bundle_str_len);
+	retval = cbor_value_get_string_length(&report, &bundle_str_len);
+	if (retval)
+		return retval;
 	// Allocate memory for the encapsulated bundle
 	bpdu->encapsulated_bundle = malloc(bundle_str_len);
+	if (bpdu->encapsulated_bundle == NULL)
+		return CborErrorInternalError;
 	bpdu->payload_length = bundle_str_len;
 	// From the cbor docs:
 	//   "The next pointer, if not null, will be updated to point to the next item after
 	//    this string. If value points to the last item, then next will be invalid."
 	// Since we don't have a next element, we need to pass a null pointer to the function here.
-	cbor_value_copy_byte_string(
+	retval = cbor_value_copy_byte_string(
 		&report,
 		bpdu->encapsulated_bundle,
 		&bundle_str_len,
 		NULL
 	);
+	if (retval)
+		goto fail;
 	if (cbor_value_advance(&report)) {
 		retval = CborErrorUnexpectedEOF;
 		goto fail;
@@ -124,12 +130,14 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 {
 	struct bibe_header hdr;
 	const size_t eid_len = strlen(dest_eid);
+	// len == 8 bytes + 1 byte header
+	const size_t CBOR_MAX_UINT_LENGTH = 9;
 
 	/* Encoding length of the bundle byte string */
-	uint8_t *temp_buffer = malloc(sizeof(uint64_t));
+	uint8_t *temp_buffer = malloc(CBOR_MAX_UINT_LENGTH);
 	CborEncoder encoder;
 
-	cbor_encoder_init(&encoder, temp_buffer, sizeof(uint64_t), 0);
+	cbor_encoder_init(&encoder, temp_buffer, CBOR_MAX_UINT_LENGTH, 0);
 	cbor_encode_uint(&encoder, (uint64_t)payload_len);
 	const size_t bpdu_size = cbor_encoder_get_buffer_size(
 		&encoder,
@@ -138,7 +146,7 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 	temp_buffer[0] |= 0x40; // see bundle7 serializer.c lines 235-239
 
 	/* Encoding the BPDU */
-	char *bibe_bytes = malloc(bpdu_size);
+	uint8_t *bibe_bytes = malloc(bpdu_size);
 
 	bibe_bytes[0] = 0x83; // 83 (100|00011) -> Array of length 3
 	bibe_bytes[1] = 0x00; // 00             -> Integer 0 (transm. ID)
@@ -161,6 +169,7 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 	msg.payload_length = payload_len + bpdu_size;
 	msg.payload = NULL;
 
+	// NOTE: bpdu_size is still included here
 	hdr.hdr_len = aap_get_serialized_size(&msg) - payload_len;
 	hdr.data = malloc(hdr.hdr_len);
 

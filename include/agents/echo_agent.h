@@ -7,6 +7,6 @@
 #include <stdint.h>
 
 int echo_agent_setup(struct bundle_agent_interface *const bai,
-		     const uint64_t lifetime_s);
+		     const uint64_t lifetime_ms);
 
 #endif // ECHO_AGENT_H_

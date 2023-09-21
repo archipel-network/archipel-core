@@ -23,6 +23,10 @@ m consumption 100000
 ## begin bpadmin
 1
 
+# watch: print bundle actions, see manpage
+# you should see "ybc" in the test; you should not see '~' or '!'
+w 1
+
 # add DTN scheme
 a scheme dtn 'dtn2fw' 'dtn2adminep'
 # the scheme will use the "gethostname" command and
@@ -41,15 +45,11 @@ a induct tcp 0.0.0.0:4556 tcpcli
 # add outduct to uD3TN2 instance
 a outduct tcp 127.0.0.1:4554 tcpcli
 
+# add egress plan
+a plan dtn://ud3tn2.dtn*
+a planduct dtn://ud3tn2.dtn* tcp 127.0.0.1:4554
+
 # start daemons
 s
 ## end bpadmin
 
-## begin ipnadmin
-# no ipn: EIDs configured
-## end ipnadmin
-
-## begin dtn2admin
-a plan dtn://ud3tn1.dtn* x tcp/127.0.0.1:4555
-a plan dtn://ud3tn2.dtn* x tcp/127.0.0.1:4554
-## end dtn2admin

@@ -6,17 +6,28 @@ ifeq ($(TOOLCHAIN),clang)
   CLANG  ?= $(CLANG_PREFIX)clang
   CC     := $(CLANG)
   CXX    := $(CLANG)
+  LD     := $(CLANG)
 else
   CC     := $(GCC_TOOLCHAIN_PREFIX)gcc
   CXX    := $(GCC_TOOLCHAIN_PREFIX)g++
+  LD     := $(GCC_TOOLCHAIN_PREFIX)gcc
 endif
 
 AS       := $(GCC_TOOLCHAIN_PREFIX)gcc
-LD       := $(GCC_TOOLCHAIN_PREFIX)gcc
 AR       := $(GCC_TOOLCHAIN_PREFIX)ar
 RANLIB   := $(GCC_TOOLCHAIN_PREFIX)ranlib
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objdump
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objcopy
+
+# OS DETECTION
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+  EXPECT_MACOS_LINKER ?= 1
+else
+  EXPECT_MACOS_LINKER ?= 0
+endif
 
 # COMMON FLAGS
 
@@ -26,6 +37,15 @@ CFLAGS += -std=gnu99
 CXXFLAGS += -fno-exceptions -fno-rtti
 
 ASFLAGS += $(ARCH_FLAGS)
+
+ifeq ($(EXPECT_MACOS_LINKER),1)
+  LDFLAGS_PRE_LIB += -Wl,-all_load
+else
+  LDFLAGS_PRE += -Wl,--start-group
+  LDFLAGS += -Wl,--end-group
+  LDFLAGS_PRE_LIB += -Wl,--whole-archive
+  LDFLAGS_LIB += -Wl,--no-whole-archive
+endif
 
 LDFLAGS += $(ARCH_FLAGS) -lc -lm
 
@@ -52,12 +72,20 @@ cmd_cc_o_s         = "$(AS)" -o "$@" $(ASFLAGS) -c "$<"
 quiet_cmd_ar       = AR      $@
 cmd_ar             = "$(AR)" rcs "$@" $(OBJECTS)
 
+quiet_cmd_arcat    = AR_CAT  $@
+cmd_arcat          = "$(AR)" rcT "$@" $(LIBS)
+
 quiet_cmd_link     = LINK    $@
-cmd_link           = "$(LD)" -o "$@" "-Wl,-Map=$@.map" \
-                     -Wl,--whole-archive -Wl,--start-group \
+cmd_link           = "$(LD)" -o "$@" \
+                     $(LDFLAGS_PRE) \
                      $(OBJECTS) $(LIBS) \
-                     -Wl,--end-group -Wl,--no-whole-archive \
-                     $(LDFLAGS)
+                     $(LDFLAGS_EXECUTABLE) $(LDFLAGS)
+
+quiet_cmd_linklib  = LINK    $@
+cmd_linklib        = "$(LD)" -o "$@" \
+                     $(LDFLAGS_PRE) $(LDFLAGS_PRE_LIB) \
+                     $(OBJECTS) $(LIBS) \
+                     $(LDFLAGS_LIB) $(LDFLAGS)
 
 quiet_cmd_mkdir    = MKDIR   $@
 cmd_mkdir          = mkdir -p "$@"

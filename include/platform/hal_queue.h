@@ -53,14 +53,15 @@ void hal_queue_push_to_back(QueueIdentifier_t queue, const void *item);
  * @param queue The identifier of the Queue that the element should be
  *              inserted
  * @param item  The target item
- * @param timeout After which time (in milliseconds) the receiving attempt
+ * @param timeout After which time (in milliseconds) the "push attempt"
  *		  should be aborted.
- *		  If this value is -1, receiving will block indefinitely
+ *		  If this value is -1 or larger than 9223372036854, pushing
+ *		  will block indefinitely (see hal_semaphore_try_take)
  * @return Whether the attachment attempt was successful
  */
 enum ud3tn_result hal_queue_try_push_to_back(QueueIdentifier_t queue,
 					     const void *item,
-					     int timeout);
+					     int64_t timeout);
 
 /**
  * @brief hal_queue_override_to_back Attach a given item to the back of the
@@ -84,26 +85,18 @@ enum ud3tn_result hal_queue_override_to_back(QueueIdentifier_t queue,
  *		       be stored
  * @param timeout After which time (in milliseconds) the receiving attempt
  *		  should be aborted.
- *		  If this value is -1, receiving will block indefinitely
+ *		  If this value is -1 or larger than 9223372036854, receiving
+ *		  will block indefinitely (see hal_semaphore_try_take)
  * @return Whether the receiving was successful
  */
 enum ud3tn_result hal_queue_receive(QueueIdentifier_t queue,
 				    void *targetBuffer,
-				    int timeout);
+				    int64_t timeout);
 
 /**
  * @brief hal_queue_reset Reset (i.e. empty) the specific queue
  * @param queue The queue that should be cleared
  */
 void hal_queue_reset(QueueIdentifier_t queue);
-
-/**
- * @brief hal_queue_nr_of_data_waiting Return the number of waiting items
- *				       in a queue
- * @param The queue that should be checked
- * @return 0 if the queue doesn't exist, otherwise the number of waiting
- *	     items
- */
-uint8_t hal_queue_nr_of_items_waiting(QueueIdentifier_t queue);
 
 #endif /* HAL_QUEUE_H_INCLUDED */

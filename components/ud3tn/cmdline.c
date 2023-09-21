@@ -54,7 +54,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->status_reporting = false;
 	result->allow_remote_configuration = false;
 	result->exit_immediately = false;
-	result->lifetime = DEFAULT_BUNDLE_LIFETIME;
+	result->lifetime_s = DEFAULT_BUNDLE_LIFETIME_S;
 	// The following values cannot be 0
 	result->mbs = 0;
 	// The strings are set afterwards if not provided as an option
@@ -103,8 +103,8 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			result->exit_immediately = true;
 			return result;
 		case 'l':
-			if (parse_uint64(optarg, &result->lifetime)
-					!= UD3TN_OK || !result->lifetime) {
+			if (parse_uint64(optarg, &result->lifetime_s)
+					!= UD3TN_OK || !result->lifetime_s) {
 				LOG("Invalid lifetime provided!");
 				return NULL;
 			}

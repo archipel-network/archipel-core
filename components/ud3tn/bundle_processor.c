@@ -8,7 +8,8 @@
 #include "ud3tn/report_manager.h"
 #include "ud3tn/result.h"
 #include "ud3tn/router.h"
-#include "ud3tn/task_tags.h"
+
+#include "agents/config_agent.h"
 
 #include "bundle6/bundle6.h"
 #include "bundle7/bundle_age.h"
@@ -52,7 +53,7 @@ struct bp_context {
 
 	struct known_bundle_list {
 		struct bundle_unique_identifier id;
-		uint64_t deadline;
+		uint64_t deadline_ms;
 		struct known_bundle_list *next;
 	} *known_bundle_list;
 };
@@ -63,8 +64,6 @@ static inline void handle_signal(
 	struct bp_context *const ctx,
 	const struct bundle_processor_signal signal);
 
-static void handle_process_router_command(
-	const struct bp_context *const ctx, struct router_command *cmd);
 static void handle_contact_over(
 	const struct bp_context *const ctx, struct contact *contact);
 
@@ -166,7 +165,8 @@ int bundle_processor_perform_agent_action(
 	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
 	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param),
+	void (*const callback)(struct bundle_adu data, void *param,
+			       const void *bp_context),
 	void *param,
 	bool wait_for_feedback)
 {
@@ -223,7 +223,34 @@ int bundle_processor_perform_agent_action(
 	}
 
 	hal_queue_delete(feedback_queue);
+	ASSERT(0); // hal_queue_receive with timeout == -1 should never fail
 	return -1;
+}
+
+void bundle_processor_handle_router_command(
+	void *const bp_context, struct router_command *cmd)
+{
+	const struct bp_context *const ctx = bp_context;
+
+	hal_semaphore_take_blocking(ctx->cm_param.semaphore);
+
+	// NOTE: May invoke router via bundle_dangling!
+	enum ud3tn_result result = router_process_command(
+		cmd,
+		(struct rescheduling_handle) {
+			.reschedule_func = bundle_resched_func,
+			.reschedule_func_context = ctx,
+		}
+	);
+
+	hal_semaphore_release(ctx->cm_param.semaphore);
+
+	if (result == UD3TN_OK) {
+		wake_up_contact_manager(
+			ctx->cm_param.control_queue,
+			CM_SIGNAL_UPDATE_CONTACT_LIST
+		);
+	}
 }
 
 void bundle_processor_task(void * const param)
@@ -247,8 +274,13 @@ void bundle_processor_task(void * const param)
 
 		char *const dot = strchr(ctx.local_eid_prefix, '.');
 
-		ASSERT(dot != NULL);
-		dot[1] = '\0'; // truncate string after dot
+		if (!dot) {
+			LOGF("BundleProcessor: Invalid local EID \"%s\"",
+			     ctx.local_eid_prefix);
+			ASSERT(false);
+		} else {
+			dot[1] = '\0'; // truncate string after dot
+		}
 	} else {
 		ctx.local_eid_prefix = strdup(ctx.local_eid);
 
@@ -265,7 +297,16 @@ void bundle_processor_task(void * const param)
 	ctx.cm_param = contact_manager_start(
 		p->signaling_queue,
 		routing_table_get_raw_contact_list_ptr());
-	ASSERT(ctx.cm_param.control_queue != NULL);
+	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
+		LOG("BundleProcessor: Contact manager could not be initialized!");
+		ASSERT(false);
+	}
+
+	if (config_agent_setup(p->signaling_queue, ctx.local_eid,
+			       p->allow_remote_configuration, &ctx)) {
+		LOG("BundleProcessor: Config agent could not be initialized!");
+		ASSERT(false);
+	}
 
 	LOGF("BundleProcessor: BPA initialized for \"%s\", status reports %s",
 	     p->local_eid, p->status_reporting ? "enabled" : "disabled");
@@ -336,9 +377,6 @@ static inline void handle_signal(
 		// XXX: We do not use the provided CLA address.
 		free(signal.peer_cla_addr);
 		break;
-	case BP_SIGNAL_PROCESS_ROUTER_COMMAND:
-		handle_process_router_command(ctx, signal.router_cmd);
-		break;
 	case BP_SIGNAL_CONTACT_OVER:
 		handle_contact_over(ctx, signal.contact);
 		break;
@@ -346,30 +384,6 @@ static inline void handle_signal(
 		LOGF("BundleProcessor: Invalid signal (%d) detected",
 		     signal.type);
 		break;
-	}
-}
-
-static void handle_process_router_command(
-	const struct bp_context *const ctx, struct router_command *cmd)
-{
-	hal_semaphore_take_blocking(ctx->cm_param.semaphore);
-
-	// NOTE: May invoke router via bundle_dangling!
-	enum ud3tn_result result = router_process_command(
-		cmd,
-		(struct rescheduling_handle) {
-			.reschedule_func = bundle_resched_func,
-			.reschedule_func_context = ctx,
-		}
-	);
-
-	hal_semaphore_release(ctx->cm_param.semaphore);
-
-	if (result == UD3TN_OK) {
-		wake_up_contact_manager(
-			ctx->cm_param.control_queue,
-			CM_SIGNAL_UPDATE_CONTACT_LIST
-		);
 	}
 }
 
@@ -405,22 +419,34 @@ static enum ud3tn_result bundle_dispatch(
 	return bundle_forward(ctx, bundle);
 }
 
+enum ud3tn_result bundle_processor_bundle_dispatch(
+	void *bp_context, struct bundle *bundle)
+{
+	return bundle_dispatch(bp_context, bundle);
+}
+
+static bool endpoint_is_local(
+	const struct bp_context *const ctx, const char *eid)
+{
+	const size_t local_len = strlen(ctx->local_eid_prefix);
+	const size_t dest_len = strlen(eid);
+
+	/* Compare EID _prefix_ with configured uD3TN EID */
+	return (
+		// For the memcmp to be safe, the tested EID has to be at
+		// least as long as the local EID.
+		dest_len >= local_len &&
+		// The prefix (the local EID) has to match the EID.
+		memcmp(ctx->local_eid_prefix, eid,
+		       local_len) == 0
+	);
+}
+
 /* 5.3-1 */
 static bool bundle_endpoint_is_local(
 	const struct bp_context *const ctx, struct bundle *bundle)
 {
-	const size_t local_len = strlen(ctx->local_eid_prefix);
-	const size_t dest_len = strlen(bundle->destination);
-
-	/* Compare bundle destination EID _prefix_ with configured uD3TN EID */
-	return (
-		// For the memcmp to be safe, the destination EID has to be at
-		// least as long as the local EID.
-		dest_len >= local_len &&
-		// The prefix (the local EID) has to match the bundle dest-EID.
-		memcmp(ctx->local_eid_prefix, bundle->destination,
-		       local_len) == 0
-	);
+	return endpoint_is_local(ctx, bundle->destination);
 }
 
 /* 5.4 */
@@ -527,9 +553,9 @@ static void bundle_receive(struct bp_context *const ctx, struct bundle *bundle)
 		);
 
 	// Check lifetime
-	const uint64_t timestamp_s = hal_time_get_timestamp_s();
+	const uint64_t timestamp_ms = hal_time_get_timestamp_ms();
 
-	if (bundle_get_expiration_time_s(bundle, timestamp_s) < timestamp_s) {
+	if (bundle_get_expiration_time_ms(bundle) < timestamp_ms) {
 		bundle_expired(ctx, bundle);
 		return;
 	}
@@ -850,12 +876,14 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 			ASSERT(agent_id != NULL);
 			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
 			     agent_id, adu.length);
-			agent_forward(agent_id, adu);
+			agent_forward(agent_id, adu, ctx);
 		} else if (record != NULL) {
 			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
 			     record->type);
+			bundle_adu_free_members(adu);
 		} else {
 			LOG("BundleProcessor: Received administrative record we cannot parse, discarding.");
+			bundle_adu_free_members(adu);
 		}
 
 		free_administrative_record(record);
@@ -867,7 +895,7 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 	ASSERT(agent_id != NULL);
 	LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
 	     agent_id, adu.length);
-	agent_forward(agent_id, adu);
+	agent_forward(agent_id, adu, ctx);
 }
 
 /* 5.13 (BPv7) */
@@ -946,8 +974,9 @@ static void send_status_report(
 
 	/* If the report-to EID is the null endpoint or uD3TN itself we do */
 	/* not need to create a status report */
-	if (strcmp(bundle->destination, "dtn:none") == 0
-		|| strcmp(bundle->destination, ctx->local_eid) == 0)
+	if (bundle->report_to == NULL ||
+	    strcmp(bundle->report_to, "dtn:none") == 0 ||
+	    endpoint_is_local(ctx, bundle->report_to))
 		return;
 
 	struct bundle_status_report report = {
@@ -1122,10 +1151,12 @@ static bool bundle_record_add_and_check_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	uint64_t cur_time = hal_time_get_timestamp_s();
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle, cur_time);
+	uint64_t cur_time_ms = hal_time_get_timestamp_ms();
+	const uint64_t bundle_deadline_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 
-	if (bundle_deadline < cur_time)
+	if (bundle_deadline_ms < cur_time_ms)
 		return true; // We assume we "know" all expired bundles.
 	// 1. Cleanup and search
 	while (*cur_entry != NULL) {
@@ -1133,12 +1164,12 @@ static bool bundle_record_add_and_check_known(
 
 		if (bundle_is_equal(bundle, &e->id)) {
 			return true;
-		} else if (e->deadline < cur_time) {
+		} else if (e->deadline_ms < cur_time_ms) {
 			*cur_entry = e->next;
 			bundle_free_unique_identifier(&e->id);
 			free(e);
 			continue;
-		} else if (e->deadline > bundle_deadline) {
+		} else if (e->deadline_ms > bundle_deadline_ms) {
 			// Won't find, insert here!
 			break;
 		}
@@ -1153,7 +1184,7 @@ static bool bundle_record_add_and_check_known(
 	if (!new_entry)
 		return false;
 	new_entry->id = bundle_get_unique_identifier(bundle);
-	new_entry->deadline = bundle_deadline;
+	new_entry->deadline_ms = bundle_deadline_ms;
 	new_entry->next = *cur_entry;
 	*cur_entry = new_entry;
 
@@ -1164,7 +1195,9 @@ static bool bundle_reassembled_is_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
+	const uint64_t bundle_deadline_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
@@ -1174,7 +1207,7 @@ static bool bundle_reassembled_is_known(
 				e->id.payload_length ==
 					bundle->total_adu_length) {
 			return true;
-		} else if (e->deadline > bundle_deadline) {
+		} else if (e->deadline_ms > bundle_deadline_ms) {
 			// Won't find...
 			break;
 		}
@@ -1187,12 +1220,14 @@ static void bundle_add_reassembled_as_known(
 	struct bp_context *const ctx, const struct bundle *bundle)
 {
 	struct known_bundle_list **cur_entry = &ctx->known_bundle_list;
-	const uint64_t bundle_deadline = bundle_get_expiration_time_s(bundle, hal_time_get_timestamp_s());
+	const uint64_t bundle_deadline_ms = bundle_get_expiration_time_ms(
+		bundle
+	);
 
 	while (*cur_entry != NULL) {
 		struct known_bundle_list *e = *cur_entry;
 
-		if (e->deadline > bundle_deadline)
+		if (e->deadline_ms > bundle_deadline_ms)
 			break;
 		cur_entry = &(*cur_entry)->next;
 	}
@@ -1206,7 +1241,7 @@ static void bundle_add_reassembled_as_known(
 	new_entry->id = bundle_get_unique_identifier(bundle);
 	new_entry->id.fragment_offset = 0;
 	new_entry->id.payload_length = bundle->total_adu_length;
-	new_entry->deadline = bundle_deadline;
+	new_entry->deadline_ms = bundle_deadline_ms;
 	new_entry->next = *cur_entry;
 	*cur_entry = new_entry;
 }

@@ -157,12 +157,8 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 				const bool is_rx, const bool is_tx)
 {
 	link->config = config;
-	link->active = true;
 
 	link->cla_addr = cla_addr ? strdup(cla_addr) : NULL;
-
-	link->rx_task_handle = NULL;
-	link->tx_task_handle = NULL;
 
 	link->last_rx_time_ms = hal_time_get_timestamp_ms();
 
@@ -183,6 +179,13 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 		goto fail_tx_sem;
 	}
 	hal_semaphore_release(link->tx_task_sem);
+
+	link->rx_task_notification = hal_semaphore_init_binary();
+	if (!link->rx_task_notification) {
+		LOG("CLA: Cannot allocate memory for RX notify semaphore!");
+		goto fail_rx_notify_sem;
+	}
+	hal_semaphore_release(link->rx_task_notification);
 
 	if (rx_task_data_init(&link->rx_task_data, config) != UD3TN_OK) {
 		LOG("CLA: Failed to initialize RX task data!");
@@ -214,7 +217,16 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	if (is_tx) {
 		if (cla_launch_contact_tx_task(link) != UD3TN_OK) {
 			LOG("CLA: Failed to start TX task!");
-			goto fail_tx_task;
+			// The RX task already takes care of the link; we MUST
+			// NOT invalidate the associated data. The TX task
+			// semaphore is not locked, so it is properly treated
+			// as not being running.
+			// We also report UD3TN_OK as otherwise the caller will
+			// consider `link` invalid, which it is not in this
+			// case. However, we do not trigger BP and inform the
+			// RX task that it should terminate.
+			hal_semaphore_try_take(link->rx_task_notification, 0);
+			return UD3TN_OK;
 		}
 
 		// Notify the BP task of the newly established connection...
@@ -233,8 +245,6 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 
 	return UD3TN_OK;
 
-fail_tx_task:
-	hal_task_delete(link->rx_task_handle);
 fail_rx_task:
 	hal_semaphore_delete(link->tx_queue_sem);
 fail_tx_queue_sem:
@@ -242,6 +252,8 @@ fail_tx_queue_sem:
 fail_tx_queue:
 	rx_task_data_deinit(&link->rx_task_data);
 fail_rx_data:
+	hal_semaphore_delete(link->rx_task_notification);
+fail_rx_notify_sem:
 	hal_semaphore_delete(link->tx_task_sem);
 fail_tx_sem:
 	hal_semaphore_delete(link->rx_task_sem);
@@ -251,13 +263,23 @@ fail_rx_sem:
 
 void cla_link_wait_cleanup(struct cla_link *link)
 {
+	cla_link_wait(link);
+	cla_link_cleanup(link);
+}
+
+void cla_link_wait(struct cla_link *link)
+{
 	// Wait for graceful termination of tasks
 	hal_semaphore_take_blocking(link->rx_task_sem);
 	hal_semaphore_take_blocking(link->tx_task_sem);
+}
 
+void cla_link_cleanup(struct cla_link *link)
+{
 	// Clean up semaphores
 	hal_semaphore_delete(link->rx_task_sem);
 	hal_semaphore_delete(link->tx_task_sem);
+	hal_semaphore_delete(link->rx_task_notification);
 
 	// The TX task ensures the queue is locked and empty before terminating
 	QueueIdentifier_t tx_queue_handle = link->tx_queue_handle;
@@ -291,7 +313,7 @@ char *cla_get_connect_addr(const char *cla_addr, const char *cla_name)
 void cla_generic_disconnect_handler(struct cla_link *link)
 {
 	// RX task will delete itself
-	link->active = false;
+	hal_semaphore_try_take(link->rx_task_notification, 0);
 	// Notify dispatcher that the connection was lost
 	const struct bundle_agent_interface *bundle_agent_interface =
 		link->config->bundle_agent_interface;
@@ -313,7 +335,8 @@ char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 {
 	const char *const cla_name = link->config->vtable->cla_name_get();
 
-	ASSERT(cla_name != NULL);
+	if (!cla_name)
+		return NULL;
 
 	const size_t cla_name_len = strlen(cla_name);
 
@@ -324,11 +347,18 @@ char *cla_get_cla_addr_from_link(const struct cla_link *const link)
 	const size_t result_len = cla_name_len + 1 + addr_len + 1;
 	char *const result = malloc(result_len);
 
-	strncpy(result, cla_name, result_len);
+	ASSERT(
+		snprintf(result, result_len, "%s", cla_name) ==
+		(int64_t)cla_name_len
+	);
 	result[cla_name_len] = ':';
 	if (addr)
-		strncpy(result + cla_name_len + 1, addr,
-			result_len - 1 - cla_name_len);
+		ASSERT(snprintf(
+			result + cla_name_len + 1,
+			result_len - 1 - cla_name_len,
+			"%s",
+			addr
+		) == (int64_t)addr_len);
 	result[result_len - 1] = '\0';
 
 	return result;
@@ -354,7 +384,9 @@ static void cla_register(struct cla_config *config)
 
 struct cla_config *cla_config_get(const char *cla_addr)
 {
-	ASSERT(cla_addr != NULL);
+	if (!cla_addr)
+		return NULL;
+
 	const size_t addr_len = strlen(cla_addr);
 
 	for (size_t i = 0; i < ARRAY_SIZE(AVAILABLE_CLAS); i++) {

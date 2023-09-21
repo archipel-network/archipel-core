@@ -6,9 +6,10 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
-#define HASHL(key, len) (hashlittle(key, len, 0))
+#define HASHL(key, len) (hashlittle(key, len, 0) & 0xFFFF)
 /* Gets length of string, should be optimized out... */
 #define HASH(key) (HASHL(key, strlen(key)))
 
@@ -18,6 +19,12 @@ void htab_init(struct htab *tab, const uint16_t slot_count,
 	int i;
 
 	ASSERT(tab != NULL);
+	if (!tab)
+		return;
+	ASSERT(entrylist != NULL);
+	if (!entrylist)
+		return;
+
 	tab->slot_count = slot_count;
 	tab->elements = entrylist;
 	for (i = 0; i < tab->slot_count; i++)
@@ -27,9 +34,13 @@ void htab_init(struct htab *tab, const uint16_t slot_count,
 struct htab *htab_alloc(const uint16_t slot_count)
 {
 	int i;
-	struct htab *tab = (struct htab *)malloc(sizeof(struct htab));
 
 	ASSERT(slot_count != 0);
+	if (!slot_count)
+		return NULL;
+
+	struct htab *tab = (struct htab *)malloc(sizeof(struct htab));
+
 	tab->slot_count = slot_count;
 	tab->elements = (struct htab_entrylist **)
 		malloc(sizeof(struct htab_entrylist *) * slot_count);
@@ -52,7 +63,12 @@ void htab_trunc(struct htab *tab)
 	struct htab_entrylist *cur, *next;
 
 	ASSERT(tab != NULL);
+	if (!tab)
+		return;
 	ASSERT(tab->elements != NULL);
+	if (!tab->elements)
+		return;
+
 	for (i = 0; i < tab->slot_count; i++) {
 		cur = tab->elements[i];
 		while (cur != NULL) {
@@ -71,7 +87,13 @@ static struct htab_entrylist **get_elist_ptr_by_hash(
 {
 	struct htab_entrylist **cur_elem;
 
+	ASSERT(tab != NULL);
+	if (!tab)
+		return NULL;
 	ASSERT(tab->elements != NULL);
+	if (!tab->elements)
+		return NULL;
+
 	cur_elem = &(tab->elements[hash]);
 	if (compare_ptr_only) {
 		while (*cur_elem != NULL) {
@@ -103,14 +125,19 @@ struct htab_entrylist *htab_add_known(
 	uint16_t shash;
 
 	ASSERT(tab != NULL);
+	if (!tab)
+		return NULL;
 	ASSERT(tab->slot_count != 0);
+	if (!tab->slot_count)
+		return NULL;
+
 	shash = hash % tab->slot_count;
 	if (get_elist_ptr_by_hash(tab, shash, key, compare_ptr_only) != NULL)
 		return NULL;
 
 	new_elem = malloc(sizeof(struct htab_entrylist));
 	new_elem->key = malloc(key_length + 1);
-	strncpy(new_elem->key, key, key_length + 1);
+	snprintf(new_elem->key, key_length + 1, "%s", key);
 	new_elem->value = valptr;
 	new_elem->next = NULL;
 
@@ -139,7 +166,12 @@ void *htab_get_known(
 	struct htab_entrylist **elist_ptr;
 
 	ASSERT(tab != NULL);
+	if (!tab)
+		return NULL;
 	ASSERT(tab->slot_count != 0);
+	if (!tab->slot_count)
+		return NULL;
+
 	elist_ptr = get_elist_ptr_by_hash(
 		tab, hash % tab->slot_count, key, compare_ptr_only);
 	if (elist_ptr == NULL)
@@ -160,7 +192,12 @@ struct htab_entrylist *htab_get_known_pair(
 	struct htab_entrylist **elist_ptr;
 
 	ASSERT(tab != NULL);
+	if (!tab)
+		return NULL;
 	ASSERT(tab->slot_count != 0);
+	if (!tab->slot_count)
+		return NULL;
+
 	elist_ptr = get_elist_ptr_by_hash(
 		tab, hash % tab->slot_count, key, compare_ptr_only);
 	if (elist_ptr == NULL)
@@ -182,7 +219,12 @@ void *htab_remove_known(
 	void *valptr;
 
 	ASSERT(tab != NULL);
+	if (!tab)
+		return NULL;
 	ASSERT(tab->slot_count != 0);
+	if (!tab->slot_count)
+		return NULL;
+
 	elist_ptr = get_elist_ptr_by_hash(
 		tab, hash % tab->slot_count, key, compare_ptr_only);
 	if (elist_ptr == NULL)

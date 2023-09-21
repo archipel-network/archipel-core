@@ -4,7 +4,7 @@
 
 #include "ud3tn/common.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -19,7 +19,7 @@ TEST_SETUP(spp)
 {
 	ctx = spp_new_context();
 	wmemset((wchar_t *)&buf[0],
-			0xdeadbeef,
+			(wchar_t)0xdeadbeef,
 			ARRAY_SIZE(buf) / sizeof(wchar_t));
 }
 

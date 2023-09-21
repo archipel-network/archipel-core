@@ -39,7 +39,7 @@ Contact.__doc__ = """named tuple holding uD3TN contact information
 Attrs:
     start (int): DTN timestamp when the contact starts
     end (int): DTN timestamp when the contact is over
-    bitrate (int): Bitrate of the contact
+    bitrate (int): Bitrate of the contact, in bytes per second
 """
 
 
@@ -49,7 +49,7 @@ def make_contact(start_offset, duration, bitrate):
     Args:
         start_offset (int): Start point of the contact from in seconds from now
         duration (int): Duration of the contact in seconds
-        bitrate (int): Bitrate of the contact
+        bitrate (int): Bitrate of the contact, in bytes per second
     Returns:
         Contact: contact tuple with DTN timestamps
     """

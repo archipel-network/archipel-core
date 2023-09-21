@@ -5,7 +5,7 @@
 
 #include "platform/hal_time.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -27,14 +27,15 @@ TEST_TEAR_DOWN(bundle7Create)
 TEST(bundle7Create, create_bundle)
 {
 	char *payload = malloc(sizeof(test_payload));
-	uint64_t creation_timestamp_s = 658489863; // 2020-11-12T09:51:03+00:00
+	// 2020-11-12T09:51:03+00:00
+	uint64_t creation_timestamp_ms = 658489863000;
 
 	memcpy(payload, test_payload, sizeof(test_payload));
 
 	struct bundle *b = bundle7_create_local(
 		payload, sizeof(test_payload),
 		"dtn:sourceeid", "dtn:desteid",
-		creation_timestamp_s, 1, 42,
+		creation_timestamp_ms, 1, 42000,
 		BUNDLE_FLAG_REPORT_DELIVERY);
 
 	TEST_ASSERT_NOT_NULL(b);
@@ -46,14 +47,18 @@ TEST(bundle7Create, create_bundle)
 
 	TEST_ASSERT_EQUAL(sizeof(test_payload),
 			  b->payload_block->length);
-	TEST_ASSERT_EQUAL_MEMORY(test_payload, b->payload_block->data,
-				 sizeof(test_payload));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		test_payload,
+		b->payload_block->data,
+		sizeof(test_payload)
+	);
 	TEST_ASSERT_EQUAL(1, b->payload_block->number);
 	TEST_ASSERT_EQUAL(0,  b->payload_block->flags);
 
 	TEST_ASSERT_EQUAL(7, b->protocol_version);
 	TEST_ASSERT_EQUAL(BUNDLE_FLAG_REPORT_DELIVERY, b->proc_flags);
-	TEST_ASSERT_EQUAL(creation_timestamp_s * 1000, b->creation_timestamp_ms);
+	TEST_ASSERT_EQUAL(creation_timestamp_ms,
+			  b->creation_timestamp_ms);
 	TEST_ASSERT_EQUAL(1, b->sequence_number);
 	TEST_ASSERT_EQUAL(42000, b->lifetime_ms);
 	TEST_ASSERT_NOT_EQUAL(0, b->primary_block_length);

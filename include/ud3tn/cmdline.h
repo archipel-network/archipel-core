@@ -16,7 +16,7 @@ struct ud3tn_cmdline_options {
 	bool allow_remote_configuration;
 	bool exit_immediately; // after parsing --help or --usage etc.
 	uint64_t mbs; // maximum bundle size
-	uint64_t lifetime;
+	uint64_t lifetime_s;
 };
 
 const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[]);

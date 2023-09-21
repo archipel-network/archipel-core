@@ -16,7 +16,6 @@
 #ifndef SIMPLE_QUEUE_H_INCLUDED
 #define SIMPLE_QUEUE_H_INCLUDED
 
-#include <semaphore.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -30,11 +29,11 @@ typedef struct {
 	int item_size;
 
 	// provides mutual exclusion for the given queue
-	sem_t semaphore;
+	struct Semaphore *semaphore;
 
 	// these semaphores circumvent busy waiting
-	sem_t sem_pop;
-	sem_t sem_push;
+	struct Semaphore *sem_pop;
+	struct Semaphore *sem_push;
 
 	// abs_start and abs_end are pointers to the first and last
 	// byte of the reserved memory
@@ -71,24 +70,19 @@ void queueDelete(Queue_t *queue);
 void queueReset(Queue_t *queue);
 
 /**
- * @brief queueItemsWaiting Returns the number of items that are currently in
- *				the list
- * @param queue	The pointer to the queue structure
- * @return The number of items in the list
- */
-unsigned int queueItemsWaiting(Queue_t *queue);
-
-/**
  * @brief queuePush Pushes an item to the end of the queue
  * @param queue The pointer to the queue structure
  * @param item A pointer to the item that should be queued
  * @param timeout Defines how long the queuing should be tried
- *			(in milliseconds)
+ *		  (in milliseconds)
+ *		  If this value is -1 or larger than 9223372036854, pushing
+ *		  will block indefinitely (see hal_semaphore_try_take)
  * @param force Defines if the last element of the queue should be replaced
  *		forcefully (only applied when queue is full)
  * @return Exitcode, if queueing was successfull
  */
-uint8_t queuePush(Queue_t *queue, const void *item, int timeout, bool force);
+uint8_t queuePush(Queue_t *queue, const void *item, int64_t timeout,
+		  bool force);
 
 /**
  * @brief queuePop Pops the upmost element of the queue
@@ -96,9 +90,11 @@ uint8_t queuePush(Queue_t *queue, const void *item, int timeout, bool force);
  * @param targetBuffer The memory location where the queued item should be
  *			copied to
  * @param timeout Defines how long the dequeuing should be tried
- *			(in milliseconds)
+ *		  (in milliseconds)
+ *		  If this value is -1 or larger than 9223372036854, popping
+ *		  will block indefinitely (see hal_semaphore_try_take)
  * @return Exitcode, if dequeueing was successfull
  */
-uint8_t queuePop(Queue_t *queue, void *targetBuffer, int timeout);
+uint8_t queuePop(Queue_t *queue, void *targetBuffer, int64_t timeout);
 
 #endif /* SIMPLE_QUEUE_H_INCLUDED */

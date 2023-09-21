@@ -2,10 +2,7 @@ include mk/toolchain.mk
 
 # COMPONENTS
 
-EXTERNAL_INCLUDES += -Iexternal/platform/$(PLATFORM)/include \
-                     -Iexternal/tinycbor/src \
-                     -Iexternal/unity/src \
-                     -Iexternal/unity/extras/fixture/src \
+EXTERNAL_INCLUDES += -Iexternal/tinycbor/src \
                      -Iexternal/util/include
 
 $(eval $(call addComponentWithRules,components/aap))
@@ -30,10 +27,6 @@ TINYCBOR_SOURCES := \
 	cbortojson.c
 
 $(eval $(call addComponentWithRules,external/tinycbor/src,$(TINYCBOR_SOURCES)))
-
-$(eval $(call addComponentWithRules,external/unity/src))
-$(eval $(call addComponentWithRules,external/unity/extras/fixture/src))
-
 $(eval $(call addComponentWithRules,external/util/src))
 
 # LIB
@@ -41,34 +34,40 @@ $(eval $(call addComponentWithRules,external/util/src))
 $(eval $(call generateComponentRules,components/daemon))
 $(eval $(call generateComponentRules,test/unit))
 
-build/$(PLATFORM)/libud3tn.so: LDFLAGS += $(LDFLAGS_LIB)
 build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
 build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
-	$(call cmd,link)
+	$(call cmd,linklib)
+
+# STATIC LIB
+
+build/$(PLATFORM)/libud3tn.a: LIBS = $(LIBS_libud3tn.so)
+build/$(PLATFORM)/libud3tn.a: $(LIBS_libud3tn.so) | build/$(PLATFORM)
+	$(call cmd,arcat)
 
 # EXECUTABLE
 
 $(eval $(call addComponent,ud3tn,components/daemon))
 
-build/$(PLATFORM)/ud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
 build/$(PLATFORM)/ud3tn: LIBS = $(LIBS_ud3tn)
 build/$(PLATFORM)/ud3tn: $(LIBS_ud3tn) | build/$(PLATFORM)
 	$(call cmd,link)
 
 # TEST EXECUTABLE
 
+$(eval $(call generateComponentRules,external/unity/src))
+$(eval $(call generateComponentRules,external/unity/extras/fixture/src))
+
+$(eval $(call addComponent,testud3tn,external/unity/src))
+$(eval $(call addComponent,testud3tn,external/unity/extras/fixture/src))
+
 $(eval $(call addComponent,testud3tn,test/unit))
 
 build/$(PLATFORM)/testud3tn: LDFLAGS += $(LDFLAGS_EXECUTABLE)
 # 64 bit support has to be enabled first.
 build/$(PLATFORM)/testud3tn: CPPFLAGS += -DUNITY_SUPPORT_64
-# We wrap some functions to make Unity usable without surprises on our platform.
-build/$(PLATFORM)/testud3tn: LDFLAGS += -Wl,-wrap,putchar \
-                                       -Wl,-wrap,UNITY_OUTPUT_CHAR \
-                                       -Wl,-wrap,unity_malloc \
-                                       -Wl,-wrap,unity_calloc \
-                                       -Wl,-wrap,unity_realloc \
-                                       -Wl,-wrap,unity_free
+build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Itest/unit
+build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/src
+build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/extras/fixture/src
 build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
 build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
 	$(call cmd,link)

@@ -16,7 +16,6 @@
 #include "ud3tn/common.h"
 #include "ud3tn/config.h"
 #include "ud3tn/eid.h"
-#include "ud3tn/task_tags.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -32,7 +31,11 @@ static void bundle_send(struct bundle *bundle, void *param)
 {
 	struct cla_config *const config = param;
 
-	ASSERT(bundle != NULL);
+	if (!bundle) {
+		LOG("Tried to send NULL bundle");
+		ASSERT(false);
+		return;
+	}
 
 	char *const source_node_id = get_node_id(bundle->source);
 
@@ -195,8 +198,9 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
 static uint8_t *bulk_read(struct cla_link *link)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
-	uint8_t *parsed = rx_data->input_buffer.start +
-			  rx_data->cur_parser->next_bytes;
+	uint8_t *parsed;
+
+	ASSERT(rx_data->input_buffer.end >= rx_data->input_buffer.start);
 
 	/*
 	 * Bulk read operation requested that is smaller than the input buffer.
@@ -211,11 +215,17 @@ static uint8_t *bulk_read(struct cla_link *link)
 	 *
 	 *
 	 */
-	if (parsed <= rx_data->input_buffer.end) {
+	if (rx_data->cur_parser->next_bytes <=
+			(size_t)(rx_data->input_buffer.end -
+				 rx_data->input_buffer.start)) {
 		/* Fill bulk read buffer from input buffer. */
 		memcpy(
 			rx_data->cur_parser->next_buffer,
 			rx_data->input_buffer.start,
+			rx_data->cur_parser->next_bytes
+		);
+		parsed = (
+			rx_data->input_buffer.start +
 			rx_data->cur_parser->next_bytes
 		);
 	}
@@ -397,7 +407,7 @@ static void cla_contact_rx_task(void *const param)
 
 	uint8_t *parsed;
 
-	while (link->active) {
+	while (!hal_semaphore_is_blocked(link->rx_task_notification)) {
 		if (HAS_FLAG(rx_data->cur_parser->flags, PARSER_FLAG_BULK_READ))
 			parsed = bulk_read(link);
 		else
@@ -462,11 +472,7 @@ static void cla_contact_rx_task(void *const param)
 		}
 	}
 
-	Task_t rx_task_handle = link->rx_task_handle;
-
-	// After releasing the semaphore, link may become invalid.
 	hal_semaphore_release(link->rx_task_sem);
-	hal_task_delete(rx_task_handle);
 }
 
 enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
@@ -479,13 +485,18 @@ enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
 	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
 
 	hal_semaphore_take_blocking(link->rx_task_sem);
-	link->rx_task_handle = hal_task_create(
+
+	const enum ud3tn_result res = hal_task_create(
 		cla_contact_rx_task,
 		tname_buf,
 		CONTACT_RX_TASK_PRIORITY,
 		link,
-		CONTACT_RX_TASK_STACK_SIZE,
-		(void *)CONTACT_RX_TASK_TAG
+		CONTACT_RX_TASK_STACK_SIZE
 	);
-	return link->rx_task_handle ? UD3TN_OK : UD3TN_FAIL;
+
+	// Not launched, no need to wait for exit.
+	if (res != UD3TN_OK)
+		hal_semaphore_release(link->rx_task_sem);
+
+	return res;
 }

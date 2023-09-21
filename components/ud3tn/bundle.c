@@ -56,7 +56,8 @@ struct bundle *bundle_init(void)
 
 inline void bundle_free_dynamic_parts(struct bundle *bundle)
 {
-	ASSERT(bundle != NULL);
+	if (!bundle)
+		return;
 
 	// EIDs
 	free(bundle->destination);
@@ -130,7 +131,9 @@ struct bundle *bundle_dup(const struct bundle *bundle)
 	struct bundle *dup;
 	struct bundle_block_list *cur_block;
 
-	ASSERT(bundle != NULL);
+	if (!bundle)
+		return NULL;
+
 	dup = malloc(sizeof(struct bundle));
 	if (dup == NULL)
 		return NULL;
@@ -161,6 +164,7 @@ struct bundle *bundle_dup(const struct bundle *bundle)
 			dup->payload_block = cur_block->data;
 			break;
 		}
+		cur_block = cur_block->next;
 	}
 
 	return dup;
@@ -222,7 +226,8 @@ struct bundle_list *bundle_list_entry_free(struct bundle_list *entry)
 {
 	struct bundle_list *next;
 
-	ASSERT(entry != NULL);
+	if (!entry)
+		return NULL;
 	next = entry->next;
 	bundle_free(entry->data);
 	free(entry);
@@ -287,7 +292,8 @@ struct bundle_block_list *bundle_block_entry_free(struct bundle_block_list *e)
 {
 	struct bundle_block_list *next;
 
-	ASSERT(e != NULL);
+	if (!e)
+		return NULL;
 	next = e->next;
 	bundle_block_free(e->data);
 	free(e);
@@ -298,7 +304,8 @@ struct bundle_block *bundle_block_dup(struct bundle_block *b)
 {
 	struct bundle_block *dup;
 
-	ASSERT(b != NULL);
+	if (!b)
+		return NULL;
 	dup = malloc(sizeof(struct bundle_block));
 	if (dup == NULL)
 		return NULL;
@@ -333,7 +340,8 @@ struct bundle_block_list *bundle_block_entry_dup(struct bundle_block_list *e)
 	struct bundle_block *dup;
 	struct bundle_block_list *result;
 
-	ASSERT(e != NULL);
+	if (!e)
+		return NULL;
 	dup = bundle_block_dup(e->data);
 	if (dup == NULL)
 		return NULL;
@@ -427,12 +435,10 @@ size_t bundle_get_last_fragment_min_size(struct bundle *bundle)
 	}
 }
 
-uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle,
-	const uint64_t current_time_s)
+uint64_t bundle_get_expiration_time_ms(const struct bundle *const bundle)
 {
 	if (bundle->creation_timestamp_ms != 0)
-		return (bundle->creation_timestamp_ms + bundle->lifetime_ms +
-			500) / 1000;
+		return bundle->creation_timestamp_ms + bundle->lifetime_ms;
 
 	const struct bundle_block *const age_block = bundle_block_find_first_by_type(
 		bundle->blocks, BUNDLE_BLOCK_TYPE_BUNDLE_AGE);
@@ -443,13 +449,26 @@ uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle,
 	    age_block->length))
 		return 0;
 
-	const uint64_t current_time_ms = current_time_s * 1000;
+	if (bundle->lifetime_ms <= bundle_age_ms)
+		return 0;
 
 	// EXP_TIME = CUR_TIME + REMAINING_LIFETIME
 	// REMAINING_LIFETIME = TOTAL_LIFETIME - TOTAL_AGE
 	// TOTAL_AGE = AGE_IN_BLOCK + LOCAL_STORAGE_DURATION
-	return (current_time_ms + bundle->lifetime_ms - bundle_age_ms -
-		(current_time_ms - bundle->reception_timestamp_ms) + 500) / 1000;
+	// LOCAL_STORAGE_DURATION = CUR_TIME - RECEPTION_TIME
+	// Thus: EXP_TIME = TOTAL_LIFETIME - AGE_IN_BLOCK + RECEPTION_TIME
+	return (bundle->lifetime_ms - bundle_age_ms +
+		bundle->reception_timestamp_ms);
+}
+
+uint64_t bundle_get_expiration_time_s(const struct bundle *const bundle)
+{
+	const uint64_t exp_time_ms = bundle_get_expiration_time_ms(bundle);
+
+	if (exp_time_ms == 0)
+		return 0;
+
+	return (exp_time_ms + 500) / 1000;
 }
 
 enum ud3tn_result bundle_age_update(struct bundle *bundle,

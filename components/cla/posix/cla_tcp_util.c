@@ -20,6 +20,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif // NI_MAXHOST
+
+#ifndef NI_MAXSERV
+#define NI_MAXSERV 32
+#endif // NI_MAXSERV
 
 char *cla_tcp_sockaddr_to_cla_addr(struct sockaddr *const sockaddr,
 				   const socklen_t sockaddr_len)
@@ -111,7 +118,6 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 	// Default behavior when using getaddrinfo: try one after another
 	for (e = result; e != NULL; e = e->ai_next) {
-		error_code = 0;
 		sock = socket(
 			e->ai_family,
 			e->ai_socktype,
@@ -120,7 +126,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 		if (sock == -1) {
 			error_code = errno;
-			LOGF("TCP: socket(): %s", strerror(error_code));
+			LOGERROR("TCP", "socket()", error_code);
 			continue;
 		}
 
@@ -128,8 +134,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
-			LOGF("TCP: setsockopt(SO_REUSEADDR, 1): %s",
-			     strerror(error_code));
+			LOGERROR("TCP", "setsockopt(SO_REUSEADDR, 1)",
+				 error_code);
 			close(sock);
 			continue;
 		}
@@ -138,8 +144,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
-			LOGF("TCP: setsockopt(SO_REUSEPORT, 1): %s",
-			     strerror(error_code));
+			LOGERROR("TCP", "setsockopt(SO_REUSEPORT, 1)",
+				 error_code);
 			close(sock);
 			continue;
 		}
@@ -151,8 +157,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
 			    &disable, sizeof(int)) < 0) {
 				error_code = errno;
-				LOGF("TCP: setsockopt(IPV6_V6ONLY, 0): %s",
-				     strerror(error_code));
+				LOGERROR("TCP", "setsockopt(IPV6_V6ONLY, 0)",
+					 error_code);
 				close(sock);
 				continue;
 			}
@@ -162,21 +168,21 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
-			LOGF("TCP: setsockopt(TCP_NODELAY, 1): %s",
-			     strerror(error_code));
+			LOGERROR("TCP", "setsockopt(TCP_NODELAY, 1)",
+				 error_code);
 			close(sock);
 			continue;
 		}
 
 		if (client && connect(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
-			LOGF("TCP: connect(): %s", strerror(error_code));
+			LOGERROR("TCP", "connect()", error_code);
 			close(sock);
 			continue;
 		} else if (!client &&
 			   bind(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
-			LOGF("TCP: bind(): %s", strerror(error_code));
+			LOGERROR("TCP", "bind()", error_code);
 			close(sock);
 			continue;
 		}
@@ -187,11 +193,10 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 	if (e == NULL) {
 		LOGF(
-			"TCP: Failed to %s to [%s]:%s: %s",
+			"TCP: Failed to %s to [%s]:%s",
 			client ? "connect" : "bind",
 			node,
-			service,
-			error_code ? strerror(error_code) : "<unknown>"
+			service
 		);
 		if (sock != -1)
 			close(sock);
@@ -326,4 +331,17 @@ ssize_t tcp_recv_all(const int socket, void *const buffer, const size_t length)
 	}
 
 	return recvd;
+}
+
+void tcp_write_to_socket(
+	void *const p, const void *const buffer, const size_t length)
+{
+	struct tcp_write_to_socket_param *const wsp = p;
+	ssize_t result;
+
+	if (wsp->errno_)
+		return;
+	result = tcp_send_all(wsp->socket_fd, buffer, length);
+	if (result == -1)
+		wsp->errno_ = errno;
 }

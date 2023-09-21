@@ -28,6 +28,14 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#ifndef ENONET
+#define ENONET 64
+#endif // ENONET
+
+#ifndef EHOSTDOWN
+#define EHOSTDOWN 112
+#endif // EHOSTDOWN
+
 enum ud3tn_result cla_tcp_config_init(
 	struct cla_tcp_config *config,
 	const struct bundle_agent_interface *bundle_agent_interface)
@@ -35,7 +43,6 @@ enum ud3tn_result cla_tcp_config_init(
 	if (cla_config_init(&config->base, bundle_agent_interface) != UD3TN_OK)
 		return UD3TN_FAIL;
 
-	config->listen_task = NULL;
 	config->socket = -1;
 
 	return UD3TN_OK;
@@ -76,6 +83,11 @@ enum ud3tn_result cla_tcp_link_init(
 			!= UD3TN_OK)
 		return UD3TN_FAIL;
 
+	// If termination of the RX task is already requested (e.g., if spawning
+	// the TX task failed), allow it to exit by closing the socket.
+	if (hal_semaphore_is_blocked(link->base.rx_task_notification))
+		close(link->connection_socket);
+
 	return UD3TN_OK;
 }
 
@@ -84,16 +96,19 @@ enum ud3tn_result cla_tcp_read(struct cla_link *link,
 			       size_t *bytes_read)
 {
 	struct cla_tcp_link *tcp_link = (struct cla_tcp_link *)link;
+	ssize_t ret;
 
-	const ssize_t ret = recv(
-		tcp_link->connection_socket,
-		buffer,
-		length,
-		0
-	);
+	do {
+		ret = recv(
+			tcp_link->connection_socket,
+			buffer,
+			length,
+			0
+		);
+	} while (ret == -1 && errno == EINTR);
 
 	if (ret < 0) {
-		LOGF("TCP: Error reading from socket: %s", strerror(errno));
+		LOGERROR("TCP", "recv()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 		return UD3TN_FAIL;
 	} else if (ret == 0) {
@@ -152,7 +167,7 @@ enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 
 	// Listen for incoming connections.
 	if (listen(config->socket, backlog) < 0) {
-		LOGF("TCP: Listening to socket failed: %s", strerror(errno));
+		LOGERROR("TCP", "listen()", errno);
 		close(config->socket);
 		config->socket = -1;
 		return UD3TN_FAIL;
@@ -182,7 +197,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 			      &sockaddr_tmp_len)) == -1) {
 		const int err = errno;
 
-		LOGF("TCP: Accepting connection failed: %s", strerror(err));
+		LOGERROR("TCP", "accept()", err);
 
 		// See "Error handling" section of Linux man page
 		if (err != EAGAIN && err != EINTR && err != ENETDOWN &&
@@ -214,8 +229,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 	/* Disable the nagle algorithm to prevent delays in responses */
 	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 		       &enable, sizeof(int)) < 0) {
-		LOGF("TCP: setsockopt(TCP_NODELAY) failed: %s",
-		     strerror(errno));
+		LOGERROR("TCP", "setsockopt(TCP_NODELAY)", errno);
 	}
 
 	return sock;
@@ -337,6 +351,7 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 			     config->base.base.vtable->cla_name_get(),
 			     config->node, config->service);
 			ASSERT(0);
+			return;
 		}
 		cla_tcp_single_listen_task(config, struct_size);
 	}

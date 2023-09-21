@@ -357,7 +357,13 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 	case RP_EXPECT_CONTACT_START_TIME:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint64(parser,
-				&(parser->current_contact->data->from));
+				&(parser->current_contact->data->from_ms));
+			if (parser->current_contact->data->from_ms >=
+			    UINT64_MAX / 1000) {
+				parser->basedata->status = PARSER_STATUS_ERROR;
+				break;
+			}
+			parser->current_contact->data->from_ms *= 1000;
 			begin_read_integer(parser);
 			parser->stage = RP_EXPECT_CONTACT_END_TIME;
 		} else if (!read_integer(parser, byte)) {
@@ -367,30 +373,28 @@ static void read_command(struct config_parser *parser, const uint8_t byte)
 	case RP_EXPECT_CONTACT_END_TIME:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
 			end_read_uint64(parser,
-				&(parser->current_contact->data->to));
-			if (parser->current_contact->data->to >
-				parser->current_contact->data->from
-				&& parser->current_contact->data->to >
-				hal_time_get_timestamp_s()
-			) {
-				begin_read_integer(parser);
-				parser->stage = RP_EXPECT_CONTACT_BITRATE;
-			} else {
+				&(parser->current_contact->data->to_ms));
+			if (parser->current_contact->data->to_ms >=
+			    UINT64_MAX / 1000) {
 				parser->basedata->status = PARSER_STATUS_ERROR;
+				break;
 			}
+			parser->current_contact->data->to_ms *= 1000;
+			begin_read_integer(parser);
+			parser->stage = RP_EXPECT_CONTACT_BITRATE;
 		} else if (!read_integer(parser, byte)) {
 			parser->basedata->status = PARSER_STATUS_ERROR;
 		}
 		break;
 	case RP_EXPECT_CONTACT_BITRATE:
 		if (byte == OBJECT_ELEMENT_SEPARATOR) {
-			end_read_uint32(parser,
-				&(parser->current_contact->data->bitrate));
+			end_read_uint32(parser, &(parser->current_contact->data
+						  ->bitrate_bytes_per_s));
 			parser->stage
 				= RP_EXPECT_CONTACT_NODE_LIST_START_DELIMITER;
 		} else if (byte == OBJECT_END_DELIMITER) {
-			end_read_uint32(parser,
-				&(parser->current_contact->data->bitrate));
+			end_read_uint32(parser, &(parser->current_contact->data
+						  ->bitrate_bytes_per_s));
 			parser->stage = RP_EXPECT_CONTACT_SEPARATOR;
 		} else if (!read_integer(parser, byte)) {
 			parser->basedata->status = PARSER_STATUS_ERROR;
@@ -486,8 +490,8 @@ size_t config_parser_read(struct config_parser *parser,
 		config_parser_read_byte(parser, buffer[i]);
 		if (parser->basedata->status != PARSER_STATUS_GOOD
 		    && parser->basedata->status != PARSER_STATUS_DONE) {
-			LOGF("ConfigAgentParser: parser status was not good at %d ('%c') -> reset parser (cmd was: \"%s\")",
-			     i, buffer[i], buffer);
+			LOGF("ConfigAgentParser: parser status was not good at %d ('%c') -> reset parser",
+			     i, buffer[i]);
 			config_parser_reset(parser);
 			return length;
 		}
@@ -531,7 +535,7 @@ enum ud3tn_result config_parser_reset(struct config_parser *parser)
 
 struct parser *config_parser_init(
 	struct config_parser *parser,
-	void (*send_callback)(struct router_command *, void *), void *param)
+	void (*send_callback)(void *, struct router_command *), void *param)
 {
 	parser->basedata = malloc(sizeof(struct parser));
 	if (parser->basedata == NULL)
@@ -554,6 +558,6 @@ static void send_router_command(struct config_parser *parser)
 	ptr = parser->router_command;
 	/* Unset router cmd, the recipient has to take care of it... */
 	parser->router_command = NULL;
-	parser->send_callback(ptr, parser->send_param);
+	parser->send_callback(parser->send_param, ptr);
 	/* Don't reset the parser here as the input task must know the state */
 }

@@ -13,7 +13,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/task_tags.h"
 
 #include <stdlib.h>
 
@@ -34,7 +33,7 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 		blocks = &(*blocks)->next;
 	}
 
-	const uint8_t dwell_time_ms = hal_time_get_timestamp_ms() -
+	const uint64_t dwell_time_ms = hal_time_get_timestamp_ms() -
 		bundle->reception_timestamp_ms;
 
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
@@ -53,8 +52,11 @@ static void cla_contact_tx_task(void *param)
 		link->config->vtable->cla_send_packet_data;
 	QueueIdentifier_t signaling_queue =
 		link->config->bundle_agent_interface->bundle_signaling_queue;
+#ifdef CLA_TX_RATE_LIMIT
+	const int rate_sleep_time_ms = 1000 / CLA_TX_RATE_LIMIT;
+#endif // CLA_TX_RATE_LIMIT
 
-	while (link->active) {
+	for (;;) {
 		if (hal_queue_receive(link->tx_queue_handle,
 				      &cmd, -1) == UD3TN_FAIL)
 			continue;
@@ -111,6 +113,10 @@ static void cla_contact_tx_task(void *param)
 			rbl = rbl->next;
 			// Free the bundle list from the command step-by-step.
 			free(tmp);
+
+#ifdef CLA_TX_RATE_LIMIT
+			hal_task_delay(rate_sleep_time_ms);
+#endif // CLA_TX_RATE_LIMIT
 		}
 
 		// Free the attached CLA address - a copy is made by the
@@ -150,33 +156,26 @@ static void cla_contact_tx_task(void *param)
 		}
 	}
 
-	Task_t tx_task_handle = link->tx_task_handle;
-
-	// After releasing the semaphore, link may become invalid.
 	hal_semaphore_release(link->tx_task_sem);
-	hal_task_delete(tx_task_handle);
 }
 
 enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 {
-	static uint8_t ctr = 1;
-	static char tname_buf[6];
-
-	tname_buf[0] = 't';
-	tname_buf[1] = 'x';
-	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
-
 	hal_semaphore_take_blocking(link->tx_task_sem);
-	link->tx_task_handle = hal_task_create(
+
+	const enum ud3tn_result res = hal_task_create(
 		cla_contact_tx_task,
-		tname_buf,
+		NULL,
 		CONTACT_TX_TASK_PRIORITY,
 		link,
-		CONTACT_TX_TASK_STACK_SIZE,
-		(void *)CONTACT_TX_TASK_TAG
+		CONTACT_TX_TASK_STACK_SIZE
 	);
 
-	return link->tx_task_handle ? UD3TN_OK : UD3TN_FAIL;
+	// Not launched, no need to wait for exit.
+	if (res != UD3TN_OK)
+		hal_semaphore_release(link->tx_task_sem);
+
+	return res;
 }
 
 void cla_contact_tx_task_request_exit(QueueIdentifier_t queue)

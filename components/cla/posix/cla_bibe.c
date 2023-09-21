@@ -27,7 +27,6 @@
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -55,13 +54,12 @@ struct bibe_contact_parameters {
 
 	struct bibe_config *config;
 
-	Task_t management_task;
+	Semaphore_t param_semphr; // rw access to params struct
 
 	char *cla_sock_addr;
 	const char *partner_eid;
 
 	bool in_contact;
-	bool connected;
 	int connect_attempt;
 
 	int socket;
@@ -80,7 +78,19 @@ static enum ud3tn_result handle_established_connection(
 		return UD3TN_FAIL;
 	}
 
-	cla_link_wait_cleanup(&param->link.base.base);
+	// For the duration of the TX and RX tasks being executed, we hand
+	// the access of the parameters structure to these tasks. This means
+	// that we have to unlock the semaphore (it is locked beforehand
+	// starting at its creation in `launch_connection_management_task`).
+	// This way, the RX and TX task can lock and safely access the struct
+	// if needed. `cla_link_wait` will return after both tasks have
+	// terminated gracefully, thus, we can re-lock it afterwards.
+	hal_semaphore_release(param->param_semphr);
+	cla_link_wait(&param->link.base.base);
+	hal_semaphore_take_blocking(param->config->param_htab_sem);
+	hal_semaphore_take_blocking(param->param_semphr);
+	cla_link_cleanup(&param->link.base.base);
+	hal_semaphore_release(param->config->param_htab_sem);
 
 	return UD3TN_OK;
 }
@@ -90,11 +100,16 @@ static void bibe_link_management_task(void *p)
 	struct bibe_contact_parameters *const param = p;
 
 	ASSERT(param->cla_sock_addr != NULL);
+	if (!param->cla_sock_addr) {
+		LOG("bibe: Empty CLA address, cannot launch management task");
+		goto fail;
+	}
+
+	// NOTE: This loop always has to run at least once (opport. contacts)
 	do {
-		if (param->connected) {
-			ASSERT(param->socket > 0);
+		if (param->socket > 0) {
+			// NOTE the following function releases and re-locks sem
 			handle_established_connection(param);
-			param->connected = false;
 			param->connect_attempt = 0;
 			param->socket = -1;
 		} else {
@@ -103,11 +118,15 @@ static void bibe_link_management_task(void *p)
 				break;
 			}
 			ASSERT(param->socket < 0);
-			param->socket = cla_tcp_connect_to_cla_addr(
-				param->cla_sock_addr,
+			hal_semaphore_release(param->param_semphr);
+
+			const int socket = cla_tcp_connect_to_cla_addr(
+				param->cla_sock_addr, // only used by us
 				NULL
 			);
-			if (param->socket < 0) {
+
+			hal_semaphore_take_blocking(param->param_semphr);
+			if (socket < 0) {
 				if (++param->connect_attempt >
 						CLA_TCP_MAX_RETRY_ATTEMPTS) {
 					LOG("bibe: Final retry failed.");
@@ -117,38 +136,76 @@ static void bibe_link_management_task(void *p)
 				     param->connect_attempt,
 				     CLA_TCP_MAX_RETRY_ATTEMPTS,
 				     CLA_TCP_RETRY_INTERVAL_MS);
+				hal_semaphore_release(param->param_semphr);
 				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
+				hal_semaphore_take_blocking(
+					param->param_semphr
+				);
 				continue;
 			}
-			LOGF("bibe: Connected successfully to \"%s\"",
-			     param->cla_sock_addr);
-			param->connected = true;
+			param->socket = socket;
 
 			const struct aap_message register_bibe = {
 				.type = AAP_MESSAGE_REGISTER,
 				.eid = get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN ? "2925" : "bibe",
 				.eid_length = 4,
 			};
-			uint64_t *buffer = malloc(sizeof(struct aap_message));
+			struct tcp_write_to_socket_param wsp = {
+				.socket_fd = param->socket,
+				.errno_ = 0,
+			};
 
-			aap_serialize_into(buffer, &register_bibe, true);
-			tcp_send_all(param->socket, buffer, aap_get_serialized_size(&register_bibe));
-			free(buffer);
+			aap_serialize(
+				&register_bibe,
+				tcp_write_to_socket,
+				&wsp,
+				true
+			);
+			if (wsp.errno_) {
+				LOGERROR("bibe", "send()", wsp.errno_);
+				close(param->socket);
+				if (++param->connect_attempt >
+						CLA_TCP_MAX_RETRY_ATTEMPTS) {
+					LOG("bibe: Final retry failed.");
+					break;
+				}
+				LOGF("bibe: Delayed retry %d of %d in %d ms",
+				     param->connect_attempt,
+				     CLA_TCP_MAX_RETRY_ATTEMPTS,
+				     CLA_TCP_RETRY_INTERVAL_MS);
+				hal_semaphore_release(param->param_semphr);
+				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
+				hal_semaphore_take_blocking(
+					param->param_semphr
+				);
+				continue;
+			}
+			LOGF("bibe: Connected successfully to \"%s\"",
+			     param->cla_sock_addr);
 		}
 	} while (param->in_contact);
 
 	LOGF("bibe: Terminating contact link manager for \"%s\"",
 	     param->cla_sock_addr);
+
+	// Unblock parallel threads that thought to re-use the link while
+	// telling them it is not usable anymore by invalidating the socket.
+	param->in_contact = false;
+	param->socket = -1;
+	hal_semaphore_release(param->param_semphr);
+
 	hal_semaphore_take_blocking(param->config->param_htab_sem);
 	htab_remove(&param->config->param_htab, param->cla_sock_addr);
 	hal_semaphore_release(param->config->param_htab_sem);
+
+	hal_semaphore_take_blocking(param->param_semphr);
+
 	aap_parser_reset(&param->link.aap_parser);
 	free(param->cla_sock_addr);
 
-	Task_t management_task = param->management_task;
-
+fail:
+	hal_semaphore_delete(param->param_semphr);
 	free(param);
-	hal_task_delete(management_task);
 }
 
 static void launch_connection_management_task(
@@ -169,6 +226,13 @@ static void launch_connection_management_task(
 	contact_params->connect_attempt = 0;
 
 	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+
+	if (!cla_sock_addr) {
+		LOG("bibe: Invalid address");
+		free(contact_params);
+		return;
+	}
+
 	char *const eid_delimiter = strchr(cla_sock_addr, '#');
 
 	// If <connect-addr>#<lower-eid> is used (we find a '#' delimiter)
@@ -178,13 +242,20 @@ static void launch_connection_management_task(
 	contact_params->cla_sock_addr = cla_sock_addr;
 	contact_params->partner_eid = eid;
 	contact_params->socket = -1;
-	contact_params->connected = false;
 	contact_params->in_contact = true;
 
 	if (!contact_params->cla_sock_addr) {
 		LOG("bibe: Failed to obtain CLA address!");
 		goto fail;
 	}
+
+	contact_params->param_semphr = hal_semaphore_init_binary();
+	ASSERT(contact_params->param_semphr != NULL);
+	if (contact_params->param_semphr == NULL) {
+		LOG("bibe: Failed to create semaphore!");
+		goto fail;
+	}
+	// NOTE that the binary semaphore (mutex) is locked after creation.
 
 	aap_parser_init(&contact_params->link.aap_parser);
 
@@ -197,19 +268,18 @@ static void launch_connection_management_task(
 	);
 	if (!htab_entry) {
 		LOG("bibe: Error creating htab entry!");
-		goto fail;
+		goto fail_sem;
 	}
 
-	contact_params->management_task = hal_task_create(
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		bibe_link_management_task,
 		"bibe_mgmt_t",
 		CONTACT_MANAGEMENT_TASK_PRIORITY,
 		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_MANAGEMENT_TASK_STACK_SIZE
 	);
 
-	if (!contact_params->management_task) {
+	if (task_creation_result != UD3TN_OK) {
 		LOG("bibe: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->cla_sock_addr);
@@ -218,11 +288,13 @@ static void launch_connection_management_task(
 				contact_params->cla_sock_addr
 			) == contact_params);
 		}
-		goto fail;
+		goto fail_sem;
 	}
 
 	return;
 
+fail_sem:
+	hal_semaphore_delete(contact_params->param_semphr);
 fail:
 	free(contact_params->cla_sock_addr);
 	free(contact_params);
@@ -286,6 +358,11 @@ size_t bibe_forward_to_specific_parser(struct cla_link *const link,
 		if (msg.type == AAP_MESSAGE_RECVBIBE) {
 			// Parsing the BPDU
 			struct bibe_protocol_data_unit bpdu;
+
+			// Ensure it is always initialized, so we can safely
+			// invoke free() below.
+			bpdu.encapsulated_bundle = NULL;
+
 			size_t err = bibe_parser_parse(
 				msg.payload,
 				msg.payload_length,
@@ -301,6 +378,8 @@ size_t bibe_forward_to_specific_parser(struct cla_link *const link,
 					bpdu.payload_length
 				);
 			}
+
+			free(bpdu.encapsulated_bundle);
 		}
 
 		aap_message_clear(&msg);
@@ -319,6 +398,12 @@ static struct bibe_contact_parameters *get_contact_parameters(
 	struct bibe_config *const bibe_config =
 		(struct bibe_config *)config;
 	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+
+	if (!cla_sock_addr) {
+		LOG("bibe: Invalid address");
+		return NULL;
+	}
+
 	char *const eid_delimiter = strchr(cla_sock_addr, '#');
 
 	// If <connect-addr>#<lower-eid> is used (we find a '#' delimiter)
@@ -346,19 +431,28 @@ static struct cla_tx_queue bibe_get_tx_queue(
 		config,
 		cla_addr
 	);
-	const char *dest_eid = strchr(cla_addr, '#');
+	const char *const dest_eid_delimiter = strchr(cla_addr, '#');
 	const bool dest_eid_is_valid = (
-		dest_eid &&
-		dest_eid[0] != '\0' &&
-		validate_eid(&dest_eid[1]) == UD3TN_OK
+		dest_eid_delimiter &&
+		dest_eid_delimiter[0] != '\0' &&
+		// The EID starts after the delimiter.
+		validate_eid(&dest_eid_delimiter[1]) == UD3TN_OK
 	);
 
-	dest_eid = &dest_eid[1]; // EID starts _after_ the '#'
+	if (param && dest_eid_is_valid) {
+		hal_semaphore_take_blocking(param->param_semphr);
 
-	if (param && param->connected && dest_eid_is_valid) {
+		// Check that link is connected
+		if (param->socket < 0) {
+			hal_semaphore_release(param->param_semphr);
+			hal_semaphore_release(bibe_config->param_htab_sem);
+			return (struct cla_tx_queue){ NULL, NULL };
+		}
+
 		struct cla_link *const cla_link = &param->link.base.base;
 
 		hal_semaphore_take_blocking(cla_link->tx_queue_sem);
+		hal_semaphore_release(param->param_semphr);
 		hal_semaphore_release(bibe_config->param_htab_sem);
 
 		// Freed while trying to obtain it
@@ -389,30 +483,39 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 	);
 
 	if (param) {
-		LOGF("bibe: Associating open connection with \"%s\" to new contact",
-		     cla_addr);
-		param->in_contact = true;
+		hal_semaphore_take_blocking(param->param_semphr);
+		if (param->socket > 0 || param->in_contact) {
+			LOGF("bibe: Associating open connection with \"%s\" to new contact",
+			     cla_addr);
+			param->in_contact = true;
 
-		// Even if it is no _new_ connection, we notify the BP task
-		const struct bundle_agent_interface *bai =
-			config->bundle_agent_interface;
+			const struct bundle_agent_interface *bai =
+				config->bundle_agent_interface;
+			const bool link_active = param->socket > 0;
 
-		if (param->connected) {
-			bundle_processor_inform(
-				bai->bundle_signaling_queue,
-				NULL,
-				BP_SIGNAL_NEW_LINK_ESTABLISHED,
-				cla_get_cla_addr_from_link(
-					&param->link.base.base
-				),
-				NULL,
-				NULL,
-				NULL
-			);
+			hal_semaphore_release(param->param_semphr);
+			// Check that link is connected
+			if (link_active) {
+				bundle_processor_inform(
+					bai->bundle_signaling_queue,
+					NULL,
+					BP_SIGNAL_NEW_LINK_ESTABLISHED,
+					strdup(cla_addr),
+					NULL,
+					NULL,
+					NULL
+				);
+			}
+
+			hal_semaphore_release(bibe_config->param_htab_sem);
+			return UD3TN_OK;
 		}
-
-		hal_semaphore_release(bibe_config->param_htab_sem);
-		return UD3TN_OK;
+		hal_semaphore_release(param->param_semphr);
+		// Task is cleaning up already, just insert a new entry then.
+		// NOTE this calls htab_remove earlier than the connection
+		// management task but the 2nd call invoked by the latter
+		// is no issue - it will not find the entry and return.
+		htab_remove(&bibe_config->param_htab, cla_addr);
 	}
 
 	launch_connection_management_task(bibe_config, cla_addr, eid);
@@ -434,9 +537,8 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 		cla_addr
 	);
 
-	if (param && param->in_contact) {
-		LOGF("bibe: Marking open connection with \"%s\" as opportunistic",
-		     cla_addr);
+	if (param != NULL) {
+		hal_semaphore_take_blocking(param->param_semphr);
 		param->in_contact = false;
 		if (param->socket >= 0) {
 			LOGF("bibe: Terminating connection with \"%s\"",
@@ -446,6 +548,7 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 			shutdown(param->socket, SHUT_RDWR);
 			close(param->socket);
 		}
+		hal_semaphore_release(param->param_semphr);
 	}
 
 	hal_semaphore_release(bibe_config->param_htab_sem);
@@ -463,10 +566,6 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 	ASSERT(dest_eid);
 	ASSERT(dest_eid[0] != '\0' && dest_eid[1] != '\0');
 	dest_eid = &dest_eid[1]; // EID starts _after_ the '#'
-
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
 
 	struct bibe_header hdr;
 
@@ -491,10 +590,6 @@ void bibe_send_packet_data(
 	struct cla_link *link, const void *data, const size_t length)
 {
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
-
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
 		LOG("bibe: Error during sending. Data discarded.");

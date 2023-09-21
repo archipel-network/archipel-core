@@ -23,25 +23,10 @@ struct config_agent_params {
 	bool allow_remote_configuration;
 };
 
-static void router_command_send(struct router_command *cmd, void *param)
+static void callback(struct bundle_adu data, void *param, const void *ctx)
 {
-	ASSERT(cmd != NULL);
+	(void)ctx;
 
-	QueueIdentifier_t bp_queue = param;
-
-	bundle_processor_inform(
-		bp_queue,
-		NULL,
-		BP_SIGNAL_PROCESS_ROUTER_COMMAND,
-		NULL,
-		NULL,
-		NULL,
-		cmd
-	);
-}
-
-static void callback(struct bundle_adu data, void *param)
-{
 	struct config_agent_params *const ca_param = param;
 
 	if (!ca_param->allow_remote_configuration) {
@@ -69,12 +54,16 @@ static void callback(struct bundle_adu data, void *param)
 int config_agent_setup(
 	QueueIdentifier_t bundle_processor_signaling_queue,
 	const char *local_eid,
-	bool allow_remote_configuration)
+	bool allow_remote_configuration,
+	void *bundle_processor_context)
 {
 	const int is_ipn = get_eid_scheme(local_eid) == EID_SCHEME_IPN;
 
-	ASSERT(config_parser_init(&parser, &router_command_send,
-				  bundle_processor_signaling_queue));
+	ASSERT(config_parser_init(
+		&parser,
+		&bundle_processor_handle_router_command,
+		bundle_processor_context
+	));
 
 	struct config_agent_params *const ca_param = malloc(
 		sizeof(struct config_agent_params)

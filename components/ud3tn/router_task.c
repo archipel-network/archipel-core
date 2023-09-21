@@ -46,6 +46,15 @@ enum ud3tn_result router_process_command(
 	struct rescheduling_handle rescheduler)
 {
 	bool success = true;
+	const uint64_t cur_time_s = hal_time_get_timestamp_s();
+
+	if (!node_prepare_and_verify(command->data, cur_time_s)) {
+		free_node(command->data);
+		LOGF("Router: Command (T = %c) is invalid!",
+			command->type);
+		free(command);
+		return UD3TN_FAIL;
+	}
 
 	success = process_router_command(
 		command,
@@ -102,9 +111,9 @@ static struct bundle_processing_result process_bundle(struct bundle *bundle)
 	};
 
 	ASSERT(bundle != NULL);
-	uint64_t timestamp_s = hal_time_get_timestamp_s();
+	const uint64_t timestamp_ms = hal_time_get_timestamp_ms();
 
-	if (bundle_get_expiration_time_s(bundle, timestamp_s) < timestamp_s) {
+	if (bundle_get_expiration_time_ms(bundle) < timestamp_ms) {
 		// Bundle is already expired on arrival at the router...
 		result.status_or_fragments = BUNDLE_RESULT_EXPIRED;
 		return result;

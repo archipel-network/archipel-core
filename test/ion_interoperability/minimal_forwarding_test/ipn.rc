@@ -1,0 +1,52 @@
+## begin ionadmin
+# Initialization command
+1 1 ''
+
+# Start ION
+s
+
+# Add contacts
+a contact +1 +3600 1 1 100000
+a contact +1 +3600 2 1 100000
+a contact +1 +3600 1 3 100000
+
+# Assign ranges
+a range +1 +3600 1 1 1
+a range +1 +3600 2 1 1
+a range +1 +3600 1 3 1
+
+# Assign production/consumption rates (dummy)
+m production 100000
+m consumption 100000
+## end ionadmin
+
+## begin ionsecadmin
+1
+## end ionsecadmin
+
+## begin bpadmin
+1
+
+# watch: print bundle actions, see manpage
+# you should see "ybc" in the test; you should not see '~' or '!'
+w 1
+
+a scheme ipn 'ipnfw' 'ipnadminep'
+a endpoint ipn:1.0 q
+a endpoint ipn:1.1 q
+
+# add the tcp convergence layer and outducts
+# note that your IPs will be different
+a protocol tcp 1400 100
+a induct tcp 0.0.0.0:4556 tcpcli
+
+# add outduct to uD3TN2 instance
+a outduct tcp 127.0.0.1:4554 tcpcli
+
+# add egress plan
+a plan ipn:3.0
+a planduct ipn:3.0 tcp 127.0.0.1:4554
+
+# start daemons
+s
+## end bpadmin

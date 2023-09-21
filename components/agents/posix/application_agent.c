@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
+
 #include "aap/aap.h"
 #include "aap/aap_parser.h"
 #include "aap/aap_serializer.h"
@@ -12,6 +13,7 @@
 #include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
+#include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 #include "platform/hal_time.h"
 #include "platform/hal_types.h"
@@ -24,7 +26,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/eid.h"
-#include "ud3tn/task_tags.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -46,19 +47,17 @@ struct application_agent_config {
 	const struct bundle_agent_interface *bundle_agent_interface;
 
 	uint8_t bp_version;
-	uint64_t lifetime;
+	uint64_t lifetime_ms;
 
 	int listen_socket;
-	Task_t listener_task;
 };
 
 struct application_agent_comm_config {
 	struct application_agent_config *parent;
 	int socket_fd;
 	int bundle_pipe_fd[2];
-	Task_t task;
 	char *registered_agent_id;
-	uint64_t last_bundle_timestamp_s;
+	uint64_t last_bundle_timestamp_ms;
 	uint64_t last_bundle_sequence_number;
 };
 
@@ -83,7 +82,7 @@ static void application_agent_listener_task(void *const param)
 		);
 
 		if (conn_fd == -1) {
-			LOGF("AppAgent: accept(): %s", strerror(errno));
+			LOGERROR("AppAgent", "accept()", errno);
 			continue;
 		}
 
@@ -125,21 +124,22 @@ static void application_agent_listener_task(void *const param)
 		}
 		child_config->parent = config;
 		child_config->socket_fd = conn_fd;
-		child_config->task = hal_task_create(
+		child_config->last_bundle_timestamp_ms = 0;
+		child_config->last_bundle_sequence_number = 0;
+
+		const enum ud3tn_result task_creation_result = hal_task_create(
 			application_agent_comm_task,
 			"app_comm_t",
 			APPLICATION_AGENT_TASK_PRIORITY,
 			child_config,
-			DEFAULT_TASK_STACK_SIZE,
-			(void *)APPLICATION_AGENT_COMM_TASK_TAG
+			DEFAULT_TASK_STACK_SIZE
 		);
-		if (!child_config->task) {
+
+		if (task_creation_result != UD3TN_OK) {
 			LOG("AppAgent: Error starting comm. task!");
 			close(conn_fd);
 			free(child_config);
 		}
-		child_config->last_bundle_timestamp_s = 0;
-		child_config->last_bundle_sequence_number = 0;
 	}
 }
 
@@ -163,40 +163,25 @@ static size_t parse_aap(struct aap_parser *parser,
 	return consumed;
 }
 
-struct write_socket_param {
-	int socket_fd;
-	int errno_;
-};
-
-static void write_to_socket(void *const p,
-			    const void *const buffer, const size_t length)
-{
-	struct write_socket_param *const wsp = (struct write_socket_param *)p;
-	ssize_t result;
-
-	if (wsp->errno_)
-		return;
-	result = tcp_send_all(wsp->socket_fd, buffer, length);
-	if (result == -1)
-		wsp->errno_ = errno;
-}
-
 static int send_message(const int socket_fd,
 			const struct aap_message *const msg)
 {
-	struct write_socket_param wsp = {
+	struct tcp_write_to_socket_param wsp = {
 		.socket_fd = socket_fd,
 		.errno_ = 0,
 	};
 
-	aap_serialize(msg, write_to_socket, &wsp, true);
+	aap_serialize(msg, tcp_write_to_socket, &wsp, true);
 	if (wsp.errno_)
-		LOGF("AppAgent: send(): %s", strerror(wsp.errno_));
+		LOGERROR("AppAgent", "send()", wsp.errno_);
 	return -wsp.errno_;
 }
 
-static void agent_msg_recv(struct bundle_adu data, void *param)
+static void agent_msg_recv(struct bundle_adu data, void *param,
+			   const void *bp_context)
 {
+	(void)bp_context;
+
 	struct application_agent_comm_config *const config = (
 		(struct application_agent_comm_config *)param
 	);
@@ -206,7 +191,7 @@ static void agent_msg_recv(struct bundle_adu data, void *param)
 
 	if (pipeq_write_all(config->bundle_pipe_fd[1],
 			    &data, sizeof(struct bundle_adu)) <= 0) {
-		LOGF("AppAgent: write(): %s", strerror(errno));
+		LOGERROR("AppAgent", "write()", errno);
 		bundle_adu_free_members(data);
 	}
 }
@@ -246,12 +231,12 @@ static void deregister_sink(struct application_agent_comm_config *config)
 
 static uint64_t allocate_sequence_number(
 	struct application_agent_comm_config *const config,
-	const uint64_t time_s)
+	const uint64_t time_ms)
 {
-	if (config->last_bundle_timestamp_s == time_s)
+	if (config->last_bundle_timestamp_ms == time_ms)
 		return ++config->last_bundle_sequence_number;
 
-	config->last_bundle_timestamp_s = time_s;
+	config->last_bundle_timestamp_ms = time_ms;
 	config->last_bundle_sequence_number = 1;
 
 	return 1;
@@ -321,19 +306,19 @@ static int16_t process_aap_message(
 			msg.payload_length = ar_size;
 		}
 
-		const uint64_t time = hal_time_get_timestamp_s();
+		const uint64_t time_ms = hal_time_get_timestamp_ms();
 		const uint64_t seqnum = allocate_sequence_number(
 			config,
-			time
+			time_ms
 		);
 		struct bundle *bundle = agent_create_forward_bundle(
 			config->parent->bundle_agent_interface,
 			config->parent->bp_version,
 			config->registered_agent_id,
 			msg.eid,
-			time,
+			time_ms,
 			seqnum,
-			config->parent->lifetime,
+			config->parent->lifetime_ms,
 			msg.payload,
 			msg.payload_length,
 			(
@@ -351,7 +336,13 @@ static int16_t process_aap_message(
 		} else {
 			LOGF("AppAgent: Injected new bundle %p.", bundle);
 			response.type = AAP_MESSAGE_SENDCONFIRM;
-			response.bundle_id = (uint64_t)(uintptr_t)bundle;
+			response.bundle_id = (
+				1ULL << 63 | // reserved bit MUST be 1
+				0ULL << 62 | // Format: with-timestamp
+				// 46-bit creation timestamp, see #60
+				(time_ms & 0x00003FFFFFFFFFFFULL) << 16 |
+				(seqnum & 0xFFFF) // 16-bit seqnum
+			);
 		}
 
 		break;
@@ -403,11 +394,11 @@ static ssize_t receive_from_socket(
 		config->socket_fd,
 		rx_buffer + bytes_available,
 		APPLICATION_AGENT_RX_BUFFER_SIZE - bytes_available,
-		MSG_DONTWAIT
+		0
 	);
 	if (recv_result <= 0) {
 		if (recv_result < 0)
-			LOGF("AppAgent: recv(): %s", strerror(errno));
+			LOGERROR("AppAgent", "recv()", errno);
 		return -1;
 	}
 	bytes_available += recv_result;
@@ -463,7 +454,7 @@ static void application_agent_comm_task(void *const param)
 	config->registered_agent_id = NULL;
 
 	if (pipe(config->bundle_pipe_fd) == -1) {
-		LOGF("AppAgent: pipe(): %s", strerror(errno));
+		LOGERROR("AppAgent", "pipe()", errno);
 		goto pipe_creation_error;
 	}
 
@@ -493,7 +484,7 @@ static void application_agent_comm_task(void *const param)
 
 	for (;;) {
 		if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {
-			LOGF("AppAgent: poll(): %s", strerror(errno));
+			LOGERROR("AppAgent", "poll()", errno);
 			// Try again if interrupted by a signal, else fail.
 			if (errno == EINTR)
 				continue;
@@ -522,7 +513,7 @@ static void application_agent_comm_task(void *const param)
 			if (pipeq_read_all(config->bundle_pipe_fd[0],
 					   &data,
 					   sizeof(struct bundle_adu)) <= 0) {
-				LOGF("AppAgent: read(): %s", strerror(errno));
+				LOGERROR("AppAgent", "read()", errno);
 				break;
 			}
 			if (send_bundle(config->socket_fd, data) < 0)
@@ -530,6 +521,7 @@ static void application_agent_comm_task(void *const param)
 		}
 	}
 
+	aap_parser_deinit(&parser);
 done:
 	close(config->bundle_pipe_fd[0]);
 	close(config->bundle_pipe_fd[1]);
@@ -537,6 +529,7 @@ pipe_creation_error:
 	deregister_sink(config);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
+	free(config);
 	LOG("AppAgent: Closed connection.");
 }
 
@@ -545,24 +538,37 @@ static int create_unix_domain_socket(const char *path)
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (sock == -1) {
-		LOGF("UNIX Domain Socket: Failed to create socket: %s",
-		     errno ? strerror(errno) : "<unknown>");
+		LOGERROR("AppAgent", "socket(AF_UNIX)", errno);
 		return -1;
 	}
 
 	struct sockaddr_un addr = {
 		.sun_family = AF_UNIX,
 	};
-	strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+	const int rv1 = snprintf(
+		addr.sun_path,
+		sizeof(addr.sun_path),
+		"%s",
+		path
+	);
+
+	if (rv1 <= 0 || (unsigned int)rv1 > sizeof(addr.sun_path)) {
+		LOGF(
+			"AppAgent: Invalid socket path, len = %d, maxlen = %zu",
+			rv1,
+			sizeof(addr.sun_path)
+		);
+		return -1;
+	}
 
 	unlink(path);
-	int ret = bind(sock,
-		       (const struct sockaddr *) &addr,
-		       sizeof(struct sockaddr_un));
-	if (ret == -1) {
-		LOGF("UNIX Domain Socket: Failed to bind to: %s: %s",
-		     addr.sun_path,
-		     errno ? strerror(errno) : "<unknown>");
+	int rv2 = bind(
+		sock,
+		(const struct sockaddr *)&addr,
+		sizeof(struct sockaddr_un)
+	);
+	if (rv2 == -1) {
+		LOGERROR("AppAgent", "bind(unix_domain_socket)", errno);
 		return -1;
 	}
 
@@ -573,7 +579,7 @@ struct application_agent_config *application_agent_setup(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const char *socket_path,
 	const char *node, const char *service,
-	const uint8_t bp_version, uint64_t lifetime)
+	const uint8_t bp_version, uint64_t lifetime_ms)
 {
 	struct application_agent_config *const config = malloc(
 		sizeof(struct application_agent_config)
@@ -610,19 +616,21 @@ struct application_agent_config *application_agent_setup(
 
 	config->bundle_agent_interface = bundle_agent_interface;
 	config->bp_version = bp_version;
-	config->lifetime = lifetime;
-	config->listener_task = hal_task_create(
+	config->lifetime_ms = lifetime_ms;
+
+	const enum ud3tn_result task_creation_result = hal_task_create(
 		application_agent_listener_task,
 		"app_listener_t",
 		APPLICATION_AGENT_TASK_PRIORITY,
 		config,
-		DEFAULT_TASK_STACK_SIZE,
-		(void *)APPLICATION_AGENT_LISTENER_TASK_TAG
+		DEFAULT_TASK_STACK_SIZE
 	);
-	if (!config->listener_task) {
+
+	if (task_creation_result != UD3TN_OK) {
 		LOG("AppAgent: Error creating listener task!");
 		free(config);
 		return NULL;
 	}
+
 	return config;
 }

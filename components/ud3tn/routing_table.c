@@ -144,11 +144,6 @@ bool routing_table_add_node(
 	struct node *cur_node;
 	struct contact_list *cap_modified = NULL, *cur_contact, *next;
 
-	if (!node_prepare_and_verify(new_node)) {
-		free_node(new_node);
-		return false;
-	}
-
 	entry = get_node_entry_by_eid(new_node->eid);
 
 	if (entry == NULL)
@@ -205,11 +200,6 @@ bool routing_table_replace_node(
 {
 	struct node_list *entry;
 
-	if (!node_prepare_and_verify(node)) {
-		free_node(node);
-		return false;
-	}
-
 	entry = get_node_entry_by_eid(node->eid);
 
 	if (entry == NULL)
@@ -250,11 +240,6 @@ bool routing_table_delete_node(
 	struct node *cur_node;
 	struct contact_list *modified = NULL, *deleted = NULL, *next, *tmp;
 
-	if (!node_prepare_and_verify(new_node)) {
-		free_node(new_node);
-		return false;
-	}
-
 	entry_ptr = get_node_entry_ptr_by_eid(new_node->eid);
 	if (entry_ptr != NULL) {
 		cur_node = (*entry_ptr)->node;
@@ -272,8 +257,9 @@ bool routing_table_delete_node(
 			remove_node_from_tables(cur_node, false, rescheduler);
 			cur_node->endpoints = endpoint_list_difference(
 				cur_node->endpoints, new_node->endpoints, 1);
+			new_node->endpoints = NULL; // free'd
 			cur_node->contacts = contact_list_difference(
-				cur_node->contacts, new_node->contacts, 1,
+				cur_node->contacts, new_node->contacts,
 				&modified, &deleted);
 			/* Process modified contacts */
 			while (modified != NULL) {
@@ -296,8 +282,7 @@ bool routing_table_delete_node(
 				}
 			}
 			add_node_to_tables(cur_node);
-			free(new_node->eid);
-			free(new_node);
+			free_node(new_node);
 		}
 		return true;
 	}
@@ -343,6 +328,9 @@ static void remove_node_from_tables(struct node *node, bool drop_contacts,
 	struct endpoint_list *cur_persistent_node, *cur_contact_node;
 
 	ASSERT(node != NULL);
+	if (!node)
+		return;
+
 	cur_slot = &node->contacts;
 	while (*cur_slot != NULL) {
 		struct contact_list *const cur_contact = *cur_slot;
@@ -385,6 +373,9 @@ static bool add_contact_to_node_in_htab(char *eid, struct contact *c)
 
 	ASSERT(eid != NULL);
 	ASSERT(c != NULL);
+	if (!eid || !c)
+		return false;
+
 	entry = (struct node_table_entry *)htab_get(&eid_table, eid);
 	if (entry == NULL) {
 		entry = malloc(sizeof(struct node_table_entry));
@@ -407,6 +398,9 @@ static bool remove_contact_from_node_in_htab(char *eid, struct contact *c)
 
 	ASSERT(eid != NULL);
 	ASSERT(c != NULL);
+	if (!eid || !c)
+		return false;
+
 	entry = (struct node_table_entry *)htab_get(&eid_table, eid);
 	if (entry == NULL)
 		return false;
@@ -437,7 +431,12 @@ void routing_table_delete_contact(struct contact *contact)
 	struct endpoint_list *cur_eid;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return;
 	ASSERT(contact->contact_bundles == NULL);
+	if (contact->contact_bundles != NULL)
+		return;
+
 	if (contact->node != NULL) {
 		remove_contact_from_node_in_htab(
 			contact->node->eid, contact);
@@ -470,6 +469,22 @@ void routing_table_contact_passed(
 	struct contact *contact, struct rescheduling_handle rescheduler)
 {
 	struct routed_bundle_list *tmp;
+	struct contact_list *clist = contact_list;
+	bool found = false;
+
+	if (contact == NULL)
+		return;
+	// Find contact in list -- if it has been already deleted, we must not
+	// access it.
+	while (clist != NULL) {
+		if (contact == clist->data) {
+			found = true;
+			break;
+		}
+		clist = clist->next;
+	}
+	if (!found)
+		return;
 
 	if (contact->node != NULL) {
 		while (contact->contact_bundles != NULL) {
@@ -478,7 +493,6 @@ void routing_table_contact_passed(
 				rescheduler.reschedule_func_context
 			);
 			tmp = contact->contact_bundles->next;
-			free(contact->contact_bundles->data);
 			free(contact->contact_bundles);
 			contact->contact_bundles = tmp;
 		}
@@ -494,12 +508,15 @@ static void reschedule_bundles(
 	struct bundle *b;
 
 	ASSERT(contact != NULL);
+	if (!contact)
+		return;
+
 	/* Empty the bundle list and queue them in for re-scheduling */
 	while (contact->contact_bundles != NULL) {
 		b = contact->contact_bundles->data;
 		router_remove_bundle_from_contact(contact, b);
 		rescheduler.reschedule_func(
-			contact->contact_bundles->data,
+			b,
 			rescheduler.reschedule_func_context
 		);
 	}

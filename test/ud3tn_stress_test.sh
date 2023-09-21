@@ -70,11 +70,11 @@ ip -netns $NS2 link set dev $VE2 up
 ip -netns $NS1 addr add "$IP1/24" dev $VE1
 ip -netns $NS2 addr add "$IP2/24" dev $VE2
 
-ip netns exec $NS1 sudo -u $RUNAS_USER stdbuf -oL "$WORK_DIR/build/posix/ud3tn" -c "mtcp:$IP1,4222" -e "dtn://ud3tn1.dtn/" -s "$SOCK_DIR/ud3tn1.socket" > "$SOCK_DIR/ud3tn1.log" &
+ip netns exec $NS1 sudo -u $RUNAS_USER "$WORK_DIR/build/posix/ud3tn" -c "mtcp:$IP1,4222" -e "dtn://ud3tn1.dtn/" -s "$SOCK_DIR/ud3tn1.socket" > "$SOCK_DIR/ud3tn1.log" &
 UD3TN_1=$!
-ip netns exec $NS2 sudo -u $RUNAS_USER stdbuf -oL "$WORK_DIR/build/posix/ud3tn" -c "mtcp:$IP2,4222" -e "dtn://ud3tn2.dtn/" -s "$SOCK_DIR/ud3tn2.socket" > "$SOCK_DIR/ud3tn2.log" &
+ip netns exec $NS2 sudo -u $RUNAS_USER "$WORK_DIR/build/posix/ud3tn" -c "mtcp:$IP2,4222" -e "dtn://ud3tn2.dtn/" -s "$SOCK_DIR/ud3tn2.socket" > "$SOCK_DIR/ud3tn2.log" &
 UD3TN_2=$!
-ip netns exec $NS1 sudo -u $RUNAS_USER stdbuf -oL "$WORK_DIR/build/posix/ud3tn" -c "mtcp:$IP1,4223" -e "dtn://ud3tn3.dtn/" -s "$SOCK_DIR/ud3tn3.socket" > "$SOCK_DIR/ud3tn3.log" &
+ip netns exec $NS1 sudo -u $RUNAS_USER "$WORK_DIR/build/posix/ud3tn" -c "mtcp:$IP1,4223" -e "dtn://ud3tn3.dtn/" -s "$SOCK_DIR/ud3tn3.socket" > "$SOCK_DIR/ud3tn3.log" &
 UD3TN_3=$!
 
 # Configure
