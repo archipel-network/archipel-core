@@ -65,6 +65,7 @@ struct aap2_agent_comm_config {
 	bool is_subscriber;
 	char *registered_eid;
 	char *secret;
+	int keepalive_timeout_ms;
 
 	// TODO: Move to common multiplexer/demux state in BP. For now, allow
 	// only one sender per ID.
@@ -157,6 +158,7 @@ static void aap2_agent_listener_task(void *const param)
 		child_config->is_subscriber = false;
 		child_config->registered_eid = NULL;
 		child_config->secret = NULL;
+		child_config->keepalive_timeout_ms = -1; // infinite
 
 		child_config->pb_istream = (pb_istream_t){
 			&pb_recv_callback,
@@ -348,6 +350,22 @@ static aap2_ResponseStatus process_configure_msg(
 	msg->endpoint_id = NULL; // take over freeing
 	config->secret = msg->secret;
 	msg->secret = NULL; // take over freeing
+
+	config->keepalive_timeout_ms = -1; // infinite by default
+	if (msg->keepalive_seconds != 0) {
+		if (msg->keepalive_seconds >= (INT32_MAX / 1000 / 2)) {
+			LOGF("AAP2Agent: Keepalive timeout of %d sec is too large, ignoring.",
+			     msg->keepalive_seconds);
+		} else {
+			config->keepalive_timeout_ms = (
+				msg->keepalive_seconds * 1000
+			);
+			// For active clients we wait for twice the specified
+			// timeout until we terminate the connection.
+			if (!msg->is_subscriber)
+				config->keepalive_timeout_ms *= 2;
+		}
+	}
 
 	config->is_subscriber = msg->is_subscriber;
 	if (config->is_subscriber)
@@ -719,6 +737,60 @@ static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
 	close(bundle_pipe_fd[1]);
 }
 
+static int send_keepalive(struct aap2_agent_comm_config *const config)
+{
+	aap2_AAPMessage msg = aap2_AAPMessage_init_default;
+
+	LOG("AAP2Agent: Sending Keepalive message to Client.");
+	msg.which_msg = aap2_AAPMessage_keepalive_tag;
+
+	const int socket_fd = config->socket_fd;
+	int send_result = send_message(
+		socket_fd,
+		aap2_AAPMessage_fields,
+		&msg
+	);
+
+	// NOTE: We do not "release" msg as there is nothing to deallocate here.
+
+	if (send_result < 0)
+		return send_result;
+
+	// Receive status from client.
+	aap2_AAPResponse response = aap2_AAPResponse_init_default;
+
+	if (!poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS)) {
+		LOG("AAP2Agent: Client did not respond, closing connection.");
+		send_result = -1;
+		goto done;
+	}
+
+	const bool success = pb_decode_ex(
+		&config->pb_istream,
+		aap2_AAPResponse_fields,
+		&response,
+		PB_DECODE_DELIMITED
+	);
+
+	if (!success) {
+		LOGF("AAP2Agent: Protobuf decode error: %s",
+		     PB_GET_ERROR(&config->pb_istream));
+		send_result = -1;
+		goto done;
+	}
+
+	if (response.response_status !=
+	    aap2_ResponseStatus_RESPONSE_STATUS_ACK) {
+		LOG("AAP2Agent: Keepalive not acknowledged, closing connection.");
+		send_result = -1;
+		goto done;
+	}
+
+done:
+	pb_release(aap2_AAPResponse_fields, &response);
+	return send_result;
+}
+
 static void aap2_agent_comm_task(void *const param)
 {
 	struct aap2_agent_comm_config *const config = (
@@ -753,8 +825,13 @@ static void aap2_agent_comm_task(void *const param)
 
 	for (;;) {
 		if (config->is_subscriber) {
-			// TODO: Timeout & send keepalive messages!
-			if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {
+			const int poll_result = poll(
+				pollfd,
+				ARRAY_LENGTH(pollfd),
+				config->keepalive_timeout_ms
+			);
+
+			if (poll_result == -1) {
 				const int err = errno;
 
 				LOGERROR("AAP2Agent", "poll()", err);
@@ -762,6 +839,11 @@ static void aap2_agent_comm_task(void *const param)
 				if (err == EINTR)
 					continue;
 				break;
+			}
+			if (poll_result == 0) {
+				if (send_keepalive(config) < 0)
+					break;
+				continue;
 			}
 			if ((pollfd[0].revents & POLLERR) ||
 			    (pollfd[1].revents & POLLERR)) {
@@ -780,8 +862,11 @@ static void aap2_agent_comm_task(void *const param)
 				if (send_bundle_from_pipe(config) < 0)
 					break;
 		} else {
-			if (!poll_recv_timeout(config->socket_fd, -1))
+			if (!poll_recv_timeout(config->socket_fd,
+					       config->keepalive_timeout_ms)) {
+				LOG("AAP2Agent: Client exceeded keepalive timeout, terminating.");
 				break;
+			}
 
 			bool success = pb_decode_ex(
 				&config->pb_istream,
