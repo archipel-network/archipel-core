@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 import os
+import time
 
 from ud3tn_utils.config import ConfigMessage, RouterCommand
 from pyd3tn.bundle7 import Bundle, CRCType
@@ -16,6 +17,14 @@ TCPSPP_PORT = 4223
 TCPCL_PORT = 4556
 SMTCP_PORT = 4222
 # MTCP_PORT = 4224
+
+AAP_USE_TCP = os.environ.get("AAP_USE_TCP", "0") == "1"
+AAP_SOCKET = os.environ.get(
+    "AAP_SOCKET",
+    ("localhost", 4242) if AAP_USE_TCP else "ud3tn.socket"
+)
+AAP_AGENT_ID = "testagent"
+TEST_AAP = os.environ.get("TEST_AAP", "1") == "1"
 
 UD3TN_EID = "dtn://ud3tn.dtn/"
 UD3TN_CONFIG_EP = UD3TN_EID + "config"
@@ -75,3 +84,6 @@ def send_delete_gs(conn, serialize_func, gs_iterable):
                 type=RouterCommand.DELETE,
             ))
         ))
+    # Wait for uD3TN to properly process the deletion request to make sure
+    # it is not processed after the next test's configuration is received.
+    time.sleep(1)

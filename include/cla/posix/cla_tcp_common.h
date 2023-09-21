@@ -30,9 +30,6 @@ struct cla_tcp_config {
 
 	/* The handle for the passive or active socket */
 	int socket;
-
-	/* Task handle for the listener - required to support concurrent CLAs */
-	Task_t listen_task;
 };
 
 struct cla_tcp_single_config {

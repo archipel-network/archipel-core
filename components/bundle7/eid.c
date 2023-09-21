@@ -139,7 +139,7 @@ CborError eid_parse_dtn(CborValue *it, char **eid)
 		return err;
 
 	// Remaining bytes are not sufficient
-	if ((size_t) (it->parser->end - it->ptr) < length)
+	if ((size_t) (it->parser->source.end - it->source.ptr) < length)
 		return CborErrorUnexpectedEOF;
 
 	// The number of bytes written to the buffer will be written to the
@@ -158,6 +158,9 @@ CborError eid_parse_dtn(CborValue *it, char **eid)
 	err = cbor_value_copy_text_string(it, *eid + 4, &length, it);
 	if (err) {
 		free(*eid);
+		// Ensure that the pointer is not used afterwards.
+		// Otherwise a parser reset might try to double-free it.
+		*eid = NULL;
 		return err;
 	}
 

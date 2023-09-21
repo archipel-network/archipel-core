@@ -22,7 +22,6 @@
 #include "ud3tn/config.h"
 #include "ud3tn/parser.h"
 #include "ud3tn/result.h"
-#include "ud3tn/task_tags.h"
 
 #include <sys/socket.h>
 
@@ -78,25 +77,19 @@ static void tcpspp_link_creation_task(void *param)
 		&tcpspp_config->base,
 		sizeof(struct cla_tcp_link)
 	);
+
 	ASSERT(0);
 }
 
 static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
 {
-	struct tcpspp_config *tcpspp_config = (struct tcpspp_config *)config;
-
-	tcpspp_config->base.base.listen_task = hal_task_create(
+	return hal_task_create(
 		tcpspp_link_creation_task,
 		"spp_listen_t",
 		CONTACT_LISTEN_TASK_PRIORITY,
 		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE,
-		(void *)CLA_SPECIFIC_TASK_TAG
+		CONTACT_LISTEN_TASK_STACK_SIZE
 	);
-
-	if (!tcpspp_config->base.base.listen_task)
-		return UD3TN_FAIL;
-	return UD3TN_OK;
 }
 
 static const char *tcpspp_get_name(void)
@@ -323,10 +316,6 @@ static void tcpspp_begin_packet(struct cla_link *link, size_t length, char *cla_
 	struct tcpspp_config *const tcpspp_config_ =
 		(struct tcpspp_config *)link->config;
 
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
-
 	if (CLA_TCPSPP_USE_CRC)
 		length += 2;
 
@@ -375,10 +364,6 @@ static void tcpspp_end_packet(struct cla_link *link)
 	struct tcpspp_config *tcpspp_config_ =
 		(struct tcpspp_config *)link->config;
 
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
-
 	if (CLA_TCPSPP_USE_CRC) {
 		tcpspp_config_->crc16.feed_eof(&tcpspp_config_->crc16);
 		const uint8_t *crc16 = tcpspp_config_->crc16.bytes;
@@ -399,10 +384,6 @@ static void tcpspp_send_packet_data(
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 	struct tcpspp_config *tcpspp_config_
 		= (struct tcpspp_config *)link->config;
-
-	// A previous operation may have canceled the sending process.
-	if (!link->active)
-		return;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
 		LOG("tcpspp: Error during sending. Data discarded.");

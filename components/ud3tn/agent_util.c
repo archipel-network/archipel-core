@@ -15,8 +15,8 @@
 
 struct bundle *agent_create_bundle(const uint8_t bp_version,
 	const char *local_eid, char *sink_id, char *destination,
-	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
-	const uint64_t lifetime, void *payload, size_t payload_length,
+	const uint64_t creation_timestamp_ms, const uint64_t sequence_number,
+	const uint64_t lifetime_ms, void *payload, size_t payload_length,
 	enum bundle_proc_flags flags)
 {
 	const size_t local_eid_length = strlen(local_eid);
@@ -28,11 +28,15 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 		return NULL;
 	}
 
-	memcpy(source_eid, local_eid, local_eid_length);
+	memcpy(source_eid, local_eid, local_eid_length + 1); // include '\0'
 	if (get_eid_scheme(source_eid) == EID_SCHEME_IPN) {
 		char *const dot = strchr(source_eid, '.');
 
-		ASSERT(dot != NULL);
+		if (!dot) {
+			free(source_eid);
+			free(payload);
+			return NULL;
+		}
 		memcpy(&dot[1], sink_id, sink_length + 1);
 	} else {
 		memcpy(&source_eid[local_eid_length],
@@ -44,13 +48,13 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 	if (bp_version == 6)
 		result = bundle6_create_local(
 			payload, payload_length, source_eid, destination,
-			creation_timestamp_s, sequence_number,
-			lifetime, flags);
+			creation_timestamp_ms, sequence_number,
+			lifetime_ms, flags);
 	else
 		result = bundle7_create_local(
 			payload, payload_length, source_eid, destination,
-			creation_timestamp_s, sequence_number,
-			lifetime, flags);
+			creation_timestamp_ms, sequence_number,
+			lifetime_ms, flags);
 
 	free(source_eid);
 
@@ -60,8 +64,8 @@ struct bundle *agent_create_bundle(const uint8_t bp_version,
 struct bundle *agent_create_forward_bundle(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const uint8_t bp_version, char *sink_id, char *destination,
-	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
-	const uint64_t lifetime, void *payload, size_t payload_length,
+	const uint64_t creation_timestamp_ms, const uint64_t sequence_number,
+	const uint64_t lifetime_ms, void *payload, size_t payload_length,
 	enum bundle_proc_flags flags)
 {
 	struct bundle *bundle = agent_create_bundle(
@@ -69,9 +73,9 @@ struct bundle *agent_create_forward_bundle(
 		bundle_agent_interface->local_eid,
 		sink_id,
 		destination,
-		creation_timestamp_s,
+		creation_timestamp_ms,
 		sequence_number,
-		lifetime,
+		lifetime_ms,
 		payload,
 		payload_length,
 		flags
@@ -91,4 +95,36 @@ struct bundle *agent_create_forward_bundle(
 	);
 
 	return bundle;
+}
+
+struct bundle *agent_create_forward_bundle_direct(
+	const struct bp_context *bundle_processor_context,
+	const char *local_eid,
+	const uint8_t bp_version, char *sink_id, char *destination,
+	const uint64_t creation_timestamp_s, const uint64_t sequence_number,
+	const uint64_t lifetime, void *payload, size_t payload_length,
+	enum bundle_proc_flags flags)
+{
+	struct bundle *bundle = agent_create_bundle(
+		bp_version,
+		local_eid,
+		sink_id,
+		destination,
+		creation_timestamp_s,
+		sequence_number,
+		lifetime,
+		payload,
+		payload_length,
+		flags
+	);
+
+	if (!bundle)
+		return NULL;
+
+	const enum ud3tn_result dispatch_res = bundle_processor_bundle_dispatch(
+		(void *)bundle_processor_context,
+		bundle
+	);
+
+	return dispatch_res == UD3TN_OK ? bundle : NULL;
 }

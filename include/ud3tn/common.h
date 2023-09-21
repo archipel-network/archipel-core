@@ -57,9 +57,9 @@ while (list != NULL) { \
 #define ARRAY_SIZE ARRAY_LENGTH
 
 #if defined(__GNUC__) && (__GNUC__ >= 7) && !defined(__clang__)
-#define fallthrough __attribute__ ((fallthrough))
+#define fallthrough_ok __attribute__ ((fallthrough))
 #else
-#define fallthrough
+#define fallthrough_ok
 #endif
 
 /* ASSERT */
@@ -72,16 +72,7 @@ while (list != NULL) { \
 
 #else /* DEBUG */
 
-// FIXME: A lot of cases are reported by clang-tidy in which an assertion may
-// not be met, resulting in invalid pointers. Before they are fixed, this has
-// to stay a check for all builds to ensure a reliable abort() if an
-// assertion cannot be met.
-
-// #define ASSERT(value) ((void)(value))
-
-#include <assert.h>
-
-#define ASSERT(value) assert(value)
+#define ASSERT(value) ((void)(value))
 
 #endif /* DEBUG */
 

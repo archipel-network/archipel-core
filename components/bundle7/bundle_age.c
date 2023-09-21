@@ -9,6 +9,9 @@ bool bundle_age_parse(uint64_t *bundle_age, const uint8_t *buffer,
 	CborParser parser;
 	CborValue it;
 
+	if (buffer == NULL)
+		return false;
+
 	if (cbor_parser_init(buffer, length, 0, &parser, &it) ||
 	    !cbor_value_is_unsigned_integer(&it))
 		return false;

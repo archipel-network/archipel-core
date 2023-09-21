@@ -6,7 +6,7 @@
 #include "platform/hal_platform.h"
 #include "platform/hal_task.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +42,7 @@ int main(void)
 
 	init(1, argv);
 
-	hal_task_create(test_task, "test_task", 0, NULL, 0, NULL);
+	hal_task_create(test_task, "test_task", 0, NULL, 0);
 
 	return start_os();
 }

@@ -15,13 +15,6 @@
 #define DTN_TIMESTAMP_OFFSET 946684800
 
 /**
- * @brief hal_TimeInit Initialize the clock of the underlying system with the
- *		       given initialTimestamp
- * @param initialTimestamp The current time (in seconds)
- */
-void hal_time_init(const uint64_t initial_timestamp);
-
-/**
  * @brief hal_time_get_timestamp_s Provides information about the current time
  * @return The current time in seconds
  */
@@ -47,10 +40,9 @@ uint64_t hal_time_get_timestamp_us(void);
 uint64_t hal_time_get_system_time(void);
 
 /**
- * @brief hal_time_get_log_time_string Generate the system time as human-
- *				       readable c-string
- * @return the human-readable string
+ * @brief hal_time_print_log_time_string Print the system time via hal_io as
+ *					 human-readable C-string.
  */
-char *hal_time_get_log_time_string(void);
+void hal_time_print_log_time_string(void);
 
 #endif /* HAL_TIME_H_INCLUDED */

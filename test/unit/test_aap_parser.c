@@ -4,7 +4,7 @@
 
 #include "ud3tn/common.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -173,8 +173,11 @@ TEST(aap_parser, parse_sendbundle_message)
 	TEST_ASSERT(parser.message.eid[7] == '\0');
 	TEST_ASSERT_EQUAL_STRING("ipn:1.0", parser.message.eid);
 	TEST_ASSERT_EQUAL(7, parser.message.payload_length);
-	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", parser.message.payload,
-				 parser.message.payload_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		"PAYLOAD",
+		parser.message.payload,
+		parser.message.payload_length
+	);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 
 	const size_t msg_size_without_payload = 18;
@@ -203,9 +206,11 @@ TEST(aap_parser, parse_sendbundle_message)
 	TEST_ASSERT(parser.message.eid[7] == '\0');
 	TEST_ASSERT_EQUAL_STRING("ipn:1.0", parser.message.eid);
 	TEST_ASSERT_EQUAL(payload_size, parser.message.payload_length);
-	TEST_ASSERT_EQUAL_MEMORY(msg_sendbundle_big + msg_size_without_payload,
-				 parser.message.payload,
-				 parser.message.payload_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		msg_sendbundle_big + msg_size_without_payload,
+		parser.message.payload,
+		parser.message.payload_length
+	);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 
 	uint8_t msg_sendbundle_huge[] = {
@@ -237,8 +242,11 @@ TEST(aap_parser, parse_recvbundle_message)
 	TEST_ASSERT(parser.message.eid[7] == '\0');
 	TEST_ASSERT_EQUAL_STRING("ipn:1.0", parser.message.eid);
 	TEST_ASSERT_EQUAL(7, parser.message.payload_length);
-	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", parser.message.payload,
-				 parser.message.payload_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		"PAYLOAD",
+		parser.message.payload,
+		parser.message.payload_length
+	);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 }
 
@@ -311,8 +319,11 @@ TEST(aap_parser, parse_welcome_message)
 	TEST_ASSERT_EQUAL(AAP_MESSAGE_WELCOME, parser.message.type);
 	TEST_ASSERT_EQUAL(10, parser.message.eid_length);
 	TEST_ASSERT_NOT_NULL(parser.message.eid);
-	TEST_ASSERT_EQUAL_MEMORY("dtn://A42\0\0", parser.message.eid,
-				 parser.message.eid_length + 1);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		"dtn://A42\0\0",
+		parser.message.eid,
+		parser.message.eid_length + 1
+	);
 	TEST_ASSERT_NULL(parser.message.payload);
 	// The message should be parsed successfully, but is invalid for uD3TN.
 	TEST_ASSERT(!aap_message_is_valid(&parser.message));
@@ -419,8 +430,11 @@ TEST(aap_parser, parse_chunked_message)
 	TEST_ASSERT(parser.message.eid[7] == '\0');
 	TEST_ASSERT_EQUAL_STRING("ipn:1.0", parser.message.eid);
 	TEST_ASSERT_EQUAL(7, parser.message.payload_length);
-	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", parser.message.payload,
-				 parser.message.payload_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		"PAYLOAD",
+		parser.message.payload,
+		parser.message.payload_length
+	);
 	TEST_ASSERT(aap_message_is_valid(&parser.message));
 }
 
@@ -484,8 +498,11 @@ TEST(aap_parser, extract_message)
 	TEST_ASSERT(msg_extracted.eid[7] == '\0');
 	TEST_ASSERT_EQUAL_STRING("ipn:1.0", msg_extracted.eid);
 	TEST_ASSERT_EQUAL(7, msg_extracted.payload_length);
-	TEST_ASSERT_EQUAL_MEMORY("PAYLOAD", msg_extracted.payload,
-				 msg_extracted.payload_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		"PAYLOAD",
+		msg_extracted.payload,
+		msg_extracted.payload_length
+	);
 	TEST_ASSERT(aap_message_is_valid(&msg_extracted));
 	aap_message_clear(&msg_extracted);
 }

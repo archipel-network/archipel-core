@@ -11,6 +11,10 @@ enum parser_status {
 };
 
 enum parser_flags {
+	// Force enum type to be signed, such that var &= ~FLAG
+	// does not result in a signed to unsigned conversion.
+	PARSER_FLAG_INVALID = -1,
+
 	PARSER_FLAG_NONE = 0x00,
 	PARSER_FLAG_BULK_READ = 0x01,
 

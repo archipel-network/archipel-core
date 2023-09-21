@@ -13,16 +13,19 @@ set -o errexit
 # This assumes you are running the command from within the "ud3tn" directory.
 UD3TN_DIR="$(pwd)"
 
-# Compile uD3TN and create Python venv
-make
-make virtualenv || true
-source .venv/bin/activate
-
 exit_handler() {
     cd "$UD3TN_DIR"
 
-    echo "Terminating uD3TN..."
-    kill -KILL $(ps ax | grep ud3tn | grep -v grep | tr -s ' ' | sed 's/^ *//g' | cut -d ' ' -f 1) &> /dev/null || true
+    kill -TERM $UD3TN1_PID
+    kill -TERM $UD3TN2_PID
+    kill -TERM $UD3TN3_PID
+    kill -TERM $UD3TN4_PID
+    echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+    wait $UD3TN1_PID
+    wait $UD3TN2_PID
+    wait $UD3TN3_PID
+    wait $UD3TN4_PID
+
     sleep 1
     echo ">>> LOWER1 LOGFILE"
     cat "/tmp/lower1.log" || true
@@ -38,21 +41,28 @@ exit_handler() {
     echo
 }
 
-trap exit_handler EXIT
-
 rm -f /tmp/*.log
 
 # Start first uD3TN instance (lower1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e "dtn://lower1.dtn/" -c "mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e "dtn://lower1.dtn/" -c "mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
+UD3TN1_PID=$!
 sleep 1
+
 # Start second uD3TN instance (upper1)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e "dtn://upper1.dtn/" -c "bibe:," > /tmp/upper1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e "dtn://upper1.dtn/" -c "bibe:," > /tmp/upper1.log 2>&1 &
+UD3TN2_PID=$!
 sleep 1
+
 # Start third uD3TN instance (lower2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e "dtn://lower2.dtn/" -c "mtcp:127.0.0.1,4225" > /tmp/lower2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e "dtn://lower2.dtn/" -c "mtcp:127.0.0.1,4225" > /tmp/lower2.log 2>&1 &
+UD3TN3_PID=$!
 sleep 1
+
 # Start fourth uD3TN instance (upper2)
-stdbuf -oL "$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e "dtn://upper2.dtn/" -c "bibe:," > /tmp/upper2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e "dtn://upper2.dtn/" -c "bibe:," > /tmp/upper2.log 2>&1 &
+UD3TN4_PID=$!
+
+trap exit_handler EXIT
 
 # Configure contacts
 sleep 3
@@ -65,7 +75,7 @@ sleep 3
 
 # Send a BIBE bundle to upper2
 PAYLOAD="THISISTHEBUNDLEPAYLOAD"
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --tcp localhost 4245 -a bundlesink --count 1 --verify-pl "$PAYLOAD" &
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --tcp localhost 4245 -a bundlesink --count 1 --verify-pl "$PAYLOAD" --newline -vv &
 sleep 1
 python "$UD3TN_DIR/tools/cla/bibe_over_mtcp_test.py" -l localhost -p 4224 --payload "$PAYLOAD" -i "dtn://upper2.dtn/bundlesink" -o "dtn://lower1.dtn/" &
 sleep 1

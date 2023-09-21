@@ -2,6 +2,7 @@
 #ifndef CONTACTMANAGER_H_INCLUDED
 #define CONTACTMANAGER_H_INCLUDED
 
+#include "ud3tn/common.h"
 #include "ud3tn/node.h"
 
 #include "platform/hal_types.h"
@@ -9,6 +10,7 @@
 #include <stdint.h>
 
 struct contact_manager_params {
+	enum ud3tn_result task_creation_result;
 	Semaphore_t semaphore;
 	QueueIdentifier_t control_queue;
 };

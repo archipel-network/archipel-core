@@ -5,12 +5,9 @@
 #include "ud3tn/common.h"
 #include "ud3tn/init.h"
 #include "ud3tn/router.h"
-#include "ud3tn/task_tags.h"
 
 #include "agents/application_agent.h"
-#include "agents/config_agent.h"
 #include "agents/echo_agent.h"
-#include "agents/management_agent.h"
 
 #include "cla/cla.h"
 
@@ -25,6 +22,9 @@
 #include <string.h>
 
 static struct bundle_agent_interface bundle_agent_interface;
+
+// Reference kept for program runtime
+static struct application_agent_config *aa_cfg;
 
 void init(int argc, char *argv[])
 {
@@ -60,60 +60,49 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_agent_interface.bundle_signaling_queue
 			= hal_queue_create(BUNDLE_QUEUE_LENGTH,
 				sizeof(struct bundle_processor_signal));
-	ASSERT(bundle_agent_interface.bundle_signaling_queue != NULL);
+	if (!bundle_agent_interface.bundle_signaling_queue) {
+		LOG("INIT: Allocation of `bundle_signaling_queue` failed");
+		exit(EXIT_FAILURE);
+	}
 
 	struct bundle_processor_task_parameters *bundle_processor_task_params
 		= malloc(sizeof(struct bundle_processor_task_parameters));
 
-	ASSERT(bundle_processor_task_params != NULL);
+	if (!bundle_processor_task_params) {
+		LOG("INIT: Allocation of `bundle_processor_task_params` failed");
+		exit(EXIT_FAILURE);
+	}
 	bundle_processor_task_params->signaling_queue =
 			bundle_agent_interface.bundle_signaling_queue;
 	bundle_processor_task_params->local_eid =
 			bundle_agent_interface.local_eid;
 	bundle_processor_task_params->status_reporting =
 			opt->status_reporting;
+	bundle_processor_task_params->allow_remote_configuration =
+			opt->allow_remote_configuration;
 
-	Task_t task_result = hal_task_create(
+	// NOTE: Must be called before launching the BP which calls the function
+	// to register agents from its thread.
+	agent_manager_init(bundle_agent_interface.local_eid);
+
+	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
 		"bundl_proc_t",
 		BUNDLE_PROCESSOR_TASK_PRIORITY,
 		bundle_processor_task_params,
-		DEFAULT_TASK_STACK_SIZE,
-		(void *)BUNDLE_PROCESSOR_TASK_TAG
+		DEFAULT_TASK_STACK_SIZE
 	);
-	if (!task_result) {
+
+	if (bp_task_result != UD3TN_OK) {
 		LOG("INIT: Bundle processor task could not be started!");
 		exit(EXIT_FAILURE);
 	}
 
-	agent_manager_init(bundle_agent_interface.local_eid);
-
-	int result;
-
-	result = config_agent_setup(
-		bundle_agent_interface.bundle_signaling_queue,
-		bundle_agent_interface.local_eid,
-		opt->allow_remote_configuration
-	);
-	if (result) {
-		LOG("INIT: Config agent could not be initialized!");
-		exit(EXIT_FAILURE);
-	}
-
-	result = management_agent_setup(
-		bundle_agent_interface.bundle_signaling_queue,
-		bundle_agent_interface.local_eid,
-		opt->allow_remote_configuration
-	);
-	if (result) {
-		LOG("INIT: Management agent could not be initialized!");
-		exit(EXIT_FAILURE);
-	}
-
-	result = echo_agent_setup(
+	int result = echo_agent_setup(
 		&bundle_agent_interface,
-		opt->lifetime
+		opt->lifetime_s * 1000
 	);
+
 	if (result) {
 		LOG("INIT: Echo agent could not be initialized!");
 		exit(EXIT_FAILURE);
@@ -122,13 +111,13 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	if (opt->allow_remote_configuration)
 		LOG("!! WARNING !! Remote configuration capability ENABLED!");
 
-	const struct application_agent_config *aa_cfg = application_agent_setup(
+	aa_cfg = application_agent_setup(
 		&bundle_agent_interface,
 		opt->aap_socket,
 		opt->aap_node,
 		opt->aap_service,
 		opt->bundle_version,
-		opt->lifetime
+		opt->lifetime_s * 1000
 	);
 
 	if (!aa_cfg) {
@@ -150,6 +139,5 @@ int start_os(void)
 	hal_task_start_scheduler();
 	/* Should never get here! */
 	ASSERT(0);
-	hal_platform_restart();
 	__builtin_unreachable();
 }

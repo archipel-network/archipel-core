@@ -156,7 +156,7 @@ struct bundle *bundle7_generate_status_report(
 	const struct bundle * const bundle,
 	const struct bundle_status_report *prototype,
 	const char *source,
-	const uint64_t timestamp_s)
+	const uint64_t timestamp_ms)
 {
 	uint8_t *payload;
 	CborEncoder container, record, report, status_info;
@@ -235,20 +235,17 @@ struct bundle *bundle7_generate_status_report(
 	}
 
 	// Lifetime
-	const int64_t lifetime_seconds = (
-		(int64_t)bundle_get_expiration_time_s(bundle, timestamp_s) -
-		timestamp_s
-	);
+	const uint64_t exp_time_ms = bundle_get_expiration_time_ms(bundle);
 
-	if (lifetime_seconds < 0) {
+	if (exp_time_ms <= timestamp_ms) {
 		free(compress);
 		return NULL;
 	}
 
 	return bundle7_create_local(
 		compress, written, source, bundle->report_to,
-		timestamp_s, 1,
-		lifetime_seconds, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
+		timestamp_ms, 1,
+		exp_time_ms - timestamp_ms, BUNDLE_FLAG_ADMINISTRATIVE_RECORD);
 }
 
 
@@ -256,7 +253,7 @@ struct bundle_list *bundle7_generate_custody_signal(
 	const struct bundle * const bundle,
 	const struct bundle_custody_signal *signal,
 	const char *source,
-	const uint64_t timestamp_s)
+	const uint64_t timestamp_ms)
 {
 	(void)bundle;
 	(void)signal;

@@ -6,10 +6,11 @@
 
 #include "ud3tn/common.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define EXPECTED_HEADER_LENGTH 31
@@ -35,8 +36,7 @@ TEST(bibe_header_encoder, get_encoded_size)
 
 	hdr = bibe_encode_header("dtn://ud3tn.dtn", 90);
 
-	TEST_ASSERT_EQUAL(EXPECTED_HEADER_LENGTH,
-				  hdr.hdr_len);
+	TEST_ASSERT_EQUAL(EXPECTED_HEADER_LENGTH, hdr.hdr_len);
 
 	free(hdr.data);
 }
@@ -47,7 +47,7 @@ TEST(bibe_header_encoder, encode_header)
 
 	hdr = bibe_encode_header("dtn://ud3tn.dtn", 90);
 
-	TEST_ASSERT_EQUAL_MEMORY(
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
 		valid_header_bytes,
 		hdr.data,
 		EXPECTED_HEADER_LENGTH

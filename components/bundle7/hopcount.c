@@ -11,6 +11,9 @@ bool bundle7_hop_count_parse(struct bundle_hop_count *hop_count,
 	CborError err;
 	uint64_t number;
 
+	if (buffer == NULL)
+		return false;
+
 	err = cbor_parser_init(buffer, length, 0, &parser, &it);
 	if (err || !cbor_value_is_array(&it))
 		return false;

@@ -39,7 +39,7 @@ enum config_parser_stage {
 
 struct config_parser {
 	struct parser *basedata;
-	void (*send_callback)(struct router_command *, void *);
+	void (*send_callback)(void *, struct router_command *);
 	void *send_param;
 	enum config_parser_stage stage;
 	struct router_command *router_command;
@@ -51,7 +51,7 @@ struct config_parser {
 
 struct parser *config_parser_init(
 	struct config_parser *parser,
-	void (*send_callback)(struct router_command *, void *), void *param);
+	void (*send_callback)(void *, struct router_command *), void *param);
 size_t config_parser_read(struct config_parser *parser,
 	const uint8_t *buffer, size_t length);
 enum ud3tn_result config_parser_reset(struct config_parser *parser);

@@ -4,7 +4,9 @@
 #include "ud3tn/config.h"
 #include "ud3tn/common.h"
 
+#include <inttypes.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -149,6 +151,41 @@ fail:
 	return NULL;
 }
 
+static inline size_t decimal_digits(uint64_t number)
+{
+	size_t digits = 0;
+
+	if (number == 0)
+		return 1;
+	while (number != 0) {
+		digits++;
+		number /= 10;
+	}
+	return digits;
+}
+
+static char *bundle6_create_eid_cbhe(const struct bundle6_eid_reference ref)
+{
+	if (ref.scheme_offset == 0 || ref.ssp_offset == 0)
+		return strdup("dtn:none");
+
+	// "ipn:" + nodenum + "." + servicenum + "\0"
+	const size_t length = 4
+			+ decimal_digits(ref.scheme_offset)
+			+ 1
+			+ decimal_digits(ref.ssp_offset)
+			+ 1;
+	char *const eid = malloc(length);
+
+	if (eid == NULL)
+		return NULL;
+
+	snprintf(eid, length, "ipn:%"PRIu64".%"PRIu64,
+		 ref.scheme_offset, ref.ssp_offset);
+
+	return eid;
+}
+
 static bool bundle_is_valid(struct bundle *const bundle)
 {
 	return bundle->payload_block != NULL;
@@ -216,8 +253,44 @@ static inline void bundle6_parser_next(struct bundle6_parser *state)
 		break;
 	case PARSER_STAGE_DICTIONARY:
 		state->current_index = 0;
+		// CBHE (RFC 6260)
 		if (state->dict_length == 0) {
-			state->basedata->status = PARSER_STATUS_ERROR;
+			state->bundle->source = bundle6_create_eid_cbhe(
+				state->source_eidref
+			);
+			// destination
+			state->bundle->destination = bundle6_create_eid_cbhe(
+				state->destination_eidref
+			);
+			// report-to
+			state->bundle->report_to = bundle6_create_eid_cbhe(
+				state->report_to_eidref
+			);
+			// custodian
+			state->bundle->current_custodian =
+				bundle6_create_eid_cbhe(
+					state->custodian_eidref
+				);
+
+			if (state->bundle->source == NULL ||
+					state->bundle->destination == NULL ||
+					state->bundle->report_to == NULL ||
+					state->bundle->current_custodian == NULL
+			) {
+				state->basedata->status = PARSER_STATUS_ERROR;
+				break;
+			}
+
+			// CBHE = no dict -> skip through!
+			if (bundle_is_fragmented(state->bundle)) {
+				state->next_stage =
+					PARSER_STAGE_FRAGMENT_OFFSET;
+			} else {
+				state->next_stage =
+					PARSER_STAGE_BLOCK_TYPE;
+				// see PARSER_STAGE_BLOCK_TYPE
+				state->current_block = PARSER_BLOCK_GENERIC;
+			}
 			break;
 		}
 		state->cur_bytes_remaining = state->dict_length;
@@ -327,7 +400,8 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 			state->error = PARSER_ERROR_BLOCK_LENGTH_EXHAUSTED;
 			return;
 		}
-		state->primary_bytes_remaining--;
+		if (state->primary_bytes_remaining != 0)
+			state->primary_bytes_remaining--;
 	}
 
 	switch (state->current_stage) {
@@ -349,49 +423,49 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 				state, PARSER_STAGE_DESTINATION_EID_SCHEME);
 		break;
 	case PARSER_STAGE_DESTINATION_EID_SCHEME:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->destination_eidref.scheme_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_DESTINATION_EID_SSP);
 		break;
 	case PARSER_STAGE_DESTINATION_EID_SSP:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->destination_eidref.ssp_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_SOURCE_EID_SCHEME);
 		break;
 	case PARSER_STAGE_SOURCE_EID_SCHEME:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->source_eidref.scheme_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_SOURCE_EID_SSP);
 		break;
 	case PARSER_STAGE_SOURCE_EID_SSP:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->source_eidref.ssp_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_REPORT_EID_SCHEME);
 		break;
 	case PARSER_STAGE_REPORT_EID_SCHEME:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->report_to_eidref.scheme_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_REPORT_EID_SSP);
 		break;
 	case PARSER_STAGE_REPORT_EID_SSP:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->report_to_eidref.ssp_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_CUSTODIAN_EID_SCHEME);
 		break;
 	case PARSER_STAGE_CUSTODIAN_EID_SCHEME:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->custodian_eidref.scheme_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_CUSTODIAN_EID_SSP);
 		break;
 	case PARSER_STAGE_CUSTODIAN_EID_SSP:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->custodian_eidref.ssp_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_TIMESTAMP);
@@ -523,13 +597,13 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 		}
 		break;
 	case PARSER_STAGE_BLOCK_EID_REF_SCH:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->cur_eidref.scheme_offset, byte);
 		bundle6_parser_wait_for_sdnv(
 			state, PARSER_STAGE_BLOCK_EID_REF_SSP);
 		break;
 	case PARSER_STAGE_BLOCK_EID_REF_SSP:
-		sdnv_read_u16(&state->sdnv_state,
+		sdnv_read_u64(&state->sdnv_state,
 			      &state->cur_eidref.ssp_offset, byte);
 		if (bundle6_parser_wait_for_sdnv(
 				state, PARSER_STAGE_BLOCK_EID_REF_SCH)) {
@@ -540,9 +614,18 @@ static void bundle6_parser_read_byte(struct bundle6_parser *state,
 				break;
 			}
 
-			entry->eid = bundle6_read_eid(
-				state->dict, state->dict_length,
-				state->cur_eidref);
+			if (state->dict_length == 0) {
+				// CBHE
+				entry->eid = bundle6_create_eid_cbhe(
+					state->cur_eidref
+				);
+			} else {
+				// read from dict
+				entry->eid = bundle6_read_eid(
+					state->dict, state->dict_length,
+					state->cur_eidref);
+			}
+
 			entry->next = (*state->current_block_entry)
 				->data->eid_refs;
 			(*state->current_block_entry)

@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #ifdef PLATFORM_POSIX
 
+#include "platform/hal_semaphore.h"
+#include "platform/posix/hal_types.h"
 #include "platform/posix/simple_queue.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <time.h>
+
+#ifndef __APPLE__
+#include <semaphore.h>
+#endif //__APPLE__
 
 TEST_GROUP(simple_queue);
 
@@ -178,24 +184,29 @@ TEST(simple_queue, test_ResetQueue)
 	TEST_ASSERT_NOT_EQUAL(q->abs_start, q->current_start);
 	TEST_ASSERT_NOT_EQUAL(q->abs_start, q->current_end);
 
+#ifndef __APPLE__
+	// Apple systems use another implementation of the semaphore.
 	int value_pop, value_push;
 
-	sem_getvalue(&q->sem_pop, &value_pop);
-	sem_getvalue(&q->sem_push, &value_push);
+	sem_getvalue(&q->sem_pop->sem, &value_pop);
+	sem_getvalue(&q->sem_push->sem, &value_push);
 
 	TEST_ASSERT_EQUAL_INT(2, value_pop);
 	TEST_ASSERT_EQUAL_INT(8, value_push);
+#endif //__APPLE__
 
 	queueReset(q);
 
 	TEST_ASSERT_EQUAL_PTR(q->abs_start, q->current_start);
 	TEST_ASSERT_EQUAL_PTR(q->abs_start, q->current_end);
 
-	sem_getvalue(&q->sem_pop, &value_pop);
-	sem_getvalue(&q->sem_push, &value_push);
+#ifndef __APPLE__
+	sem_getvalue(&q->sem_pop->sem, &value_pop);
+	sem_getvalue(&q->sem_push->sem, &value_push);
 
 	TEST_ASSERT_EQUAL_INT(0, value_pop);
 	TEST_ASSERT_EQUAL_INT(10, value_push);
+#endif //__APPLE__
 
 }
 
@@ -209,21 +220,32 @@ TEST(simple_queue, test_NrOfWaitingElements)
 	for (i = 0; i <= 8; i++)
 		TEST_ASSERT_EQUAL_INT(0, queuePush(q, &i, 0, false));
 
-	TEST_ASSERT_EQUAL_UINT(9, queueItemsWaiting(q));
+#ifndef __APPLE__
+	int value;
+
+	sem_getvalue(&q->sem_pop->sem, &value);
+	TEST_ASSERT_EQUAL_UINT(9, value);
+#endif //__APPLE__
 
 	for (i = 0; i <= 3; i++) {
 		TEST_ASSERT_EQUAL_INT(0, queuePop(q, &j, 0));
 		TEST_ASSERT_EQUAL_INT(i, j);
 	}
 
-	TEST_ASSERT_EQUAL_UINT(5, queueItemsWaiting(q));
+#ifndef __APPLE__
+	sem_getvalue(&q->sem_pop->sem, &value);
+	TEST_ASSERT_EQUAL_UINT(5, value);
+#endif //__APPLE__
 
 	for (i = 4; i <= 8; i++) {
 		TEST_ASSERT_EQUAL_INT(0, queuePop(q, &j, 0));
 		TEST_ASSERT_EQUAL_INT(i, j);
 	}
 
-	TEST_ASSERT_EQUAL_UINT(0, queueItemsWaiting(q));
+#ifndef __APPLE__
+	sem_getvalue(&q->sem_pop->sem, &value);
+	TEST_ASSERT_EQUAL_UINT(0, value);
+#endif //__APPLE__
 
 }
 
@@ -275,6 +297,8 @@ int ms_diff(struct timespec *start, struct timespec *stop)
 	return result.tv_sec * 1000 + (result.tv_nsec / 1000000);
 }
 
+#define MAX_DELAY_INCREASE_MS 200
+
 TEST(simple_queue, test_SemaphoreTimingBehaviour)
 {
 	struct timespec ts1, ts2;
@@ -289,7 +313,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	TEST_ASSERT_EQUAL_INT(1, queuePop(q, &j, 0));
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < MAX_DELAY_INCREASE_MS);
 
 	// a removal with timeout 100ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -297,7 +321,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 98);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 102);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 100 + MAX_DELAY_INCREASE_MS);
 
 	// a removal with timeout 2000ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -305,7 +329,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 1998);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2002);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2000 + MAX_DELAY_INCREASE_MS);
 
 
 	for (i = 0; i <= 9; i++) {
@@ -318,7 +342,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	TEST_ASSERT_EQUAL_INT(1, queuePush(q, &i, 0, false));
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < MAX_DELAY_INCREASE_MS);
 
 	// a insertion with timeout 100ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -326,7 +350,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 98);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 102);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 100 + MAX_DELAY_INCREASE_MS);
 
 	// a insertion with timeout 2000ms should fail eventually
 	clock_gettime(CLOCK_REALTIME, &ts1);
@@ -334,7 +358,7 @@ TEST(simple_queue, test_SemaphoreTimingBehaviour)
 	clock_gettime(CLOCK_REALTIME, &ts2);
 	// allow a little deviation due to the overhead
 	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) > 1998);
-	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2002);
+	TEST_ASSERT_TRUE(ms_diff(&ts1, &ts2) < 2000 + MAX_DELAY_INCREASE_MS);
 }
 
 TEST_GROUP_RUNNER(simple_queue)

@@ -3,7 +3,7 @@
 ###############################################################################
 
 .PHONY: all
-all: posix
+all: posix-all
 
 .PHONY: ud3tn
 ud3tn: posix
@@ -63,6 +63,11 @@ run-unittest-posix: unittest-posix
 	build/posix/testud3tn
 
 
+.PHONY: run-unittest-posix-with-coverage
+run-unittest-posix-with-coverage:
+	$(MAKE) run-unittest-posix coverage=yes && geninfo build/posix -b . -o ./coverage1.info && genhtml coverage1.info -o build/coverage && echo "Coverage report has been generated in 'file://$$(pwd)/build/coverage/index.html'"
+
+
 ###############################################################################
 # Tools
 ###############################################################################
@@ -95,27 +100,20 @@ integration-test-mtcp:
 
 # Directory for the virtual Python envionment
 VENV := .venv
-GET_PIP = curl -sS https://bootstrap.pypa.io/get-pip.py | $(VENV)/bin/python
 
 ifeq "$(verbose)" "yes"
-  PIP = $(VENV)/bin/pip
+  PIP = pip
 else
-  PIP = $(VENV)/bin/pip -q
+  PIP = pip -q
   GET_PIP += > /dev/null
 endif
 
 .PHONY: virtualenv
 virtualenv:
 	@echo "Create virtualenv in $(VENV)/ ..."
-	@python3 -m venv --without-pip $(VENV)
-	@echo "Install latest pip package ..."
-	@$(GET_PIP)
-	@echo "Install local dependencies to site-packages..."
-	@$(PIP) install -e ./pyd3tn
-	@$(PIP) install -e ./python-ud3tn-utils
-	@echo "Install additional dependencies ..."
-	@$(PIP) install -U -r ./test/integration/requirements.txt
-	@$(PIP) install -U -r ./tools/analysis/requirements.txt
+	@python3 -m venv $(VENV)
+	@echo "Install/update dependencies..."
+	. $(VENV)/bin/activate && $(MAKE) update-virtualenv
 	@echo
 	@echo "=> To activate the virtualenv, source $(VENV)/bin/activate"
 	@echo "   or use environment-setup tools like"
@@ -125,7 +123,12 @@ virtualenv:
 
 .PHONY: update-virtualenv
 update-virtualenv:
+	@echo "Update setuptools, pip, wheel..."
 	$(PIP) install -U setuptools pip wheel
+	@echo "Install local dependencies to site-packages..."
+	$(PIP) install -e ./pyd3tn
+	$(PIP) install -e ./python-ud3tn-utils
+	@echo "Install additional dependencies ..."
 	$(PIP) install -U -r ./test/integration/requirements.txt
 	$(PIP) install -U -r ./tools/analysis/requirements.txt
 
@@ -139,7 +142,7 @@ check-style:
 
 .PHONY: clang-check-posix
 clang-check-posix: ccmds-posix
-	bash ./tools/analysis/clang-check.sh check \
+	bash ./tools/analysis/clang-check.sh clang-check \
 		"posix" \
 		"components/agents/posix" \
 		"components/cla/posix" \
@@ -147,7 +150,7 @@ clang-check-posix: ccmds-posix
 
 .PHONY: clang-tidy-posix
 clang-tidy-posix: ccmds-posix
-	bash ./tools/analysis/clang-check.sh tidy \
+	bash ./tools/analysis/clang-check.sh "clang-tidy --use-color" \
 		"posix" \
 		"components/agents/posix" \
 		"components/cla/posix" \
@@ -186,13 +189,47 @@ ifneq "$(verbose)" "yes"
   MAKEFLAGS += --no-print-directory
 endif
 
+ifeq "$(sanitize-strict)" "yes"
+  sanitize ?= yes
+  ARCH_FLAGS += -fno-sanitize-recover=address,undefined
+  ifeq "$(TOOLCHAIN)" "clang"
+    ARCH_FLAGS += -fno-sanitize-recover=unsigned-integer-overflow,implicit-conversion,local-bounds
+  endif
+endif
+
+ifeq "$(sanitize)" "yes"
+  ARCH_FLAGS += -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
+  ifeq "$(TOOLCHAIN)" "clang"
+    ARCH_FLAGS += -fsanitize=unsigned-integer-overflow,implicit-conversion,local-bounds
+  endif
+else
+  ifeq "$(TOOLCHAIN)" "clang"
+    ifeq "$(sanitize)" "memory"
+      ARCH_FLAGS += -fsanitize=memory -fsanitize-memory-track-origins
+      ifeq "$(sanitize-strict)" "yes"
+        ARCH_FLAGS += -fno-sanitize-recover=memory
+      endif
+    endif
+    ifeq "$(sanitize)" "thread"
+      ARCH_FLAGS += -fsanitize=thread
+      ifeq "$(sanitize-strict)" "yes"
+        ARCH_FLAGS += -fno-sanitize-recover=thread
+      endif
+    endif
+  endif
+endif
+
+ifeq "$(coverage)" "yes"
+  ARCH_FLAGS += --coverage
+endif
+
 -include config.mk
 
 ###############################################################################
 # uD3TN-Builds
 ###############################################################################
 
-.PHONY: posix
+.PHONY: posix posix-lib posix-all unittest-posix ccmds-posix
 
 ifndef PLATFORM
 
@@ -201,6 +238,9 @@ posix:
 
 posix-lib:
 	@$(MAKE) PLATFORM=posix posix-lib
+
+posix-all:
+	@$(MAKE) PLATFORM=posix posix posix-lib
 
 unittest-posix:
 	@$(MAKE) PLATFORM=posix unittest-posix
@@ -214,7 +254,9 @@ include mk/$(PLATFORM).mk
 include mk/build.mk
 
 posix: build/posix/ud3tn
-posix-lib: build/posix/libud3tn.so
+posix-lib: build/posix/libud3tn.so build/posix/libud3tn.a
+posix-all: posix posix-lib
 unittest-posix: build/posix/testud3tn
+ccmds-posix: build/posix/compile_commands.json
 
 endif # ifndef PLATFORM

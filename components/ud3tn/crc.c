@@ -81,12 +81,14 @@ static void crc16_x25_feed_eof(struct crc_stream *crc)
 
 uint16_t crc16_x25(const uint8_t *data, size_t len)
 {
-	// Initial vale as defined in CRC-16 X.25
+	// Initial value as defined in CRC-16 X.25
 	uint16_t crc = 0xffff;
 	const uint8_t *p = data;
 
-	while (len--)
+	while (len) {
 		crc = (crc >> 8) ^ crc16_x25_table[(crc & 0xff) ^ (*p++)];
+		len--;
+	}
 
 	// Final XOR
 	return crc ^ 0xffff;
@@ -154,12 +156,12 @@ static void crc16_ccitt_false_feed_eof(struct crc_stream *crc)
 
 uint16_t crc16_ccitt_false(const uint8_t *data, size_t len)
 {
-	// Initial vale as defined in CRC-16 CCITT FALSE
+	// Initial value as defined in CRC-16 CCITT FALSE
 	uint16_t crc = 0xffff;
 	const uint8_t *p = data;
 	uint8_t index;
 
-	while (len--) {
+	while (len) {
 		// Update the MSB of the current CRC value. This MSB is the
 		// index for the lookup table.
 		index = ((crc >> 8) ^ (*p++)) & 0x00ff;
@@ -169,6 +171,8 @@ uint16_t crc16_ccitt_false(const uint8_t *data, size_t len)
 
 		// Update CRC
 		crc ^= crc16_ccitt_false_table[index];
+
+		len--;
 	}
 
 	// No final XOR
@@ -281,8 +285,10 @@ uint32_t crc32(const uint8_t *data, size_t len)
 	uint32_t crc = 0xffffffff;
 	const uint8_t *p = data;
 
-	while (len--)
+	while (len) {
 		crc = (crc >> 8) ^ crc32_table[(crc & 0xff) ^ (*p++)];
+		len--;
+	}
 
 	// Final XOR
 	return crc ^ 0xffffffff;
@@ -293,8 +299,10 @@ void crc_feed_bytes(struct crc_stream *crc, const uint8_t *data, size_t len)
 {
 	const uint8_t *p = data;
 
-	while (len--)
+	while (len) {
 		crc->feed(crc, *p++);
+		len--;
+	}
 }
 
 

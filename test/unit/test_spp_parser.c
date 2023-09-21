@@ -3,7 +3,7 @@
 
 #include "ud3tn/common.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 TEST_GROUP(spp_parser);
 

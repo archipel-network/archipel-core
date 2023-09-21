@@ -8,4 +8,4 @@ FROM alpine
 RUN apk update
 RUN apk add coreutils
 COPY --from=0 /ud3tn/build/posix/ud3tn /ud3tn
-ENTRYPOINT [ "stdbuf", "-oL", "/ud3tn" ]
+ENTRYPOINT [ "/ud3tn" ]

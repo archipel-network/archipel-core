@@ -3,7 +3,7 @@
 
 #include "ud3tn/bundle.h"
 
-#include "unity_fixture.h"
+#include "testud3tn_unity.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +27,9 @@ static struct bundle *create_bundle(void)
 	bundle->destination = strdup("dtn:GS1");
 	bundle->source = strdup("ipn:243.350");
 	bundle->report_to = strdup("dtn:GS2");
+
+	bundle->creation_timestamp_ms = 1000;
+	bundle->lifetime_ms = 299000;
 
 	struct bundle_block_list *entry;
 	struct bundle_block *block;
@@ -84,7 +87,12 @@ TEST(bundle7Reports, generate_status_reports)
 	};
 
 	struct bundle *record = bundle7_generate_status_report(bundle,
-		&report, "dtn:test", 0);
+		&report, "dtn:test", 300000);
+
+	TEST_ASSERT_NULL(record); // already expired
+
+	record = bundle7_generate_status_report(bundle,
+		&report, "dtn:test", 299999);
 
 	TEST_ASSERT_NOT_NULL(record);
 
@@ -99,13 +107,14 @@ TEST(bundle7Reports, generate_status_reports)
 	//     ],
 	//     0,                # Reason Code
 	//     [2, [243, 350]],  # Source EID
-	//     [0, 0]            # Creation Timestamp
+	//     [1000, 0]         # Creation Timestamp (orig. Bundle)
 	//   ]
 	// ]
 	const uint8_t cbor_report[] = {
 		0x82, 0x01, 0x84, 0x84, 0x82, 0xf5, 0x18, 0x64,
 		0x82, 0xf5, 0x18, 0xc8, 0x81, 0xf4, 0x81, 0xf4, 0x00, 0x82,
-		0x02, 0x82, 0x18, 0xf3, 0x19, 0x01, 0x5e, 0x82, 0x00, 0x00,
+		0x02, 0x82, 0x18, 0xf3, 0x19, 0x01, 0x5e,
+		0x82, 0x19, 0x03, 0xe8, 0x00,
 	};
 
 	TEST_ASSERT_TRUE(record->proc_flags

@@ -13,7 +13,7 @@ from helpers import add_common_parser_arguments, initialize_logger
 from ud3tn_utils.aap.aap_message import AAPMessageType
 
 
-def run_aap_recv(aap_client, max_count, output, verify_pl):
+def run_aap_recv(aap_client, max_count, output, verify_pl, newline):
     logger.info("Waiting for bundles...")
     counter = 0
 
@@ -41,6 +41,8 @@ def run_aap_recv(aap_client, max_count, output, verify_pl):
                 len(payload),
             )
             output.write(payload)
+            if newline:
+                output.write(b"\n")
             output.flush()
             if verify_pl is not None and verify_pl.encode("utf-8") != payload:
                 logger.fatal("Unexpected payload != '%s'", verify_pl)
@@ -81,6 +83,11 @@ if __name__ == "__main__":
         default=None,
         help="verify that the payload is equal to the provided string",
     )
+    parser.add_argument(
+        "--newline",
+        action="store_true",
+        help="print a line feed character after every received bundle payload",
+    )
 
     args = parser.parse_args()
     logger = initialize_logger(args.verbosity)
@@ -94,6 +101,7 @@ if __name__ == "__main__":
                     args.count,
                     args.output,
                     args.verify_pl,
+                    args.newline,
                 )
         else:
             with AAPUnixClient(address=args.socket) as aap_client:
@@ -103,6 +111,7 @@ if __name__ == "__main__":
                     args.count,
                     args.output,
                     args.verify_pl,
+                    args.newline,
                 )
     finally:
         args.output.close()

@@ -19,7 +19,7 @@ A VM or Docker container will work for this purpose, too.
 
 Please install all dependencies stated in the [`README.md` file](https://gitlab.com/d3tn/ud3tn/-/blob/master/README.md) for the version you have obtained.
 At least an up-to-date **C build toolchain**, **GNU Make**, and the **GNU Binutils** are always needed.
-Apart from that, you need an up-to-date version of **Python 3** for the µD3TN tools and **Git** for working with the code repository.
+Apart from that, you need an up-to-date version of **Python 3** including **pip** and **setuptools** for the µD3TN tools and **Git** for working with the code repository.
 
 ## Getting the code
 
@@ -56,7 +56,7 @@ This will launch a new instance of µD3TN with the default parameters; you will 
 
 For getting the Python tools working, you have two options:
 
-1. If you have already pulled the code of a specific version it is probably easiest to use the [**development setup**](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/python-venv.md). Just run `make virtualenv` in the µD3TN directory and it will create a `.venv` subdirectory containing a full [Python virtual environment](https://www.python.org/dev/peps/pep-0405/) for development. You can activate the virtual environment in your shell of choice via `source .venv/bin/activate`.
+1. If you have already pulled the code of a specific version it is probably easiest to use the [**development setup**](https://gitlab.com/d3tn/ud3tn/-/blob/master/doc/python-venv.md). Just run `make virtualenv` in the µD3TN directory and it will create a `.venv` subdirectory containing a full [Python virtual environment](https://www.python.org/dev/peps/pep-0405/) for development. You can activate the virtual environment in your shell of choice via `source .venv/bin/activate`. (Using a custom tool to manage virtual environments in other locations is also possible - to just install all dependencies run `make update-virtualenv`.)
 
 2. If you don't want to create a new virtual environment or have troubles with the development setup, you can use the [**PyPI packages**](https://pypi.org/user/d3tn/). You can, of course, also install them in a virtual environment or use a Python package manager of your choice. Installation via `pip` is performed as follows (replace `vX.Y.Z` by the µD3TN version you are using): `pip install pyd3tn==vX.Y.Z ud3tn-utils==vX.Y.Z`
 

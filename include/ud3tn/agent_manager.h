@@ -9,7 +9,8 @@
 
 struct agent {
 	const char *sink_identifier;
-	void (*callback)(struct bundle_adu data, void *param);
+	void (*callback)(struct bundle_adu data, void *param,
+			 const void *bp_context);
 	void *param;
 };
 
@@ -33,7 +34,8 @@ void agent_manager_init(const char *const ud3tn_local_eid);
  *
  * @not_thread_safe
  */
-int agent_forward(const char *sink_identifier, struct bundle_adu data);
+int agent_forward(const char *sink_identifier, struct bundle_adu data,
+		  const void *bp_context);
 
 
 /**
@@ -50,7 +52,8 @@ int agent_forward(const char *sink_identifier, struct bundle_adu data);
  * @not_thread_safe
  */
 int agent_register(const char *sink_identifier,
-		   void (*const callback)(struct bundle_adu data, void *param),
+		   void (*const callback)(struct bundle_adu data, void *param,
+					  const void *bp_context),
 		   void *param);
 
 /**
