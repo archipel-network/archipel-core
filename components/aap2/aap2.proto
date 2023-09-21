@@ -314,6 +314,10 @@ enum ResponseStatus {
 
   // A resource required for processing the request was not found.
   RESPONSE_STATUS_NOT_FOUND = 11;
+
+  // The client is not authorized to perform the requested action or a provided
+  // credential value is not valid for the requested authorization.
+  RESPONSE_STATUS_UNAUTHORIZED = 12;
 }
 
 // Representation of a result of a Bundle Dispatcher Module (BDM).

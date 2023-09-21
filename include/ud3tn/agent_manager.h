@@ -9,6 +9,7 @@
 
 struct agent {
 	const char *sink_identifier;
+	const char *secret;
 	void (*callback)(struct bundle_adu data, void *param,
 			 const void *bp_context);
 	void *param;

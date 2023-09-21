@@ -78,7 +78,10 @@ typedef enum _aap2_ResponseStatus {
     /* The received request is considered invalid and, thus, is not processed. */
     aap2_ResponseStatus_RESPONSE_STATUS_INVALID_REQUEST = 10,
     /* A resource required for processing the request was not found. */
-    aap2_ResponseStatus_RESPONSE_STATUS_NOT_FOUND = 11
+    aap2_ResponseStatus_RESPONSE_STATUS_NOT_FOUND = 11,
+    /* The client is not authorized to perform the requested action or a provided
+ credential value is not valid for the requested authorization. */
+    aap2_ResponseStatus_RESPONSE_STATUS_UNAUTHORIZED = 12
 } aap2_ResponseStatus;
 
 /* Struct definitions */
@@ -276,8 +279,8 @@ extern "C" {
 #define _aap2_LinkStatus_ARRAYSIZE ((aap2_LinkStatus)(aap2_LinkStatus_LINK_STATUS_TEARDOWN+1))
 
 #define _aap2_ResponseStatus_MIN aap2_ResponseStatus_RESPONSE_STATUS_UNSPECIFIED
-#define _aap2_ResponseStatus_MAX aap2_ResponseStatus_RESPONSE_STATUS_NOT_FOUND
-#define _aap2_ResponseStatus_ARRAYSIZE ((aap2_ResponseStatus)(aap2_ResponseStatus_RESPONSE_STATUS_NOT_FOUND+1))
+#define _aap2_ResponseStatus_MAX aap2_ResponseStatus_RESPONSE_STATUS_UNAUTHORIZED
+#define _aap2_ResponseStatus_ARRAYSIZE ((aap2_ResponseStatus)(aap2_ResponseStatus_RESPONSE_STATUS_UNAUTHORIZED+1))
 
 
 

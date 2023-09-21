@@ -64,6 +64,7 @@ struct aap2_agent_comm_config {
 
 	bool is_subscriber;
 	char *registered_eid;
+	char *secret;
 
 	// TODO: Move to common multiplexer/demux state in BP. For now, allow
 	// only one sender per ID.
@@ -155,6 +156,7 @@ static void aap2_agent_listener_task(void *const param)
 		child_config->last_bundle_sequence_number = 0;
 		child_config->is_subscriber = false;
 		child_config->registered_eid = NULL;
+		child_config->secret = NULL;
 
 		child_config->pb_istream = (pb_istream_t){
 			&pb_recv_callback,
@@ -249,6 +251,7 @@ static void agent_msg_recv(struct bundle_adu data, void *param,
 }
 
 static int register_sink(const char *sink_identifier, bool is_subscriber,
+			 const char *secret,
 			 struct aap2_agent_comm_config *config)
 {
 	return bundle_processor_perform_agent_action(
@@ -259,7 +262,10 @@ static int register_sink(const char *sink_identifier, bool is_subscriber,
 			: BP_SIGNAL_AGENT_REGISTER_RPC
 		),
 		(struct agent) {
+			// NOTE that both sink_identifier and secret have to be
+			// valid for the full duration of the registration!
 			.sink_identifier = sink_identifier,
+			.secret = secret,
 			.callback = is_subscriber ? agent_msg_recv : NULL,
 			.param = is_subscriber ? config : NULL,
 		},
@@ -269,28 +275,31 @@ static int register_sink(const char *sink_identifier, bool is_subscriber,
 
 static void deregister_sink(struct aap2_agent_comm_config *config)
 {
-	if (config->registered_eid) {
-		const char *agent_id = get_agent_id_ptr(
-			config->registered_eid
-		);
+	if (config->registered_eid == NULL)
+		return;
 
-		LOGF("AAP2Agent: De-registering agent ID \"%s\".",
-			agent_id);
+	const char *agent_id = get_agent_id_ptr(
+		config->registered_eid
+	);
 
-		ASSERT(bundle_processor_perform_agent_action(
-			config->parent->bundle_agent_interface->bundle_signaling_queue,
-			(
-				config->is_subscriber
-				? BP_SIGNAL_AGENT_DEREGISTER
-				: BP_SIGNAL_AGENT_DEREGISTER_RPC
-			),
-			(struct agent){ .sink_identifier = agent_id },
-			true
-		) == 0);
+	LOGF("AAP2Agent: De-registering agent ID \"%s\".",
+		agent_id);
 
-		free(config->registered_eid);
-		config->registered_eid = NULL;
-	}
+	ASSERT(bundle_processor_perform_agent_action(
+		config->parent->bundle_agent_interface->bundle_signaling_queue,
+		(
+			config->is_subscriber
+			? BP_SIGNAL_AGENT_DEREGISTER
+			: BP_SIGNAL_AGENT_DEREGISTER_RPC
+		),
+		(struct agent){ .sink_identifier = agent_id },
+		true
+	) == 0);
+
+	free(config->registered_eid);
+	config->registered_eid = NULL;
+	free(config->secret);
+	config->secret = NULL;
 }
 
 static uint64_t allocate_sequence_number(
@@ -332,15 +341,13 @@ static aap2_ResponseStatus process_configure_msg(
 		return aap2_ResponseStatus_RESPONSE_STATUS_INVALID_REQUEST;
 	}
 
-	// TODO: Check authentication here!
-
-	if (register_sink(sink_id, msg->is_subscriber,
-				config)) {
-		return aap2_ResponseStatus_RESPONSE_STATUS_ERROR;
-	}
+	if (register_sink(sink_id, msg->is_subscriber, msg->secret, config))
+		return aap2_ResponseStatus_RESPONSE_STATUS_UNAUTHORIZED;
 
 	config->registered_eid = msg->endpoint_id;
 	msg->endpoint_id = NULL; // take over freeing
+	config->secret = msg->secret;
+	msg->secret = NULL; // take over freeing
 
 	config->is_subscriber = msg->is_subscriber;
 	if (config->is_subscriber)

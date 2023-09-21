@@ -36,6 +36,9 @@ int agent_register(struct agent agent, const bool is_subscriber)
 	struct agent_list **const al_ptr = (
 		is_subscriber ? &agent_entry_node : &rpc_ag_entry_node
 	);
+	struct agent_list **const al_ptr_other = (
+		is_subscriber ? &rpc_ag_entry_node : &agent_entry_node
+	);
 
 	ASSERT(local_eid != NULL && strlen(local_eid) > 3);
 	if (get_eid_scheme(local_eid) == EID_SCHEME_IPN) {
@@ -50,6 +53,15 @@ int agent_register(struct agent agent, const bool is_subscriber)
 	/* check if agent with that sink_id is already existing */
 	if (agent_search(al_ptr, agent.sink_identifier) != NULL) {
 		LOGF("AgentManager: Agent with sink_id %s is already registered! Abort!",
+		     agent.sink_identifier);
+		return -1;
+	}
+
+	struct agent *ag_ex = agent_search(al_ptr_other, agent.sink_identifier);
+
+	if (ag_ex && agent.secret != ag_ex->secret &&
+	    strcmp(agent.secret, ag_ex->secret) != 0) {
+		LOGF("AgentManager: Invalid secret provided for sink_id %s! Abort!",
 		     agent.sink_identifier);
 		return -1;
 	}
