@@ -79,7 +79,7 @@ typedef enum _aap2_ResponseStatus {
     aap2_ResponseStatus_RESPONSE_STATUS_INVALID_REQUEST = 10,
     /* A resource required for processing the request was not found. */
     aap2_ResponseStatus_RESPONSE_STATUS_NOT_FOUND = 11,
-    /* The client is not authorized to perform the requested action or a provided
+    /* The Client is not authorized to perform the requested action or a provided
  credential value is not valid for the requested authorization. */
     aap2_ResponseStatus_RESPONSE_STATUS_UNAUTHORIZED = 12
 } aap2_ResponseStatus;
@@ -98,7 +98,7 @@ typedef struct _aap2_Welcome {
  connection. */
 typedef struct _aap2_ConnectionConfig {
     /* If `true`, the direction of control is switched after positive
- confirmation, i.e., the server becomes the initiator of all following
+ confirmation, i.e., the Server becomes the Initiator of all following
  communication and also takes over sending the Keepalive messages. */
     bool is_subscriber;
     /* Controls the actions allowed and data provided over the connection. */
@@ -118,7 +118,7 @@ typedef struct _aap2_ConnectionConfig {
     /* The maximum time interval between messages, should be zero, or between
  30 sec and 600 sec. The Initiator SHALL send `KEEPALIVE` messages after
  this amount of time has elapsed. 0 disables the feature (see RFC 9174),
- which is useful e.g. for local sockets. Default = 60 seconds. */
+ which is useful e.g. for local sockets. Default = 0 (disabled). */
     uint32_t keepalive_seconds;
 } aap2_ConnectionConfig;
 
@@ -188,14 +188,14 @@ typedef struct _aap2_Link {
     char *peer_cla_addr;
 } aap2_Link;
 
-/* A message that should be regularly sent by the current initiator and must be
- acknowledged with an `AAPResponse` specifying the result `RPC_RESULT_ACK`. */
+/* A message that should be regularly sent by the current Initiator and must be
+ acknowledged with an `AAPResponse` specifying `RESPONSE_STATUS_ACK`. */
 typedef struct _aap2_Keepalive {
     char dummy_field;
 } aap2_Keepalive;
 
-/* The outer AAP 2.0 message type that is always sent by the initiator (the
- client if configured with `is_subscriber == false`, otherwise the server). */
+/* The outer AAP 2.0 message type that is always sent by the Initiator (the
+ Client if configured with `is_subscriber == false`, otherwise the Server). */
 typedef struct _aap2_AAPMessage {
     pb_size_t which_msg;
     union {
@@ -241,7 +241,7 @@ typedef struct _aap2_AAPResponse {
     /* The result of the received call/request represented as a single value. */
     aap2_ResponseStatus response_status;
     /* Set the next hops for a bundle. Only valid in response to a Bundle
- message sent to a BDM by the server (µD3TN). */
+ message sent to a BDM by the Server (µD3TN). */
     bool has_dispatch_result;
     aap2_DispatchResult dispatch_result;
     /* Headers of the created bundle (present when sending a bundle). */

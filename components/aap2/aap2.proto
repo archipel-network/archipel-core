@@ -12,8 +12,8 @@ package aap2;
 // Message (unsolicited - Info/Request/Call)
 // -----------------------------------------------------------------------------
 
-// The outer AAP 2.0 message type that is always sent by the initiator (the
-// client if configured with `is_subscriber == false`, otherwise the server).
+// The outer AAP 2.0 message type that is always sent by the Initiator (the
+// Client if configured with `is_subscriber == false`, otherwise the Server).
 message AAPMessage {
   oneof msg {
     // Message sent by the Server at the start of a connection to
@@ -79,7 +79,7 @@ enum AuthType {
 // connection.
 message ConnectionConfig {
   // If `true`, the direction of control is switched after positive
-  // confirmation, i.e., the server becomes the initiator of all following
+  // confirmation, i.e., the Server becomes the Initiator of all following
   // communication and also takes over sending the Keepalive messages.
   bool is_subscriber = 1;
 
@@ -108,7 +108,7 @@ message ConnectionConfig {
   // The maximum time interval between messages, should be zero, or between
   // 30 sec and 600 sec. The Initiator SHALL send `KEEPALIVE` messages after
   // this amount of time has elapsed. 0 disables the feature (see RFC 9174),
-  // which is useful e.g. for local sockets. Default = 60 seconds.
+  // which is useful e.g. for local sockets. Default = 0 (disabled).
   uint32 keepalive_seconds = 5;
 
   // NOTE: FUTURE EXTENSION: Whether or not to subscribe to payload data as
@@ -269,8 +269,8 @@ message FIBInfo {
 }
 */
 
-// A message that should be regularly sent by the current initiator and must be
-// acknowledged with an `AAPResponse` specifying the result `RPC_RESULT_ACK`.
+// A message that should be regularly sent by the current Initiator and must be
+// acknowledged with an `AAPResponse` specifying `RESPONSE_STATUS_ACK`.
 message Keepalive {
 }
 
@@ -284,7 +284,7 @@ message AAPResponse {
   ResponseStatus response_status = 1;
 
   // Set the next hops for a bundle. Only valid in response to a Bundle
-  // message sent to a BDM by the server (µD3TN).
+  // message sent to a BDM by the Server (µD3TN).
   DispatchResult dispatch_result = 2;
 
   // Headers of the created bundle (present when sending a bundle).
@@ -315,7 +315,7 @@ enum ResponseStatus {
   // A resource required for processing the request was not found.
   RESPONSE_STATUS_NOT_FOUND = 11;
 
-  // The client is not authorized to perform the requested action or a provided
+  // The Client is not authorized to perform the requested action or a provided
   // credential value is not valid for the requested authorization.
   RESPONSE_STATUS_UNAUTHORIZED = 12;
 }
