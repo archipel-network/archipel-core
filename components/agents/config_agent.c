@@ -73,9 +73,15 @@ int config_agent_setup(
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		is_ipn ? AGENT_ID_CONFIG_IPN : AGENT_ID_CONFIG_DTN,
-		callback,
-		ca_param,
+		(struct agent){
+			.sink_identifier = (
+				is_ipn
+				? AGENT_ID_CONFIG_IPN
+				: AGENT_ID_CONFIG_DTN
+			),
+			.callback = callback,
+			.param = ca_param,
+		},
 		false
 	);
 }

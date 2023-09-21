@@ -231,12 +231,12 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 			config->bundle_agent_interface;
 		bundle_processor_inform(
 			bundle_agent_interface->bundle_signaling_queue,
-			NULL,
-			BP_SIGNAL_NEW_LINK_ESTABLISHED,
-			cla_get_cla_addr_from_link(link),
-			NULL,
-			NULL,
-			NULL
+			(struct bundle_processor_signal) {
+				.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+				.peer_cla_addr = cla_get_cla_addr_from_link(
+					link
+				),
+			}
 		);
 	}
 
@@ -316,12 +316,10 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 		link->config->bundle_agent_interface;
 	bundle_processor_inform(
 		bundle_agent_interface->bundle_signaling_queue,
-		NULL,
-		BP_SIGNAL_LINK_DOWN,
-		cla_get_cla_addr_from_link(link),
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal) {
+			.type = BP_SIGNAL_LINK_DOWN,
+			.peer_cla_addr = cla_get_cla_addr_from_link(link),
+		}
 	);
 	// TX task will delete its queue and itself
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);

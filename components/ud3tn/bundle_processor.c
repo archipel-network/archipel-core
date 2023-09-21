@@ -140,82 +140,51 @@ static void bundle_resched_func(struct bundle *bundle, const void *ctx);
 
 void bundle_processor_inform(
 	QueueIdentifier_t bundle_processor_signaling_queue,
-	struct bundle *bundle,
-	enum bundle_processor_signal_type type,
-	char *peer_cla_addr,
-	struct agent_manager_parameters *agent_manager_params,
-	struct contact *contact,
-	struct router_command *router_cmd)
+	const struct bundle_processor_signal signal)
 {
-	struct bundle_processor_signal signal = {
-		.type = type,
-		.bundle = bundle,
-		.peer_cla_addr = peer_cla_addr,
-		.agent_manager_params = agent_manager_params,
-		.contact = contact,
-		.router_cmd = router_cmd,
-	};
-
 	hal_queue_push_to_back(bundle_processor_signaling_queue, &signal);
 }
 
 int bundle_processor_perform_agent_action(
 	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
-	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param,
-			       const void *bp_context),
-	void *param,
+	const struct agent agent,
 	bool wait_for_feedback)
 {
-	struct agent_manager_parameters *aaps;
-	QueueIdentifier_t feedback_queue;
-	int result;
-
-	ASSERT((type == BP_SIGNAL_AGENT_REGISTER && callback) ||
+	ASSERT((type == BP_SIGNAL_AGENT_REGISTER && agent.callback) ||
 	       type == BP_SIGNAL_AGENT_DEREGISTER ||
-	       (type == BP_SIGNAL_AGENT_REGISTER_RPC) ||
+	       type == BP_SIGNAL_AGENT_REGISTER_RPC ||
 	       type == BP_SIGNAL_AGENT_DEREGISTER_RPC);
-	ASSERT(sink_identifier);
 
-	aaps = malloc(sizeof(struct agent_manager_parameters));
+	struct agent_manager_parameters *const aaps = malloc(
+		sizeof(struct agent_manager_parameters)
+	);
 	if (!aaps)
 		return -1;
 
-	aaps->agent.sink_identifier = sink_identifier;
-	aaps->agent.callback = callback;
-	aaps->agent.param = param;
+	aaps->agent = agent;
 	aaps->feedback_queue = NULL;
 
+	struct bundle_processor_signal signal = {
+		.type = type,
+		.agent_manager_params = aaps,
+	};
+
 	if (!wait_for_feedback) {
-		bundle_processor_inform(
-			signaling_queue,
-			NULL,
-			type,
-			NULL,
-			aaps,
-			NULL,
-			NULL
-		);
+		bundle_processor_inform(signaling_queue, signal);
 		return 0;
 	}
 
-	feedback_queue = hal_queue_create(1, sizeof(int));
+	QueueIdentifier_t feedback_queue = hal_queue_create(1, sizeof(int));
+	int result;
+
 	if (!feedback_queue) {
 		free(aaps);
 		return -1;
 	}
 
 	aaps->feedback_queue = feedback_queue;
-	bundle_processor_inform(
-		signaling_queue,
-		NULL,
-		type,
-		NULL,
-		aaps,
-		NULL,
-		NULL
-	);
+	bundle_processor_inform(signaling_queue, signal);
 
 	if (hal_queue_receive(feedback_queue, &result, -1) == UD3TN_OK) {
 		hal_queue_delete(feedback_queue);

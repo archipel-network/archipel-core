@@ -344,12 +344,10 @@ static void manage_contacts(
 			/* The contact has to be deleted first... */
 			bundle_processor_inform(
 				bp_queue,
-				NULL,
-				BP_SIGNAL_CONTACT_OVER,
-				NULL,
-				NULL,
-				removed_list[i].contact,
-				NULL
+				(struct bundle_processor_signal) {
+					.type = BP_SIGNAL_CONTACT_OVER,
+					.contact = removed_list[i].contact,
+				}
 			);
 		}
 	}

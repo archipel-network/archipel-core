@@ -60,13 +60,11 @@ static void bundle_send(struct bundle *bundle, void *param)
 	     config->vtable->cla_name_get());
 	bundle_processor_inform(
 		config->bundle_agent_interface->bundle_signaling_queue,
-		bundle,
-		BP_SIGNAL_BUNDLE_INCOMING,
-		// TODO: Pass CLA address of sending peer #108
-		NULL,
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal){
+			.type = BP_SIGNAL_BUNDLE_INCOMING,
+			.bundle = bundle,
+			// TODO: Pass CLA address of sending peer #108
+		}
 	);
 }
 

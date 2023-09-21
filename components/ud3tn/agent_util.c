@@ -86,12 +86,10 @@ struct bundle *agent_create_forward_bundle(
 
 	bundle_processor_inform(
 		bundle_agent_interface->bundle_signaling_queue,
-		bundle,
-		BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
-		NULL,
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal){
+			.type = BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
+			.bundle = bundle,
+		}
 	);
 
 	return bundle;

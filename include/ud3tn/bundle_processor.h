@@ -65,12 +65,7 @@ struct bundle_processor_task_parameters {
 
 void bundle_processor_inform(
 	QueueIdentifier_t bundle_processor_signaling_queue,
-	struct bundle *bundle,
-	enum bundle_processor_signal_type type,
-	char *peer_cla_addr,
-	struct agent_manager_parameters *agent_manager_params,
-	struct contact *contact,
-	struct router_command *router_cmd);
+	const struct bundle_processor_signal signal);
 
 /**
  * @brief Instruct the BP to interact with the agent manager state
@@ -78,20 +73,13 @@ void bundle_processor_inform(
  * @param bundle_processor_signaling_queue Handle to the signaling queue of
  *	the BP task
  * @param type BP_SIGNAL_AGENT_REGISTER or BP_SIGNAL_AGENT_DRREGISTER
- * @param sink_identifier Unique string to identify an agent, must not be NULL
- * @param callback Logic to be executed every time a bundle should be
- *	delivered to the agent (BP_SIGNAL_AGENT_REGISTER only)
- * @param param Use this to pass additional arguments to callback
- *	(BP_SIGNAL_AGENT_REGISTER only)
+ * @param agent The agent parameters to be passed to the BP
  * @param wait_for_feedback If true, block and wait for the feedback of the BP
  */
 int bundle_processor_perform_agent_action(
-	QueueIdentifier_t bundle_processor_signaling_queue,
+	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
-	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param,
-			       const void *bp_context),
-	void *param,
+	const struct agent agent,
 	bool wait_for_feedback);
 
 // Forward declaration of internal opaque struct. Only to be used by agents

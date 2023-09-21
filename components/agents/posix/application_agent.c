@@ -216,31 +216,34 @@ static int register_sink(char *sink_identifier,
 	return bundle_processor_perform_agent_action(
 		config->parent->bundle_agent_interface->bundle_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		sink_identifier,
-		agent_msg_recv,
-		config,
+		(struct agent){
+			.sink_identifier = sink_identifier,
+			.callback = agent_msg_recv,
+			.param = config,
+		},
 		true
 	);
 }
 
 static void deregister_sink(struct application_agent_comm_config *config)
 {
-	if (config->registered_agent_id) {
-		LOGF("AppAgent: De-registering agent ID \"%s\".",
-		     config->registered_agent_id);
+	if (!config->registered_agent_id)
+		return;
 
-		bundle_processor_perform_agent_action(
-			config->parent->bundle_agent_interface->bundle_signaling_queue,
-			BP_SIGNAL_AGENT_DEREGISTER,
-			config->registered_agent_id,
-			NULL,
-			NULL,
-			true
-		);
+	LOGF("AppAgent: De-registering agent ID \"%s\".",
+		config->registered_agent_id);
 
-		free(config->registered_agent_id);
-		config->registered_agent_id = NULL;
-	}
+	bundle_processor_perform_agent_action(
+		config->parent->bundle_agent_interface->bundle_signaling_queue,
+		BP_SIGNAL_AGENT_DEREGISTER,
+		(struct agent){
+			.sink_identifier = config->registered_agent_id,
+		},
+		true
+	);
+
+	free(config->registered_agent_id);
+	config->registered_agent_id = NULL;
 }
 
 static uint64_t allocate_sequence_number(

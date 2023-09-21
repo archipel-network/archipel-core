@@ -258,9 +258,11 @@ static int register_sink(const char *sink_identifier, bool is_subscriber,
 			? BP_SIGNAL_AGENT_REGISTER
 			: BP_SIGNAL_AGENT_REGISTER_RPC
 		),
-		sink_identifier,
-		is_subscriber ? agent_msg_recv : NULL,
-		is_subscriber ? config : NULL,
+		(struct agent) {
+			.sink_identifier = sink_identifier,
+			.callback = is_subscriber ? agent_msg_recv : NULL,
+			.param = is_subscriber ? config : NULL,
+		},
 		true
 	);
 }
@@ -282,9 +284,7 @@ static void deregister_sink(struct aap2_agent_comm_config *config)
 				? BP_SIGNAL_AGENT_DEREGISTER
 				: BP_SIGNAL_AGENT_DEREGISTER_RPC
 			),
-			agent_id,
-			NULL,
-			NULL,
+			(struct agent){ .sink_identifier = agent_id },
 			true
 		) == 0);
 
@@ -444,12 +444,10 @@ static aap2_ResponseStatus process_adu_msg(
 
 	bundle_processor_inform(
 		config->parent->bundle_agent_interface->bundle_signaling_queue,
-		bundle,
-		BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
-		NULL,
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal){
+			.type = BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
+			.bundle = bundle,
+		}
 	);
 
 	LOGF("AAP2Agent: Injected new bundle %p.", bundle);

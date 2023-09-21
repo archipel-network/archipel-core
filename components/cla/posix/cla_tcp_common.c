@@ -266,14 +266,15 @@ static void handle_established_connection(
 		// Notify the BP task of the newly established connection...
 		const struct bundle_agent_interface *bundle_agent_interface =
 			config->base.base.bundle_agent_interface;
+
 		bundle_processor_inform(
 			bundle_agent_interface->bundle_signaling_queue,
-			NULL,
-			BP_SIGNAL_NEW_LINK_ESTABLISHED,
-			cla_get_cla_addr_from_link(&link->base),
-			NULL,
-			NULL,
-			NULL
+			(struct bundle_processor_signal) {
+				.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+				.peer_cla_addr = cla_get_cla_addr_from_link(
+					&link->base
+				),
+			}
 		);
 
 		cla_link_wait_cleanup(&link->base);
