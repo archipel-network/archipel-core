@@ -36,6 +36,14 @@ Install (as root)
 make install-posix
 ```
 
+Archipel core is now installed on your machine.
+
+### System-wide node
+
+This section describes node configuration for a system-wide process. In this scenario, you'll have an archipel-core process running in background on startup.
+
+Prefer this scenario if you want to build a headless node. But use the next section procedure if you plan to let user control their own node.
+
 Configure your node by copying `default-conf.env` to `/etc/archipel-core/conf.env` (as root)
 
 ```sh-session
@@ -51,7 +59,44 @@ Start system-wide service (as root)
 systemctl start archipel-core
 ```
 
-Archipel core is now installed on your machine.
+Enable this service to start archipel core on boot
+
+```sh-session
+systemctl enable archipel-core
+```
+
+Archipel core is now configured and will start at boot time.
+
+IPC socket is present on `/run/archipel-core/archipel-core.socket`
+
+### Per-user node
+
+This section describes node configuration for each user with their own process and node. In this scenario, a node is startd on user-session opening and will shut down on session close.
+
+This scenario is helpful to allow user control their very own node node on the network. It also run process as the current user and allow Archipel Core to use user resources such as removabled drives ([archipel-file-carrier](https://github.com/EpicKiwi/archipel-file-carrier)).
+
+Configure your node by copying `default-conf.env` to `~/.config/archipel-core/conf.env`
+
+```sh-session
+mkdir -p ~/.config/archipel-core
+cp default-conf.env ~/.config/archipel-core/conf.env
+```
+
+Edit `~/.config/archipel-core/conf.env` and change `NODE_ID` for your own name on the network
+
+Start user service
+
+```sh-session
+systemctl start --user archipel-core
+```
+
+Enable this service to start it on user session opening
+
+```sh-session
+systemctl enable --user archipel-core
+```
+
+IPC socket is present on `/run/user/[user uid]/archipel-core/archipel-core.socket`
 
 ### Optional features
 
