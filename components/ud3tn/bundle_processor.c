@@ -320,10 +320,8 @@ static inline void handle_signal(
 	case BP_SIGNAL_AGENT_REGISTER:
 		aaps = signal.agent_manager_params;
 		feedback = agent_register(
-			aaps->agent.sink_identifier,
-			true,
-			aaps->agent.callback,
-			aaps->agent.param
+			aaps->agent,
+			true
 		);
 		if (aaps->feedback_queue)
 			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
@@ -341,10 +339,8 @@ static inline void handle_signal(
 		ASSERT(aaps->agent.callback == NULL);
 		ASSERT(aaps->agent.param == NULL);
 		feedback = agent_register(
-			aaps->agent.sink_identifier,
-			false,
-			NULL,
-			NULL
+			aaps->agent,
+			false
 		);
 		if (aaps->feedback_queue)
 			hal_queue_push_to_back(aaps->feedback_queue, &feedback);
