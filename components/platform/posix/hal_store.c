@@ -11,6 +11,7 @@
 #include "platform/hal_store.h"
 #include "platform/hal_io.h"
 #include <sys/stat.h>
+#include "ud3tn/eid.h"
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -52,14 +53,29 @@ void write_bundle_to_file(void* file, const void * b, const size_t size){
 }
 
 enum ud3tn_result hal_store_bundle(struct bundle_store* store, struct bundle *bundle) {
+    // Create index folder
+    char* node_id = get_node_id(bundle->destination);
+    eid_to_filename(node_id);
+    char* dirpath = malloc(sizeof(char) * (strlen(store->identifier) + 1 + strlen(node_id)));
+    sprintf(dirpath, "%s/%s", store->identifier, node_id);
+    free(node_id);
+    if(mkdir(dirpath, S_IRWXG|S_IRWXU) && errno != EEXIST){
+        LOGF("Bundle Store : Failed to create folder %s (error %d)", dirpath, errno);
+        free(dirpath);
+        return UD3TN_FAIL;
+    }
+
+    // prepare filename
     size_t max_len = (25 + 1 + strlen(bundle->source) + strlen(bundle->destination) + 1);
     char* filename = malloc(sizeof(char) * max_len);
     snprintf(filename, max_len, "%ld_%s_%s", bundle->sequence_number, bundle->source, bundle->destination);
     eid_to_filename(filename);
 
-    char* path = malloc(sizeof(char) * (strlen(store->identifier) + 1 + max_len));
-    sprintf(path, "%s/%s", store->identifier, filename);
+    // create path
+    char* path = malloc(sizeof(char) * (strlen(dirpath) + 1 + max_len));
+    sprintf(path, "%s/%s", dirpath, filename);
     free(filename);
+    free(dirpath);
 
     enum ud3tn_result return_result = UD3TN_FAIL;
 
