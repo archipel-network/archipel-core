@@ -184,7 +184,7 @@ static void transmission_task(
 										1); // ending \0
 			
 			char* filename = malloc(filename_size);
-			sprintf(filename, "%s/%s_%s.bundle%s", folder, seq_num, source_eid, protocol_version);
+			sprintf(filename, "%s/%s_%s.bundle%s", folder, seq_num, source_eid, protocol_version); // TODO Use Bundle_unique_identifier
 
 			FILE *f = fopen(filename, "w");
 			if(f == NULL){

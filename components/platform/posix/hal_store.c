@@ -66,9 +66,30 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* store, struct bundle *bu
     }
 
     // prepare filename
-    size_t max_len = (25 + 1 + strlen(bundle->source) + strlen(bundle->destination) + 1);
+    struct bundle_unique_identifier bundle_id = bundle_get_unique_identifier(bundle);
+    size_t max_len = (
+        4 // protocol version
+        + 1 // _
+        + strlen(bundle->source)
+        + 1 // _
+        + 24 // creation timestamp
+        + 1 // _
+        + 24 // sequence number
+        + 1 // _
+        + 10 // fragment offset
+        + 1 // _
+        + 10 // Payload length
+    );
     char* filename = malloc(sizeof(char) * max_len);
-    snprintf(filename, max_len, "%ld_%s_%s", bundle->sequence_number, bundle->source, bundle->destination);
+    snprintf(filename, max_len, "%d_%s_%ld_%ld_%d_%d",
+        bundle_id.protocol_version,
+        bundle_id.source,
+        bundle_id.creation_timestamp_ms,
+        bundle_id.sequence_number,
+        bundle_id.fragment_offset,
+        bundle_id.payload_length
+    );
+    bundle_free_unique_identifier(&bundle_id);
     eid_to_filename(filename);
 
     // create path
