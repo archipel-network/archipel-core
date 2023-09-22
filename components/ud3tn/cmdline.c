@@ -55,6 +55,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->allow_remote_configuration = false;
 	result->exit_immediately = false;
 	result->lifetime_s = DEFAULT_BUNDLE_LIFETIME_S;
+	result->store_folder = strdup("./" DEFAULT_STORE_LOCATION);
 	// The following values cannot be 0
 	result->mbs = 0;
 	// The strings are set afterwards if not provided as an option
@@ -66,7 +67,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		goto finish;
 
 	shorten_long_cli_options(argc, argv);
-	while ((opt = getopt(argc, argv, ":a:b:c:e:l:m:p:s:rRhu")) != -1) {
+	while ((opt = getopt(argc, argv, ":a:b:c:e:l:m:p:s:rRhuS:")) != -1) {
 		switch (opt) {
 		case 'a':
 			if (!optarg || strlen(optarg) < 1) {
@@ -135,6 +136,13 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 				return NULL;
 			}
 			result->aap_socket = strdup(optarg);
+			break;
+		case 'S':
+			if (!optarg || strlen(optarg) < 1) {
+				LOG("Invalid store folder path provided!");
+				return NULL;
+			}
+			result->store_folder = strdup(optarg);
 			break;
 		case 'u':
 			print_usage_text();
@@ -214,6 +222,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--status-reports", "-r"},
 		{"--allow-remote-config", "-R"},
 		{"--usage", "-u"},
+		{"--store", "-S"},
 	};
 
 	const unsigned long aliases_count = sizeof(aliases) / sizeof(*aliases);
@@ -236,7 +245,8 @@ static void print_usage_text(void)
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
 		"    [-R, --allow-remote-config]\n"
-		"    [-s PATH --aap-socket PATH] [-u, --usage]\n";
+		"    [-s PATH --aap-socket PATH]\n"
+		"    [-S PATH --store PATH] [-u, --usage]\n";
 
 	hal_io_message_printf(usage_text);
 }
@@ -259,6 +269,7 @@ static void print_help_text(void)
 		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
 		"  -u, --usage                 print usage summary and exit\n"
+		"  -S, --store PATH            folder to store persisted bundles in\n"
 		"\n"
 		"Default invocation: ud3tn \\\n"
 		"  -b " STR(DEFAULT_BUNDLE_VERSION) " \\\n"
@@ -266,7 +277,8 @@ static void print_help_text(void)
 		"  -e " DEFAULT_EID " \\\n"
 		"  -l " STR(DEFAULT_BUNDLE_LIFETIME) " \\\n"
 		"  -m %lu \\\n"
-		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\n"
+		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\\\n"
+		"  -S $PWD/" DEFAULT_STORE_LOCATION "\n"
 		"\n"
 		"Please report bugs to <contact@d3tn.com>.\n";
 

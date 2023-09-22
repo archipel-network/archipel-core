@@ -41,6 +41,8 @@ static const int IS_DEBUG_BUILD;
  */
 #define DEFAULT_CRC_TYPE BUNDLE_CRC_TYPE_16
 
+#define DEFAULT_STORE_LOCATION "archipel-core-bundles"
+
 
 /*
  * [GENERAL] general configuration options

@@ -8,6 +8,7 @@
 #include "ud3tn/router.h"
 
 #include "platform/hal_types.h"
+#include "platform/hal_store.h"
 
 // Interface to the bundle agent, provided to other agents and the CLA.
 struct bundle_agent_interface {
@@ -48,6 +49,7 @@ struct bundle_processor_task_parameters {
 	const char *local_eid;
 	bool status_reporting;
 	bool allow_remote_configuration;
+	struct bundle_store* bundle_store;
 };
 
 void bundle_processor_inform(

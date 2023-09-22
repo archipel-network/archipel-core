@@ -16,6 +16,7 @@
 #include "platform/hal_platform.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_task.h"
+#include "platform/hal_store.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -85,6 +86,13 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	// to register agents from its thread.
 	agent_manager_init(bundle_agent_interface.local_eid);
 
+	struct bundle_store* bundle_store = hal_store_init(opt->store_folder);
+	if(bundle_store == NULL){
+		LOG("INIT: Bundle persistance store could not be initialized!");
+		exit(EXIT_FAILURE);
+	}
+	bundle_processor_task_params->bundle_store  = bundle_store;
+
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
 		"bundl_proc_t",
@@ -98,7 +106,11 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		exit(EXIT_FAILURE);
 	}
 
-	int result = echo_agent_setup(
+	agent_manager_init(bundle_agent_interface.local_eid);
+
+	int result;
+
+	result = echo_agent_setup(
 		&bundle_agent_interface,
 		opt->lifetime_s * 1000
 	);

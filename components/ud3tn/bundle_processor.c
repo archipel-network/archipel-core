@@ -40,6 +40,7 @@ struct bp_context {
 	char *local_eid_prefix;
 	bool local_eid_is_ipn;
 	bool status_reporting;
+	struct bundle_store* store;
 
 	struct contact_manager_params cm_param;
 
@@ -265,6 +266,7 @@ void bundle_processor_task(void * const param)
 		.status_reporting = p->status_reporting,
 		.reassembly_list = NULL,
 		.known_bundle_list = NULL,
+		.store = p->bundle_store,
 	};
 
 	ASSERT(strlen(ctx.local_eid) > 3);
@@ -494,13 +496,14 @@ static void bundle_forwarding_contraindicated(
 {
 	if(reason == BUNDLE_SR_REASON_NO_KNOWN_ROUTE){
 
-		LOGF("BundleProcessor: No route found for %s, persisting bundle %p...", bundle->destination, bundle);
+		LOGF("BundleProcessor: No route found for %s", bundle->destination);
 
-		enum ud3tn_result result = hal_store_bundle(bundle);
+		enum ud3tn_result result = hal_store_bundle(ctx->store, bundle);
 		if(result != UD3TN_OK) {
 			LOGF("BundleProcessor: Failed to persist bundle %p", bundle);
 			bundle_forwarding_failed(ctx, bundle, reason);
 		} else {
+			LOGF("BundleProcessor: Bundle %s persisted for later dispatch", bundle->destination);
 			bundle_free(bundle);
 		}
 
