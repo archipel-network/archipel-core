@@ -109,34 +109,23 @@ if __name__ == "__main__":
 
     try:
         if args.tcp:
-            with AAP2TCPClient(address=args.tcp) as aap2_client:
-                secret = aap2_client.configure(
-                    args.agentid,
-                    subscribe=True,
-                    secret=args.secret,
-                )
-                logger.info("Assigned agent secret: '%s'", secret)
-                run_aap_recv(
-                    aap2_client,
-                    args.count,
-                    args.output,
-                    args.verify_pl,
-                    args.newline,
-                )
+            aap2_client = AAP2TCPClient(address=args.tcp)
         else:
-            with AAP2UnixClient(address=args.socket) as aap2_client:
-                secret = aap2_client.configure(
-                    args.agentid,
-                    subscribe=True,
-                    secret=args.secret,
-                )
-                logger.info("Assigned agent secret: '%s'", secret)
-                run_aap_recv(
-                    aap2_client,
-                    args.count,
-                    args.output,
-                    args.verify_pl,
-                    args.newline,
-                )
+            aap2_client = AAP2UnixClient(address=args.socket)
+
+        with aap2_client:
+            secret = aap2_client.configure(
+                args.agentid,
+                subscribe=True,
+                secret=args.secret,
+            )
+            logger.info("Assigned agent secret: '%s'", secret)
+            run_aap_recv(
+                aap2_client,
+                args.count,
+                args.output,
+                args.verify_pl,
+                args.newline,
+            )
     finally:
         args.output.close()
