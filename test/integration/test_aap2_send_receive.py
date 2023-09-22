@@ -72,7 +72,15 @@ def do_aap2_test(rpc_client, sub_client):
         adu_msg.src_eid, bundle_data
     ))
     assert bundle_data == payload
+    assert adu_msg.payload_length == len(payload)
     assert adu_msg.src_eid == rpc_client.eid
+    # Test bundle headers returned when sending it
+    rbdl = response.bundle_headers
+    assert adu_msg.src_eid == rbdl.src_eid
+    assert adu_msg.dst_eid == rbdl.dst_eid
+    assert adu_msg.creation_timestamp_ms == rbdl.creation_timestamp_ms
+    assert adu_msg.sequence_number == rbdl.sequence_number
+    assert adu_msg.payload_length == rbdl.payload_length
 
 
 @pytest.mark.skipif(not TEST_AAP2, reason="TEST_AAP2 disabled via environment")

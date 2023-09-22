@@ -484,6 +484,7 @@ static aap2_ResponseStatus process_adu_msg(
 	response->bundle_headers.creation_timestamp_ms = time_ms;
 	response->bundle_headers.sequence_number = seqnum;
 	response->bundle_headers.lifetime_ms = config->parent->lifetime_ms;
+	response->has_bundle_headers = true;
 
 	return aap2_ResponseStatus_RESPONSE_STATUS_SUCCESS;
 }
