@@ -15,6 +15,7 @@ $(eval $(call addComponentWithRules,components/cla/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/platform/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/spp))
 $(eval $(call addComponentWithRules,components/ud3tn))
+$(eval $(call addComponentWithRules,components/archipel-core))
 
 TINYCBOR_SOURCES := \
 	cborerrorstrings.c \

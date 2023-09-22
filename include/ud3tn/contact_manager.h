@@ -25,6 +25,7 @@ enum contact_manager_signal {
 
 struct contact_manager_params contact_manager_start(
 	QueueIdentifier_t bp_queue,
-	struct contact_list **clistptr);
+	struct contact_list **clistptr,
+	QueueIdentifier_t bundle_restore_queue);
 
 #endif /* CONTACTMANAGER_H_INCLUDED */

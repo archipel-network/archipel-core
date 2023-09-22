@@ -298,7 +298,9 @@ void bundle_processor_task(void * const param)
 	/* Start contact manager */
 	ctx.cm_param = contact_manager_start(
 		p->signaling_queue,
-		routing_table_get_raw_contact_list_ptr());
+		routing_table_get_raw_contact_list_ptr(),
+		p->bundle_restore_queue
+		);
 	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
 		LOG("BundleProcessor: Contact manager could not be initialized!");
 		ASSERT(false);

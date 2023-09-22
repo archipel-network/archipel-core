@@ -21,6 +21,7 @@
 #define CONTACT_TX_TASK_PRIORITY 3
 #define CONTACT_LISTEN_TASK_PRIORITY 2
 #define CONTACT_MANAGEMENT_TASK_PRIORITY 2
+#define BUNDLE_RESTORE_TASK_PRIORITY 2
 
 /* 0 means inheriting the stack size from the parent task */
 #define DEFAULT_TASK_STACK_SIZE 0

@@ -50,6 +50,7 @@ struct bundle_processor_task_parameters {
 	bool status_reporting;
 	bool allow_remote_configuration;
 	struct bundle_store* bundle_store;
+	QueueIdentifier_t bundle_restore_queue;
 };
 
 void bundle_processor_inform(

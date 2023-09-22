@@ -4,6 +4,7 @@
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
+#include "archipel-core/bundle_restore.h"
 
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
@@ -26,6 +27,7 @@ struct contact_manager_task_parameters {
 	QueueIdentifier_t control_queue;
 	QueueIdentifier_t bp_queue;
 	struct contact_list **contact_list_ptr;
+	QueueIdentifier_t restore_queue;
 };
 
 struct contact_info {
@@ -38,6 +40,7 @@ struct contact_manager_context {
 	struct contact_info current_contacts[MAX_CONCURRENT_CONTACTS];
 	int8_t current_contact_count;
 	uint64_t next_contact_time_ms;
+	QueueIdentifier_t bundle_restore_queue;
 };
 
 static bool contact_active(
@@ -298,6 +301,10 @@ static uint8_t check_for_contacts(
 				added_contacts[i].cla_addr
 			);
 		}
+
+		bundle_restore_for_destination(
+			ctx->bundle_restore_queue,
+			added_contacts[i].eid);
 	}
 	for (i = 0; i < removed_count; i++) {
 		LOGF("ContactManager: Scheduled contact with \"%s\" ended (%p).",
@@ -375,6 +382,7 @@ static void contact_manager_task(void *cm_parameters)
 	struct contact_manager_context ctx = {
 		.current_contact_count = 0,
 		.next_contact_time_ms = UINT64_MAX,
+		.bundle_restore_queue = parameters->restore_queue
 	};
 
 	if (!parameters) {
@@ -419,7 +427,8 @@ static void contact_manager_task(void *cm_parameters)
 
 struct contact_manager_params contact_manager_start(
 	QueueIdentifier_t bp_queue,
-	struct contact_list **clistptr)
+	struct contact_list **clistptr,
+	QueueIdentifier_t bundle_restore_queue)
 {
 	struct contact_manager_params ret = {
 		.task_creation_result = UD3TN_FAIL,
@@ -448,6 +457,7 @@ struct contact_manager_params contact_manager_start(
 	cmt_params->control_queue = queue;
 	cmt_params->bp_queue = bp_queue;
 	cmt_params->contact_list_ptr = clistptr;
+	cmt_params->restore_queue = bundle_restore_queue;
 	ret.task_creation_result = hal_task_create(
 		contact_manager_task,
 		"cont_man_t",

@@ -17,6 +17,7 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_task.h"
 #include "platform/hal_store.h"
+#include "archipel-core/bundle_restore.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -66,6 +67,39 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		exit(EXIT_FAILURE);
 	}
 
+	/* Initialize persistance store */
+	struct bundle_store* bundle_store = hal_store_init(opt->store_folder);
+	if(bundle_store == NULL){
+		LOG("INIT: Bundle persistance store could not be initialized!");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Initialize bundle restoration task */
+	struct bundle_restore_config* bundle_restore_task_config = 
+		malloc(sizeof(struct bundle_restore_config));
+
+	bundle_restore_task_config->processor_signaling_queue =
+		bundle_agent_interface.bundle_signaling_queue;
+	bundle_restore_task_config->restore_queue =
+		hal_queue_create(
+				BUNDLE_QUEUE_LENGTH,
+				sizeof(struct bundle_restore_signal)
+		);
+	bundle_restore_task_config->store = bundle_store;
+
+	const enum ud3tn_result restore_task_result = hal_task_create(
+		bundle_restore_task,
+		"bundle_restore_t",
+		BUNDLE_RESTORE_TASK_PRIORITY,
+		bundle_restore_task_config,
+		DEFAULT_TASK_STACK_SIZE
+	);
+	if (restore_task_result != UD3TN_OK) {
+		LOG("INIT: Bundle restore task could not be started!");
+		exit(EXIT_FAILURE);
+	}
+
+
 	struct bundle_processor_task_parameters *bundle_processor_task_params
 		= malloc(sizeof(struct bundle_processor_task_parameters));
 
@@ -81,17 +115,14 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 			opt->status_reporting;
 	bundle_processor_task_params->allow_remote_configuration =
 			opt->allow_remote_configuration;
+	bundle_processor_task_params->bundle_store =
+			bundle_store;
+	bundle_processor_task_params->bundle_restore_queue =
+			bundle_restore_task_config->restore_queue;
 
 	// NOTE: Must be called before launching the BP which calls the function
 	// to register agents from its thread.
 	agent_manager_init(bundle_agent_interface.local_eid);
-
-	struct bundle_store* bundle_store = hal_store_init(opt->store_folder);
-	if(bundle_store == NULL){
-		LOG("INIT: Bundle persistance store could not be initialized!");
-		exit(EXIT_FAILURE);
-	}
-	bundle_processor_task_params->bundle_store  = bundle_store;
 
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
@@ -105,8 +136,6 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		LOG("INIT: Bundle processor task could not be started!");
 		exit(EXIT_FAILURE);
 	}
-
-	agent_manager_init(bundle_agent_interface.local_eid);
 
 	int result;
 
