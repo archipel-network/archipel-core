@@ -111,7 +111,8 @@ class AAP2Client(abc.ABC):
         return None
 
     def configure(self, agent_id=None, subscribe=False, secret=None,
-                  auth_type=aap2_pb2.AuthType.AUTH_TYPE_DEFAULT):
+                  auth_type=aap2_pb2.AuthType.AUTH_TYPE_DEFAULT,
+                  keepalive_seconds=0):
         """Attempt to configure the connection as specified.
 
         Args:
@@ -132,6 +133,7 @@ class AAP2Client(abc.ABC):
             is_subscriber=subscribe,
             endpoint_id=eid,
             secret=self.secret,
+            keepalive_seconds=keepalive_seconds,
         )
         logger.debug(f"Sending CONFIGURE message for '{agent_id}'...")
         self.send(aap2_pb2.AAPMessage(config=config_msg))

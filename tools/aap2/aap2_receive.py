@@ -26,9 +26,16 @@ def run_aap_recv(aap2_client, max_count, output, verify_pl, newline):
         if not msg:
             return
 
-        if msg.WhichOneof("msg") != "adu":
+        msg_type = msg.WhichOneof("msg")
+        if msg_type == "keepalive":
+            logger.debug("Received keepalive message, acknowledging.")
+            aap2_client.send_response_status(
+                ResponseStatus.RESPONSE_STATUS_ACK
+            )
+            continue
+        elif msg_type != "adu":
             logger.info("Received message with field '%s' set, discarding.",
-                        msg.WhichOneof("msg"))
+                        msg_type)
             continue
 
         adu_msg, bundle_data = aap2_client.receive_adu(msg.adu)
@@ -88,6 +95,15 @@ if __name__ == "__main__":
         help="amount of bundles to be received before terminating",
     )
     parser.add_argument(
+        "-k", "--keepalive-seconds",
+        type=int,
+        default=0,
+        help=(
+            "amount of seconds after which µD3TN should send a keepalive "
+            "message (default: disabled)"
+        ),
+    )
+    parser.add_argument(
         "-o", "--output",
         type=argparse.FileType("wb"),
         default=sys.stdout.buffer,
@@ -114,10 +130,15 @@ if __name__ == "__main__":
             aap2_client = AAP2UnixClient(address=args.socket)
 
         with aap2_client:
+            keepalive = args.keepalive_seconds
+            if keepalive < 0 or keepalive > 86400:
+                logger.warning("Invalid keepalive value, disabling keepalive.")
+                keepalive = 0
             secret = aap2_client.configure(
                 args.agentid,
                 subscribe=True,
                 secret=args.secret,
+                keepalive_seconds=keepalive,
             )
             logger.info("Assigned agent secret: '%s'", secret)
             run_aap_recv(
