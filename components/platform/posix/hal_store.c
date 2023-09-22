@@ -22,6 +22,8 @@
 #include <dirent.h>
 #include <inttypes.h>
 
+#define SEQUENCE_NUMBER_KEY "sequence_number"
+
 struct posix_bundle_store {
     struct bundle_store base;
 
@@ -42,14 +44,23 @@ struct bundle_store* hal_store_init(const char* identifier) {
         return NULL;
     }
 
+    char* values_path = malloc(sizeof(char) * (strlen(identifier) + 7 + 1));
+    sprintf(values_path, "%s/values", identifier);
+    if(mkdir(values_path, S_IRWXG|S_IRWXU) && errno != EEXIST){
+        LOGF("Bundle Store : Failed to create folder %s (error %d)", values_path, errno);
+        return NULL;
+    }
+    free(values_path);
+
     struct posix_bundle_store* s = malloc(sizeof(struct posix_bundle_store));
     if(s == NULL){
         return NULL;
     }
     s->base.identifier = strdup(identifier);
 
-    s->current_sequence_number = 0; // BUG Should restore sequence number after restart
+    s->current_sequence_number = 0;
     s->current_sequence_number_sem = hal_semaphore_init_binary();
+    s->current_sequence_number = hal_store_get_uint64_value((struct bundle_store*) s, SEQUENCE_NUMBER_KEY, 0);
     hal_semaphore_release(s->current_sequence_number_sem);
 
     return ((struct bundle_store*) s);
@@ -154,6 +165,11 @@ struct bundle_store_popseq* hal_store_popseq(struct bundle_store* base_store, co
 
     hal_semaphore_take_blocking(store->current_sequence_number_sem);
     const uint64_t max_seqnum = store->current_sequence_number;
+    store->current_sequence_number += 1;
+    hal_store_set_uint64_value(
+        base_store,
+        SEQUENCE_NUMBER_KEY,
+        store->current_sequence_number);
     hal_semaphore_release(store->current_sequence_number_sem);
 
     struct posix_bundle_store_popseq* popseq = malloc(sizeof(struct posix_bundle_store_popseq));
@@ -187,7 +203,6 @@ void hal_store_popseq_free(struct bundle_store_popseq* base_popseq){
     free(popseq->folder_path);
     free(popseq);
 }
-
 
 static void _hal_store_get_bundle(struct bundle *bundle, void* p){
     struct bundle** bundle_box = (struct bundle**) p;
@@ -290,4 +305,66 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
     }
 
     return next_bundle;
+}
+
+char* _hal_store_get_value_path(struct bundle_store* store, const char* key){
+    char* filepath = malloc(sizeof(char) * (
+        strlen(store->identifier)
+        + 1 // /
+        + 6 // values
+        + 1 // /
+        + strlen(key) // key
+        + 1 // \0
+    ));
+    sprintf(filepath, "%s/values/%s", store->identifier, key);
+    return filepath;
+}
+
+enum ud3tn_result hal_store_set_uint64_value(
+    struct bundle_store* store,
+    const char* key,
+    const uint64_t value){
+
+    char* filepath = _hal_store_get_value_path(store, key);
+
+    enum ud3tn_result result = UD3TN_OK; 
+
+    FILE* file = fopen(filepath, "w");
+    if(file == NULL){
+        LOGF("Bundle Store : Failed to write value %s in file %s", key, filepath);
+        result = UD3TN_FAIL;
+    } else {
+        size_t n = fwrite(&value, sizeof(uint64_t), 1, file);
+        if(n < 1){
+            LOGF("Bundle Store : Failed to write value %s in file %s", key, filepath);
+            result = UD3TN_FAIL;
+        }
+        fclose(file);
+    }
+
+    free(filepath);
+
+    return result;
+}
+
+uint64_t hal_store_get_uint64_value(
+    struct bundle_store* store,
+    const char* key,
+    uint64_t default_value){
+    
+    char* filepath = _hal_store_get_value_path(store, key);
+    uint64_t value = default_value;
+
+    FILE* file = fopen(filepath, "r");
+    if(file != NULL){
+        size_t n = fread(&value, sizeof(uint64_t), 1, file);
+        if(n < 1){
+            LOGF("Bundle Store : Failed to read value %s in file %s", key, filepath);
+            value = default_value;
+        }
+        fclose(file);
+    }
+
+    free(filepath);
+    return value;
 }
