@@ -316,10 +316,10 @@ static void watching_task(
 
 								if(bundle_ver == '6'){
 									bundle6_parser_read(&b6_parser, buffer, len);
-									basedata = b7_parser.basedata;
+									basedata = b6_parser.basedata;
 								} else if(bundle_ver == '7') {
 									bundle7_parser_read(&b7_parser, buffer, len);
-									basedata = b6_parser.basedata;
+									basedata = b7_parser.basedata;
 								}
 
 								if(basedata->status == PARSER_STATUS_ERROR){
