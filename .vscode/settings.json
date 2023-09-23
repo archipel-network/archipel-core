@@ -1,15 +1,21 @@
 {
     "files.associations": {
-        "common.h": "c",
-        "config.h": "c",
-        "task_tags.h": "c",
-        "simplehtab.h": "c",
-        "dirent.h": "c",
-        "algorithm": "c",
-        "aap_serializer.h": "c",
-        "serializer.h": "c",
-        "types.h": "c",
-        "string.h": "c",
-        "bundle_processor.h": "c"
-    }
+        "*.h": "c",
+        "*.c": "c",
+    },
+    "checkpatch.diagnosticLevel": "Warning",
+    "checkpatch.run": "onSave",
+    "checkpatch.checkpatchArgs": [
+        "--no-tree",
+        "--terse",
+        "--show-types",
+        "--ignore AVOID_EXTERNS",
+        "--ignore COMPLEX_MACRO",
+        "--ignore NEW_TYPEDEFS",
+        "--ignore FUNCTION_ARGUMENTS",
+        "--ignore SPDX_LICENSE_TAG",
+        "--ignore LONG_LINE_STRING",
+        "--ignore REPEATED_WORD",
+        "--typedefsfile ./tools/analysis/stylecheck_typedefs.txt"
+    ]
 }
