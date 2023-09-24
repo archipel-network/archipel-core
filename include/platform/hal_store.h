@@ -10,7 +10,6 @@ struct bundle_store {
 
 struct bundle_store_popseq {
     struct bundle_store* store;
-    char* destination;
 };
 
 /**
@@ -49,13 +48,12 @@ uint64_t hal_store_get_uint64_value(struct bundle_store* store, const char* key,
  * @brief hal_store_popseq returns a sequence of bundles available to read
  * 
  * Returned popseq is guarendeed to return only bundles persisted before its creation
- * Ignoreing newly persisted bundles resulting of a failed routing for example
+ * Ignoring newly persisted bundles (e.g. after a failed routing)
  * 
  * @param store Store to operate on (see hal_store_init)
- * @param destination Node identifier of poped bundle
  * @return A pop sequence iterating over available bundles or NULL if an error occured
 */
-struct bundle_store_popseq* hal_store_popseq(struct bundle_store* store, const char* destination);
+struct bundle_store_popseq* hal_store_popseq(struct bundle_store* store);
 
 /**
  * @brief hal_store_popseq_next get next bundle in sequence

@@ -189,7 +189,7 @@ static void transmission_task(
 			FILE *f = fopen(filename, "w");
 			if(f == NULL){
 				LOGF("FileCLA : Failed to open file %s in write mode",filename);
-
+				// BUG should notify system to keep bundle
 			} else {
 				prepare_bundle_for_forwarding(bundle, config->local_eid);
 				bundle_serialize(bundle, write_to_file, f);

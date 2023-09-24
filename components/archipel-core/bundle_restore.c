@@ -22,7 +22,7 @@ void bundle_restore_task(void* conf){
             LOGF("BundleRestore : Should restore for %s", signal.destination);
 
             struct bundle_store_popseq* seq = 
-                hal_store_popseq(config->store, signal.destination);
+                hal_store_popseq(config->store);
 
             struct bundle* bundle = NULL;
             while((bundle = hal_store_popseq_next(seq)) != NULL){

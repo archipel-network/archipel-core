@@ -52,6 +52,14 @@ struct bundle_store* hal_store_init(const char* identifier) {
     }
     free(values_path);
 
+    char* data_path = malloc(sizeof(char) * (strlen(identifier) + 5 + 1));
+    sprintf(data_path, "%s/data", identifier);
+    if(mkdir(data_path, S_IRWXG|S_IRWXU) && errno != EEXIST){
+        LOGF("Bundle Store : Failed to create folder %s (error %d)", data_path, errno);
+        return NULL;
+    }
+    free(data_path);
+
     struct posix_bundle_store* s = malloc(sizeof(struct posix_bundle_store));
     if(s == NULL){
         return NULL;
@@ -96,17 +104,8 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundl
     uint64_t current_seqnum = store->current_sequence_number;
     hal_semaphore_release(store->current_sequence_number_sem);
 
-    // Create index folder
-    char* node_id = get_node_id(bundle->destination);
-    eid_to_filename(node_id);
-    char* dirpath = malloc(sizeof(char) * (strlen(store->base.identifier) + 1 + strlen(node_id)));
-    sprintf(dirpath, "%s/%s", store->base.identifier, node_id);
-    free(node_id);
-    if(mkdir(dirpath, S_IRWXG|S_IRWXU) && errno != EEXIST){
-        LOGF("Bundle Store : Failed to create folder %s (error %d)", dirpath, errno);
-        free(dirpath);
-        return UD3TN_FAIL;
-    }
+    char* dirpath = malloc(sizeof(char) * (strlen(store->base.identifier) + 5 + 1));
+    sprintf(dirpath, "%s/data", store->base.identifier);
 
     // prepare filename
     struct bundle_unique_identifier bundle_id = bundle_get_unique_identifier(bundle);
@@ -158,7 +157,7 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundl
     return return_result;
 }
 
-struct bundle_store_popseq* hal_store_popseq(struct bundle_store* base_store, const char* destination){
+struct bundle_store_popseq* hal_store_popseq(struct bundle_store* base_store){
 
     struct posix_bundle_store* store = 
         (struct posix_bundle_store*) base_store;
@@ -174,20 +173,14 @@ struct bundle_store_popseq* hal_store_popseq(struct bundle_store* base_store, co
 
     struct posix_bundle_store_popseq* popseq = malloc(sizeof(struct posix_bundle_store_popseq));
     popseq->base.store = base_store;
-    popseq->base.destination = get_node_id(destination);
     popseq->max_sequence_number = max_seqnum;
-
-    char* filename = strdup(popseq->base.destination);
-    eid_to_filename(filename);
 
     popseq->folder_path = malloc(sizeof(char) * (
         strlen(store->base.identifier)
-        + 1
-        + strlen(filename)
-        + 1
+        + 5 // /data
+        + 1 // \0
     ));
-    sprintf(popseq->folder_path, "%s/%s", store->base.identifier, filename);
-    free(filename);
+    sprintf(popseq->folder_path, "%s/data", store->base.identifier);
 
     popseq->dir = opendir(popseq->folder_path);
 
@@ -199,7 +192,6 @@ void hal_store_popseq_free(struct bundle_store_popseq* base_popseq){
         (struct posix_bundle_store_popseq*) base_popseq;
 
     closedir(popseq->dir);
-    free(popseq->base.destination);
     free(popseq->folder_path);
     free(popseq);
 }
