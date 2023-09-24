@@ -182,3 +182,11 @@ int start_os(void)
 	ASSERT(0);
 	__builtin_unreachable();
 }
+
+#ifdef __ANDROID__
+#include <jni.h>
+
+void Java_fr_epickiwi_archipel_core_ArchipelNode_init(JNIEnv *env, jobject thiz){
+	init(0, NULL);
+}
+#endif

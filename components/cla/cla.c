@@ -2,12 +2,14 @@
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 
+#ifndef __ANDROID__
 #include "cla/posix/cla_mtcp.h"
 #include "cla/posix/cla_smtcp.h"
 #include "cla/posix/cla_tcpclv3.h"
 #include "cla/posix/cla_tcpspp.h"
 #include "cla/posix/cla_bibe.h"
 #include "cla/posix/cla_file.h"
+#endif
 
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
@@ -37,12 +39,14 @@ struct available_cla_list_entry {
 };
 
 const struct available_cla_list_entry AVAILABLE_CLAS[] = {
+#ifndef __ANDROID__
 	{ "mtcp", &mtcp_create },
 	{ "smtcp", &smtcp_create },
 	{ "tcpclv3", &tcpclv3_create },
 	{ "tcpspp", &tcpspp_create },
 	{ "bibe", &bibe_create },
 	{ "file", &filecla_create },
+#endif
 };
 
 
