@@ -545,7 +545,7 @@ static int process_aap_message(
 	return result;
 }
 
-static bool poll_recv_timeout(const int socket_fd, const int timeout)
+static int poll_recv_timeout(const int socket_fd, const int timeout)
 {
 	struct pollfd pollfd[1];
 
@@ -561,19 +561,19 @@ static bool poll_recv_timeout(const int socket_fd, const int timeout)
 				continue;
 
 			LOGERROR("AAP2Agent", "poll()", err);
-			return false;
+			return -1;
 		}
 		if ((pollfd[0].revents & POLLERR)) {
 			LOG("AAP2Agent: Socket error (e.g. TCP RST) detected.");
-			return false;
+			return -1;
 		}
 		if (pollfd[0].revents & POLLHUP) {
 			LOG("AAP2Agent: The peer closed the connection.");
-			return false;
+			return -1;
 		}
 		if (pollfd[0].revents & POLLIN)
-			return true;
-		return false;
+			return 1;
+		return 0;
 	}
 }
 
@@ -685,8 +685,8 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 	// Receive status from client.
 	aap2_AAPResponse response = aap2_AAPResponse_init_default;
 
-	if (!poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS)) {
-		LOG("AAP2Agent: Client did not respond, closing connection.");
+	if (poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS) <= 0) {
+		LOG("AAP2Agent: No response received, closing connection.");
 		send_result = -1;
 		goto done;
 	}
@@ -722,7 +722,7 @@ static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
 {
 	struct bundle_adu data;
 
-	while (poll_recv_timeout(bundle_pipe_fd[0], 0)) {
+	while (poll_recv_timeout(bundle_pipe_fd[0], 0) > 0) {
 		if (pipeq_read_all(bundle_pipe_fd[0],
 				   &data, sizeof(struct bundle_adu)) <= 0) {
 			LOGERROR("AAP2Agent", "read()", errno);
@@ -760,8 +760,8 @@ static int send_keepalive(struct aap2_agent_comm_config *const config)
 	// Receive status from client.
 	aap2_AAPResponse response = aap2_AAPResponse_init_default;
 
-	if (!poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS)) {
-		LOG("AAP2Agent: Client did not respond, closing connection.");
+	if (poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS) <= 0) {
+		LOG("AAP2Agent: No response received, closing connection.");
 		send_result = -1;
 		goto done;
 	}
@@ -863,9 +863,16 @@ static void aap2_agent_comm_task(void *const param)
 				if (send_bundle_from_pipe(config) < 0)
 					break;
 		} else {
-			if (!poll_recv_timeout(config->socket_fd,
-					       config->keepalive_timeout_ms)) {
+			const int poll_result = poll_recv_timeout(
+				config->socket_fd,
+				config->keepalive_timeout_ms
+			);
+
+			if (poll_result == 0) {
 				LOG("AAP2Agent: Client exceeded keepalive timeout, terminating.");
+				break;
+			} else if (poll_result < 0) {
+				// An error message was already logged here.
 				break;
 			}
 
