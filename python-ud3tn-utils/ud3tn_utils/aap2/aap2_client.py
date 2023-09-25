@@ -17,6 +17,25 @@ from .generated import aap2_pb2
 logger = logging.getLogger(__name__)
 
 
+class AAP2Error(RuntimeError):
+    pass
+
+
+class AAP2CommunicationError(AAP2Error):
+    pass
+
+
+class AAP2OperationFailed(AAP2Error):
+    pass
+
+
+class AAP2UnexpectedMessage(AAP2Error):
+
+    def __init__(self, *args, message=None):
+        super().__init__(*args)
+        self.message = message
+
+
 class AAP2Client(abc.ABC):
     """A context manager class for connecting to the AAP socket of a uD3TN
     instance.
@@ -64,14 +83,19 @@ class AAP2Client(abc.ABC):
         """
         data = self.socket.recv(1)
         if not data:
-            raise RuntimeError("Connection broke during handshake")
+            raise AAP2CommunicationError("Connection broke during handshake")
         if data[0] != 0x2f:
-            raise RuntimeError(
+            raise AAP2CommunicationError(
                 "Did not receive AAP 2.0 magic number 0x2F, but: " +
                 hex(data[0])
             )
         msg_welcome = self.receive_msg()
-        assert msg_welcome.WhichOneof("msg") == "welcome"
+        if msg_welcome.WhichOneof("msg") != "welcome":
+            raise AAP2UnexpectedMessage(
+                "Expected the 'welcome' oneof field but received: " +
+                msg_welcome.WhichOneof("msg"),
+                msg_welcome
+            )
         self.node_eid = msg_welcome.welcome.node_id
         logger.debug(f"WELCOME message received! ~ EID = {self.node_eid}")
         return msg_welcome.welcome
@@ -138,10 +162,12 @@ class AAP2Client(abc.ABC):
         logger.debug(f"Sending CONFIGURE message for '{agent_id}'...")
         self.send(aap2_pb2.AAPMessage(config=config_msg))
         response = self.receive_response()
-        assert (
-            response.response_status ==
-            aap2_pb2.ResponseStatus.RESPONSE_STATUS_SUCCESS
-        )
+        if (response.response_status !=
+                aap2_pb2.ResponseStatus.RESPONSE_STATUS_SUCCESS):
+            raise AAP2OperationFailed(
+                "The server returned an invalid response status: " +
+                str(response.response_status)
+            )
         logger.debug("ACK message received!")
         return self.secret
 
@@ -167,14 +193,14 @@ class AAP2Client(abc.ABC):
         while c < 10:
             data = self.socket.recv(1)
             if not data:
-                raise RuntimeError("Connection broke on `recv()`")
+                raise AAP2CommunicationError("Connection broke on `recv()`")
             result.append(data[0])
             # No continuation bit set -> exit loop
             if (data[0] & 0x80) == 0:
                 break
             c += 1
         if c >= 10:
-            raise RuntimeError("Invalid varint received")
+            raise AAP2CommunicationError("Invalid varint received")
         data_len = _DecodeVarint32(data, 0)[0]
         # Read and return data
         return self._receive_all(data_len)
@@ -196,9 +222,14 @@ class AAP2Client(abc.ABC):
     def receive_adu(self, adu_msg=None):
         """Receive a bundle ADU (Protobuf with extra payload data)."""
         if not adu_msg:
-            adu = self.receive_msg()
-            assert adu.WhichOneof("msg") == "adu"
-            adu_msg = adu.adu
+            msg = self.receive_msg()
+            if msg.WhichOneof("msg") != "adu":
+                raise AAP2UnexpectedMessage(
+                    "Expected the 'adu' oneof field but received: " +
+                    msg.WhichOneof("msg"),
+                    msg
+                )
+            adu_msg = msg.adu
         bundle_len = adu_msg.payload_length
         bundle_data = self.socket.recv(bundle_len)
         return adu_msg, bundle_data
@@ -213,7 +244,10 @@ class AAP2Client(abc.ABC):
 
     def send_adu(self, adu_msg, bundle_data):
         """Send a bundle ADU (Protobuf with extra payload data)."""
-        assert adu_msg.payload_length == len(bundle_data)
+        if adu_msg.payload_length != len(bundle_data):
+            raise ValueError(
+                "Payload length in message does not match length of data"
+            )
         self.send(aap2_pb2.AAPMessage(adu=adu_msg))
         self.socket.send(bundle_data)
 
