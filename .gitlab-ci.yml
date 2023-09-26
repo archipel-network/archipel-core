@@ -187,6 +187,26 @@ aap-test:
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN2_PID
 
+aap2-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - rm -f ./ud3tn.aap2.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - python tools/aap2/aap2_ping.py dtn://ud3tn.dtn/echo -t 1 -c 1
+        - python tools/aap2/aap2_ping.py dtn://ud3tn.dtn/1 -a 1 -t 1 -c 1
+        - (sleep 1 && python tools/aap2/aap2_send.py -a 1 -s secret dtn://ud3tn.dtn/1 hello) & timeout 3 python tools/aap2/aap2_receive.py -a 1 -s secret -c 1 --verify-pl hello
+        - kill -TERM $UD3TN1_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
+
 ion-ipn-bpv6-interoperability-test:
     stage: functional_test
     when: always
