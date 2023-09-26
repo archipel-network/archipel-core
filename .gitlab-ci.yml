@@ -180,7 +180,7 @@ aap-test:
         - kill -TERM $UD3TN1_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN1_PID
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         - while ! nc -z localhost 4242; do sleep 0.1; done
         - python tools/aap/aap_test.py --tcp '::1' 4242
         - kill -TERM $UD3TN2_PID
@@ -274,8 +274,8 @@ fragment-reassembly-test:
         - cd /ud3tn_build
         - rm -f ./ud3tn1.socket
         - rm -f ./ud3tn2.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket -S ud3tn1.aap2.socket & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
@@ -300,9 +300,9 @@ ipv6-compatibility-test:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
         # IPv6 and IPv4
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 -S ud3tn1.aap2.socket & UD3TN1_PID=$!
         # IPv4-only
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         # Create venv and wait for uD3TN ports to be open
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"

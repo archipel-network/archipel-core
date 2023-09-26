@@ -44,22 +44,22 @@ exit_handler() {
 rm -f /tmp/*.log
 
 # Start first uD3TN instance (lower1)
-"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -e "dtn://lower1.dtn/" -c "mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4242 -S "$UD3TN_DIR/ud3tn1.aap2.socket" -e "dtn://lower1.dtn/" -c "mtcp:127.0.0.1,4224" > /tmp/lower1.log 2>&1 &
 UD3TN1_PID=$!
 sleep 1
 
 # Start second uD3TN instance (upper1)
-"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -e "dtn://upper1.dtn/" -c "bibe:," > /tmp/upper1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4243 -S "$UD3TN_DIR/ud3tn2.aap2.socket" -e "dtn://upper1.dtn/" -c "bibe:," > /tmp/upper1.log 2>&1 &
 UD3TN2_PID=$!
 sleep 1
 
 # Start third uD3TN instance (lower2)
-"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -e "dtn://lower2.dtn/" -c "mtcp:127.0.0.1,4225" > /tmp/lower2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4244 -S "$UD3TN_DIR/ud3tn3.aap2.socket" -e "dtn://lower2.dtn/" -c "mtcp:127.0.0.1,4225" > /tmp/lower2.log 2>&1 &
 UD3TN3_PID=$!
 sleep 1
 
 # Start fourth uD3TN instance (upper2)
-"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -e "dtn://upper2.dtn/" -c "bibe:," > /tmp/upper2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -a localhost -p 4245 -S "$UD3TN_DIR/ud3tn4.aap2.socket" -e "dtn://upper2.dtn/" -c "bibe:," > /tmp/upper2.log 2>&1 &
 UD3TN4_PID=$!
 
 trap exit_handler EXIT

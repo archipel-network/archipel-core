@@ -71,11 +71,11 @@ rm -f ion.log
 rm -f /tmp/ion*log /tmp/ud3tn*.log
 
 # Start first uD3TN instance (uD3TN1)
-"$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn1.socket -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "$UD3TN1_EID" > /tmp/ud3tn1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -s "$UD3TN_DIR/ud3tn1.socket" -S "$UD3TN_DIR/ud3tn1.aap2.socket" -c "tcpclv3:127.0.0.1,4555" -b $BP_VERSION -e "$UD3TN1_EID" > /tmp/ud3tn1.log 2>&1 &
 UD3TN1_PID=$!
 
 # Start second uD3TN instance (uD3TN2)
-"$UD3TN_DIR/build/posix/ud3tn" -s $UD3TN_DIR/ud3tn2.socket -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "$UD3TN2_EID" > /tmp/ud3tn2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" -s "$UD3TN_DIR/ud3tn2.socket" -S "$UD3TN_DIR/ud3tn2.aap2.socket" -c "tcpclv3:127.0.0.1,4554" -b $BP_VERSION -e "$UD3TN2_EID" > /tmp/ud3tn2.log 2>&1 &
 UD3TN2_PID=$!
 
 # Start ION instance
@@ -87,20 +87,20 @@ trap exit_handler EXIT
 
 # Configure a contact to ION in uD3TN1 which allows to reach uD3TN2
 sleep 0.5
-python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "$UD3TN2_EID" "$ION_EID" tcpclv3:127.0.0.1:4556
+python "$UD3TN_DIR/tools/aap/aap_config.py" --socket "$UD3TN_DIR/ud3tn1.socket" --schedule 1 3600 10000 --reaches "$UD3TN2_EID" "$ION_EID" tcpclv3:127.0.0.1:4556
 
 # Send a bundle to uD3TN1, addressed to uD3TN2
 PAYLOAD="THISISTHEBUNDLEPAYLOAD"
-python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID" "$PAYLOAD" &
+python "$UD3TN_DIR/tools/aap/aap_send.py" --socket "$UD3TN_DIR/ud3tn1.socket" --agentid "$SOURCE_AGENTID" "$SINK_EID" "$PAYLOAD" &
 
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket "$UD3TN_DIR/ud3tn2.socket" --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
 
 # Test forwarding from ION directly
 (sleep 0.5 && bpsource "$SINK_EID" "$PAYLOAD") &
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
+timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket "$UD3TN_DIR/ud3tn2.socket" --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
 
 if [[ "$ION_SINK_EID" != "dtn:none" ]]; then
-    (sleep 0.5 && python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$ION_SINK_EID" "$PAYLOAD") &
+    (sleep 0.5 && python "$UD3TN_DIR/tools/aap/aap_send.py" --socket "$UD3TN_DIR/ud3tn1.socket" --agentid "$SOURCE_AGENTID" "$ION_SINK_EID" "$PAYLOAD") &
     timeout 10 bprecvfile "$ION_SINK_EID" 1
     RECEIVED_PAYLOAD="$(cat testfile1)"
     echo "bprecvfile: $RECEIVED_PAYLOAD"
