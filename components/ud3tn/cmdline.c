@@ -97,7 +97,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 				LOG("Invalid EID provided!");
 				return NULL;
 			}
-			result->eid = strdup(optarg);
+			result->eid = preprocess_local_eid(optarg);
 			break;
 		case 'h':
 			print_help_text();

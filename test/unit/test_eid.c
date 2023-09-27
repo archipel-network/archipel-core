@@ -104,6 +104,30 @@ TEST(eid, validate_local_eid)
 	));
 }
 
+TEST(eid, preprocess_local_eid)
+{
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("dtn:"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("dtn:none"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("ipn:"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("dtn"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("ipn"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid(""));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("xyz"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid(":"));
+	TEST_ASSERT_EQUAL_ASTRING(NULL, preprocess_local_eid("dtn://"));
+	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/",
+				  preprocess_local_eid("dtn://ud3tn"));
+	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/",
+				  preprocess_local_eid("dtn://ud3tn/"));
+	TEST_ASSERT_EQUAL_ASTRING("dtn://ud3tn/abc",
+				  preprocess_local_eid("dtn://ud3tn/abc"));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.", preprocess_local_eid("ipn:1."));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.0", preprocess_local_eid("ipn:1"));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.0", preprocess_local_eid("ipn:1.0"));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:1.3", preprocess_local_eid("ipn:1.3"));
+	TEST_ASSERT_EQUAL_ASTRING("ipn:10.3", preprocess_local_eid("ipn:10.3"));
+}
+
 TEST(eid, get_eid_scheme)
 {
 	TEST_ASSERT_EQUAL(EID_SCHEME_DTN, get_eid_scheme("dtn:none"));
@@ -179,6 +203,7 @@ TEST_GROUP_RUNNER(eid)
 {
 	RUN_TEST_CASE(eid, validate_eid);
 	RUN_TEST_CASE(eid, validate_local_eid);
+	RUN_TEST_CASE(eid, preprocess_local_eid);
 	RUN_TEST_CASE(eid, get_eid_scheme);
 	RUN_TEST_CASE(eid, validate_ipn_eid);
 	RUN_TEST_CASE(eid, parse_ipn_ull);
