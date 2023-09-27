@@ -4,7 +4,10 @@
 
 #include "ud3tn/result.h"
 
+#include <limits.h>
 #include <stdint.h>
+
+#define EID_MAX_LEN (INT16_MAX - 1)
 
 enum eid_scheme {
 	EID_SCHEME_UNKNOWN,

@@ -69,6 +69,19 @@ TEST(eid, validate_eid)
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_eid("ipn:"));
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_eid("ipn"));
 	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_eid("IPN:1.0"));
+
+	char *const too_long_eid = malloc(EID_MAX_LEN + 2);
+	int i;
+
+	snprintf(too_long_eid, EID_MAX_LEN + 2, "dtn://");
+	for (i = 6; i < EID_MAX_LEN; i++)
+		too_long_eid[i] = 'd';
+	too_long_eid[EID_MAX_LEN] = '/';
+	too_long_eid[EID_MAX_LEN + 1] = '\0';
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_eid(too_long_eid));
+	too_long_eid[EID_MAX_LEN] = '\0';
+	TEST_ASSERT_EQUAL(UD3TN_OK, validate_eid(too_long_eid));
+	free(too_long_eid);
 }
 
 TEST(eid, validate_local_eid)

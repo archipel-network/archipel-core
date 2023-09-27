@@ -108,6 +108,9 @@ enum eid_scheme get_eid_scheme(const char *const eid)
 
 	const size_t len = strlen(eid);
 
+	if (len > EID_MAX_LEN)
+		return EID_SCHEME_UNKNOWN;
+
 	if (len >= 4 && !memcmp(eid, "dtn:", 4))
 		return EID_SCHEME_DTN;
 	else if (len >= 4 && !memcmp(eid, "ipn:", 4))
