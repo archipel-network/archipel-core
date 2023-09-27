@@ -212,10 +212,14 @@ char *get_node_id(const char *const eid)
 		if (delim[1] == '~')
 			return NULL;
 		result = strdup(eid);
+		if (result == NULL)
+			return NULL;
 		result[delim - eid + 1] = '\0';
 		return result;
 	case EID_SCHEME_IPN:
 		result = strdup(eid);
+		if (result == NULL)
+			return NULL;
 		delim = strchr(result, '.');
 		ASSERT(delim);
 		// No out-of-bounds access as validate_eid ensures the dot is
