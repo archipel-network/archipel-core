@@ -242,6 +242,16 @@ ione-dtn-bpv7-interoperability-test:
     extends: ion-dtn-bpv7-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
 
+hdtn-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/hdtn-interop:1.0.0
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/run_hdtn_test.sh
+
 mtcp-test:
     stage: functional_test
     when: always
