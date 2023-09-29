@@ -8,10 +8,3 @@ aap2.BundleADU.dst_eid                    type:FT_POINTER
 aap2.BundleADU.src_eid                    type:FT_POINTER
 aap2.Bundle.dst_eid                       type:FT_POINTER
 aap2.Bundle.src_eid                       type:FT_POINTER
-aap2.Link.peer_node_id                    type:FT_POINTER
-aap2.Link.peer_cla_addr                   type:FT_POINTER
-# aap2.FIBInfo.fib_entries                  type:FT_POINTER
-# aap2.FIBInfo.FIBEntry.peer_links          type:FT_POINTER
-# aap2.FIBInfo.FIBEntry.peer_node_id        type:FT_POINTER
-aap2.DispatchResult.next_hops             type:FT_POINTER
-aap2.DispatchResult.NextHopEntry.node_id  type:FT_POINTER

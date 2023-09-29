@@ -27,21 +27,8 @@ message AAPMessage {
     // Message transmitting a bundle ADU into either direction.
     BundleADU adu = 3;
 
-    // Message informing a BDM Client about a bundle that needs to be
-    // dispatched.
-    DispatchRequest dispatch_request = 4;
-
-    // Message for initiating or informing about CLA link status changes.
-    // This message is also issued multiple times by µD3TN at the start of a
-    // connection to a FIB-authorized subscriber to transmit the current FIB.
-    Link link = 5;
-
     // Call issued regularly to ensure the connection is still alive.
     Keepalive keepalive = 6;
-
-    // NOTE: FUTURE EXTENSION: Message for informing a FIB-authorized Client
-    // of the FIB contents in a "bulk manner".
-    // FIBInfo fib_info = 7;
   }
 }
 
@@ -59,20 +46,6 @@ enum AuthType {
   // Only allow to register free endpoints or agent IDs for which the same
   // secret can be provided.
   AUTH_TYPE_DEFAULT = 0;
-
-  // Allow for changing the FIB (non-sub) or receiving FIB updates (sub).
-  AUTH_TYPE_FIB_CONTROL = 1;
-
-  // Allow for dispatching bundles (sub) or sending bundles from arbitrary
-  // source endpoints (non-sub).
-  AUTH_TYPE_BUNDLE_DISPATCH = 2;
-
-  // Allow for receiving FIB updates and dispatching bundles.
-  AUTH_TYPE_FIB_AND_DISPATCH = 3;
-
-  // NOTE: FUTURE EXTENSION: Allow registering for all agent IDs. Leave
-  // `agent_id` empty to receive everything.
-  // AUTH_TYPE_ALL_ENDPOINTS = 4;
 }
 
 // Message sent by the Client to authenticate itself and configure the
@@ -100,20 +73,11 @@ message ConnectionConfig {
   // only intends to control the FIB or dispatch bundles.
   string endpoint_id = 4;
 
-  // NOTE: FUTURE EXTENSION: Multiple endpoints per connection can be allowed
-  // as future extension. This, however, requires to specify the EID to be
-  // used in every ADU message.
-  // repeated string endpoint_id = 4;
-
   // The maximum time interval between messages, should be zero, or between
   // 30 sec and 600 sec. The Initiator SHALL send `KEEPALIVE` messages after
   // this amount of time has elapsed. 0 disables the feature (see RFC 9174),
   // which is useful e.g. for local sockets. Default = 0 (disabled).
   uint32 keepalive_seconds = 5;
-
-  // NOTE: FUTURE EXTENSION: Whether or not to subscribe to payload data as
-  // well. Default = true.
-  // bool deliver_bundle_payload = 6;
 }
 
 // Flags defining specific behavior for the bundle ADU, e.g., for BIBE.
@@ -181,94 +145,6 @@ message Bundle {
   // extension blocks.
 }
 
-// The reason why a DispatchRequest was sent.
-enum DispatchReason {
-  // Invalid.
-  DISPATCH_REASON_UNSPECIFIED = 0;
-
-  // Destination EID was not found in FIB.
-  DISPATCH_REASON_NO_FIB_ENTRY = 1;
-
-  // The link that should be used is currently not active or unusable.
-  DISPATCH_REASON_LINK_INACTIVE = 2;
-
-  // The CLA subsystem responded negatively to the next-hop request.
-  DISPATCH_REASON_CLA_LOOKUP_FAILED = 3;
-
-  // The transmission was attempted but failed.
-  DISPATCH_REASON_TX_FAILED = 4;
-}
-
-// Message informing a BDM Client about a bundle that needs to be dispatched.
-message DispatchRequest {
-  // The bundle to dispatch.
-  Bundle bundle = 1;
-
-  // Specifies why the BDM was triggered this time.
-  DispatchReason reason = 2;
-}
-
-// The intended or currently-recorded status of a Link in the FIB.
-enum LinkStatus {
-  // Do not change the status. Invalid in a response/information.
-  LINK_STATUS_UNSPECIFIED = 0;
-
-  // The link has been requested (e.g., via AAP) but the CLA has not yet
-  // confirmed a connection.
-  LINK_STATUS_PENDING = 1;
-
-  // The link is present and available for forwarding bundles.
-  LINK_STATUS_ACTIVE = 2;
-
-  // The link has been detected by a CLA but insufficient information exists
-  // to use the associated FIB entry.
-  LINK_STATUS_OPPORTUNISTIC = 3;
-
-  // Deletion of the link is requested.
-  LINK_STATUS_TEARDOWN = 4;
-}
-
-// Message for initiating or informing about CLA link status changes.
-message Link {
-  // The intended or detected link status.
-  LinkStatus status = 1;
-
-  // An EID representing the next-hop node ID.
-  string peer_node_id = 2;
-
-  // The identification of a CLA plus CLA-specific address to reach the
-  // next-hop bundle node.
-  string peer_cla_addr = 3;
-
-  // NOTE: FUTURE EXTENSION: Allow for multiple CLA addresses for peers
-  // reachable via multiple interfaces. In the meantime, this is represented
-  // using multiple Links.
-  // repeated string peer_cla_addr = 3;
-
-  // NOTE: FUTURE EXTENSION: Store the expected remaining volume transferrable
-  // via the Link, to enable e.g. fragmentation.
-  // uint64 remaining_volume_bytes = 4;
-}
-
-// NOTE: FUTURE EXTENSION:
-// Message for informing a FIB-authorized Client of the FIB contents.
-/*
-message FIBInfo {
-  // Message representing one line (entry) in the FIB.
-  message FIBEntry {
-    // The node ID (as defined in RFC 9171) of the other peer.
-    string peer_node_id = 1;
-
-    // The recorded Links for the given peer including their status.
-    // Note that this list also contains Links that are not (yet) active.
-    repeated Link peer_links = 2;
-  }
-
-  // The list of all current FIB entries (lines).
-  repeated FIBEntry fib_entries = 1;
-}
-*/
-
 // A message that should be regularly sent by the current Initiator and must be
 // acknowledged with an `AAPResponse` specifying `RESPONSE_STATUS_ACK`.
 message Keepalive {
@@ -282,10 +158,6 @@ message Keepalive {
 message AAPResponse {
   // The result of the received call/request represented as a single value.
   ResponseStatus response_status = 1;
-
-  // Set the next hops for a bundle. Only valid in response to a Bundle
-  // message sent to a BDM by the Server (µD3TN).
-  DispatchResult dispatch_result = 2;
 
   // Headers of the created bundle (present when sending a bundle).
   Bundle bundle_headers = 3;
@@ -318,27 +190,4 @@ enum ResponseStatus {
   // The Client is not authorized to perform the requested action or a provided
   // credential value is not valid for the requested authorization.
   RESPONSE_STATUS_UNAUTHORIZED = 12;
-}
-
-// Representation of a result of a Bundle Dispatcher Module (BDM).
-message DispatchResult {
-  // Representation of an entry in the list of next hops of a DispatchResult.
-  message NextHopEntry {
-    // The next-hop node ID for the bundle. May be an ID such as "ud3tn:storage"
-    // that resolve to a special CLA.
-    string node_id = 1;
-  }
-
-  // The next hop node for the bundle, which must be directly connected.
-  // If more than one next hop is specified, the bundle will be replicated
-  // among all of those nodes.
-  // If empty, the bundle will be dropped as the BPA is not expected to have
-  // any storage by itself (see the storage concepts discussion below).
-  // This way, we also do not need an "action list" as described for the
-  // "Generic Bundle Forwarding Interface" paper previously, because all
-  // actions can either be represented as forwarding to a specific set of
-  // nodes or _not_ forwarding, i.e., the deletion of the bundle.
-  // Note that proactive fragmentation is expected to be a feature of the
-  // storage for now. Later, maximum link capacities may be added (see above).
-  repeated NextHopEntry next_hops = 1;
 }

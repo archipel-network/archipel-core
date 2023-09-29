@@ -13,43 +13,31 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\naap2.proto\x12\x04\x61\x61p2\"\xf4\x01\n\nAAPMessage\x12 \n\x07welcome\x18\x01 \x01(\x0b\x32\r.aap2.WelcomeH\x00\x12(\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x16.aap2.ConnectionConfigH\x00\x12\x1e\n\x03\x61\x64u\x18\x03 \x01(\x0b\x32\x0f.aap2.BundleADUH\x00\x12\x31\n\x10\x64ispatch_request\x18\x04 \x01(\x0b\x32\x15.aap2.DispatchRequestH\x00\x12\x1a\n\x04link\x18\x05 \x01(\x0b\x32\n.aap2.LinkH\x00\x12$\n\tkeepalive\x18\x06 \x01(\x0b\x32\x0f.aap2.KeepaliveH\x00\x42\x05\n\x03msg\"\x1a\n\x07Welcome\x12\x0f\n\x07node_id\x18\x01 \x01(\t\"\x8c\x01\n\x10\x43onnectionConfig\x12\x15\n\ris_subscriber\x18\x01 \x01(\x08\x12!\n\tauth_type\x18\x02 \x01(\x0e\x32\x0e.aap2.AuthType\x12\x0e\n\x06secret\x18\x03 \x01(\t\x12\x13\n\x0b\x65ndpoint_id\x18\x04 \x01(\t\x12\x19\n\x11keepalive_seconds\x18\x05 \x01(\r\"\xa6\x01\n\tBundleADU\x12\x0f\n\x07src_eid\x18\x01 \x01(\t\x12\x0f\n\x07\x64st_eid\x18\x02 \x01(\t\x12\x1d\n\x15\x63reation_timestamp_ms\x18\x03 \x01(\x04\x12\x17\n\x0fsequence_number\x18\x04 \x01(\x04\x12\x16\n\x0epayload_length\x18\x05 \x01(\x04\x12\'\n\tadu_flags\x18\x06 \x01(\x0e\x32\x14.aap2.BundleADUFlags\"\xc2\x01\n\x06\x42undle\x12\x0f\n\x07src_eid\x18\x01 \x01(\t\x12\x0f\n\x07\x64st_eid\x18\x02 \x01(\t\x12\x1d\n\x15\x63reation_timestamp_ms\x18\x03 \x01(\x04\x12\x17\n\x0fsequence_number\x18\x04 \x01(\x04\x12\x16\n\x0epayload_length\x18\x05 \x01(\x04\x12\x17\n\x0f\x66ragment_offset\x18\x06 \x01(\x04\x12\x18\n\x10total_adu_length\x18\x07 \x01(\x04\x12\x13\n\x0blifetime_ms\x18\x08 \x01(\x04\"U\n\x0f\x44ispatchRequest\x12\x1c\n\x06\x62undle\x18\x01 \x01(\x0b\x32\x0c.aap2.Bundle\x12$\n\x06reason\x18\x02 \x01(\x0e\x32\x14.aap2.DispatchReason\"U\n\x04Link\x12 \n\x06status\x18\x01 \x01(\x0e\x32\x10.aap2.LinkStatus\x12\x14\n\x0cpeer_node_id\x18\x02 \x01(\t\x12\x15\n\rpeer_cla_addr\x18\x03 \x01(\t\"\x0b\n\tKeepalive\"\x91\x01\n\x0b\x41\x41PResponse\x12-\n\x0fresponse_status\x18\x01 \x01(\x0e\x32\x14.aap2.ResponseStatus\x12-\n\x0f\x64ispatch_result\x18\x02 \x01(\x0b\x32\x14.aap2.DispatchResult\x12$\n\x0e\x62undle_headers\x18\x03 \x01(\x0b\x32\x0c.aap2.Bundle\"g\n\x0e\x44ispatchResult\x12\x34\n\tnext_hops\x18\x01 \x03(\x0b\x32!.aap2.DispatchResult.NextHopEntry\x1a\x1f\n\x0cNextHopEntry\x12\x0f\n\x07node_id\x18\x01 \x01(\t*{\n\x08\x41uthType\x12\x15\n\x11\x41UTH_TYPE_DEFAULT\x10\x00\x12\x19\n\x15\x41UTH_TYPE_FIB_CONTROL\x10\x01\x12\x1d\n\x19\x41UTH_TYPE_BUNDLE_DISPATCH\x10\x02\x12\x1e\n\x1a\x41UTH_TYPE_FIB_AND_DISPATCH\x10\x03*<\n\x0e\x42undleADUFlags\x12\x15\n\x11\x42UNDLE_ADU_NORMAL\x10\x00\x12\x13\n\x0f\x42UNDLE_ADU_BPDU\x10\x01*\xbc\x01\n\x0e\x44ispatchReason\x12\x1f\n\x1b\x44ISPATCH_REASON_UNSPECIFIED\x10\x00\x12 \n\x1c\x44ISPATCH_REASON_NO_FIB_ENTRY\x10\x01\x12!\n\x1d\x44ISPATCH_REASON_LINK_INACTIVE\x10\x02\x12%\n!DISPATCH_REASON_CLA_LOOKUP_FAILED\x10\x03\x12\x1d\n\x19\x44ISPATCH_REASON_TX_FAILED\x10\x04*\x93\x01\n\nLinkStatus\x12\x1b\n\x17LINK_STATUS_UNSPECIFIED\x10\x00\x12\x17\n\x13LINK_STATUS_PENDING\x10\x01\x12\x16\n\x12LINK_STATUS_ACTIVE\x10\x02\x12\x1d\n\x19LINK_STATUS_OPPORTUNISTIC\x10\x03\x12\x18\n\x14LINK_STATUS_TEARDOWN\x10\x04*\x85\x02\n\x0eResponseStatus\x12\x1f\n\x1bRESPONSE_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n\x17RESPONSE_STATUS_SUCCESS\x10\x01\x12\x17\n\x13RESPONSE_STATUS_ACK\x10\x02\x12\x19\n\x15RESPONSE_STATUS_ERROR\x10\x08\x12\x1b\n\x17RESPONSE_STATUS_TIMEOUT\x10\t\x12#\n\x1fRESPONSE_STATUS_INVALID_REQUEST\x10\n\x12\x1d\n\x19RESPONSE_STATUS_NOT_FOUND\x10\x0b\x12 \n\x1cRESPONSE_STATUS_UNAUTHORIZED\x10\x0c\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\naap2.proto\x12\x04\x61\x61p2\"\xa5\x01\n\nAAPMessage\x12 \n\x07welcome\x18\x01 \x01(\x0b\x32\r.aap2.WelcomeH\x00\x12(\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x16.aap2.ConnectionConfigH\x00\x12\x1e\n\x03\x61\x64u\x18\x03 \x01(\x0b\x32\x0f.aap2.BundleADUH\x00\x12$\n\tkeepalive\x18\x06 \x01(\x0b\x32\x0f.aap2.KeepaliveH\x00\x42\x05\n\x03msg\"\x1a\n\x07Welcome\x12\x0f\n\x07node_id\x18\x01 \x01(\t\"\x8c\x01\n\x10\x43onnectionConfig\x12\x15\n\ris_subscriber\x18\x01 \x01(\x08\x12!\n\tauth_type\x18\x02 \x01(\x0e\x32\x0e.aap2.AuthType\x12\x0e\n\x06secret\x18\x03 \x01(\t\x12\x13\n\x0b\x65ndpoint_id\x18\x04 \x01(\t\x12\x19\n\x11keepalive_seconds\x18\x05 \x01(\r\"\xa6\x01\n\tBundleADU\x12\x0f\n\x07src_eid\x18\x01 \x01(\t\x12\x0f\n\x07\x64st_eid\x18\x02 \x01(\t\x12\x1d\n\x15\x63reation_timestamp_ms\x18\x03 \x01(\x04\x12\x17\n\x0fsequence_number\x18\x04 \x01(\x04\x12\x16\n\x0epayload_length\x18\x05 \x01(\x04\x12\'\n\tadu_flags\x18\x06 \x01(\x0e\x32\x14.aap2.BundleADUFlags\"\xc2\x01\n\x06\x42undle\x12\x0f\n\x07src_eid\x18\x01 \x01(\t\x12\x0f\n\x07\x64st_eid\x18\x02 \x01(\t\x12\x1d\n\x15\x63reation_timestamp_ms\x18\x03 \x01(\x04\x12\x17\n\x0fsequence_number\x18\x04 \x01(\x04\x12\x16\n\x0epayload_length\x18\x05 \x01(\x04\x12\x17\n\x0f\x66ragment_offset\x18\x06 \x01(\x04\x12\x18\n\x10total_adu_length\x18\x07 \x01(\x04\x12\x13\n\x0blifetime_ms\x18\x08 \x01(\x04\"\x0b\n\tKeepalive\"b\n\x0b\x41\x41PResponse\x12-\n\x0fresponse_status\x18\x01 \x01(\x0e\x32\x14.aap2.ResponseStatus\x12$\n\x0e\x62undle_headers\x18\x03 \x01(\x0b\x32\x0c.aap2.Bundle*!\n\x08\x41uthType\x12\x15\n\x11\x41UTH_TYPE_DEFAULT\x10\x00*<\n\x0e\x42undleADUFlags\x12\x15\n\x11\x42UNDLE_ADU_NORMAL\x10\x00\x12\x13\n\x0f\x42UNDLE_ADU_BPDU\x10\x01*\x85\x02\n\x0eResponseStatus\x12\x1f\n\x1bRESPONSE_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n\x17RESPONSE_STATUS_SUCCESS\x10\x01\x12\x17\n\x13RESPONSE_STATUS_ACK\x10\x02\x12\x19\n\x15RESPONSE_STATUS_ERROR\x10\x08\x12\x1b\n\x17RESPONSE_STATUS_TIMEOUT\x10\t\x12#\n\x1fRESPONSE_STATUS_INVALID_REQUEST\x10\n\x12\x1d\n\x19RESPONSE_STATUS_NOT_FOUND\x10\x0b\x12 \n\x1cRESPONSE_STATUS_UNAUTHORIZED\x10\x0c\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'aap2_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_AUTHTYPE']._serialized_start=1244
-  _globals['_AUTHTYPE']._serialized_end=1367
-  _globals['_BUNDLEADUFLAGS']._serialized_start=1369
-  _globals['_BUNDLEADUFLAGS']._serialized_end=1429
-  _globals['_DISPATCHREASON']._serialized_start=1432
-  _globals['_DISPATCHREASON']._serialized_end=1620
-  _globals['_LINKSTATUS']._serialized_start=1623
-  _globals['_LINKSTATUS']._serialized_end=1770
-  _globals['_RESPONSESTATUS']._serialized_start=1773
-  _globals['_RESPONSESTATUS']._serialized_end=2034
+  _globals['_AUTHTYPE']._serialized_start=838
+  _globals['_AUTHTYPE']._serialized_end=871
+  _globals['_BUNDLEADUFLAGS']._serialized_start=873
+  _globals['_BUNDLEADUFLAGS']._serialized_end=933
+  _globals['_RESPONSESTATUS']._serialized_start=936
+  _globals['_RESPONSESTATUS']._serialized_end=1197
   _globals['_AAPMESSAGE']._serialized_start=21
-  _globals['_AAPMESSAGE']._serialized_end=265
-  _globals['_WELCOME']._serialized_start=267
-  _globals['_WELCOME']._serialized_end=293
-  _globals['_CONNECTIONCONFIG']._serialized_start=296
-  _globals['_CONNECTIONCONFIG']._serialized_end=436
-  _globals['_BUNDLEADU']._serialized_start=439
-  _globals['_BUNDLEADU']._serialized_end=605
-  _globals['_BUNDLE']._serialized_start=608
-  _globals['_BUNDLE']._serialized_end=802
-  _globals['_DISPATCHREQUEST']._serialized_start=804
-  _globals['_DISPATCHREQUEST']._serialized_end=889
-  _globals['_LINK']._serialized_start=891
-  _globals['_LINK']._serialized_end=976
-  _globals['_KEEPALIVE']._serialized_start=978
-  _globals['_KEEPALIVE']._serialized_end=989
-  _globals['_AAPRESPONSE']._serialized_start=992
-  _globals['_AAPRESPONSE']._serialized_end=1137
-  _globals['_DISPATCHRESULT']._serialized_start=1139
-  _globals['_DISPATCHRESULT']._serialized_end=1242
-  _globals['_DISPATCHRESULT_NEXTHOPENTRY']._serialized_start=1211
-  _globals['_DISPATCHRESULT_NEXTHOPENTRY']._serialized_end=1242
+  _globals['_AAPMESSAGE']._serialized_end=186
+  _globals['_WELCOME']._serialized_start=188
+  _globals['_WELCOME']._serialized_end=214
+  _globals['_CONNECTIONCONFIG']._serialized_start=217
+  _globals['_CONNECTIONCONFIG']._serialized_end=357
+  _globals['_BUNDLEADU']._serialized_start=360
+  _globals['_BUNDLEADU']._serialized_end=526
+  _globals['_BUNDLE']._serialized_start=529
+  _globals['_BUNDLE']._serialized_end=723
+  _globals['_KEEPALIVE']._serialized_start=725
+  _globals['_KEEPALIVE']._serialized_end=736
+  _globals['_AAPRESPONSE']._serialized_start=738
+  _globals['_AAPRESPONSE']._serialized_end=836
 # @@protoc_insertion_point(module_scope)
