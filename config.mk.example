@@ -2,6 +2,48 @@
 # Copy this to `config.mk` and adjust as needed. The values shown below are
 # usage examples, whereas the first one is always the default value.
 
+##################
+# Build settings #
+##################
+
+# Note: The following settings are expected to be provided mainly on the `make`
+# command line. If needed, however, they can be specified here.
+
+# If set to `release`, build without debug symbols and optimize the binary.
+#type ?= debug
+#type ?= release
+
+# If set to `yes`, enable further warnings. If set to `all`, enable even more
+# warnings, including those that could be false positive.
+#wextra ?= yes
+#wextra ?= no
+#wextra ?= all
+
+# If set to `yes`, make warnings terminate the build process.
+#werror ?= no
+#werror ?= yes
+
+# If set to `yes`, print all commands issued during build.
+#verbose ?= no
+#verbose ?= yes
+
+# Enable sanitizers. As some of them are incompatible, there are multiple
+# options: `yes` means to use the address and UB sanitizers, `memory` (only
+# available with Clang) the memory sanitizer, and `thread` (only available with
+# Clang) the thread sanitizer.
+#sanitize ?= no
+#sanitize ?= yes
+#sanitize ?= memory
+#sanitize ?= thread
+
+# If set to `yes`, terminate the program on sanitizer errors.
+#sanitize-strict ?= no
+#sanitize-strict ?= yes
+
+# If set to `yes`, build a binary instrumented for coverage analysis.
+#coverage ?= no
+#coverage ?= yes
+
 #####################
 # Toolchain options #
 #####################
