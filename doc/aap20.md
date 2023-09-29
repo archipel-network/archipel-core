@@ -8,7 +8,7 @@ In extension to that, AAP 2.0 has the following properties:
 - Every endpoint registration has to provide a secret that is shared among all registrations of the same endpoint. If there is already an active registration, the same secret has to be provided or the new (re-)registration will be declined.
 - AAP 2.0 uses **Protobuf** as data serialization format. Reasoning: There is wide language support along with good support of the C language and microcontroller environments, and it prevents reinventing an own protocol wire representation plus parser and serializer. Note that we previously evaluated Cap'nProto, which is also a good candidate and especially beneficial due to native RPC support, however, the C language support and microcontroller support is severely lacking, unfortunately.
 
-![The AAP 2.0 protocol state machine](figures/aap20-protocol-state-machine.drawio.svg)
+![The AAP 2.0 protocol state machine](aap20-protocol-state-machine.drawio.svg)
 
 ### AAP Message (outer request structure)
 
