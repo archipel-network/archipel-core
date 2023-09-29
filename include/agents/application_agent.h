@@ -8,7 +8,10 @@
 
 #define APPLICATION_AGENT_TASK_PRIORITY 2
 
+// Listen-backlog for the app. agent.
+#ifndef APPLICATION_AGENT_BACKLOG
 #define APPLICATION_AGENT_BACKLOG 2
+#endif // APPLICATION_AGENT_BACKLOG
 
 struct application_agent_config *application_agent_setup(
 	const struct bundle_agent_interface *bundle_agent_interface,

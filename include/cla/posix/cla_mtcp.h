@@ -9,6 +9,11 @@
 
 #include <stddef.h>
 
+// Whether or not to close active TCP connections after a contact
+#ifndef CLA_MTCP_CLOSE_AFTER_CONTACT
+#define CLA_MTCP_CLOSE_AFTER_CONTACT 1
+#endif // CLA_MTCP_CLOSE_AFTER_CONTACT
+
 struct cla_config *mtcp_create(
 	const char *const options[], const size_t option_count,
 	const struct bundle_agent_interface *bundle_agent_interface);

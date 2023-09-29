@@ -4,7 +4,6 @@
 
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -34,7 +33,7 @@ struct bundle *bundle7_create_local(
 	bundle->sequence_number = sequence_number;
 	bundle->lifetime_ms = lifetime_ms;
 
-	bundle->crc_type = DEFAULT_CRC_TYPE;
+	bundle->crc_type = DEFAULT_BPV7_CRC_TYPE;
 
 	// Create payload block and block list
 	bundle->payload_block = bundle_block_create(BUNDLE_BLOCK_TYPE_PAYLOAD);

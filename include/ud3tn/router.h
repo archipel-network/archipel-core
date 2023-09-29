@@ -6,13 +6,32 @@
 
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
 
 #include <stddef.h>
 #include <stdint.h>
+
+// Maximum number of fragments created by the router.
+#ifndef ROUTER_MAX_FRAGMENTS
+#define ROUTER_MAX_FRAGMENTS 10
+#endif // ROUTER_MAX_FRAGMENTS
+
+// Default maximum bundle size.
+#ifndef ROUTER_GLOBAL_MBS
+#define ROUTER_GLOBAL_MBS SIZE_MAX
+#endif // ROUTER_GLOBAL_MBS
+
+// Default minimum payload for creating a fragment.
+#ifndef FRAGMENT_MIN_PAYLOAD
+#define FRAGMENT_MIN_PAYLOAD 8
+#endif // FRAGMENT_MIN_PAYLOAD
+
+// Below this, the default route will be used
+#ifndef ROUTER_MIN_CONTACTS_HTAB
+#define ROUTER_MIN_CONTACTS_HTAB 10
+#endif // ROUTER_MIN_CONTACTS_HTAB
 
 struct router_config {
 	size_t global_mbs;

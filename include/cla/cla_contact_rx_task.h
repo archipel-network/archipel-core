@@ -18,7 +18,10 @@ enum cla_payload_type {
 	PAYLOAD_IRRELEVANT = 127,
 };
 
+// Size of the input buffer in bytes == size of the chunks used for reading.
+#ifndef CLA_RX_BUFFER_SIZE
 #define CLA_RX_BUFFER_SIZE 64
+#endif // CLA_RX_BUFFER_SIZE
 
 struct rx_task_data {
 	enum cla_payload_type payload_type;

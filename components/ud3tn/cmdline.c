@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
+#include "ud3tn/router.h"
 
 #include "platform/hal_io.h"
 

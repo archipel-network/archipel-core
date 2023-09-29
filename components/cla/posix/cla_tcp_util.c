@@ -4,7 +4,6 @@
 #include "platform/hal_io.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 
 #include <netdb.h>
 #include <netinet/in.h>

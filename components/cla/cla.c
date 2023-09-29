@@ -15,7 +15,6 @@
 #include "platform/hal_semaphore.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/init.h"
 #include "ud3tn/result.h"
 

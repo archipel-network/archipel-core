@@ -9,6 +9,10 @@
 #include <stddef.h>   // size_t
 #include <stdint.h>   // uint*_t
 
+// Bundles requiring more space will be dropped immediately for safety.
+#ifndef BUNDLE_MAX_SIZE
+#define BUNDLE_MAX_SIZE 1073741824
+#endif // BUNDLE_MAX_SIZE
 
 struct endpoint_list {
 	char *eid;

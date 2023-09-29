@@ -17,7 +17,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Maximum number of CLA config options. If any new CLA needs more, increase.
 #define CLA_MAX_OPTION_COUNT 10
+
+// Length of the outgoing-bundle queue.
+#ifndef CONTACT_TX_TASK_QUEUE_LENGTH
+#define CONTACT_TX_TASK_QUEUE_LENGTH 3
+#endif // CONTACT_TX_TASK_QUEUE_LENGTH
 
 struct cla_config {
 	const struct cla_vtable *vtable;

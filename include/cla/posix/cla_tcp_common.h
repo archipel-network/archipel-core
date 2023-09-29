@@ -18,6 +18,31 @@
 #define CLA_OPTION_TCP_ACTIVE "true"
 #define CLA_OPTION_TCP_PASSIVE "false"
 
+// Length of the listen backlog for single-connection CLAs
+#ifndef CLA_TCP_SINGLE_BACKLOG
+#define CLA_TCP_SINGLE_BACKLOG 1
+#endif // CLA_TCP_SINGLE_BACKLOG
+
+// Length of the listen backlog for multi-connection CLAs
+#ifndef CLA_TCP_MULTI_BACKLOG
+#define CLA_TCP_MULTI_BACKLOG 64
+#endif // CLA_TCP_MULTI_BACKLOG
+
+// On contact start, outgoing connections are attempted. If the first attempt
+// fails, it is retried in the given interval up to the given maximum number
+// of attempts.
+#ifndef CLA_TCP_RETRY_INTERVAL_MS
+#define CLA_TCP_RETRY_INTERVAL_MS 1000
+#endif // CLA_TCP_RETRY_INTERVAL_MS
+#ifndef CLA_TCP_MAX_RETRY_ATTEMPTS
+#define CLA_TCP_MAX_RETRY_ATTEMPTS 10
+#endif // CLA_TCP_MAX_RETRY_ATTEMPTS
+
+// The number of slots in the TCP CLA hash tables (e.g. for TCPCLv3 and MTCP)
+#ifndef CLA_TCP_PARAM_HTAB_SLOT_COUNT
+#define CLA_TCP_PARAM_HTAB_SLOT_COUNT 32
+#endif // CLA_TCP_PARAM_HTAB_SLOT_COUNT
+
 struct cla_tcp_link {
 	struct cla_link base;
 

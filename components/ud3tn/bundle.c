@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 
 // RFC 5050
 #include "bundle6/bundle6.h"
@@ -33,7 +32,7 @@ static inline void bundle_reset_internal(struct bundle *bundle)
 	bundle->report_to = NULL;
 	bundle->current_custodian = NULL;
 
-	bundle->crc_type = DEFAULT_CRC_TYPE;
+	bundle->crc_type = DEFAULT_BPV7_CRC_TYPE;
 	bundle->creation_timestamp_ms = 0;
 	bundle->reception_timestamp_ms = 0;
 	bundle->sequence_number = 0;

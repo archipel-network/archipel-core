@@ -2,6 +2,14 @@
 #ifndef UD3TN_COMMON_H_INCLUDED
 #define UD3TN_COMMON_H_INCLUDED
 
+// We provide a public constant for that to allow compiling (and, thus,
+// detecting errors in) debug code regardless of the #define.
+#ifdef DEBUG
+static const int IS_DEBUG_BUILD = 1;
+#else // DEBUG
+static const int IS_DEBUG_BUILD;
+#endif // DEBUG
+
 /* POSIX functions provided in libc/Newlib headers */
 
 // For strdup

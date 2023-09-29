@@ -5,7 +5,6 @@
 #include "bundle7/create.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 
 #include "cbor.h"
 
