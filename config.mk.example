@@ -1,20 +1,42 @@
-# Example for Makefile configuration options
-# Copy this to config.mk and either download the required software packages
-# and extract them to an arbitrary directory or install them
-# with your package manager. The variables show the defaults applied by the
-# build system automatically.
+# Example for build-time configuration options.
+# Copy this to `config.mk` and adjust as needed. The values shown below are
+# usage examples, whereas the first one is always the default value.
 
-# Toolchain to be used. `gcc` or `clang` can be selected
+#####################
+# Toolchain options #
+#####################
+
+# Toolchain to be used. `gcc` or `clang` can be selected. Note that this can
+# also be specified on the command line, e.g.: `make TOOLCHAIN=clang`
 #TOOLCHAIN := gcc
 
-# Toolchain prefix for local posix target
+# Toolchain prefix, useful for cross-compilation.
 # can be left empy most of the time (default: search in $PATH)
 #TOOLCHAIN_POSIX :=
+#TOOLCHAIN_POSIX := arm-linux-gnueabihf-
 
 # Prefix for the Clang compiler
 #CLANG_PREFIX :=
+#CLANG_PREFIX := /opt/my-clang-installation/
 
 # --sysroot provided to the Clang compiler, useful for providing the path to
 # the embedded toolchain so the proper headers are found.
 # If left empty, the option is not provided to the compiler.
 #CLANG_SYSROOT_POSIX :=
+
+# Value passed to the compiler via `-march`. If not specified, will use
+# `-march=native` on x86/x86_64 platforms and not pass the parameter on others.
+#ARCH :=
+#ARCH := armv7-m
+
+# Use flags suitable for the macOS linker. If not specified, autodetect.
+#EXPECT_MACOS_LINKER := 0
+
+# Additional compiler flags.
+#CPPFLAGS +=
+
+# Additional linker flags.
+#LDFLAGS +=
+
+# Additional flags passed to compiler and linker.
+#ARCH_FLAGS +=
