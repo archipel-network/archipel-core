@@ -13,6 +13,10 @@
 #define APPLICATION_AGENT_BACKLOG 2
 #endif // APPLICATION_AGENT_BACKLOG
 
+#ifndef APPLICATION_AGENT_RX_BUFFER_SIZE
+#define APPLICATION_AGENT_RX_BUFFER_SIZE 512
+#endif // APPLICATION_AGENT_RX_BUFFER_SIZE
+
 struct application_agent_config *application_agent_setup(
 	const struct bundle_agent_interface *bundle_agent_interface,
 	const char *socket_path,
