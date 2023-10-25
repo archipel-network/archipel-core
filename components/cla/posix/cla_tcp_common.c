@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
-#define _POSIX_C_SOURCE 200809L
-#define _DEFAULT_SOURCE
-
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 #include "cla/posix/cla_tcp_common.h"

@@ -10,6 +10,10 @@ CLANG_SYSROOT ?= $(CLANG_SYSROOT_POSIX)
 
 CPPFLAGS += -DPLATFORM_POSIX -pipe -fPIC
 
+# Provide POSIX symbols and extensions.
+# https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
+CPPFLAGS += -D_XOPEN_SOURCE=700
+
 ifdef ARCH
   CPPFLAGS += -march=$(ARCH)
 else

@@ -10,14 +10,6 @@ static const int IS_DEBUG_BUILD = 1;
 static const int IS_DEBUG_BUILD;
 #endif // DEBUG
 
-/* POSIX functions provided in libc/Newlib headers */
-
-// For strdup
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif // _POSIX_C_SOURCE
-#include <string.h>
-
 /* COMMON FUNCTIONS */
 
 #ifdef MIN
