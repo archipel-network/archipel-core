@@ -1,6 +1,8 @@
 # Example for build-time configuration options.
 # Copy this to `config.mk` and adjust as needed. The values shown below are
-# usage examples, whereas the first one is always the default value.
+# usage examples, whereas the first one always represents the default value.
+# Please note that you should trigger a clean build (`make clean && make`) after
+# changing any of these settings.
 
 ##################
 # Build settings #
@@ -82,3 +84,114 @@
 
 # Additional flags passed to compiler and linker.
 #ARCH_FLAGS +=
+
+########################
+# Compile-time defines #
+########################
+
+# The sink identifier of the config agent for dtn-scheme EIDs.
+#CPPFLAGS += -DAGENT_ID_CONFIG_DTN=\"config\"
+
+# The sink identifier (service no.) of the config agent for ipn-scheme EIDs.
+#CPPFLAGS += -DAGENT_ID_CONFIG_IPN=\"9000\"
+
+# The sink identifier of the echo agent for dtn-scheme EIDs.
+#CPPFLAGS += -DAGENT_ID_ECHO_DTN=\"echo\"
+
+# The sink identifier (service no.) of the echo agent for ipn-scheme EIDs.
+#CPPFLAGS += -DAGENT_ID_ECHO_IPN=\"9002\"
+
+# The socket `listen()` backlog length of the Application Agent.
+#CPPFLAGS += -DAPPLICATION_AGENT_BACKLOG=2
+
+# The size, in bytes, of the receive buffer used by the Application Agent.
+#CPPFLAGS += -DAPPLICATION_AGENT_RX_BUFFER_SIZE=512
+
+# Whether to be compatible with the Bundle-in-Bundle-Encapsulation draft v1,
+# which is used by ION (thus, needed for the interoperability test).
+#CPPFLAGS += -DBIBE_CL_DRAFT_1_COMPATIBILITY=0
+
+# The maximum size of bundles that the BPA is allowed to process.
+#CPPFLAGS += -DBUNDLE_MAX_SIZE=1073741824
+
+# The maximum length of the bundle processor queue until it starts blocking.
+#CPPFLAGS += -DBUNDLE_QUEUE_LENGTH=10
+
+# Whether or not to close an active connection after the end of a contact.
+# Note that closure by the other peer may often not be recognized and, thus,
+# setting this to zero may lead to dead connections being used for some time.
+#CPPFLAGS += -DCLA_MTCP_CLOSE_AFTER_CONTACT=1
+
+# The size of the chunked-read buffer of the CLA RX task.
+#CPPFLAGS += -DCLA_RX_BUFFER_SIZE=64
+
+# The maximum time interval, in milliseconds, between receiving two bytes part
+# of the same bundle. When this time has passed, all parsers are reset.
+# Setting this can help when broken records may be part of the incoming data.
+#CPPFLAGS += -DCLA_RX_READ_TIMEOUT=0
+
+# Maximum number of attempts to create a connection on contact start.
+#CPPFLAGS += -DCLA_TCP_MAX_RETRY_ATTEMPTS=10
+
+# The length of the listen backlog for multi-connection TCP CLAs.
+#CPPFLAGS += -DCLA_TCP_MULTI_BACKLOG=64
+
+# The number of slots in the TCP multi-connection CLA parameters hash table,
+# which stores the currently-active connections to other nodes.
+#CPPFLAGS += -DCLA_TCP_PARAM_HTAB_SLOT_COUNT=32
+
+# Interval between attempts to create a connection on contact start, in ms.
+#CPPFLAGS += -DCLA_TCP_RETRY_INTERVAL_MS=1000
+
+# The length of the listen backlog for single-connection TCP CLAs.
+#CPPFLAGS += -DCLA_TCP_SINGLE_BACKLOG=1
+
+# The SPP timestamp format preamble to be sent by the TCPSPP CLA.
+#CPPFLAGS += -DCLA_TCPSPP_TIMESTAMP_FORMAT_PREAMBLE=0x1c
+
+# Whether or not to encode and read the SPP timestamp P-field.
+#CPPFLAGS += -DCLA_TCPSPP_TIMESTAMP_USE_P_FIELD="(true)"
+
+# Whether or not to encode and read the SPP CRC checksum.
+#CPPFLAGS += -DCLA_TCPSPP_USE_CRC="(true)"
+
+# The maximum size of space packets, which is used for calculating the maximum
+# bundle size reported by the CLA.
+#CPPFLAGS += -DCLA_TCPSPP_SPP_MAX_SIZE="(1 << 16)"
+
+# The maximum number of bundles to be sent per second, to prevent overloading
+# the underlying communication system (default: unlimited).
+#CPPFLAGS += -DCLA_TX_RATE_LIMIT=0
+
+# The length of the outgoing-bundle queue toward the TX task.
+#CPPFLAGS += -DCONTACT_TX_TASK_QUEUE_LENGTH=3
+
+# The default value for the `--aap-socket` argument.
+#CPPFLAGS += -DDEFAULT_AAP_NODE=\"0.0.0.0\"
+
+# The default value for the `--aap-socket` argument.
+#CPPFLAGS += -DDEFAULT_AAP_SERVICE=\"4242\"
+
+# The default value for the `--aap-socket` argument.
+#CPPFLAGS += -DDEFAULT_AAP_SOCKET_FILENAME=\"ud3tn.socket\"
+
+# The default CRC type used for newly-created BPv7 bundles. See `bundle.h`.
+#CPPFLAGS += -DDEFAULT_BPV7_CRC_TYPE=BUNDLE_CRC_TYPE_16
+
+# The default value for the `--lifetime` argument, in seconds.
+#CPPFLAGS += -DDEFAULT_BUNDLE_LIFETIME_S=86400
+
+# The default value for the `--bp-version` argument - either `6` or `7`.
+#CPPFLAGS += -DDEFAULT_BUNDLE_VERSION=7
+
+# The default value for the `--cla` argument.
+#CPPFLAGS += -DDEFAULT_CLA_OPTIONS="\"tcpclv3:*,4556;tcpspp:*,4223,false,1;smtcp:*,4222,false;mtcp:*,4224\""
+
+# The default value for the `--eid` argument.
+#CPPFLAGS += -DDEFAULT_EID=\"dtn://ud3tn.dtn/\"
+
+# The default value for the `--log-level` argument.
+#CPPFLAGS += -DDEFAULT_LOG_LEVEL=3
+
+# Whether to use Linux-specific API functions such as thread naming.
+#CPPFLAGS += -DLINUX_SPECIFIC_API=0
