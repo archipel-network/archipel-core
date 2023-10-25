@@ -42,6 +42,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+// The BIBE BPDU type code, which was different in BIBE draft v1 (used by ION).
+#if defined(BIBE_CL_DRAFT_1_COMPATIBILITY) && BIBE_CL_DRAFT_1_COMPATIBILITY != 0
+static const uint8_t BIBE_TYPECODE = 7;
+#else // BIBE_CL_DRAFT_1_COMPATIBILITY
+static const uint8_t BIBE_TYPECODE = 3;
+#endif // BIBE_CL_DRAFT_1_COMPATIBILITY
+
 struct application_agent_config {
 	const struct bundle_agent_interface *bundle_agent_interface;
 
@@ -290,12 +297,6 @@ static int16_t process_aap_message(
 		if (msg.type == AAP_MESSAGE_SENDBIBE) {
 			LOG("AppAgent: ADU is a BPDU, prepending AR header!");
 
-			#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
-				uint8_t typecode = 7;
-			#else
-				uint8_t typecode = 3;
-			#endif
-
 			const size_t ar_size = msg.payload_length + 2;
 			uint8_t *const ar_bytes = malloc(ar_size);
 
@@ -304,8 +305,8 @@ static int16_t process_aap_message(
 				msg.payload,
 				msg.payload_length
 			);
-			ar_bytes[0] = 0x82;     // CBOR array of length 2
-			ar_bytes[1] = typecode; // Integer (record type)
+			ar_bytes[0] = 0x82;          // CBOR array of length 2
+			ar_bytes[1] = BIBE_TYPECODE; // Integer (record type)
 
 			free(msg.payload);
 			msg.payload = ar_bytes;
