@@ -839,17 +839,23 @@ static enum ud3tn_result tcpclv3_init(
 	/* set base_config vtable */
 	config->base.base.vtable = &tcpclv3_vtable;
 
+	config->param_htab_sem = hal_semaphore_init_binary();
+	if (!config->param_htab_sem)
+		return UD3TN_FAIL;
+	hal_semaphore_release(config->param_htab_sem);
+
 	htab_init(&config->param_htab, CLA_TCP_PARAM_HTAB_SLOT_COUNT,
 		  config->param_htab_elem);
-
-	config->param_htab_sem = hal_semaphore_init_binary();
-	hal_semaphore_release(config->param_htab_sem);
 
 	/* Start listening */
 	if (cla_tcp_listen(&config->base, node, service,
 			   CLA_TCP_MULTI_BACKLOG)
-			!= UD3TN_OK)
+			!= UD3TN_OK) {
+		hal_semaphore_take_blocking(config->param_htab_sem);
+		htab_trunc(&config->param_htab);
+		hal_semaphore_delete(config->param_htab_sem);
 		return UD3TN_FAIL;
+	}
 
 	return UD3TN_OK;
 }
