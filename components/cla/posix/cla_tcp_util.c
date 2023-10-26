@@ -139,7 +139,8 @@ int create_tcp_socket(const char *const node, const char *const service,
 			continue;
 		}
 
-#ifdef SO_REUSEPORT
+#if defined(CLA_TCP_ALLOW_REUSE_PORT) && CLA_TCP_ALLOW_REUSE_PORT == 1
+		// NOTE: SO_REUSEPORT is Linux- and BSD-specific.
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
@@ -148,7 +149,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 			close(sock);
 			continue;
 		}
-#endif // SO_REUSEPORT
+#endif // CLA_TCP_ALLOW_REUSE_PORT
 
 		if (e->ai_family == AF_INET6) {
 			// Some systems may want to only listen for IPv6

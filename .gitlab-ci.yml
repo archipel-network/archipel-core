@@ -185,13 +185,14 @@ aap-test:
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - python tools/aap/aap_test.py
+        - kill -TERM $UD3TN1_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
         - while ! nc -z localhost 4242; do sleep 0.1; done
         - python tools/aap/aap_test.py --tcp '::1' 4242
-        - kill -TERM $UD3TN1_PID
         - kill -TERM $UD3TN2_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
-        - wait $UD3TN1_PID
         - wait $UD3TN2_PID
 
 ion-ipn-bpv6-interoperability-test:

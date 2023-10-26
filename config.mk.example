@@ -130,6 +130,10 @@
 # Setting this can help when broken records may be part of the incoming data.
 #CPPFLAGS += -DCLA_RX_READ_TIMEOUT=0
 
+# Whether to set SO_REUSEPORT on listening TCP sockets. Note that this may have
+# security implications and it is Linux-/BSD-specific.
+#CPPFLAGS += -DCLA_TCP_ALLOW_REUSE_PORT=0
+
 # Maximum number of attempts to create a connection on contact start.
 #CPPFLAGS += -DCLA_TCP_MAX_RETRY_ATTEMPTS=10
 
