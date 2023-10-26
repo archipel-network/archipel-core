@@ -101,12 +101,73 @@ enum ud3tn_result validate_local_eid(const char *const eid)
 	}
 }
 
+char *preprocess_local_eid(const char *const eid)
+{
+	const size_t eid_len = strlen(eid);
+
+	switch (get_eid_scheme(eid)) {
+	case EID_SCHEME_DTN:
+		// Allow dtn://node.dtn -> dtn://node.dtn/
+		// (Make sure a slash terminates the EID.)
+
+		if (eid_len < 7 || memcmp(eid, "dtn://", 6))
+			return NULL;
+
+		char *const slash_pos = strchr(&eid[6], '/');
+
+		if (slash_pos != NULL)
+			return strdup(eid);
+
+		char *const returned_eid_dtn = malloc(eid_len + 2);
+
+		if (returned_eid_dtn == NULL)
+			return NULL;
+
+		if (snprintf(returned_eid_dtn, eid_len + 2, "%s/", eid) !=
+		    (long)eid_len + 1) {
+			free(returned_eid_dtn);
+			return NULL;
+		}
+
+		return returned_eid_dtn;
+	case EID_SCHEME_IPN:
+		// Allow ipn:1 -> ipn:1.0
+		// (Make sure node and service numbers are specified.)
+
+		if (eid_len < 5)
+			return NULL;
+
+		char *const dot_pos = strchr(&eid[4], '.');
+
+		if (dot_pos != NULL)
+			return strdup(eid);
+
+		char *const returned_eid_ipn = malloc(eid_len + 3);
+
+		if (returned_eid_ipn == NULL)
+			return NULL;
+
+		if (snprintf(returned_eid_ipn, eid_len + 3, "%s.0", eid) !=
+		    (long)eid_len + 2) {
+			free(returned_eid_ipn);
+			return NULL;
+		}
+
+		return returned_eid_ipn;
+	default:
+		return NULL;
+	}
+}
+
 enum eid_scheme get_eid_scheme(const char *const eid)
 {
 	if (!eid)
 		return EID_SCHEME_UNKNOWN;
 
 	const size_t len = strlen(eid);
+
+	if (len > EID_MAX_LEN)
+		return EID_SCHEME_UNKNOWN;
 
 	if (len >= 4 && !memcmp(eid, "dtn:", 4))
 		return EID_SCHEME_DTN;
@@ -162,14 +223,20 @@ enum ud3tn_result validate_ipn_eid(
 		return UD3TN_FAIL;
 
 	const char *cur;
+	uint64_t tmp_node, tmp_service;
 
-	cur = parse_ipn_ull(&eid[4], node_out);
+	cur = parse_ipn_ull(&eid[4], &tmp_node);
 	if (!cur || *cur != '.')
 		return UD3TN_FAIL;
 
-	cur = parse_ipn_ull(cur + 1, service_out);
+	cur = parse_ipn_ull(cur + 1, &tmp_service);
 	if (!cur || *cur != '\0')
 		return UD3TN_FAIL;
+
+	if (node_out)
+		*node_out = tmp_node;
+	if (service_out)
+		*service_out = tmp_service;
 
 	return UD3TN_OK;
 }
@@ -209,10 +276,14 @@ char *get_node_id(const char *const eid)
 		if (delim[1] == '~')
 			return NULL;
 		result = strdup(eid);
+		if (result == NULL)
+			return NULL;
 		result[delim - eid + 1] = '\0';
 		return result;
 	case EID_SCHEME_IPN:
 		result = strdup(eid);
+		if (result == NULL)
+			return NULL;
 		delim = strchr(result, '.');
 		ASSERT(delim);
 		// No out-of-bounds access as validate_eid ensures the dot is
