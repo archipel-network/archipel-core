@@ -348,7 +348,7 @@ ion-bibe-interoperability-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY=1"
         - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate
         - bash test/ion_interoperability/bibe_forwarding_test/run.sh

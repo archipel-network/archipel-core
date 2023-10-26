@@ -326,9 +326,9 @@ error_t administrative_record(struct record_parser *state, CborValue *it)
 		err = status_report(state, &nested);
 		break;
 	case BUNDLE_AR_BPDU:
-	#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
+#if defined(BIBE_CL_DRAFT_1_COMPATIBILITY) && BIBE_CL_DRAFT_1_COMPATIBILITY == 1
 	case BUNDLE_AR_BPDU_COMPAT:
-	#endif // BIBE_CL_DRAFT_1_COMPATIBILITY
+#endif // BIBE_CL_DRAFT_1_COMPATIBILITY
 		// Validating the BPDU without actually
 		// parsing anything.
 		err = bpdu(state, &nested);
