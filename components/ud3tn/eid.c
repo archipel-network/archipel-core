@@ -223,14 +223,20 @@ enum ud3tn_result validate_ipn_eid(
 		return UD3TN_FAIL;
 
 	const char *cur;
+	uint64_t tmp_node, tmp_service;
 
-	cur = parse_ipn_ull(&eid[4], node_out);
+	cur = parse_ipn_ull(&eid[4], &tmp_node);
 	if (!cur || *cur != '.')
 		return UD3TN_FAIL;
 
-	cur = parse_ipn_ull(cur + 1, service_out);
+	cur = parse_ipn_ull(cur + 1, &tmp_service);
 	if (!cur || *cur != '\0')
 		return UD3TN_FAIL;
+
+	if (node_out)
+		*node_out = tmp_node;
+	if (service_out)
+		*service_out = tmp_service;
 
 	return UD3TN_OK;
 }

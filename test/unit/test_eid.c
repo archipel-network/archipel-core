@@ -177,6 +177,30 @@ TEST(eid, validate_ipn_eid)
 	));
 	TEST_ASSERT_EQUAL_UINT64(0, node);
 	TEST_ASSERT_EQUAL_UINT64(0, service);
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_ipn_eid(
+		"ipn:18446744073709551615.18446744073709551616",
+		&node, &service
+	));
+	TEST_ASSERT_EQUAL_UINT64(0, node);
+	TEST_ASSERT_EQUAL_UINT64(0, service);
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_ipn_eid(
+		"ipn:1.",
+		&node, &service
+	));
+	TEST_ASSERT_EQUAL_UINT64(0, node);
+	TEST_ASSERT_EQUAL_UINT64(0, service);
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_ipn_eid(
+		"ipn:1",
+		&node, &service
+	));
+	TEST_ASSERT_EQUAL_UINT64(0, node);
+	TEST_ASSERT_EQUAL_UINT64(0, service);
+	TEST_ASSERT_EQUAL(UD3TN_FAIL, validate_ipn_eid(
+		"dtn:none",
+		&node, &service
+	));
+	TEST_ASSERT_EQUAL_UINT64(0, node);
+	TEST_ASSERT_EQUAL_UINT64(0, service);
 }
 
 TEST(eid, parse_ipn_ull)
