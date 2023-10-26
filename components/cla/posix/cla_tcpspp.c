@@ -434,6 +434,11 @@ static enum ud3tn_result tcpspp_init(
 	config->base.node = strdup(node);
 	config->base.service = strdup(service);
 
+	if (!config->base.node || !config->base.service) {
+		LOG("tcpspp: Failed to copy node/service identifiers!");
+		goto fail_node_service;
+	}
+
 	/* Set cla_config vtable */
 	config->base.base.base.vtable = &tcpspp_vtable;
 
@@ -444,8 +449,10 @@ static enum ud3tn_result tcpspp_init(
 	const bool have_timecode = sizeof(preamble) > 0;
 
 	config->spp_ctx = spp_new_context();
-	if (!spp_configure_ancillary_data(config->spp_ctx, 0))
+	if (!spp_configure_ancillary_data(config->spp_ctx, 0)) {
 		LOG("tcpspp: Failed to configure ancillary data size!");
+		goto fail_ctx;
+	}
 
 	if (CLA_TCPSPP_USE_CRC)
 		LOG("tcpspp: Using CRC16-CCITT-FALSE.");
@@ -460,18 +467,27 @@ static enum ud3tn_result tcpspp_init(
 			&preamble[0], sizeof(preamble)) != 0) {
 			/* preamble uses unknown format */
 			LOG("tcpspp: Failed to configure timecode!");
+			goto fail_ctx;
 		} else if (!spp_configure_timecode(
 			config->spp_ctx,
 			&config->spp_timecode)) {
 			/* this can’t actually fail atm, but may in the future
 			 */
 			LOG("tcpspp: Failed to apply timecode!");
+			goto fail_ctx;
 		}
 	} else {
 		LOG("tcpspp: Not using timecode.");
 	}
 
 	return UD3TN_OK;
+
+fail_ctx:
+	free(config->spp_ctx);
+fail_node_service:
+	free((void *)config->base.node);
+	free((void *)config->base.service);
+	return UD3TN_FAIL;
 }
 
 // Note that this is basically the same as parsing a TCP port number.
@@ -527,7 +543,7 @@ struct cla_config *tcpspp_create(
 	}
 
 	if (tcpspp_init(config, options[0], options[1], tcp_active, apid,
-			bundle_agent_interface) < 0) {
+			bundle_agent_interface) != UD3TN_OK) {
 		free(config);
 		LOG("tcpspp: Initialization failed!");
 		return NULL;
