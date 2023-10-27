@@ -16,6 +16,6 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     url='https://gitlab.com/d3tn/ud3tn',
     packages=['pyd3tn'],
-    install_requires=['cbor'],
+    install_requires=['cbor==1.0.0'],
     python_requires='>=3.7',
 )
