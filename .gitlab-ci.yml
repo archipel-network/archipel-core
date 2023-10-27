@@ -451,6 +451,7 @@ coverage-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
+        - project_dir="$(pwd)"
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build coverage=yes
         - cd /ud3tn_build
         - rm -f ./ud3tn.socket
@@ -464,6 +465,7 @@ coverage-test:
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN_PID
         - gcovr --xml-pretty --exclude-unreachable-branches --gcov-ignore-parse-errors --print-summary -o coverage.xml --root .
+        - cp -v coverage.xml "$project_dir/"
     coverage: /^\s*lines:\s*\d+.\d+\%/
     artifacts:
         name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
