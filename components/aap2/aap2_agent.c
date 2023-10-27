@@ -321,7 +321,7 @@ static uint64_t allocate_sequence_number(
 
 static aap2_ResponseStatus process_configure_msg(
 	struct aap2_agent_comm_config *const config,
-	aap2_ConnectionConfig * const msg)
+	aap2_ConnectionConfig *const msg)
 {
 	LOGF("AAP2Agent: Received request to %s for EID \"%s\".",
 		msg->is_subscriber ? "subscribe" : "register",
@@ -379,7 +379,7 @@ static aap2_ResponseStatus process_configure_msg(
 
 static aap2_ResponseStatus process_adu_msg(
 	struct aap2_agent_comm_config *const config,
-	aap2_BundleADU * const msg,
+	aap2_BundleADU *const msg,
 	uint8_t *payload_data,
 	aap2_AAPResponse *response)
 {
@@ -494,7 +494,7 @@ static aap2_ResponseStatus process_adu_msg(
 
 static int process_aap_message(
 	struct aap2_agent_comm_config *const config,
-	aap2_AAPMessage * const msg,
+	aap2_AAPMessage *const msg,
 	uint8_t *const payload_data)
 {
 	aap2_AAPResponse response = aap2_AAPResponse_init_default;
