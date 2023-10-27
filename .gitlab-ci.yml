@@ -458,8 +458,6 @@ coverage-test:
         - timeout 60 build/posix/testud3tn
         - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn"
-        - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
