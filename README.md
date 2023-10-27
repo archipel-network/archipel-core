@@ -99,8 +99,9 @@ Use the `--recursive` option if you `git clone` the project or run
    - Adjust `TOOLCHAIN_POSIX` if your toolchain installation is not included in your `$PATH`
 
 3. Run `make run-posix` to build and execute µD3TN on your local machine.
-   You can find the µD3TN binary file in `build/posix/ud3tn`. To just build it, you can also run `make posix` or `make` (the latter building the library files as well).
-   Note that on some systems, such as BSD flavors, you may need to explicitly call GNU Make using the `gmake` command. In this case, just substitute all calls to `make` in the documentation by `gmake`.
+   - You can find the µD3TN binary file in `build/posix/ud3tn`. To just build it, you can also run `make posix` or `make` (the latter building the library files as well).
+   - Note that on some systems, such as BSD flavors, you may need to explicitly call GNU Make using the `gmake` command. In this case, just substitute all calls to `make` in the documentation by `gmake`.
+   - Some build-time options (e.g., building with sanitizers) can be easily specified as arguments to `make`. See `config.mk.example` for the values you can specify. Example: `make sanitize=yes`
 
 #### Library
 

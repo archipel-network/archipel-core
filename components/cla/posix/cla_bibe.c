@@ -3,10 +3,10 @@
 #include "aap/aap_parser.h"
 #include "aap/aap_serializer.h"
 
+#include "cla/bibe_proto.h"
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 #include "cla/posix/cla_bibe.h"
-#include "cla/bibe_proto.h"
 #include "cla/posix/cla_tcp_common.h"
 #include "cla/posix/cla_tcp_util.h"
 
@@ -23,7 +23,6 @@
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"

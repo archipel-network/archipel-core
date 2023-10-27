@@ -6,7 +6,6 @@
 #include "ud3tn/agent_util.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 
 #include <stdbool.h>

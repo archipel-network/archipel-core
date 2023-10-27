@@ -16,10 +16,9 @@
 #include "platform/hal_task.h"
 #include "platform/hal_types.h"
 
-#include "ud3tn/cmdline.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
 

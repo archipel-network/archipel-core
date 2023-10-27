@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 
+// 01/01/2000 00:00:00 UTC
 #define DTN_TIMESTAMP_OFFSET 946684800
 
 /**

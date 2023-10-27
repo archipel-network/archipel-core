@@ -122,6 +122,8 @@ clang-tidy-posix: ccmds-posix
 # Flags
 ###############################################################################
 
+-include config.mk
+
 CPPFLAGS += -Wall
 
 ifeq "$(type)" "release"
@@ -184,8 +186,6 @@ endif
 ifeq "$(coverage)" "yes"
   ARCH_FLAGS += --coverage
 endif
-
--include config.mk
 
 ###############################################################################
 # uD3TN-Builds

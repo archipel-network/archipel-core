@@ -2,7 +2,6 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_fragmenter.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/node.h"
 #include "ud3tn/router.h"
 #include "ud3tn/routing_table.h"

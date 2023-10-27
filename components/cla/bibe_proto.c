@@ -10,7 +10,6 @@
 #include "bundle7/reports.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/parser.h"
 #include "cbor.h"
 

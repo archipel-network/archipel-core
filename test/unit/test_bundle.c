@@ -3,7 +3,6 @@
 #include "bundle7/bundle7.h"
 
 #include "ud3tn/bundle.h"
-#include "ud3tn/config.h"
 
 #include "testud3tn_unity.h"
 
@@ -82,7 +81,7 @@ TEST(bundle, bundle_reset)
 	TEST_ASSERT_EQUAL(bundle->report_to, NULL);
 	TEST_ASSERT_EQUAL(bundle->current_custodian, NULL);
 
-	TEST_ASSERT_EQUAL(bundle->crc_type, DEFAULT_CRC_TYPE);
+	TEST_ASSERT_EQUAL(bundle->crc_type, DEFAULT_BPV7_CRC_TYPE);
 	TEST_ASSERT_EQUAL(bundle->creation_timestamp_ms, 0);
 	TEST_ASSERT_EQUAL(bundle->reception_timestamp_ms, 0);
 	TEST_ASSERT_EQUAL(bundle->sequence_number, 0);

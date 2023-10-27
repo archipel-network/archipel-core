@@ -9,6 +9,17 @@
 
 #include "platform/hal_types.h"
 
+// Contact dropping / failed forwarding policy
+enum failed_forwarding_policy {
+	POLICY_DROP,
+	POLICY_TRY_RE_SCHEDULE
+};
+
+// Default policy for re-scheduling bundles on dropped contacts, etc.
+#ifndef FAILED_FORWARD_POLICY
+#define FAILED_FORWARD_POLICY POLICY_DROP
+#endif // FAILED_FORWARD_POLICY
+
 // Interface to the bundle agent, provided to other agents and the CLA.
 struct bundle_agent_interface {
 	char *local_eid;

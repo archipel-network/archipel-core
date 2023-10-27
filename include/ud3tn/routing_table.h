@@ -10,6 +10,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Number of slots in the node hash table.
+#ifndef NODE_HTAB_SLOT_COUNT
+#define NODE_HTAB_SLOT_COUNT 128
+#endif // NODE_HTAB_SLOT_COUNT
+
 struct node_table_entry {
 	uint16_t ref_count;
 	struct contact_list *contacts;

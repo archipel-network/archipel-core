@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DEFAULT_EID1 "dtn://ud3tn.dtn/"
 #define DEFAULT_EID2 "dtn://ud3tn.dtn/agent1"

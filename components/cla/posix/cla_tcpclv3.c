@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
-#define _POSIX_C_SOURCE 200809L
-#define _DEFAULT_SOURCE
-
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 #include "cla/posix/cla_tcp_common.h"
@@ -19,10 +16,9 @@
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "ud3tn/cmdline.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"

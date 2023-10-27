@@ -14,14 +14,13 @@
 
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 
 #include <signal.h>
 #include <stdlib.h>
 #include <errno.h>
 
-#ifdef CLA_RX_READ_TIMEOUT
+#if defined(CLA_RX_READ_TIMEOUT) && CLA_RX_READ_TIMEOUT != 0
 static const unsigned long CLA_RX_READ_TIMEOUT_MS = CLA_RX_READ_TIMEOUT;
 #else // CLA_RX_READ_TIMEOUT
 static const unsigned long CLA_RX_READ_TIMEOUT_MS;

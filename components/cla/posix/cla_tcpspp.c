@@ -16,10 +16,9 @@
 #include "spp/spp_parser.h"
 #include "spp/spp_timecodes.h"
 
-#include "ud3tn/cmdline.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/parser.h"
 #include "ud3tn/result.h"
 

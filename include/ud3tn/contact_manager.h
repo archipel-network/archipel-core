@@ -9,6 +9,11 @@
 
 #include <stdint.h>
 
+// Maximum number of concurrent contacts that can be handled by CM.
+#ifndef MAX_CONCURRENT_CONTACTS
+#define MAX_CONCURRENT_CONTACTS 10
+#endif // MAX_CONCURRENT_CONTACTS
+
 struct contact_manager_params {
 	enum ud3tn_result task_creation_result;
 	Semaphore_t semaphore;

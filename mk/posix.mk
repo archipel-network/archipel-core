@@ -5,11 +5,14 @@ GCC_TOOLCHAIN_PREFIX ?= $(TOOLCHAIN_POSIX)
 CLANG_PREFIX ?=
 CLANG_SYSROOT_POSIX ?=
 CLANG_SYSROOT ?= $(CLANG_SYSROOT_POSIX)
-CPU ?=
 
 # COMPILER AND LINKER FLAGS
 
 CPPFLAGS += -DPLATFORM_POSIX -pipe -fPIC
+
+# Provide POSIX plus Linux and BSD symbols and extensions.
+# https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
+CPPFLAGS += -D_XOPEN_SOURCE=700 -D_DEFAULT_SOURCE
 
 ifdef ARCH
   CPPFLAGS += -march=$(ARCH)
