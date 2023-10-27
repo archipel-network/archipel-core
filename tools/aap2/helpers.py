@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 # encoding: utf-8
 
+import argparse
 import logging
 import sys
 
@@ -33,6 +34,30 @@ def add_agentid_parser_argument(parser):
         "-a", "--agentid",
         default=None,
         help="the agent id to register with uD3TN (default: random UUID)",
+    )
+
+
+def add_keepalive_parser_argument(parser):
+
+    def _range_limited_keepalive(argument):
+        try:
+            keepalive = int(argument)
+        except ValueError:
+            raise argparse.ArgumentTypeError("keepalive value must be integer")
+        if keepalive < 0 or keepalive > 86400:
+            raise argparse.ArgumentTypeError(
+                "invalid keepalive value, must be in range [0, 86400]"
+            )
+        return keepalive
+
+    parser.add_argument(
+        "-k", "--keepalive-seconds",
+        type=_range_limited_keepalive,
+        default=0,
+        help=(
+            "amount of seconds after which µD3TN should send a keepalive "
+            "message to the receiving end (default: disabled)"
+        ),
     )
 
 

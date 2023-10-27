@@ -21,7 +21,11 @@ from ud3tn_utils.aap2 import (
     BundleADU,
     ResponseStatus,
 )
-from helpers import add_common_parser_arguments, initialize_logger
+from helpers import (
+    add_common_parser_arguments,
+    add_keepalive_parser_argument,
+    initialize_logger,
+)
 
 
 def _send_pings(aap2_client, destination, interval, count, stop_event,
@@ -186,6 +190,7 @@ if __name__ == "__main__":
     )
 
     add_common_parser_arguments(parser)
+    add_keepalive_parser_argument(parser)
 
     parser.add_argument(
         "destination",
@@ -218,15 +223,6 @@ if __name__ == "__main__":
             "(default: 0 = program terminates after sending all bundles)"
         ),
     )
-    parser.add_argument(
-        "-k", "--keepalive-seconds",
-        type=int,
-        default=0,
-        help=(
-            "amount of seconds after which µD3TN should send a keepalive "
-            "message - only applies to the receiving end (default: disabled)"
-        ),
-    )
 
     args = parser.parse_args()
     logger = initialize_logger(args.verbosity + 1)  # log INFO by default
@@ -237,11 +233,6 @@ if __name__ == "__main__":
     else:
         rpc_client = AAP2UnixClient(address=args.socket)
         sub_client = AAP2UnixClient(address=args.socket)
-
-    keepalive = args.keepalive_seconds
-    if keepalive < 0 or keepalive > 86400:
-        logger.warning("Invalid keepalive value, disabling keepalive.")
-        keepalive = 0
 
     with rpc_client:
         secret = rpc_client.configure(
@@ -255,7 +246,7 @@ if __name__ == "__main__":
                 rpc_client.agent_id,
                 subscribe=True,
                 secret=secret,
-                keepalive_seconds=keepalive,
+                keepalive_seconds=args.keepalive_seconds,
             )
             run_aap_ping(rpc_client, sub_client, args.destination,
                          args.interval, args.count, logger, args.timeout)
