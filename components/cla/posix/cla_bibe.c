@@ -636,11 +636,13 @@ static enum ud3tn_result bibe_init(
 	// Set base_config vtable
 	config->base.base.vtable = &bibe_vtable;
 
+	config->param_htab_sem = hal_semaphore_init_binary();
+	if (!config->param_htab_sem)
+		return UD3TN_FAIL;
+	hal_semaphore_release(config->param_htab_sem);
+
 	htab_init(&config->param_htab, CLA_TCP_PARAM_HTAB_SLOT_COUNT,
 		  config->param_htab_elem);
-
-	config->param_htab_sem = hal_semaphore_init_binary();
-	hal_semaphore_release(config->param_htab_sem);
 
 	config->node = node;
 	config->service = service;
