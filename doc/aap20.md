@@ -6,7 +6,7 @@ In extension to that, AAP 2.0 has the following properties:
 - Every AAP 2.0 connection has a fixed direction of RPC (starting with calls from the application toward µD3TN) that can be switched once at the start of the connection.
 - There can be multiple concurrent connections that can even be registered under the same application endpoint.
 - Every endpoint registration has to provide a secret that is shared among all registrations of the same endpoint. If there is already an active registration, the same secret has to be provided or the new (re-)registration will be declined.
-- AAP 2.0 uses **Protobuf** as data serialization format. Reasoning: There is wide language support along with good support of the C language and microcontroller environments, and it prevents reinventing an own protocol wire representation plus parser and serializer. Note that we previously evaluated Cap'nProto, which is also a good candidate and especially beneficial due to native RPC support, however, the C language support and microcontroller support is severely lacking, unfortunately.
+- AAP 2.0 uses **Protobuf** as data serialization format. Reasoning: There is wide language support along with good support of the C language and microcontroller environments, and it prevents us from having to reinvent our own protocol wire representation plus parser and serializer. Note that we previously evaluated Cap'nProto, which is also a good candidate and especially beneficial due to native RPC support, however, the C language support and microcontroller support is severely lacking, unfortunately.
 
 ![The AAP 2.0 protocol state machine](aap20-protocol-state-machine.drawio.svg)
 

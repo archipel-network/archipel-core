@@ -142,8 +142,20 @@ class AAP2Client(abc.ABC):
         Args:
             agent_id: The agent identifier to be registered. If None,
                 uuid.uuid4() is called to generate one.
+            subscribe: Whether to subscribe for bundles (be a passive client)
+                or not (be an active client, for sending bundles).
+            secret: The AAP 2.0 authentication secret: A value that has to
+                match for multiple connections re-using the same agent ID.
+                If not specified, a random value will be generated.
+            auth_type: The requested AAP 2.0 authentication type. At the
+                moment, only AUTH_TYPE_DEFAULT is supported.
+            keepalive_seconds: The interval in which keepalive messages are
+                expected by uD3TN for active clients or will be sent by uD3TN
+                to passive clients. Note that uD3TN will close the connection
+                if an active client does not send a keepalive message within
+                twice this interval. Set to zero (default value) to disable.
         Return:
-            The secret that can be used for registering additonal connections.
+            The secret that can be used for registering additional connections.
         """
         self.agent_id = agent_id or self._generate_agent_id()
         eid = (
@@ -151,12 +163,13 @@ class AAP2Client(abc.ABC):
             if self.is_ipn_eid
             else f"{self.eid_prefix}{self.agent_id}"
         )
-        self.secret = secret or str(uuid.uuid4())
+        if secret is None:
+            secret = str(uuid.uuid4())
         config_msg = aap2_pb2.ConnectionConfig(
             auth_type=auth_type,
             is_subscriber=subscribe,
             endpoint_id=eid,
-            secret=self.secret,
+            secret=secret,
             keepalive_seconds=keepalive_seconds,
         )
         logger.debug(f"Sending CONFIGURE message for '{agent_id}'...")
@@ -169,7 +182,7 @@ class AAP2Client(abc.ABC):
                 str(response.response_status)
             )
         logger.debug("ACK message received!")
-        return self.secret
+        return secret
 
     def _receive_all(self, count):
         # Receive exactly `count` bytes from socket.
@@ -188,9 +201,10 @@ class AAP2Client(abc.ABC):
         in a preceding Protobuf varint.
         """
         # Read varint
+        PROTOBUF_VARINT_MAX_BYTES = 10  # 64 bits will encode as 10 bytes.
         c = 0
         result = bytearray()
-        while c < 10:
+        while c < PROTOBUF_VARINT_MAX_BYTES:
             data = self.socket.recv(1)
             if not data:
                 raise AAP2CommunicationError("Connection broke on `recv()`")
@@ -199,7 +213,7 @@ class AAP2Client(abc.ABC):
             if (data[0] & 0x80) == 0:
                 break
             c += 1
-        if c >= 10:
+        if c >= PROTOBUF_VARINT_MAX_BYTES:
             raise AAP2CommunicationError("Invalid varint received")
         data_len = _DecodeVarint32(data, 0)[0]
         # Read and return data

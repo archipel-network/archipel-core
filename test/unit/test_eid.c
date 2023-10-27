@@ -238,6 +238,7 @@ TEST(eid, get_agent_id_ptr)
 {
 	TEST_ASSERT_NULL(get_agent_id_ptr(""));
 	TEST_ASSERT_NULL(get_agent_id_ptr(NULL));
+	TEST_ASSERT_NULL(get_agent_id_ptr("dtn:none"));
 	TEST_ASSERT_EQUAL_STRING("agent", get_agent_id_ptr("dtn://host/agent"));
 	TEST_ASSERT_NULL(get_agent_id_ptr("dtn://host/"));
 	TEST_ASSERT_EQUAL_STRING("5678", get_agent_id_ptr("ipn:1234.5678"));

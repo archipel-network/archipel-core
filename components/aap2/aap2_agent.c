@@ -308,6 +308,8 @@ static uint64_t allocate_sequence_number(
 	struct aap2_agent_comm_config *const config,
 	const uint64_t time_ms)
 {
+	// If a previous bundle was sent less than one millisecond ago, we need
+	// to increment the sequence number.
 	if (config->last_bundle_timestamp_ms == time_ms)
 		return ++config->last_bundle_sequence_number;
 
@@ -325,6 +327,7 @@ static aap2_ResponseStatus process_configure_msg(
 		msg->is_subscriber ? "subscribe" : "register",
 		msg->endpoint_id);
 
+	// Clean up a previous registration in case there is one.
 	deregister_sink(config);
 
 	if (validate_eid(msg->endpoint_id) != UD3TN_OK) {
@@ -603,18 +606,6 @@ static uint8_t *receive_payload(pb_istream_t *istream, size_t payload_length)
 	return payload;
 }
 
-// NOTE: Callback-style serialization would be use a function as follows:
-// static bool write_string(pb_ostream_t *stream, const pb_field_iter_t *field,
-//                          void *const *arg)
-// {
-//         const char *str = *arg;
-//
-//         if (!pb_encode_tag_for_field(stream, field))
-//                 return false;
-//
-//         return pb_encode_string(stream, (uint8_t *)str, strlen(str));
-// }
-
 static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 {
 	struct bundle_adu data;
@@ -628,9 +619,6 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 	aap2_AAPMessage msg = aap2_AAPMessage_init_default;
 
 	msg.which_msg = aap2_AAPMessage_adu_tag;
-	// NOTE: Callback-style serialization would be as follows:
-	// msg.msg.adu.dst_eid.funcs.encode = &write_string;
-	// msg.msg.adu.dst_eid.arg = data.destination;
 	msg.msg.adu.dst_eid = data.destination;
 	msg.msg.adu.src_eid = data.source;
 	msg.msg.adu.payload_length = data.length;

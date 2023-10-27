@@ -165,10 +165,10 @@ static int agent_list_add_entry(struct agent_list **al_ptr, struct agent obj)
 	ag_ptr->next = NULL;
 	ag_ptr->agent_data = obj;
 
-	/* check if agent_entry is existing at all */
+	/* check if agent list is empty */
 	if (*al_ptr == NULL) {
-		/* set list object as new agent_entry node and
-		 * return success
+		/* make the new agent node the head of
+		 * the list and return success
 		 */
 		*al_ptr = ag_ptr;
 		return 0;
