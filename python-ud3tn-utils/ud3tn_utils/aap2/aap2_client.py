@@ -18,18 +18,25 @@ logger = logging.getLogger(__name__)
 
 
 class AAP2Error(RuntimeError):
+    """The base class for errors raised by AAP2Client."""
+
     pass
 
 
 class AAP2CommunicationError(AAP2Error):
+    """An error raised by AAP2Client when there is a communication error."""
+
     pass
 
 
 class AAP2OperationFailed(AAP2Error):
+    """An error raised by AAP2Client when uD3TN indicates a failure."""
+
     pass
 
 
 class AAP2UnexpectedMessage(AAP2Error):
+    """An error raised by AAP2Client when receiving an unexpected message."""
 
     def __init__(self, *args, message=None):
         super().__init__(*args)
@@ -37,13 +44,23 @@ class AAP2UnexpectedMessage(AAP2Error):
 
 
 class AAP2Client(abc.ABC):
-    """A context manager class for connecting to the AAP socket of a uD3TN
-    instance.
+    """A context manager class for connecting to uD3TN's AAP 2.0 socket.
+
+    Note:
+        This is an abstract base class for two concrete implementations:
+        `AAP2UnixClient` for UNIX domain sockets and `AAP2TCPClient` for
+        TCP sockets.
 
     Args:
-        socket: A `socket.socket` object
         address: The address of the remote socket to be used when calling
-            `socket.connect()`
+            `socket.connect()`.
+
+    Attributes:
+        socket: The underlying socket object.
+        address: The address used to connect to the socket.
+        node_eid (str): The local node ID of the connected uD3TN instance.
+        agent_id (str): The agent ID assigned to this client.
+
     """
 
     def __init__(self, address):
@@ -56,6 +73,13 @@ class AAP2Client(abc.ABC):
     def connect(self):
         """Establish a socket connection to a uD3TN instance and return the
         received welcome message.
+
+        Raises:
+            AAP2CommunicationError: On issues receiving data.
+            AAP2UnexpectedMessage: If the wrong data was received.
+            protobuf.message.DecodeError: If parsing the message fails.
+            OSError: If socket communication fails.
+
         """
         logger.debug("Connected to uD3TN, awaiting WELCOME message...")
         return self._welcome()
@@ -68,7 +92,7 @@ class AAP2Client(abc.ABC):
 
     def __enter__(self):
         """Return `self` upon calling `self.connect()` to establish the socket
-        connection.
+        connection. See the documentation of the `connect` method.
         """
         self.connect()
         return self
@@ -102,7 +126,7 @@ class AAP2Client(abc.ABC):
 
     @property
     def eid(self):
-        """Return the own EID."""
+        """Return the own EID including agent ID."""
         if self.node_eid[0:3] == "ipn":
             prefix, _ = self.node_eid.split(".")
             return f"{prefix}.{self.agent_id}"
@@ -120,7 +144,7 @@ class AAP2Client(abc.ABC):
 
     @property
     def is_ipn_eid(self):
-        """Return True if the node ID uses the `ipn` scheme."""
+        """Return True if the connected node uses the `ipn` EID scheme."""
         return self.node_eid[0:3] == "ipn"
 
     def _generate_agent_id(self):
@@ -156,6 +180,12 @@ class AAP2Client(abc.ABC):
                 twice this interval. Set to zero (default value) to disable.
         Return:
             The secret that can be used for registering additional connections.
+
+        Raises:
+            AAP2OperationFailed: If uD3TN indicates a processing error.
+            protobuf.message.DecodeError: If parsing the response fails.
+            OSError: If socket communication fails.
+
         """
         self.agent_id = agent_id or self._generate_agent_id()
         eid = (
@@ -220,21 +250,61 @@ class AAP2Client(abc.ABC):
         return self._receive_all(data_len)
 
     def receive_msg(self):
-        """Receive and return the next `AAPMessage`."""
+        """Receive and return the next `AAPMessage`.
+
+        Return:
+            The AAPMessage received from uD3TN.
+
+        Raises:
+            AAP2CommunicationError: On issues receiving data.
+            protobuf.message.DecodeError: If parsing the message fails.
+            OSError: If socket communication fails.
+
+        """
         msg_bin = self._receive_delimited()
         msg = aap2_pb2.AAPMessage()
         msg.ParseFromString(msg_bin)
         return msg
 
     def receive_response(self):
-        """Receive and return the next `AAPResponse`."""
+        """Receive and return the next `AAPResponse`.
+
+        Return:
+            The AAPResponse received from uD3TN.
+
+        Raises:
+            AAP2CommunicationError: On issues receiving data.
+            protobuf.message.DecodeError: If parsing the message fails.
+            OSError: If socket communication fails.
+
+        """
         msg_bin = self._receive_delimited()
         resp = aap2_pb2.AAPResponse()
         resp.ParseFromString(msg_bin)
         return resp
 
     def receive_adu(self, adu_msg=None):
-        """Receive a bundle ADU (Protobuf with extra payload data)."""
+        """Receive a bundle ADU (Protobuf with extra payload data).
+
+        Args:
+            adu_msg (aap_pb2.BundleADU): If the `BundleADU` message was already
+                received, it must be passed using this argument. Otherwise,
+                the function will call `receive_msg` to receive the next
+                message, which must be of type `BundleADU`.
+
+        Return:
+            A tuple of the form (BundleADU, data) containing the received
+            `BundleADU` message as metadata describing the ADU payload, and
+            the ADU binary payload itself.
+
+        Raises:
+            AAP2UnexpectedMessage: If the message received was not of type
+                `BundleADU` (if `adu_msg` was set to `None`).
+            AAP2CommunicationError: On issues receiving data.
+            protobuf.message.DecodeError: If parsing the message fails.
+            OSError: If socket communication fails.
+
+        """
         if not adu_msg:
             msg = self.receive_msg()
             if msg.WhichOneof("msg") != "adu":
@@ -249,7 +319,17 @@ class AAP2Client(abc.ABC):
         return adu_msg, bundle_data
 
     def send(self, msg):
-        """Serialize and send the provided Protobuf message."""
+        """Serialize and send the provided Protobuf message including header.
+
+        Args:
+            msg: The Protobuf message to be sent. Can be, e.g., an `AAPMessage`
+                or an `AAPResponse`.
+
+        Raises:
+            protobuf.message.EncodeError: If `msg` isn't initialized.
+            OSError: If socket communication fails.
+
+        """
         msg_bin = msg.SerializeToString()
         varint_bytes = bytearray()
         _EncodeVarint(lambda b: varint_bytes.extend(b), len(msg_bin))
@@ -257,7 +337,20 @@ class AAP2Client(abc.ABC):
         self.socket.send(msg_bin)
 
     def send_adu(self, adu_msg, bundle_data):
-        """Send a bundle ADU (Protobuf with extra payload data)."""
+        """Send a bundle ADU (Protobuf with extra payload data).
+
+        Args:
+            adu_msg (aap2_pb2.BundleADU): The metadata describing the ADU in
+                the form of a `BundleADU` message.
+            bundle_data (bytes): The binary payload data to be sent.
+
+        Raises:
+            ValueError: If the length of `bundle_data` does not match the
+                `payload_data` field of `adu_msg`.
+            protobuf.message.EncodeError: If `adu_msg` isn't initialized.
+            OSError: If socket communication fails.
+
+        """
         if adu_msg.payload_length != len(bundle_data):
             raise ValueError(
                 "Payload length in message does not match length of data"
@@ -266,14 +359,21 @@ class AAP2Client(abc.ABC):
         self.socket.send(bundle_data)
 
     def send_response_status(self, status):
-        """Send an AAPResponse with the specified status code."""
+        """Send an AAPResponse with the specified status code.
+
+        Args:
+            status (aap2_pb2.ResponseStatus): The status code to be sent.
+
+        Raises:
+            OSError: If socket communication fails.
+
+        """
         response = aap2_pb2.AAPResponse(response_status=status)
         self.send(response)
 
 
 class AAP2UnixClient(AAP2Client):
-    """A context manager class for connecting to the AAP Unix socket of a uD3TN
-    instance.
+    """A context manager class for connecting to uD3TN's AAP 2.0 Unix socket.
 
     Args:
         address: The address (PATH) of the remote socket to be used when
@@ -290,8 +390,7 @@ class AAP2UnixClient(AAP2Client):
 
 
 class AAP2TCPClient(AAP2Client):
-    """A context manager class for connecting to the AAP TCP socket of a uD3TN
-    instance.
+    """A context manager class for connecting to uD3TN's AAP 2.0 TCP socket.
 
     Args:
         address: The address tuple (HOST, PORT) of the remote socket to be used
