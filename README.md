@@ -103,6 +103,36 @@ Use the `--recursive` option if you `git clone` the project or run
    - Note that on some systems, such as BSD flavors, you may need to explicitly call GNU Make using the `gmake` command. In this case, just substitute all calls to `make` in the documentation by `gmake`.
    - Some build-time options (e.g., building with sanitizers) can be easily specified as arguments to `make`. See `config.mk.example` for the values you can specify. Example: `make sanitize=yes`
 
+#### Nix-based build and development (x86_64-linux)
+
+1. [Install the nix package manager](https://nixos.org/download)
+2. [Enable flake support](https://nixos.wiki/wiki/Flakes)
+    - *Temporary:* Add `--experimental-features 'nix-command flakes'` when using any nix commands
+    - *Permanent:* Add `experimental-features = nix-command flakes` to `~/.config/nix/nix.conf` or `/etc/nix/nix.conf`
+
+Most common nix commands are:
+
+- Build & run ud3tn:
+
+    ```sh
+    nix run '.?submodules=1'
+    ```
+- Build individual packages:
+
+    ```sh
+    nix build '.?submodules=1#ud3tn'
+    nix build '.?submodules=1#pyd3tn'
+    nix build '.?submodules=1#python-ud3tn-utils'
+    ```
+
+- Load a development environment with all packages and dependencies:
+
+    ```sh
+    nix develop '.?submodules=1'
+    ```
+
+    After the development environment has been activated, all development dependencies are fulfilled in order to be able to execute all other described debug and build commands.
+
 #### Library
 
 Beside the µD3TN daemon binary, two types of library can be built using `make posix-lib` or `make`:
