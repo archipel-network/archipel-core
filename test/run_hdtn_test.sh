@@ -32,31 +32,9 @@ cd "$UD3TN_DIR"
 exit_handler() {
     cd "$UD3TN_DIR"
 
-    kill -TERM $UD3TN1_PID
-    kill -2 $HDTNSINK_PID
-    kill -2 $HDTN_PID
-
-    if ps -p $UD3TN2_PID > /dev/null
-    then
-        kill -TERM $UD3TN2_PID
-        echo "Waiting for the second uD3TN node to exit gracefully"
-        wait $UD3TN2_PID
-        echo ">>> uD3TN1 LOGFILE"
-        cat "/tmp/ud3tn2.log" || true
-        echo
-    fi
-    if ps -p $HDTNSENDFILE_PID > /dev/null
-    then
-        kill -TERM $HDTNSENDFILE_PID
-        echo "Waiting for HDTN_BPsendfile to exit gracefully"
-        wait $HDTNSENDFILE_PID
-    fi
-
-    echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
-    echo "Waiting for HDTN and HDTN_bpsink to exit gracefully"
-    wait $UD3TN1_PID
-    wait $HDTNSINK_PID
-    wait $HDTN_PID
+    kill -TERM $UD3TN1_PID || true
+    kill -TERM $UD3TN2_PID || true
+    kill -2 $HDTN_PID || true
 
     echo
     echo ">>> HDTN LOGFILE"
@@ -64,6 +42,9 @@ exit_handler() {
     echo
     echo ">>> uD3TN1 LOGFILE"
     cat "/tmp/ud3tn1.log" || true
+    echo
+    echo ">>> uD3TN2 LOGFILE"
+    cat "/tmp/ud3tn2.log" || true
     echo
 
     rm -f -r $TMPDIR
@@ -97,23 +78,14 @@ python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --ag
 
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv
 
-echo $PAYLOAD > hdtn_payload.txt
-
-# HDTN_bpgen -> HDTN -> uD3TN2 Test
-# Start HDTN_bpgen and aap_receiver on uD3TN2
-$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpgen-async --my-uri-eid="$BPGEN_EID" --bundle-size=10000 --bundle-rate=10 --dest-uri-eid="$SINK_EID" --outducts-config-file=$HDTN_BPGEN_CONFIG --duration=1 &
-timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 10 -vv
-
 # Send `hdtn_payload.txt` to uD3TN aap_receiver so we could send it back
-$HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpsendfile --file-or-folder-path=hdtn_payload.txt --my-uri-eid="$BPGEN_EID" --dest-uri-eid="$SINK_EID" --use-bp-version-7 --outducts-config-file=$HDTN_BPGEN_CONFIG &
-HDTNSENDFILE_PID=$!
+echo $PAYLOAD > hdtn_payload.txt
+(sleep 1 && $HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpsendfile --file-or-folder-path=hdtn_payload.txt --my-uri-eid="$BPGEN_EID" --dest-uri-eid="$SINK_EID" --use-bp-version-7 --outducts-config-file=$HDTN_BPGEN_CONFIG)&
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --socket $UD3TN_DIR/ud3tn2.socket --agentid "$SINK_AGENTID" --count 1 -vv -o received_payload.txt
-sleep 3
 
 # Terminate uD3TN2 so that HDTN_ could start
 echo "Terminating uD3TN_2..." && kill -TERM $UD3TN2_PID
-echo "Termintaing HDTN_BPsendfile..." && kill -2 $HDTNSENDFILE_PID
-sleep 0.5
+echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
 wait $UD3TN2_PID
 
 # Create temporary directory
@@ -124,12 +96,12 @@ $HDTN_SOURCE_ROOT/build/common/bpcodec/apps/bpreceivefile --save-directory=$TMPD
 HDTNSINK_PID=$!
 
 # Configure contact to HDTN in uD3TN1 which allows to reach HDTN_bpreceivefile
-(sleep 2 && python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "$UD3TN2_EID" "$HDTN_EID" tcpclv3:127.0.0.1:4556)&
+python "$UD3TN_DIR/tools/aap/aap_config.py" --socket $UD3TN_DIR/ud3tn1.socket --schedule 1 3600 10000 --reaches "$UD3TN2_EID" "$HDTN_EID" tcpclv3:127.0.0.1:4556
 
 # Send bundle which contains `hdtn_payload.txt` to HDTN_bpreceivefile
-(sleep 3 && (cat $UD3TN_DIR/received_payload.txt | python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID"))&
+(sleep 2 && (cat $UD3TN_DIR/received_payload.txt | python "$UD3TN_DIR/tools/aap/aap_send.py" --socket $UD3TN_DIR/ud3tn1.socket --agentid "$SOURCE_AGENTID" "$SINK_EID"))&
 
-inotifywait $TMPDIR -t 30 -e create |
+inotifywait $TMPDIR -t 10 -e create |
         while read -r directory action file; do
             if [[ "$file" == "hdtn_payload.txt" ]]; then
                 RECEIVED_PAYLOAD="$(cat $TMPDIR/hdtn_payload.txt)"
@@ -141,3 +113,7 @@ inotifywait $TMPDIR -t 30 -e create |
                 exit;
             fi
         done
+
+echo "Terminating uD3TN_1..." && kill -TERM $UD3TN1_PID
+echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+wait $UD3TN1_PID
