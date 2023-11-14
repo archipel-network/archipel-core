@@ -296,3 +296,26 @@ char *get_node_id(const char *const eid)
 		return NULL;
 	}
 }
+
+const char *get_agent_id_ptr(const char *const eid)
+{
+	const char *delim;
+
+	switch (get_eid_scheme(eid)) {
+	case EID_SCHEME_DTN:
+		// Special case, e.g., "dtn:none"
+		if (strncmp(eid, "dtn://", 6))
+			return NULL;
+		delim = strchr((char *)&eid[6], '/');
+		if (!delim || delim[1] == '\0')
+			return NULL;
+		return &delim[1];
+	case EID_SCHEME_IPN:
+		delim = strchr(eid, '.');
+		if (!delim || delim[1] == '\0')
+			return NULL;
+		return &delim[1];
+	default:
+		return NULL;
+	}
+}

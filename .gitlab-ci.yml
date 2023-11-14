@@ -180,12 +180,32 @@ aap-test:
         - kill -TERM $UD3TN1_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN1_PID
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         - while ! nc -z localhost 4242; do sleep 0.1; done
         - python tools/aap/aap_test.py --tcp '::1' 4242
         - kill -TERM $UD3TN2_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN2_PID
+
+aap2-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - rm -f ./ud3tn.aap2.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - python tools/aap2/aap2_ping.py dtn://ud3tn.dtn/echo -t 1 -c 1
+        - python tools/aap2/aap2_ping.py dtn://ud3tn.dtn/1 -a 1 -t 1 -c 1
+        - (sleep 1 && python tools/aap2/aap2_send.py -a 1 -s secret dtn://ud3tn.dtn/1 hello) & timeout 3 python tools/aap2/aap2_receive.py -a 1 -s secret -c 1 --verify-pl hello
+        - kill -TERM $UD3TN1_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
 
 ion-ipn-bpv6-interoperability-test:
     stage: functional_test
@@ -274,8 +294,8 @@ fragment-reassembly-test:
         - cd /ud3tn_build
         - rm -f ./ud3tn1.socket
         - rm -f ./ud3tn2.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket -S ud3tn1.aap2.socket & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
@@ -300,9 +320,9 @@ ipv6-compatibility-test:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
         # IPv6 and IPv4
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 -S ud3tn1.aap2.socket & UD3TN1_PID=$!
         # IPv4-only
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         # Create venv and wait for uD3TN ports to be open
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -424,13 +444,14 @@ python-stylecheck:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - pip install -e "python-ud3tn-utils"
-        - python -m flake8 pyd3tn python-ud3tn-utils test/integration tools/aap tools/cla --max-complexity=12
+        - python -m flake8 pyd3tn python-ud3tn-utils test/integration tools/aap tools/aap2 tools/cla --max-complexity=12 --exclude=generated
 
 coverage-test:
     stage: code_quality_test
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
+        - project_dir="$(pwd)"
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build coverage=yes
         - cd /ud3tn_build
         - rm -f ./ud3tn.socket
@@ -438,14 +459,13 @@ coverage-test:
         - timeout 60 build/posix/testud3tn
         - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn"
-        - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN_PID
-        - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root .
+        - gcovr --xml-pretty --exclude-unreachable-branches --gcov-ignore-parse-errors --print-summary -o coverage.xml --root .
+        - cp -v coverage.xml "$project_dir/"
     coverage: /^\s*lines:\s*\d+.\d+\%/
     artifacts:
         name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}

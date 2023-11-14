@@ -26,6 +26,14 @@ AAP_SOCKET = os.environ.get(
 AAP_AGENT_ID = "testagent"
 TEST_AAP = os.environ.get("TEST_AAP", "1") == "1"
 
+AAP2_SOCKET = os.environ.get(
+    "AAP2_SOCKET",
+    "ud3tn.aap2.socket"
+)
+AAP2_AGENT_ID = "testagentaap2"
+AAP2_SECRET = "testsecret"
+TEST_AAP2 = os.environ.get("TEST_AAP2", "1") == "1"
+
 UD3TN_EID = "dtn://ud3tn.dtn/"
 UD3TN_CONFIG_EP = UD3TN_EID + "config"
 UD3TN_MANAGEMENT_EP = UD3TN_EID + "management"

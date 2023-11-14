@@ -466,12 +466,12 @@ static enum ud3tn_result mtcp_start_scheduled_contact(
 			if (link_active) {
 				bundle_processor_inform(
 					bai->bundle_signaling_queue,
-					NULL,
-					BP_SIGNAL_NEW_LINK_ESTABLISHED,
-					strdup(cla_addr),
-					NULL,
-					NULL,
-					NULL
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+						.peer_cla_addr = strdup(
+							cla_addr
+						),
+					}
 				);
 			}
 			hal_semaphore_release(mtcp_config->param_htab_sem);

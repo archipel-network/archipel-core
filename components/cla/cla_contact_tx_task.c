@@ -14,6 +14,7 @@
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #if defined(CLA_TX_RATE_LIMIT) && CLA_TX_RATE_LIMIT != 0
@@ -46,6 +47,25 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 	// possible moment ... the bundle age value MUST be increased ..."
 	if (bundle_age_update(bundle, dwell_time_ms) == UD3TN_FAIL)
 		LOGF("TX: Bundle %p age block update failed!", bundle);
+}
+
+static void bp_inform_tx(QueueIdentifier_t signaling_queue,
+			 struct bundle *const b,
+			 struct cla_link *const link,
+			 const bool success)
+{
+	bundle_processor_inform(
+		signaling_queue,
+		(struct bundle_processor_signal) {
+			.type = (
+				success
+				? BP_SIGNAL_TRANSMISSION_SUCCESS
+				: BP_SIGNAL_TRANSMISSION_FAILURE
+			),
+			.bundle = b,
+			.peer_cla_addr = cla_get_cla_addr_from_link(link),
+		}
+	);
 }
 
 static void cla_contact_tx_task(void *param)
@@ -90,24 +110,18 @@ static void cla_contact_tx_task(void *param)
 			link->config->vtable->cla_end_packet(link);
 
 			if (s == UD3TN_OK) {
-				bundle_processor_inform(
+				bp_inform_tx(
 					signaling_queue,
 					b,
-					BP_SIGNAL_TRANSMISSION_SUCCESS,
-					cla_get_cla_addr_from_link(link),
-					NULL,
-					NULL,
-					NULL
+					link,
+					true
 				);
 			} else {
-				bundle_processor_inform(
+				bp_inform_tx(
 					signaling_queue,
 					b,
-					BP_SIGNAL_TRANSMISSION_FAILURE,
-					cla_get_cla_addr_from_link(link),
-					NULL,
-					NULL,
-					NULL
+					link,
+					false
 				);
 			}
 
@@ -138,14 +152,11 @@ static void cla_contact_tx_task(void *param)
 			while (rbl) {
 				struct bundle *b = rbl->data;
 
-				bundle_processor_inform(
+				bp_inform_tx(
 					signaling_queue,
 					b,
-					BP_SIGNAL_TRANSMISSION_FAILURE,
-					cla_get_cla_addr_from_link(link),
-					NULL,
-					NULL,
-					NULL
+					link,
+					false
 				);
 
 				struct routed_bundle_list *tmp = rbl;

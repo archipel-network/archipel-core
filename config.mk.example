@@ -179,6 +179,9 @@
 # The default value for the `--aap-socket` argument.
 #CPPFLAGS += -DDEFAULT_AAP_SOCKET_FILENAME=\"ud3tn.socket\"
 
+# The default value for the `--aap2-socket` argument.
+#CPPFLAGS += -DDEFAULT_AAP2_SOCKET_FILENAME=\"ud3tn.aap2.socket\"
+
 # The default CRC type used for newly-created BPv7 bundles. See `bundle.h`.
 #CPPFLAGS += -DDEFAULT_BPV7_CRC_TYPE=BUNDLE_CRC_TYPE_16
 

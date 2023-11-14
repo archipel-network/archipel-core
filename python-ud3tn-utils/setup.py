@@ -15,6 +15,12 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://gitlab.com/d3tn/ud3tn',
-    packages=['ud3tn_utils', 'ud3tn_utils.aap'],
+    packages=[
+        'ud3tn_utils',
+        'ud3tn_utils.aap',
+        'ud3tn_utils.aap2',
+        'ud3tn_utils.aap2.generated',
+    ],
+    install_requires=['protobuf==4.24.4'],
     python_requires='>=3.6',
 )

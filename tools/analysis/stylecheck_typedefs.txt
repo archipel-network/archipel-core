@@ -4,3 +4,16 @@ CborValue
 CborEncoder
 CborParser
 timer_tick_t
+pb_msgdesc_t
+pb_istream_t
+pb_ostream_t
+aap2_AuthType
+aap2_BundleADUFlags
+aap2_ResponseStatus
+aap2_Welcome
+aap2_ConnectionConfig
+aap2_BundleADU
+aap2_Bundle
+aap2_Keepalive
+aap2_AAPMessage
+aap2_AAPResponse

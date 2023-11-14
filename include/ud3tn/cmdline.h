@@ -22,12 +22,17 @@
 #endif // DEFAULT_AAP_NODE
 #ifndef DEFAULT_AAP_SERVICE
 #define DEFAULT_AAP_SERVICE "4242"
-#endif //
+#endif // DEFAULT_AAP_SERVICE
 
 // Default filename used for the AAP domain socket.
 #ifndef DEFAULT_AAP_SOCKET_FILENAME
 #define DEFAULT_AAP_SOCKET_FILENAME "ud3tn.socket"
-#endif //DEFAULT_AAP_SOCKET_FILENAME
+#endif // DEFAULT_AAP_SOCKET_FILENAME
+
+// Filename used for the AAP 2.0 domain socket.
+#ifndef DEFAULT_AAP2_SOCKET_FILENAME
+#define DEFAULT_AAP2_SOCKET_FILENAME "ud3tn.aap2.socket"
+#endif // DEFAULT_AAP2_SOCKET_FILENAME
 
 // Default BP version used for generated bundles.
 #ifndef DEFAULT_BUNDLE_VERSION
@@ -51,6 +56,7 @@ struct ud3tn_cmdline_options {
 	char *aap_socket; // e.g.: /tmp/ud3tn.socket
 	char *aap_node; // e.g.: 127.0.0.1
 	char *aap_service; // e.g.: 4242
+	char *aap2_socket; // e.g.: /tmp/ud3tn.aap2.socket
 	uint8_t bundle_version;
 	uint8_t log_level;
 	bool status_reporting;

@@ -76,12 +76,20 @@ int echo_agent_setup(struct bundle_agent_interface *const bai,
 	params->last_bundle_timestamp_s = 0;
 	params->last_bundle_sequence_number = 0;
 
+	const struct agent agent = {
+		.sink_identifier = (
+			params->is_ipn
+			? AGENT_ID_ECHO_IPN
+			: AGENT_ID_ECHO_DTN
+		),
+		.callback = callback,
+		.param = params,
+	};
+
 	return bundle_processor_perform_agent_action(
 		bai->bundle_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		params->is_ipn ? AGENT_ID_ECHO_IPN : AGENT_ID_ECHO_DTN,
-		callback,
-		params,
+		agent,
 		false
 	);
 }

@@ -6,6 +6,8 @@
 #include "ud3tn/init.h"
 #include "ud3tn/router.h"
 
+#include "aap2/aap2_agent.h"
+
 #include "agents/application_agent.h"
 #include "agents/echo_agent.h"
 
@@ -24,8 +26,9 @@
 static struct bundle_agent_interface bundle_agent_interface;
 uint8_t LOG_LEVEL = DEFAULT_LOG_LEVEL;
 
-// Reference kept for program runtime
+// References kept for program runtime
 static struct application_agent_config *aa_cfg;
+static struct aap2_agent_config *aa2_cfg;
 
 void init(int argc, char *argv[])
 {
@@ -125,6 +128,20 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	);
 
 	if (!aa_cfg) {
+		LOG("INIT: Application agent could not be initialized!");
+		exit(EXIT_FAILURE);
+	}
+
+	aa2_cfg = aap2_agent_setup(
+		&bundle_agent_interface,
+		opt->aap2_socket,
+		NULL,
+		NULL,
+		opt->bundle_version,
+		opt->lifetime_s * 1000
+	);
+
+	if (!aa2_cfg) {
 		LOG("INIT: Application agent could not be initialized!");
 		exit(EXIT_FAILURE);
 	}

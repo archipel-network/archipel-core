@@ -9,13 +9,14 @@
 
 struct agent {
 	const char *sink_identifier;
+	const char *secret;
 	void (*callback)(struct bundle_adu data, void *param,
 			 const void *bp_context);
 	void *param;
 };
 
 struct agent_list {
-	struct agent *agent_data;
+	struct agent agent_data;
 	struct agent_list *next;
 };
 
@@ -39,31 +40,27 @@ int agent_forward(const char *sink_identifier, struct bundle_adu data,
 
 
 /**
- * @brief agent_register Register the callback and its param for the
- *	sink_identifier as an agent
+ * @brief agent_register Register the specified agent
  *
- * @param sink_identifier Unique string to identify an agent
- * @param callback Logic to be executed every time a bundle should be
- *	delivered to the agent
- * @param param Use this to pass additional arguments to callback
+ * @param agent The agent to be registered
+ * @param is_subscriber Whether to receive bundles with this agent or not
  * @return int Return an error if the sink_identifier is not unique or
  *	registration fails
  *
  * @not_thread_safe
  */
-int agent_register(const char *sink_identifier,
-		   void (*const callback)(struct bundle_adu data, void *param,
-					  const void *bp_context),
-		   void *param);
+int agent_register(struct agent agent, bool is_subscriber);
 
 /**
  * @brief agent_deregister Remove the agent associated with the specified
  *	sink_identifier
+ * @param sink_identifier The identifier of the agent to be unregistered
+ * @param is_subscriber Whether to receive bundles with this agent or not
  * @return int Return an error if the sink_identifier is unknown or the
  *	deregistration fails
  *
  * @not_thread_safe
  */
-int agent_deregister(const char *sink_identifier);
+int agent_deregister(const char *sink_identifier, bool is_subscriber);
 
 #endif /* AGENT_MANAGER_H_INCLUDED */

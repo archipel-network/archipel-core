@@ -67,15 +67,24 @@ int config_agent_setup(
 	struct config_agent_params *const ca_param = malloc(
 		sizeof(struct config_agent_params)
 	);
+
 	ca_param->local_eid = local_eid;
 	ca_param->allow_remote_configuration = allow_remote_configuration;
+
+	const struct agent agent = {
+		.sink_identifier = (
+			is_ipn
+			? AGENT_ID_CONFIG_IPN
+			: AGENT_ID_CONFIG_DTN
+		),
+		.callback = callback,
+		.param = ca_param,
+	};
 
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		is_ipn ? AGENT_ID_CONFIG_IPN : AGENT_ID_CONFIG_DTN,
-		callback,
-		ca_param,
+		agent,
 		false
 	);
 }

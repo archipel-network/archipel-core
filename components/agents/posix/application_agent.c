@@ -19,6 +19,7 @@
 #include "platform/hal_types.h"
 
 #include "platform/posix/pipe_queue_util.h"
+#include "platform/posix/socket_util.h"
 
 #include "ud3tn/agent_util.h"
 #include "ud3tn/common.h"
@@ -35,9 +36,6 @@
 #include <errno.h>
 #include <poll.h>
 #include <unistd.h>
-
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -216,31 +214,34 @@ static int register_sink(char *sink_identifier,
 	return bundle_processor_perform_agent_action(
 		config->parent->bundle_agent_interface->bundle_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		sink_identifier,
-		agent_msg_recv,
-		config,
+		(struct agent){
+			.sink_identifier = sink_identifier,
+			.callback = agent_msg_recv,
+			.param = config,
+		},
 		true
 	);
 }
 
 static void deregister_sink(struct application_agent_comm_config *config)
 {
-	if (config->registered_agent_id) {
-		LOGF("AppAgent: De-registering agent ID \"%s\".",
-		     config->registered_agent_id);
+	if (!config->registered_agent_id)
+		return;
 
-		bundle_processor_perform_agent_action(
-			config->parent->bundle_agent_interface->bundle_signaling_queue,
-			BP_SIGNAL_AGENT_DEREGISTER,
-			config->registered_agent_id,
-			NULL,
-			NULL,
-			true
-		);
+	LOGF("AppAgent: De-registering agent ID \"%s\".",
+		config->registered_agent_id);
 
-		free(config->registered_agent_id);
-		config->registered_agent_id = NULL;
-	}
+	bundle_processor_perform_agent_action(
+		config->parent->bundle_agent_interface->bundle_signaling_queue,
+		BP_SIGNAL_AGENT_DEREGISTER,
+		(struct agent){
+			.sink_identifier = config->registered_agent_id,
+		},
+		true
+	);
+
+	free(config->registered_agent_id);
+	config->registered_agent_id = NULL;
 }
 
 static uint64_t allocate_sequence_number(
@@ -452,6 +453,26 @@ static int send_bundle(const int socket_fd, struct bundle_adu data)
 	return send_result;
 }
 
+static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
+{
+	struct bundle_adu data;
+
+	while (poll_recv_timeout(bundle_pipe_fd[0], 0)) {
+		if (pipeq_read_all(bundle_pipe_fd[0],
+				   &data, sizeof(struct bundle_adu)) <= 0) {
+			LOGERROR("AppAgent", "read()", errno);
+			break;
+		}
+
+		LOGF("AppAgent: Dropping unsent bundle from '%s'.",
+		     data.source);
+		bundle_adu_free_members(data);
+	}
+
+	close(bundle_pipe_fd[0]);
+	close(bundle_pipe_fd[1]);
+}
+
 static void application_agent_comm_task(void *const param)
 {
 	struct application_agent_comm_config *const config = (
@@ -523,55 +544,12 @@ static void application_agent_comm_task(void *const param)
 
 	aap_parser_deinit(&parser);
 done:
-	close(config->bundle_pipe_fd[0]);
-	close(config->bundle_pipe_fd[1]);
 	deregister_sink(config);
+	shutdown_bundle_pipe(config->bundle_pipe_fd);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
 	free(config);
 	LOG("AppAgent: Closed connection.");
-}
-
-static int create_unix_domain_socket(const char *path)
-{
-	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (sock == -1) {
-		LOGERROR("AppAgent", "socket(AF_UNIX)", errno);
-		return -1;
-	}
-
-	struct sockaddr_un addr = {
-		.sun_family = AF_UNIX,
-	};
-	const int rv1 = snprintf(
-		addr.sun_path,
-		sizeof(addr.sun_path),
-		"%s",
-		path
-	);
-
-	if (rv1 <= 0 || (unsigned int)rv1 > sizeof(addr.sun_path)) {
-		LOGF(
-			"AppAgent: Invalid socket path, len = %d, maxlen = %zu",
-			rv1,
-			sizeof(addr.sun_path)
-		);
-		return -1;
-	}
-
-	unlink(path);
-	int rv2 = bind(
-		sock,
-		(const struct sockaddr *)&addr,
-		sizeof(struct sockaddr_un)
-	);
-	if (rv2 == -1) {
-		LOGERROR("AppAgent", "bind(unix_domain_socket)", errno);
-		return -1;
-	}
-
-	return sock;
 }
 
 struct application_agent_config *application_agent_setup(

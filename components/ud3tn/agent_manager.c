@@ -13,12 +13,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct agent *agent_search(const char *sink_identifier);
-static int agent_list_add_entry(struct agent *obj);
-static int agent_list_remove_entry(struct agent *obj);
-static struct agent_list **agent_search_ptr(const char *sink_identifier);
+static struct agent *agent_search(struct agent_list **al_ptr,
+				  const char *sink_identifier);
+static int agent_list_add_entry(struct agent_list **al_ptr,
+				struct agent obj);
+static int agent_list_remove_entry(struct agent_list **al_ptr,
+				   const char *sink_identifier);
+static struct agent_list **agent_search_ptr(struct agent_list **al_ptr,
+					    const char *sink_identifier);
 
 static struct agent_list *agent_entry_node;
+static struct agent_list *rpc_ag_entry_node;
 static const char *local_eid;
 
 void agent_manager_init(const char *const ud3tn_local_eid)
@@ -26,79 +31,79 @@ void agent_manager_init(const char *const ud3tn_local_eid)
 	local_eid = ud3tn_local_eid;
 }
 
-int agent_register(const char *sink_identifier,
-		   void (*const callback)(struct bundle_adu data, void *param,
-					  const void *bp_context),
-		   void *param)
+int agent_register(struct agent agent, const bool is_subscriber)
 {
-	struct agent *ag_ptr;
+	struct agent_list **const al_ptr = (
+		is_subscriber ? &agent_entry_node : &rpc_ag_entry_node
+	);
+	struct agent_list **const al_ptr_other = (
+		is_subscriber ? &rpc_ag_entry_node : &agent_entry_node
+	);
 
 	ASSERT(local_eid != NULL && strlen(local_eid) > 3);
 	if (get_eid_scheme(local_eid) == EID_SCHEME_IPN) {
-		const char *end = parse_ipn_ull(sink_identifier, NULL);
+		const char *end = parse_ipn_ull(agent.sink_identifier, NULL);
 
 		if (end == NULL || *end != '\0')
 			return -1;
-	} else if (validate_dtn_eid_demux(sink_identifier) != UD3TN_OK) {
+	} else if (validate_dtn_eid_demux(agent.sink_identifier) != UD3TN_OK) {
 		return -1;
 	}
 
 	/* check if agent with that sink_id is already existing */
-	if (agent_search(sink_identifier) != NULL) {
-		LOGF(
-			"AgentManager: Agent with sink_id %s is already registered! Abort!",
-			sink_identifier);
+	if (agent_search(al_ptr, agent.sink_identifier) != NULL) {
+		LOGF("AgentManager: Agent with sink_id %s is already registered! Abort!",
+		     agent.sink_identifier);
 		return -1;
 	}
 
-	ag_ptr = malloc(sizeof(struct agent));
-	if (!ag_ptr)
-		return -1;
+	struct agent *ag_ex = agent_search(al_ptr_other, agent.sink_identifier);
 
-	ag_ptr->sink_identifier = sink_identifier;
-	ag_ptr->callback = callback;
-	ag_ptr->param = param;
-
-	if (agent_list_add_entry(ag_ptr)) {
-		/* the adding process to the list failed */
-		free(ag_ptr);
+	if (ag_ex && agent.secret != ag_ex->secret &&
+	    strcmp(agent.secret, ag_ex->secret) != 0) {
+		LOGF("AgentManager: Invalid secret provided for sink_id %s! Abort!",
+		     agent.sink_identifier);
 		return -1;
 	}
+
+	if (agent_list_add_entry(al_ptr, agent)) // adding failed
+		return -1;
 
 	LOGF("AgentManager: Agent registered for sink \"%s\"",
-			     sink_identifier);
+	     agent.sink_identifier);
 
 	return 0;
 }
 
-int agent_deregister(const char *sink_identifier)
+int agent_deregister(const char *sink_identifier, const bool is_subscriber)
 {
+	struct agent_list **const al_ptr = (
+		is_subscriber ? &agent_entry_node : &rpc_ag_entry_node
+	);
 	struct agent *ag_ptr;
 
-	ag_ptr = agent_search(sink_identifier);
+	ag_ptr = agent_search(
+		al_ptr,
+		sink_identifier
+	);
 
 	/* check if agent with that sink_id is not existing */
 	if (ag_ptr == NULL) {
-		LOGF(
-		     "AgentManager: Agent with sink_id %s is not registered! Abort!",
+		LOGF("AgentManager: Agent with sink_id %s is not registered! Abort!",
 		     sink_identifier);
 		return -1;
 	}
 
-	if (agent_list_remove_entry(ag_ptr)) {
-		/* the adding process to the list failed */
-		free(ag_ptr);
+	if (agent_list_remove_entry(al_ptr, sink_identifier))
 		return -1;
-	}
 
-	free(ag_ptr);
 	return 0;
 }
 
 int agent_forward(const char *sink_identifier, struct bundle_adu data,
 		  const void *bp_context)
 {
-	struct agent *ag_ptr = agent_search(sink_identifier);
+	struct agent *ag_ptr = agent_search(&agent_entry_node, sink_identifier);
 
 	if (ag_ptr == NULL) {
 		LOGF("AgentManager: No agent registered for identifier \"%s\"!",
@@ -119,13 +124,12 @@ int agent_forward(const char *sink_identifier, struct bundle_adu data,
 	return 0;
 }
 
-static struct agent_list **agent_search_ptr(const char *sink_identifier)
+static struct agent_list **agent_search_ptr(struct agent_list **al_ptr,
+					    const char *sink_identifier)
 {
-	struct agent_list **al_ptr = &agent_entry_node;
-
 	/* loop runs until currently examined element is NULL => not found */
 	while (*al_ptr) {
-		if (!strcmp((*al_ptr)->agent_data->sink_identifier,
+		if (!strcmp((*al_ptr)->agent_data.sink_identifier,
 			    sink_identifier))
 			return al_ptr;
 		al_ptr = &(*al_ptr)->next;
@@ -133,41 +137,45 @@ static struct agent_list **agent_search_ptr(const char *sink_identifier)
 	return NULL;
 }
 
-struct agent *agent_search(const char *sink_identifier)
+struct agent *agent_search(struct agent_list **al_ptr,
+			   const char *sink_identifier)
 {
-	struct agent_list **al_ptr = agent_search_ptr(sink_identifier);
+	al_ptr = agent_search_ptr(al_ptr, sink_identifier);
 
 	if (al_ptr)
-		return (*al_ptr)->agent_data;
+		return &(*al_ptr)->agent_data;
 	return NULL;
 }
 
-static int agent_list_add_entry(struct agent *obj)
+static int agent_list_add_entry(struct agent_list **al_ptr, struct agent obj)
 {
 	struct agent_list *ag_ptr;
 	struct agent_list *ag_iterator;
 
-	if (agent_search(obj->sink_identifier) != NULL) {
+	if (agent_search(al_ptr, obj.sink_identifier) != NULL) {
 		/* entry already existing */
 		return -1;
 	}
 
 	/* allocate the list struct and make sure next points to NULL */
 	ag_ptr = malloc(sizeof(struct agent_list));
+	if (ag_ptr == NULL)
+		return -1;
+
 	ag_ptr->next = NULL;
 	ag_ptr->agent_data = obj;
 
-	/* check if agent_entry is existing at all */
-	if (agent_entry_node == NULL) {
-		/* set list object as new agent_entry node and
-		 * return success
+	/* check if agent list is empty */
+	if (*al_ptr == NULL) {
+		/* make the new agent node the head of
+		 * the list and return success
 		 */
-		agent_entry_node = ag_ptr;
+		*al_ptr = ag_ptr;
 		return 0;
 	}
 
 	/* assign the root element to iterator */
-	ag_iterator = agent_entry_node;
+	ag_iterator = *al_ptr;
 
 	/* iterate over the linked list until the identifier is found
 	 * or the end of the list is reached
@@ -185,14 +193,12 @@ static int agent_list_add_entry(struct agent *obj)
 			return 0;
 		}
 	}
-
-	/* something went wrong */
-	return -1;
 }
 
-static int agent_list_remove_entry(struct agent *obj)
+static int agent_list_remove_entry(struct agent_list **al_ptr,
+				   const char *sink_identifier)
 {
-	struct agent_list **al_ptr = agent_search_ptr(obj->sink_identifier);
+	al_ptr = agent_search_ptr(al_ptr, sink_identifier);
 	struct agent_list *next_element;
 
 	if (!*al_ptr)

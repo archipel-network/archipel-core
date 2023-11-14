@@ -40,6 +40,7 @@ Mandatory arguments to long options are mandatory for short options, too.
   -p, --aap-port PORT         port number of the application agent service
   -r, --status-reports        enable status reporting
   -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service
+  -S, --aap2-socket PATH      path to the UNIX domain socket of the experimental AAP 2.0 service
   -u, --usage                 print usage summary and exit
 
 Default POSIX invocation: ud3tn \
@@ -48,7 +49,8 @@ Default POSIX invocation: ud3tn \
   -e dtn://ud3tn.dtn/ \
   -l 86400 \
   -m 18446744073709551615 \
-  -s $PWD/ud3tn.socket
+  -s $PWD/ud3tn.socket \
+  -S $PWD/ud3tn.aap2.socket
 ```
 
 The AAP interface can use either a UNIX domain socket (`-s` option) or bind to a TCP address (`-a` and `-p` options).
@@ -78,6 +80,8 @@ Once a µD3TN enabled DTN network has been created, applications can leverage th
 - listen for application data addressed to their identifier.
 
 The protocol is defined at [`doc/ud3tn_aap.md`](doc/ud3tn_aap.md). Like above, there are [dedicated python scripts for various tasks](tools/aap). Python bindings for AAP are available under the name [`ud3tn-utils`](https://pypi.org/project/ud3tn-utils/) in the Python package manager PyPI.
+
+µD3TN v0.13.0 also contains an experimental preview of AAP 2.0, the next generation application protocol. In the future, AAP 2.0 will support controlling bundle forwarding decisions and links to other nodes. In the current version, only basic ADU send/receive functionality is implemented, matching the feature set of AAP 1.0 (extended by more ADU metadata). Please refer to the [AAP 2.0 Overview](doc/aap20.md) and the [AAP 2.0 Protobuf Description](components/aap2/aap2.proto) for more details.
 
 ## Develop
 
@@ -153,6 +157,7 @@ Contributions in any form (e.g., bug reports, feature, or merge requests) are ve
 ├── components             C source code
 ├── include                C header files
 ├── external               3rd party source code
+├── generated              generated source code (e.g. for Protobuf)
 ├── test                   various test routines
 ├── doc                    documentation
 ├── mk                     make scripts
