@@ -47,7 +47,11 @@
 // Default log level.
 // LOG_ERROR = 1, LOG_WARN  = 2, LOG_INFO  = 3, LOG_DEBUG = 4.
 #ifndef DEFAULT_LOG_LEVEL
+#ifdef DEBUG
 #define DEFAULT_LOG_LEVEL 3
+#else // DEBUG
+#define DEFAULT_LOG_LEVEL 2
+#endif // DEBUG
 #endif // DEFAULT_LOG_LEVEL
 
 struct ud3tn_cmdline_options {
