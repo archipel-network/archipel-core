@@ -10,8 +10,6 @@
 #ifndef HAL_IO_H_INCLUDED
 #define HAL_IO_H_INCLUDED
 
-#include "platform/hal_time.h"
-
 #include "ud3tn/result.h"
 
 #include <stddef.h>
@@ -20,34 +18,19 @@
 
 extern uint8_t LOG_LEVEL;
 
-static inline const char *get_log_level_name(const uint8_t level)
-{
-	switch (level) {
-	case 1:
-		return "ERROR";
-	case 2:
-		return "WARNING";
-	case 3:
-		return "INFO";
-	default:
-		return "DEBUG";
-	}
-}
-
 #define LOGF_GENERIC(level, f_, ...) \
-({ \
-	__typeof__(level) _level = (level); \
-	if (_level <= LOG_LEVEL) { \
-		hal_time_print_log_time_string(); \
-		hal_io_message_printf( \
-			"[%s] " f_ " [%s:%d]\n", \
-			get_log_level_name(_level), \
-			__VA_ARGS__, \
-			__FILE__, (int)(__LINE__) \
+do { \
+	__typeof__(level) level_ = (level); \
+	if (level_ <= LOG_LEVEL) { \
+		hal_io_log_printf( \
+			level_, \
+			__FILE__, \
+			(int)(__LINE__), \
+			f_, \
+			__VA_ARGS__ \
 		); \
-		fflush(stderr); \
 	} \
-})
+} while (0)
 
 #define LOGF(...) LOGF_GENERIC(3, __VA_ARGS__)
 #define LOGF_ERROR(...) LOGF_GENERIC(1, __VA_ARGS__)
@@ -69,15 +52,15 @@ static inline const char *get_log_level_name(const uint8_t level)
 #define LOGA(message, actionid, itemid) \
 	LOGF("%s (a = %d, i = %d)", message, actionid, itemid)
 
-#define LOGERROR(component_, msg_, errno_) ({ \
-	hal_time_print_log_time_string(); \
-	hal_io_message_printf( \
-		"%s: System error [%s:%d] -> ", \
-		component_, __FILE__, (int)(__LINE__) \
-	); \
-	hal_io_print_error(msg_, errno_); \
-	fflush(stderr); \
-})
+#define LOG_ERRNO(component_, msg_, errno_) \
+	hal_io_log_perror( \
+		component_, \
+		__FILE__, \
+		(int)(__LINE__), \
+		msg_, \
+		errno_ \
+	)
+#define LOGERROR LOG_ERRNO
 
 /**
  * @brief hal_io_init Initialization of underlying OS/HW for I/O
@@ -94,10 +77,24 @@ enum ud3tn_result hal_io_init(void);
 int hal_io_message_printf(const char *format, ...);
 
 /**
- * @brief hal_io_perror Print a system error (i.e., saved errno) using perror()
- * @param message The message passed to perror()
- * @param error The error number obtained from errno
+ * @brief hal_io_log_printf Write a log message to the debug interface.
+ * @param level The log level - a value between 1 (ERROR) and 4 (DEBUG).
+ * @param file The file that triggered the log message.
+ * @param line The line that triggered the log message.
+ * @param format Same as in standard libc-printf().
  */
-void hal_io_print_error(const char *message, int error);
+int hal_io_log_printf(int level, const char *file, int line,
+		      const char *format, ...);
+
+/**
+ * @brief hal_io_log_perror Log a system error (i.e., saved errno).
+ * @param component The component in which the error occurred, e.g., "Router".
+ * @param file The file in which the error occurred.
+ * @param line The line in which the error occurred.
+ * @param message The message passed to perror().
+ * @param error The error number obtained from errno.
+ */
+void hal_io_log_perror(const char *component, const char *file, int line,
+		       const char *message, int error);
 
 #endif /* HAL_IO_H_INCLUDED */
