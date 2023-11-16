@@ -21,6 +21,6 @@ setuptools.setup(
         'ud3tn_utils.aap2',
         'ud3tn_utils.aap2.generated',
     ],
-    install_requires=['protobuf==4.24.4'],
+    install_requires=['protobuf==4.21.12'],
     python_requires='>=3.6',
 )
