@@ -36,6 +36,16 @@ build-clang-posix-release:
     script:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
+build-nix-x86_64-linux:
+    stage: builds
+    when: always
+    tags: ["nix"]
+    image: alpine
+    script:
+        - nix build --experimental-features 'nix-command flakes' '.?submodules=1#ud3tn'
+        - nix build --experimental-features 'nix-command flakes' '.?submodules=1#pyd3tn'
+        - nix build --experimental-features 'nix-command flakes' '.?submodules=1#python-ud3tn-utils'
+
 build-posix-arm64-debug:
     extends: build-posix-debug
     tags: ["arm64"]
