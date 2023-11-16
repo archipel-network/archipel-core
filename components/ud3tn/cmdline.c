@@ -19,6 +19,12 @@
 
 static struct ud3tn_cmdline_options global_cmd_opts;
 
+#ifdef DEBUG
+#define LOG_LEVELS "1|2|3|4"
+#else // DEBUG
+#define LOG_LEVELS "1|2|3"
+#endif // DEBUG
+
 /**
  * Helper function for parsing a 64-bit unsigned integer from a given C-string.
  */
@@ -114,7 +120,9 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'L':
 			if (!optarg || strlen(optarg) != 1 || (
 					optarg[0] != '1' && optarg[0] != '2' &&
-					optarg[0] != '3' && optarg[0] != '4')) {
+					optarg[0] != '3' &&
+					(!IS_DEBUG_BUILD ||
+					 optarg[0] != '4'))) {
 				LOG("Invalid log level provided!");
 				return NULL;
 			}
@@ -260,7 +268,7 @@ static void print_usage_text(void)
 		"    [-b 6|7, --bp-version 6|7] [-c CLA_OPTIONS, --cla CLA_OPTIONS]\n"
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
-		"    [-R, --allow-remote-config] [-L 1|2|3|4, --log-level 1|2|3|4]\n"
+		"    [-R, --allow-remote-config] [-L " LOG_LEVELS ", --log-level " LOG_LEVELS "]\n"
 		"    [-s PATH --aap-socket PATH] [-S PATH --aap2-socket PATH]\n"
 		"    [-u, --usage]\n";
 
@@ -283,7 +291,7 @@ static void print_help_text(void)
 		"  -p, --aap-port PORT         port number of the application agent service\n"
 		"  -r, --status-reports        enable status reporting\n"
 		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
-		"  -L, --log-level             higher or lower log level 4/3/2/1 specifies more or less detailed output\n"
+		"  -L, --log-level             higher or lower log level " LOG_LEVELS " specifies more or less detailed output\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
 		"  -S, --aap2-socket PATH      path to the UNIX domain socket of the AAP 2.0 service\n"
 		"  -u, --usage                 print usage summary and exit\n"

@@ -42,6 +42,9 @@ do { \
 #define LOG_INFO(message) LOGF("%s", message)
 #define LOG LOG_INFO
 
+// NOTE: We completely remove those statements in release builds so we can also
+// use them in performance-critical sections without compromising production
+// performance.
 #ifdef DEBUG
 #define LOGF_DEBUG(...) LOGF_GENERIC(4, __VA_ARGS__)
 #define LOG_DEBUG(message) LOGF_DEBUG("%s", message)
