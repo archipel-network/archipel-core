@@ -9,6 +9,7 @@
 #include "cla/cla.h"
 
 #include "platform/hal_io.h"
+#include "platform/hal_time.h"
 
 #include <stdlib.h>
 #include <stdint.h>

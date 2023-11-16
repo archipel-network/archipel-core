@@ -7,6 +7,7 @@
 #include "ud3tn/routing_table.h"
 
 #include "platform/hal_io.h"
+#include "platform/hal_time.h"
 
 #include <stdbool.h>
 #include <stdlib.h>

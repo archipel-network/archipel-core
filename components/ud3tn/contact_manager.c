@@ -13,6 +13,7 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include <stddef.h>
 #include <stdlib.h>

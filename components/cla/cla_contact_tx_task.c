@@ -9,6 +9,7 @@
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"

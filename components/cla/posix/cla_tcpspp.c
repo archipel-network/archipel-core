@@ -11,6 +11,7 @@
 #include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "spp/spp.h"
 #include "spp/spp_parser.h"
