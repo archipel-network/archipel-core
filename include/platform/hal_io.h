@@ -32,13 +32,15 @@ do { \
 	} \
 } while (0)
 
-#define LOGF(...) LOGF_GENERIC(3, __VA_ARGS__)
 #define LOGF_ERROR(...) LOGF_GENERIC(1, __VA_ARGS__)
 #define LOGF_WARN(...) LOGF_GENERIC(2, __VA_ARGS__)
+#define LOGF_INFO(...) LOGF_GENERIC(3, __VA_ARGS__)
+#define LOGF LOGF_INFO
 
-#define LOG(message) LOGF("%s", message)
 #define LOG_ERROR(message) LOGF_ERROR("%s", message)
 #define LOG_WARN(message) LOGF_WARN("%s", message)
+#define LOG_INFO(message) LOGF("%s", message)
+#define LOG LOG_INFO
 
 #ifdef DEBUG
 #define LOGF_DEBUG(...) LOGF_GENERIC(4, __VA_ARGS__)
