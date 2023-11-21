@@ -23,6 +23,7 @@
             "Makefile"
             "^components.*"
             "^external.*"
+            "^generated.*"
             "^include.*"
             "^mk.*"
           ];
@@ -46,6 +47,7 @@
         python-ud3tn-utils = with pkgs.python3Packages; buildPythonPackage {
           name = "ud3tn-utils";
           src = ./python-ud3tn-utils;
+          propagatedBuildInputs = [ protobuf setuptools ];
         };
       };
 
@@ -66,8 +68,11 @@
           gdb
           llvmPackages.libcxxClang
           nixpkgs-fmt
-          python3Packages.pytest
+          protobuf
           python3Packages.flake8
+          python3Packages.protobuf
+          python3Packages.pytest
+          python3Packages.setuptools
         ];
       };
 
