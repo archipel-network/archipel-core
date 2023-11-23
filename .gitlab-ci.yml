@@ -39,8 +39,7 @@ build-clang-posix-release:
 build-nix-x86_64-linux:
     stage: builds
     when: always
-    tags: ["nix"]
-    image: alpine
+    image: nixos/nix:2.18.1
     script:
         - nix build --experimental-features 'nix-command flakes' '.?submodules=1#ud3tn'
         - nix build --experimental-features 'nix-command flakes' '.?submodules=1#pyd3tn'
