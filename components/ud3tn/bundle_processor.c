@@ -725,8 +725,17 @@ static void try_reassemble(
 	// Check if we can reassemble
 	for (eb = e->bundle_list; eb; eb = eb->next) {
 		b = eb->bundle;
-		if (b->fragment_offset > pos_in_bundle)
+		LOGF_DEBUG(
+			"BundleProcessor: Evaluating fragment %p having size %lu and offset %lu for position %zu.",
+			b,
+			b->payload_block->length,
+			b->fragment_offset,
+			pos_in_bundle
+		);
+		if (b->fragment_offset > pos_in_bundle) {
+			LOG_DEBUG("BundleProcessor: Reassembly not possible, gap detected.");
 			return; // cannot reassemble, has gaps
+		}
 		pos_in_bundle = b->fragment_offset + b->payload_block->length;
 		if (pos_in_bundle >= b->total_adu_length)
 			break; // can reassemble
@@ -741,8 +750,10 @@ static void try_reassemble(
 	uint8_t *const payload = malloc(adu_length);
 	bool added_as_known = false;
 
-	if (!payload)
+	if (!payload) {
+		LOG_ERROR("BundleProcessor: Cannot allocate reassembly buffer!");
 		return; // currently not enough memory to reassemble
+	}
 
 	struct bundle_adu adu = bundle_adu_init(b);
 
@@ -816,6 +827,10 @@ static void bundle_attempt_reassembly(
 		struct reassembly_list *const e = *r_list_e;
 
 		if (may_reassemble(e->bundle_list->bundle, bundle)) {
+			LOGF_DEBUG(
+				"BundleProcessor: Fragment list for new fragment %p found, updating.",
+				bundle
+			);
 			add_to_reassembly_bundle_list(ctx, e, bundle);
 			try_reassemble(ctx, r_list_e);
 			return;
