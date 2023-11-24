@@ -86,7 +86,7 @@ static bool pb_recv_callback(pb_istream_t *stream, uint8_t *buf, size_t count)
 	if (!recvd)
 		stream->bytes_left = 0;
 	else if (recvd < 0)
-		LOGERROR("AAP2Agent", "recv()", errno);
+		LOG_ERRNO("AAP2Agent", "recv()", errno);
 
 	return (size_t)recvd == count;
 }
@@ -109,35 +109,37 @@ static void aap2_agent_listener_task(void *const param)
 		);
 
 		if (conn_fd == -1) {
-			LOGERROR("AAP2Agent", "accept()", errno);
+			LOG_ERRNO("AAP2Agent", "accept()", errno);
 			continue;
 		}
 
 		switch (incoming.ss_family) {
 		case AF_UNIX:
-			LOG("AAP2Agent: Accepted connection from UNIX Domain Socket.");
+			LOG_INFO("AAP2Agent: Accepted connection from UNIX Domain Socket.");
 			break;
 		case AF_INET: {
 			struct sockaddr_in *in =
 				(struct sockaddr_in *)&incoming;
-			LOGF("AAP2Agent: Accepted connection from '%s'.",
-			     inet_ntop(in->sin_family, &in->sin_addr,
-				       addrstrbuf, sizeof(addrstrbuf))
+			LOGF_INFO(
+				"AAP2Agent: Accepted connection from '%s'.",
+				inet_ntop(in->sin_family, &in->sin_addr,
+					  addrstrbuf, sizeof(addrstrbuf))
 			);
 			break;
 		}
 		case AF_INET6: {
 			struct sockaddr_in6 *in =
 				(struct sockaddr_in6 *)&incoming;
-			LOGF("AAP2Agent: Accepted connection from '%s'.",
-			     inet_ntop(in->sin6_family, &in->sin6_addr,
-				       addrstrbuf, sizeof(addrstrbuf))
+			LOGF_INFO(
+				"AAP2Agent: Accepted connection from '%s'.",
+				inet_ntop(in->sin6_family, &in->sin6_addr,
+					  addrstrbuf, sizeof(addrstrbuf))
 			);
 			break;
 		}
 		default:
 			close(conn_fd);
-			LOG("AAP2Agent: Unknown address family. Connection closed!");
+			LOG_WARN("AAP2Agent: Unknown address family. Connection closed!");
 			continue;
 		}
 
@@ -145,7 +147,7 @@ static void aap2_agent_listener_task(void *const param)
 			sizeof(struct aap2_agent_comm_config)
 		);
 		if (!child_config) {
-			LOG("AAP2Agent: Error allocating memory for config!");
+			LOG_ERROR("AAP2Agent: Error allocating memory for config!");
 			close(conn_fd);
 			continue;
 		}
@@ -166,7 +168,7 @@ static void aap2_agent_listener_task(void *const param)
 		};
 
 		if (pipe(child_config->bundle_pipe_fd) == -1) {
-			LOGERROR("AAP2Agent", "pipe()", errno);
+			LOG_ERRNO("AAP2Agent", "pipe()", errno);
 			close(conn_fd);
 			free(child_config);
 			continue;
@@ -181,7 +183,7 @@ static void aap2_agent_listener_task(void *const param)
 		);
 
 		if (task_creation_result != UD3TN_OK) {
-			LOG("AAP2Agent: Error starting comm. task!");
+			LOG_ERROR("AAP2Agent: Error starting comm. task!");
 			close(conn_fd);
 			free(child_config);
 		}
@@ -222,9 +224,12 @@ static int send_message(const int socket_fd,
 	);
 
 	if (wsp.errno_) {
-		LOGERROR("AAP2Agent", "send()", wsp.errno_);
+		LOG_ERRNO("AAP2Agent", "send()", wsp.errno_);
 	} else if (!ret) {
-		LOGF("AAP2Agent: Protobuf encode error: %s", PB_GET_ERROR(&stream));
+		LOGF_ERROR(
+			"AAP2Agent: Protobuf encode error: %s",
+			PB_GET_ERROR(&stream)
+		);
 		wsp.errno_ = EIO;
 	}
 
@@ -240,12 +245,15 @@ static void agent_msg_recv(struct bundle_adu data, void *param,
 		(struct aap2_agent_comm_config *)param
 	);
 
-	LOGF("AAP2Agent: Got Bundle for EID \"%s\" from \"%s\", forwarding.",
-	     config->registered_eid, data.source);
+	LOGF_DEBUG(
+		"AAP2Agent: Got Bundle for EID \"%s\" from \"%s\", forwarding.",
+		config->registered_eid,
+		data.source
+	);
 
 	if (pipeq_write_all(config->bundle_pipe_fd[1],
 			    &data, sizeof(struct bundle_adu)) <= 0) {
-		LOGERROR("AAP2Agent", "write()", errno);
+		LOG_ERRNO("AAP2Agent", "write()", errno);
 		bundle_adu_free_members(data);
 	}
 }
@@ -282,8 +290,10 @@ static void deregister_sink(struct aap2_agent_comm_config *config)
 		config->registered_eid
 	);
 
-	LOGF("AAP2Agent: De-registering agent ID \"%s\".",
-		agent_id);
+	LOGF_INFO(
+		"AAP2Agent: De-registering agent ID \"%s\".",
+		agent_id
+	);
 
 	ASSERT(bundle_processor_perform_agent_action(
 		config->parent->bundle_agent_interface->bundle_signaling_queue,
@@ -321,16 +331,20 @@ static aap2_ResponseStatus process_configure_msg(
 	struct aap2_agent_comm_config *const config,
 	aap2_ConnectionConfig *const msg)
 {
-	LOGF("AAP2Agent: Received request to %s for EID \"%s\".",
+	LOGF_INFO(
+		"AAP2Agent: Received request to %s for EID \"%s\".",
 		msg->is_subscriber ? "subscribe" : "register",
-		msg->endpoint_id);
+		msg->endpoint_id
+	);
 
 	// Clean up a previous registration in case there is one.
 	deregister_sink(config);
 
 	if (validate_eid(msg->endpoint_id) != UD3TN_OK) {
-		LOGF("AAP2Agent: Invalid EID: \"%s\"",
-			msg->endpoint_id);
+		LOGF_INFO(
+			"AAP2Agent: Invalid EID provided: \"%s\"",
+			msg->endpoint_id
+		);
 		return aap2_ResponseStatus_RESPONSE_STATUS_INVALID_REQUEST;
 	}
 
@@ -339,13 +353,17 @@ static aap2_ResponseStatus process_configure_msg(
 	);
 
 	if (!sink_id) {
-		LOGF("AAP2Agent: Cannot obtain sink for EID: \"%s\"",
-			msg->endpoint_id);
+		LOGF_WARN(
+			"AAP2Agent: Cannot obtain sink for EID: \"%s\"",
+			msg->endpoint_id
+		);
 		return aap2_ResponseStatus_RESPONSE_STATUS_INVALID_REQUEST;
 	}
 
-	if (register_sink(sink_id, msg->is_subscriber, msg->secret, config))
+	if (register_sink(sink_id, msg->is_subscriber, msg->secret, config)) {
+		LOG_INFO("AAP2Agent: Registration request declined.");
 		return aap2_ResponseStatus_RESPONSE_STATUS_UNAUTHORIZED;
+	}
 
 	config->registered_eid = msg->endpoint_id;
 	msg->endpoint_id = NULL; // take over freeing
@@ -355,8 +373,10 @@ static aap2_ResponseStatus process_configure_msg(
 	config->keepalive_timeout_ms = -1; // infinite by default
 	if (msg->keepalive_seconds != 0) {
 		if (msg->keepalive_seconds >= (INT32_MAX / 1000 / 2)) {
-			LOGF("AAP2Agent: Keepalive timeout of %d sec is too large, ignoring.",
-			     msg->keepalive_seconds);
+			LOGF_WARN(
+				"AAP2Agent: Keepalive timeout of %d sec is too large, ignoring.",
+				msg->keepalive_seconds
+			);
 		} else {
 			config->keepalive_timeout_ms = (
 				msg->keepalive_seconds * 1000
@@ -370,7 +390,7 @@ static aap2_ResponseStatus process_configure_msg(
 
 	config->is_subscriber = msg->is_subscriber;
 	if (config->is_subscriber)
-		LOG("AAP2Agent: Switching control flow!");
+		LOG_INFO("AAP2Agent: Switching control flow!");
 
 	return aap2_ResponseStatus_RESPONSE_STATUS_SUCCESS;
 }
@@ -381,26 +401,31 @@ static aap2_ResponseStatus process_adu_msg(
 	uint8_t *payload_data,
 	aap2_AAPResponse *response)
 {
-	LOGF("AAP2Agent: Received %s (l = %zu) for %s via AAP.",
-		((msg->adu_flags &
-		aap2_BundleADUFlags_BUNDLE_ADU_BPDU)
-		? "BIBE BPDU" : "bundle"),
-		msg->payload_length, msg->dst_eid);
+	LOGF_DEBUG(
+		"AAP2Agent: Received %s (l = %zu) for %s via AAP.",
+		(
+			(msg->adu_flags & aap2_BundleADUFlags_BUNDLE_ADU_BPDU)
+			? "BIBE BPDU"
+			: "bundle"
+		),
+		msg->payload_length,
+		msg->dst_eid
+	);
 
 	if (msg->creation_timestamp_ms != 0 || msg->sequence_number != 0) {
-		LOG("AAP2Agent: User-defined creation timestamps are unsupported!");
+		LOG_WARN("AAP2Agent: User-defined creation timestamps are unsupported!");
 		free(payload_data);
 		return aap2_ResponseStatus_RESPONSE_STATUS_INVALID_REQUEST;
 	}
 
 	if (!config->registered_eid) {
-		LOG("AAP2Agent: No agent ID registered, dropping!");
+		LOG_WARN("AAP2Agent: No agent ID registered, dropping!");
 		free(payload_data);
 		return aap2_ResponseStatus_RESPONSE_STATUS_NOT_FOUND;
 	}
 
 	if (!payload_data) {
-		LOG("AAP2Agent: Cannot handle ADU without payload data!");
+		LOG_WARN("AAP2Agent: Cannot handle ADU without payload data!");
 		return aap2_ResponseStatus_RESPONSE_STATUS_ERROR;
 	}
 
@@ -408,7 +433,7 @@ static aap2_ResponseStatus process_adu_msg(
 	size_t payload_length = msg->payload_length;
 
 	if (msg->adu_flags & aap2_BundleADUFlags_BUNDLE_ADU_BPDU) {
-		LOG("AAP2Agent: ADU is a BPDU, prepending AR header!");
+		LOG_DEBUG("AAP2Agent: ADU is a BPDU, prepending AR header!");
 
 		#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
 			const uint8_t typecode = 7;
@@ -464,7 +489,7 @@ static aap2_ResponseStatus process_adu_msg(
 		);
 
 	if (!bundle) {
-		LOG("AAP2Agent: Bundle creation failed!");
+		LOG_WARN("AAP2Agent: Bundle creation failed!");
 		return aap2_ResponseStatus_RESPONSE_STATUS_ERROR;
 	}
 
@@ -476,7 +501,7 @@ static aap2_ResponseStatus process_adu_msg(
 		}
 	);
 
-	LOGF("AAP2Agent: Injected new bundle %p.", bundle);
+	LOGF_DEBUG("AAP2Agent: Injected new bundle %p.", bundle);
 
 	response->bundle_headers.src_eid = strdup(config->registered_eid);
 	response->bundle_headers.dst_eid = msg->dst_eid;
@@ -519,7 +544,7 @@ static int process_aap_message(
 		);
 		break;
 	case aap2_AAPMessage_keepalive_tag:
-		LOGF(
+		LOGF_DEBUG(
 			"AAP2Agent: Received KEEPALIVE from \"%s\"",
 			config->registered_eid
 			? config->registered_eid
@@ -530,8 +555,10 @@ static int process_aap_message(
 		);
 		break;
 	default:
-		LOGF("AAP2Agent: Cannot handle AAP messages of tag type %d!",
-		     msg->which_msg);
+		LOGF_WARN(
+			"AAP2Agent: Cannot handle AAP messages of tag type %d!",
+			msg->which_msg
+		);
 		break;
 	}
 
@@ -549,14 +576,14 @@ static int process_aap_message(
 static uint8_t *receive_payload(pb_istream_t *istream, size_t payload_length)
 {
 	if (payload_length > BUNDLE_MAX_SIZE) {
-		LOG("AAP2Agent: Payload too large!");
+		LOG_WARN("AAP2Agent: Payload too large!");
 		return NULL;
 	}
 
 	uint8_t *payload = malloc(payload_length);
 
 	if (!payload) {
-		LOG("AAP2Agent: Payload alloc error!");
+		LOG_ERROR("AAP2Agent: Payload alloc error!");
 		return NULL;
 	}
 
@@ -566,7 +593,7 @@ static uint8_t *receive_payload(pb_istream_t *istream, size_t payload_length)
 	if (!success) {
 		free(payload);
 		payload = NULL;
-		LOG("AAP2Agent: Payload read error!");
+		LOG_ERROR("AAP2Agent: Payload read error!");
 	}
 
 	return payload;
@@ -578,7 +605,7 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 
 	if (pipeq_read_all(config->bundle_pipe_fd[0],
 			   &data, sizeof(struct bundle_adu)) <= 0) {
-		LOGERROR("AAP2Agent", "read()", errno);
+		LOG_ERRNO("AAP2Agent", "read()", errno);
 		return -1;
 	}
 
@@ -623,11 +650,13 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 	const bool ret = pb_write(&stream, data.payload, data.length);
 
 	if (wsp.errno_) {
-		LOGERROR("AAP2Agent", "send()", wsp.errno_);
+		LOG_ERRNO("AAP2Agent", "send()", wsp.errno_);
 		send_result = -1;
 	} else if (!ret) {
-		LOGF("AAP2Agent: pb_write() error: %s",
-			PB_GET_ERROR(&stream));
+		LOGF_WARN(
+			"AAP2Agent: pb_write() error: %s",
+			PB_GET_ERROR(&stream)
+		);
 		send_result = -1;
 	}
 
@@ -640,7 +669,7 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 	aap2_AAPResponse response = aap2_AAPResponse_init_default;
 
 	if (poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS) <= 0) {
-		LOG("AAP2Agent: No response received, closing connection.");
+		LOG_WARN("AAP2Agent: No response received, closing connection.");
 		send_result = -1;
 		goto done;
 	}
@@ -653,8 +682,10 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 	);
 
 	if (!success) {
-		LOGF("AAP2Agent: Protobuf decode error: %s",
-		     PB_GET_ERROR(&config->pb_istream));
+		LOGF_WARN(
+			"AAP2Agent: Protobuf decode error: %s",
+			PB_GET_ERROR(&config->pb_istream)
+		);
 		send_result = -1;
 		goto done;
 	}
@@ -662,7 +693,7 @@ static int send_bundle_from_pipe(struct aap2_agent_comm_config *const config)
 	if (response.response_status !=
 	    aap2_ResponseStatus_RESPONSE_STATUS_SUCCESS) {
 		// TODO: Implement configurable policy to re-route/keep somehow.
-		LOG("AAP2Agent: Client reported error for bundle, dropping.");
+		LOG_WARN("AAP2Agent: Client reported error for bundle, dropping.");
 		// NOTE: Do not return -1 here as this would close the socket.
 	}
 
@@ -679,12 +710,14 @@ static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
 	while (poll_recv_timeout(bundle_pipe_fd[0], 0) > 0) {
 		if (pipeq_read_all(bundle_pipe_fd[0],
 				   &data, sizeof(struct bundle_adu)) <= 0) {
-			LOGERROR("AAP2Agent", "read()", errno);
+			LOG_ERRNO("AAP2Agent", "read()", errno);
 			break;
 		}
 
-		LOGF("AAP2Agent: Dropping unsent bundle from '%s'.",
-		     data.source);
+		LOGF_WARN(
+			"AAP2Agent: Dropping unsent bundle from '%s'.",
+			data.source
+		);
 		bundle_adu_free_members(data);
 	}
 
@@ -696,7 +729,7 @@ static int send_keepalive(struct aap2_agent_comm_config *const config)
 {
 	aap2_AAPMessage msg = aap2_AAPMessage_init_default;
 
-	LOG("AAP2Agent: Sending Keepalive message to Client.");
+	LOG_DEBUG("AAP2Agent: Sending Keepalive message to Client.");
 	msg.which_msg = aap2_AAPMessage_keepalive_tag;
 
 	const int socket_fd = config->socket_fd;
@@ -715,7 +748,7 @@ static int send_keepalive(struct aap2_agent_comm_config *const config)
 	aap2_AAPResponse response = aap2_AAPResponse_init_default;
 
 	if (poll_recv_timeout(config->socket_fd, AAP2_AGENT_TIMEOUT_MS) <= 0) {
-		LOG("AAP2Agent: No response received, closing connection.");
+		LOG_WARN("AAP2Agent: No response received, closing connection.");
 		send_result = -1;
 		goto done;
 	}
@@ -728,15 +761,17 @@ static int send_keepalive(struct aap2_agent_comm_config *const config)
 	);
 
 	if (!success) {
-		LOGF("AAP2Agent: Protobuf decode error: %s",
-		     PB_GET_ERROR(&config->pb_istream));
+		LOGF_WARN(
+			"AAP2Agent: Protobuf decode error: %s",
+			PB_GET_ERROR(&config->pb_istream)
+		);
 		send_result = -1;
 		goto done;
 	}
 
 	if (response.response_status !=
 	    aap2_ResponseStatus_RESPONSE_STATUS_ACK) {
-		LOG("AAP2Agent: Keepalive not acknowledged, closing connection.");
+		LOG_WARN("AAP2Agent: Keepalive not acknowledged, closing connection.");
 		send_result = -1;
 		goto done;
 	}
@@ -756,7 +791,7 @@ static void aap2_agent_comm_task(void *const param)
 	const uint8_t aap2_version_indicator = 0x2F;
 
 	if (tcp_send_all(config->socket_fd, &aap2_version_indicator, 1) != 1) {
-		LOGERROR("AAP2Agent", "send()", errno);
+		LOG_ERRNO("AAP2Agent", "send()", errno);
 		goto done;
 	}
 
@@ -789,7 +824,7 @@ static void aap2_agent_comm_task(void *const param)
 			if (poll_result == -1) {
 				const int err = errno;
 
-				LOGERROR("AAP2Agent", "poll()", err);
+				LOG_ERRNO("AAP2Agent", "poll()", err);
 				// Try again if interrupted by a signal.
 				if (err == EINTR)
 					continue;
@@ -802,15 +837,15 @@ static void aap2_agent_comm_task(void *const param)
 			}
 			if ((pollfd[0].revents & POLLERR) ||
 			    (pollfd[1].revents & POLLERR)) {
-				LOG("AAP2Agent: Socket error (e.g. TCP RST) detected.");
+				LOG_WARN("AAP2Agent: Socket error (e.g. TCP RST) detected.");
 				break;
 			}
 			if (pollfd[0].revents & POLLHUP) {
-				LOG("AAP2Agent: The peer closed the connection.");
+				LOG_INFO("AAP2Agent: The peer closed the connection.");
 				break;
 			}
 			if (pollfd[0].revents & POLLIN) {
-				LOG("AAP2Agent: Unexpected data on socket, terminating.");
+				LOG_WARN("AAP2Agent: Unexpected data on socket, terminating.");
 				break;
 			}
 			if (pollfd[1].revents & POLLIN)
@@ -823,7 +858,7 @@ static void aap2_agent_comm_task(void *const param)
 			);
 
 			if (poll_result == 0) {
-				LOG("AAP2Agent: Client exceeded keepalive timeout, terminating.");
+				LOG_WARN("AAP2Agent: Client exceeded keepalive timeout, terminating.");
 				break;
 			} else if (poll_result < 0) {
 				// An error message was already logged here.
@@ -838,8 +873,10 @@ static void aap2_agent_comm_task(void *const param)
 			);
 
 			if (!success) {
-				LOGF("AAP2Agent: Protobuf decode error: %s",
-				     PB_GET_ERROR(&config->pb_istream));
+				LOGF_WARN(
+					"AAP2Agent: Protobuf decode error: %s",
+					PB_GET_ERROR(&config->pb_istream)
+				);
 				break;
 			}
 
@@ -873,7 +910,7 @@ done:
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
 	free(config);
-	LOG("AAP2Agent: Closed connection.");
+	LOG_INFO("AAP2Agent: Closed connection.");
 }
 
 struct aap2_agent_config *aap2_agent_setup(
@@ -887,7 +924,7 @@ struct aap2_agent_config *aap2_agent_setup(
 	);
 
 	if (!config) {
-		LOG("AAP2Agent: Error allocating memory for task config!");
+		LOG_ERROR("AAP2Agent: Error allocating memory for task config!");
 		return NULL;
 	}
 
@@ -898,27 +935,31 @@ struct aap2_agent_config *aap2_agent_setup(
 		config->listen_socket =
 			create_unix_domain_socket(socket_path);
 	} else {
-		LOG("AAP2Agent: Invalid socket provided!");
+		LOG_ERROR("AAP2Agent: Invalid socket provided!");
 		free(config);
 		return NULL;
 	}
 
 	if (config->listen_socket < 0)  {
-		LOG("AAP2Agent: Error binding to provided address!");
+		LOG_ERROR("AAP2Agent: Error binding to provided address!");
 		free(config);
 		return NULL;
 	}
 
 	if (listen(config->listen_socket, AAP2_AGENT_BACKLOG) < 0) {
-		LOG("AAP2Agent: Error listening on provided address!");
+		LOG_ERRNO(
+			"AAP2Agent",
+			"Error listening on provided address!",
+			errno
+		);
 		free(config);
 		return NULL;
 	}
 
 	if (node && service)
-		LOGF("AAP2Agent: Listening on [%s]:%s", node, service);
+		LOGF_INFO("AAP2Agent: Listening on [%s]:%s", node, service);
 	else
-		LOGF("AAP2Agent: Listening on %s", socket_path);
+		LOGF_INFO("AAP2Agent: Listening on %s", socket_path);
 
 	config->bundle_agent_interface = bundle_agent_interface;
 	config->bp_version = bp_version;
@@ -933,7 +974,7 @@ struct aap2_agent_config *aap2_agent_setup(
 	);
 
 	if (task_creation_result != UD3TN_OK) {
-		LOG("AAP2Agent: Error creating listener task!");
+		LOG_ERROR("AAP2Agent: Error creating listener task!");
 		free(config);
 		return NULL;
 	}

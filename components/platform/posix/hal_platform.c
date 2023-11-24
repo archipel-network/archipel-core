@@ -13,6 +13,7 @@
 #include "platform/hal_time.h"
 #include "platform/hal_task.h"
 
+#include <errno.h>
 #include <inttypes.h>
 #include <signal.h>
 #include <stdint.h>
@@ -54,15 +55,15 @@ static void setup_exit_handler(void)
 
 	/* Intercept SIGHUP with this handler */
 	if (sigaction(SIGHUP, &sa, NULL) == -1)
-		LOG("Error: cannot handle SIGHUP"); /* Should not happen */
+		LOG_ERRNO("HAL", "Error: cannot handle SIGHUP", errno);
 
 	/* Intercept SIGINT with this handler */
 	if (sigaction(SIGINT, &sa, NULL) == -1)
-		LOG("Error: cannot handle SIGINT"); /* Should not happen */
+		LOG_ERRNO("HAL", "Error: cannot handle SIGINT", errno);
 
 	/* Intercept SIGTERM with this handler	 */
 	if (sigaction(SIGTERM, &sa, NULL) == -1)
-		LOG("Error: cannot handle SIGTERM"); /* Should not happen */
+		LOG_ERRNO("HAL", "Error: cannot handle SIGTERM", errno);
 
 	// Ignore SIGPIPE so uD3TN does not crash if a connection is closed
 	// during sending data. The event will be reported to us by the result
@@ -86,6 +87,6 @@ void hal_platform_init(int argc, char *argv[])
 		// NULL-terminate the array
 		restart_args[argc - 1] = NULL;
 	} else {
-		LOG("Error: Cannot allocate memory for restart buffer");
+		LOG_ERROR("Error: Cannot allocate memory for restart buffer");
 	}
 }

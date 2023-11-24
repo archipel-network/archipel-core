@@ -31,7 +31,7 @@ static void bundle_send(struct bundle *bundle, void *param)
 	struct cla_config *const config = param;
 
 	if (!bundle) {
-		LOG("Tried to send NULL bundle");
+		LOG_ERROR("Tried to send NULL bundle");
 		ASSERT(false);
 		return;
 	}
@@ -48,16 +48,20 @@ static void bundle_send(struct bundle *bundle, void *param)
 		free(source_node_id);
 
 		if (cmp_result == 0) {
-			LOGF("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
+			LOGF_WARN("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
 			bundle->source);
 			bundle_free(bundle);
 			return;
 		}
 	}
 
-	LOGF("CLA: Received new bundle %p from \"%s\" to \"%s\" via CLA %s",
-	     bundle, bundle->source, bundle->destination,
-	     config->vtable->cla_name_get());
+	LOGF_DEBUG(
+		"CLA: Received new bundle %p from \"%s\" to \"%s\" via CLA %s",
+		bundle,
+		bundle->source,
+		bundle->destination,
+		config->vtable->cla_name_get()
+	);
 	bundle_processor_inform(
 		config->bundle_agent_interface->bundle_signaling_queue,
 		(struct bundle_processor_signal){
@@ -156,7 +160,7 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
 
 		if (rx_data->cur_parser->status != PARSER_STATUS_GOOD) {
 			if (rx_data->cur_parser->status == PARSER_STATUS_ERROR)
-				LOG("RX: Parser failed, reset.");
+				LOG_WARN("RX: Parser failed, reset.");
 			link->config->vtable->cla_rx_task_reset_parsers(
 				link
 			);
@@ -290,8 +294,10 @@ uint8_t *rx_bulk_read(struct cla_link *link)
 
 				if (time_since_last_rx >
 						CLA_RX_READ_TIMEOUT_MS) {
-					LOGF("RX: Timeout after %llu ms in bulk read mode, reset.",
-					     time_since_last_rx);
+					LOGF_WARN(
+						"RX: Timeout after %llu ms in bulk read mode, reset.",
+						time_since_last_rx
+					);
 					link->config->vtable
 						->cla_rx_task_reset_parsers(
 							link
@@ -327,7 +333,7 @@ uint8_t *rx_bulk_read(struct cla_link *link)
 
 	if (rx_data->cur_parser->status != PARSER_STATUS_GOOD) {
 		if (rx_data->cur_parser->status == PARSER_STATUS_ERROR)
-			LOG("RX: Parser failed after bulk read, reset.");
+			LOG_WARN("RX: Parser failed after bulk read, reset.");
 		link->config->vtable->cla_rx_task_reset_parsers(link);
 	}
 
@@ -383,8 +389,10 @@ uint8_t *rx_chunk_read(struct cla_link *link)
 		);
 
 		if (time_since_last_rx > CLA_RX_READ_TIMEOUT_MS) {
-			LOGF("RX: New data received after %llu seconds, start parsing.",
-			     time_since_last_rx);
+			LOGF_WARN(
+				"RX: New data received after %llu seconds, restarting parsers.",
+				time_since_last_rx
+			);
 			link->config->vtable->cla_rx_task_reset_parsers(link);
 		}
 	}
@@ -461,7 +469,7 @@ static void cla_contact_rx_task(void *const param)
 		 */
 		} else if (rx_data->input_buffer.end ==
 			 rx_data->input_buffer.start + CLA_RX_BUFFER_SIZE) {
-			LOG("RX: WARNING, RX buffer is full.");
+			LOG_WARN("RX: RX buffer is full and does not clear. Resetting all parsers!");
 			link->config->vtable->cla_rx_task_reset_parsers(
 				link
 			);

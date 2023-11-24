@@ -47,7 +47,7 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
 	// possible moment ... the bundle age value MUST be increased ..."
 	if (bundle_age_update(bundle, dwell_time_ms) == UD3TN_FAIL)
-		LOGF("TX: Bundle %p age block update failed!", bundle);
+		LOGF_ERROR("TX: Bundle %p age block update failed!", bundle);
 }
 
 static void bp_inform_tx(QueueIdentifier_t signaling_queue,
@@ -93,7 +93,7 @@ static void cla_contact_tx_task(void *param)
 			struct bundle *b = rbl->data;
 
 			prepare_bundle_for_forwarding(b);
-			LOGF(
+			LOGF_DEBUG(
 				"TX: Sending bundle %p via CLA %s",
 				b,
 				link->config->vtable->cla_name_get()

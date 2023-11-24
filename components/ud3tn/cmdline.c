@@ -78,7 +78,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		switch (opt) {
 		case 'a':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP node provided!");
+				LOG_ERROR("Invalid AAP node provided!");
 				return NULL;
 			}
 			result->aap_node = strdup(optarg);
@@ -86,14 +86,14 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'b':
 			if (!optarg || strlen(optarg) != 1 || (
 					optarg[0] != '6' && optarg[0] != '7')) {
-				LOG("Invalid BP version provided!");
+				LOG_ERROR("Invalid BP version provided!");
 				return NULL;
 			}
 			result->bundle_version = (optarg[0] == '6') ? 6 : 7;
 			break;
 		case 'c':
 			if (!optarg) {
-				LOG("Invalid CLA options string provided!");
+				LOG_ERROR("Invalid CLA options string provided!");
 				return NULL;
 			}
 			result->cla_options = strdup(optarg);
@@ -101,7 +101,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'e':
 			if (!optarg || validate_local_eid(optarg) != UD3TN_OK ||
 					strcmp("dtn:none", optarg) == 0) {
-				LOG("Invalid EID provided!");
+				LOG_ERROR("Invalid EID provided!");
 				return NULL;
 			}
 			result->eid = preprocess_local_eid(optarg);
@@ -113,7 +113,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'l':
 			if (parse_uint64(optarg, &result->lifetime_s)
 					!= UD3TN_OK || !result->lifetime_s) {
-				LOG("Invalid lifetime provided!");
+				LOG_ERROR("Invalid lifetime provided!");
 				return NULL;
 			}
 			break;
@@ -123,7 +123,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 					optarg[0] != '3' &&
 					(!IS_DEBUG_BUILD ||
 					 optarg[0] != '4'))) {
-				LOG("Invalid log level provided!");
+				LOG_ERROR("Invalid log level provided!");
 				return NULL;
 			}
 			result->log_level = optarg[0] - '0';
@@ -132,13 +132,13 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'm':
 			if (parse_uint64(optarg, &result->mbs)
 					!= UD3TN_OK || !result->mbs) {
-				LOG("Invalid maximum bundle size provided!");
+				LOG_ERROR("Invalid maximum bundle size provided!");
 				return NULL;
 			}
 			break;
 		case 'p':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP port provided!");
+				LOG_ERROR("Invalid AAP port provided!");
 				return NULL;
 			}
 			result->aap_service = strdup(optarg);
@@ -151,14 +151,14 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			break;
 		case 's':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP unix domain socket provided!");
+				LOG_ERROR("Invalid AAP unix domain socket provided!");
 				return NULL;
 			}
 			result->aap_socket = strdup(optarg);
 			break;
 		case 'S':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP 2.0 unix domain socket provided!");
+				LOG_ERROR("Invalid AAP 2.0 unix domain socket provided!");
 				return NULL;
 			}
 			result->aap2_socket = strdup(optarg);
@@ -168,12 +168,17 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			result->exit_immediately = true;
 			return result;
 		case ':':
-			LOGF("Required argument of option '%s' is missing",
-					argv[option_index + 1]);
+			LOGF_ERROR(
+				"Required argument of option '%s' is missing",
+				argv[option_index + 1]
+			);
 			print_usage_text();
 			return NULL;
 		case '?':
-			LOGF("Invalid option: '%s'", argv[option_index + 1]);
+			LOGF_ERROR(
+				"Invalid option: '%s'",
+				argv[option_index + 1]
+			);
 			print_usage_text();
 			return NULL;
 		}

@@ -35,12 +35,10 @@ do { \
 #define LOGF_ERROR(...) LOGF_GENERIC(1, __VA_ARGS__)
 #define LOGF_WARN(...) LOGF_GENERIC(2, __VA_ARGS__)
 #define LOGF_INFO(...) LOGF_GENERIC(3, __VA_ARGS__)
-#define LOGF LOGF_INFO
 
 #define LOG_ERROR(message) LOGF_ERROR("%s", message)
 #define LOG_WARN(message) LOGF_WARN("%s", message)
-#define LOG_INFO(message) LOGF("%s", message)
-#define LOG LOG_INFO
+#define LOG_INFO(message) LOGF_INFO("%s", message)
 
 // NOTE: We completely remove those statements in release builds so we can also
 // use them in performance-critical sections without compromising production
@@ -53,10 +51,6 @@ do { \
 #define LOG_DEBUG(message) ((void)0)
 #endif /* DEBUG */
 
-#define LOGI(message, itemid) LOGA(message, 0xFF, itemid)
-#define LOGA(message, actionid, itemid) \
-	LOGF("%s (a = %d, i = %d)", message, actionid, itemid)
-
 #define LOG_ERRNO(component_, msg_, errno_) \
 	hal_io_log_perror( \
 		component_, \
@@ -65,7 +59,6 @@ do { \
 		msg_, \
 		errno_ \
 	)
-#define LOGERROR LOG_ERRNO
 
 /**
  * @brief hal_io_init Initialization of underlying OS/HW for I/O

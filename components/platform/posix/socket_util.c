@@ -16,7 +16,7 @@ int create_unix_domain_socket(const char *path)
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (sock == -1) {
-		LOGERROR("Socket Util", "socket(AF_UNIX)", errno);
+		LOG_ERRNO("Socket Util", "socket(AF_UNIX)", errno);
 		return -1;
 	}
 
@@ -31,7 +31,7 @@ int create_unix_domain_socket(const char *path)
 	);
 
 	if (rv1 <= 0 || (unsigned int)rv1 > sizeof(addr.sun_path)) {
-		LOGF(
+		LOGF_ERROR(
 			"Socket Util: Invalid socket path, len = %d, maxlen = %zu",
 			rv1,
 			sizeof(addr.sun_path)
@@ -46,7 +46,7 @@ int create_unix_domain_socket(const char *path)
 		sizeof(struct sockaddr_un)
 	);
 	if (rv2 == -1) {
-		LOGERROR("Socket Util", "bind(unix_domain_socket)", errno);
+		LOG_ERRNO("Socket Util", "bind(unix_domain_socket)", errno);
 		return -1;
 	}
 
@@ -68,15 +68,15 @@ int poll_recv_timeout(const int socket_fd, const int timeout)
 			if (err == EINTR)
 				continue;
 
-			LOGERROR("Socket Util", "poll()", err);
+			LOG_ERRNO("Socket Util", "poll()", err);
 			return -1;
 		}
 		if ((pollfd[0].revents & POLLERR)) {
-			LOG("Socket Util: Socket error (e.g. TCP RST) detected.");
+			LOG_WARN("Socket Util: Socket error (e.g. TCP RST) detected.");
 			return -1;
 		}
 		if (pollfd[0].revents & POLLHUP) {
-			LOG("Socket Util: The peer closed the connection.");
+			LOG_INFO("Socket Util: The peer closed the connection.");
 			return -1;
 		}
 		if (pollfd[0].revents & POLLIN)

@@ -33,8 +33,10 @@ static void callback(struct bundle_adu data, void *param, const void *ctx)
 
 		if (!node_id || strncmp(ca_param->local_eid, node_id,
 					strlen(ca_param->local_eid)) != 0) {
-			LOGF("ConfigAgent: Dropped config message from foreign endpoint \"%s\"",
-			     data.source);
+			LOGF_WARN(
+				"ConfigAgent: Dropped config message from foreign endpoint \"%s\"",
+				data.source
+			);
 			free(node_id);
 			return;
 		}

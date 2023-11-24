@@ -57,27 +57,27 @@ enum ud3tn_result hal_task_create(
 	struct task_description *desc = malloc(sizeof(*desc));
 
 	if (desc == NULL) {
-		LOG("Allocating the task attribute structure failed!");
+		LOG_ERROR("Allocating the task attribute structure failed!");
 		goto fail;
 	}
 
 	/* initialize an attribute to the default value */
 	if (pthread_attr_init(&tattr)) {
 		/* abort if error occurs */
-		LOG("Initializing the task's attributes failed!");
+		LOG_ERROR("Initializing the task's attributes failed!");
 		goto fail;
 	}
 
 	/* set the scheduling policy */
 	if (pthread_attr_setschedpolicy(&tattr, SCHED_RR)) {
 		/* abort if error occurs */
-		LOG("Setting the scheduling policy failed!");
+		LOG_ERROR("Setting the scheduling policy failed!");
 		goto fail_attr;
 	}
 
 	/* Create thread in detached state, so that no cleanup is necessary */
 	if (pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED)) {
-		LOG("Setting detached state failed!");
+		LOG_ERROR("Setting detached state failed!");
 		goto fail_attr;
 	}
 
@@ -87,7 +87,7 @@ enum ud3tn_result hal_task_create(
 			task_priority;
 	if (pthread_attr_setschedparam(&tattr, &param)) {
 		/* abort if error occurs */
-		LOG("Setting the scheduling priority failed!");
+		LOG_ERROR("Setting the scheduling priority failed!");
 		goto fail_attr;
 	}
 
@@ -96,7 +96,7 @@ enum ud3tn_result hal_task_create(
 	if (task_stack_size != 0 &&
 			pthread_attr_setstacksize(&tattr, task_stack_size)) {
 		/* abort if error occurs */
-		LOG("Setting the tasks stack size failed! Wrong value!");
+		LOG_ERROR("Setting the tasks stack size failed! Wrong value!");
 		goto fail_attr;
 	}
 
@@ -107,14 +107,14 @@ enum ud3tn_result hal_task_create(
 				    execute_pthread_compat, desc);
 
 	if (error_code) {
-		LOG("Thread Creation failed!");
+		LOG_ERROR("Thread Creation failed!");
 		goto fail_attr;
 	}
 
 #if LINUX_SPECIFIC_API
 	if (task_name) {
 		if (pthread_setname_np(thread, task_name)) {
-			LOG("Could not set thread name!");
+			LOG_ERROR("Could not set thread name!");
 			goto fail_attr;
 		}
 	}

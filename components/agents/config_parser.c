@@ -487,8 +487,11 @@ size_t config_parser_read(struct config_parser *parser,
 		config_parser_read_byte(parser, buffer[i]);
 		if (parser->basedata->status != PARSER_STATUS_GOOD &&
 		    parser->basedata->status != PARSER_STATUS_DONE) {
-			LOGF("ConfigAgentParser: parser status was not good at %d ('%c') -> reset parser",
-			     i, buffer[i]);
+			LOGF_WARN(
+				"ConfigAgentParser: parser status was not good at %d ('%c') -> reset parser",
+				i,
+				buffer[i]
+			);
 			config_parser_reset(parser);
 			return length;
 		}

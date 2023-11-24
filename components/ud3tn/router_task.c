@@ -50,7 +50,7 @@ enum ud3tn_result router_process_command(
 
 	if (!node_prepare_and_verify(command->data, cur_time_s)) {
 		free_node(command->data);
-		LOGF("Router: Command (T = %c) is invalid!",
+		LOGF_WARN("Router: Command (T = %c) is invalid!",
 			command->type);
 		free(command);
 		return UD3TN_FAIL;
@@ -61,11 +61,15 @@ enum ud3tn_result router_process_command(
 		rescheduler
 	);
 	if (success) {
-		LOGF("Router: Command (T = %c) processed.",
-			command->type);
+		LOGF_DEBUG(
+			"Router: Command (T = %c) processed.",
+			command->type
+		);
 	} else {
-		LOGF("Router: Processing command (T = %c) failed!",
-			command->type);
+		LOGF_DEBUG(
+			"Router: Processing command (T = %c) failed!",
+			command->type
+		);
 	}
 	free(command);
 
@@ -184,8 +188,10 @@ static struct bundle_processing_result apply_fragmentation(
 		if (router_add_bundle_to_contact(
 				route.fragment_results[f].contact,
 				frags[f]) != UD3TN_OK) {
-			LOGF("Router: Scheduling bundle %p failed, dropping all fragments.",
-			     bundle);
+			LOGF_INFO(
+				"Router: Scheduling bundle %p failed, dropping all fragments.",
+				bundle
+			);
 			// Remove from all previously-scheduled routes
 			for (g = 0; g < f; g++)
 				router_remove_bundle_from_contact(
@@ -217,18 +223,12 @@ enum router_result_status router_route_bundle(struct bundle *b)
 	if (b != NULL)
 		proc_result = process_bundle(b);
 
-	// b should not be used anymore, may be dropped due to
-	// fragmentation.
-	struct bundle *const b_old_ptr = b;
-
-	if (IS_DEBUG_BUILD)
-		LOGF(
-			"Router: Bundle %p [ %s ] [ frag = %d ]",
-			b_old_ptr,
-			(proc_result.status_or_fragments < 1)
-				? "ERR" : "OK",
-			proc_result.status_or_fragments
-		);
+	LOGF_DEBUG(
+		"Router: Bundle %p [ %s ] [ frag = %d ]",
+		b,
+		(proc_result.status_or_fragments < 1) ? "ERR" : "OK",
+		proc_result.status_or_fragments
+	);
 	if (proc_result.status_or_fragments < 1)
 		return br_to_rrs(proc_result.status_or_fragments);
 	return ROUTER_RESULT_OK;
