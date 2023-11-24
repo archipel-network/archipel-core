@@ -398,8 +398,7 @@ static void contact_manager_task(void *cm_parameters)
 
 	if (!parameters) {
 		LOG_ERROR("ContactManager: Cannot start, parameters not defined");
-		ASSERT(false);
-		return;
+		abort();
 	}
 	for (;;) {
 		if (signal != CM_SIGNAL_NONE) {

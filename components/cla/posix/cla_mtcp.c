@@ -290,7 +290,7 @@ static void mtcp_listener_task(void *param)
 	}
 
 	// unexpected failure to accept() - exit thread in release mode
-	ASSERT(0);
+	ASSERT(false);
 }
 
 static enum ud3tn_result mtcp_launch(struct cla_config *const config)

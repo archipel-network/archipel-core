@@ -332,7 +332,7 @@ static void tcpclv3_link_management_task(void *p)
 		} else {
 			// TCPCLV3_INACTIVE, TCPCLV3_ESTABLISHED
 			// should never happen as we are not created or wait
-			ASSERT(0);
+			abort();
 		}
 	}
 	LOGF_INFO(
@@ -517,7 +517,7 @@ static void tcpclv3_listener_task(void *p)
 	}
 
 	// unexpected failure to accept() - exit thread in release mode
-	ASSERT(0);
+	ASSERT(false);
 }
 
 /*

@@ -374,7 +374,7 @@ static void cla_register(struct cla_config *config)
 		}
 	}
 	LOGF_ERROR("CLA: FATAL: Could not globally register CLA \"%s\"", name);
-	ASSERT(0);
+	abort();
 }
 
 struct cla_config *cla_config_get(const char *cla_addr)

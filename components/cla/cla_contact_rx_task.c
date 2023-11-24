@@ -32,7 +32,7 @@ static void bundle_send(struct bundle *bundle, void *param)
 
 	if (!bundle) {
 		LOG_ERROR("Tried to send NULL bundle");
-		ASSERT(false);
+		ASSERT(false); // we can continue in release mode
 		return;
 	}
 

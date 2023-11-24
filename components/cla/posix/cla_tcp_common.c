@@ -341,7 +341,7 @@ void cla_tcp_single_listen_task(struct cla_tcp_single_config *config,
 	}
 
 	LOG_ERROR("TCP: Socket connection broke, terminating listener.");
-	ASSERT(0);
+	abort();
 }
 
 void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
@@ -359,7 +359,7 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 				config->node,
 				config->service
 			);
-			ASSERT(0);
+			abort();
 			return;
 		}
 		cla_tcp_single_listen_task(config, struct_size);

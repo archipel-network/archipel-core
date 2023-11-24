@@ -193,7 +193,9 @@ int bundle_processor_perform_agent_action(
 	}
 
 	hal_queue_delete(feedback_queue);
-	ASSERT(0); // hal_queue_receive with timeout == -1 should never fail
+	// hal_queue_receive with timeout == -1 should never fail, continue
+	// anyway in release mode
+	ASSERT(false);
 	return -1;
 }
 
@@ -249,7 +251,7 @@ void bundle_processor_task(void * const param)
 				"BundleProcessor: Invalid local EID \"%s\"",
 				ctx.local_eid_prefix
 			);
-			ASSERT(false);
+			abort(); // should be a bug, is checked beforehand
 		} else {
 			dot[1] = '\0'; // truncate string after dot
 		}
@@ -271,13 +273,13 @@ void bundle_processor_task(void * const param)
 		routing_table_get_raw_contact_list_ptr());
 	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
 		LOG_ERROR("BundleProcessor: Contact manager could not be initialized!");
-		ASSERT(false);
+		abort();
 	}
 
 	if (config_agent_setup(p->signaling_queue, ctx.local_eid,
 			       p->allow_remote_configuration, &ctx)) {
 		LOG_ERROR("BundleProcessor: Config agent could not be initialized!");
-		ASSERT(false);
+		abort();
 	}
 
 	LOGF_INFO(

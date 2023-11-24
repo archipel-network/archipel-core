@@ -50,7 +50,7 @@ Queue_t *queueCreate(unsigned int queue_length, unsigned int item_size)
 	if (queue_length == 0 || item_size == 0) {
 		// if one of the values is zero, creating a queue
 		// makes no sense
-		exit(EXIT_FAILURE);
+		abort();
 	}
 
 	// allocate memory to store management data

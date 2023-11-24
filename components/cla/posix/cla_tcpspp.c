@@ -80,7 +80,8 @@ static void tcpspp_link_creation_task(void *param)
 		sizeof(struct cla_tcp_link)
 	);
 
-	ASSERT(0);
+	// Should never get here.
+	abort();
 }
 
 static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
