@@ -1,0 +1,33 @@
+# DTN7-rs Dockerfile that contains the necessary dependencies for interoperability tests
+
+FROM buildpack-deps:bullseye
+
+RUN apt-get update && \
+    apt-get dist-upgrade -y && \
+    apt-get install python3-venv python3-pip curl -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for Rust installation
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Add Rust binaries to the PATH
+ENV PATH="${CARGO_HOME}/bin:${PATH}"
+
+RUN cargo install --bins --examples dtn7
+
+COPY ./pyd3tn/requirements.txt /req-pyd3tn.txt
+COPY ./python-ud3tn-utils/requirements.txt /req-utils.txt
+COPY ./test/integration/requirements.txt /req-test.txt
+COPY ./tools/analysis/requirements.txt /req-analysis.txt
+
+RUN python3 -m venv /ud3tn_venv && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U setuptools pip wheel && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-pyd3tn.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-utils.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-test.txt && \
+    /ud3tn_venv/bin/python -m pip install --no-cache-dir -U -r /req-analysis.txt

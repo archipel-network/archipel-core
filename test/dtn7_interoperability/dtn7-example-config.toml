@@ -1,0 +1,2 @@
+[statics]
+peers = ["mtcp://127.0.0.1:4224/bundlesink"]
