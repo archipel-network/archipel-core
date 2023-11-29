@@ -57,6 +57,8 @@
       in
       pkgs.mkShell {
 
+        hardeningDisable = [ "all" ];
+
         packages = with self.packages.x86_64-linux; with pkgs; [
           # self
           pyd3tn
