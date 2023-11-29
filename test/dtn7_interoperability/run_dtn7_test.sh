@@ -26,42 +26,32 @@ DTN7_CONFIG_FILE=test/dtn7_interoperability/dtn7-example-config.toml
 
 # This assumes you are running the command from within the "ud3tn" directory.
 UD3TN_DIR="$(pwd)"
-cd "$UD3TN_DIR"
+
+UD3TN1_PID=0
+UD3TN2_PID=0
+DTN7_PID=0
 
 exit_handler() {
-    cd "$UD3TN_DIR"
+    kill -TERM $UD3TN1_PID || true
+    kill -TERM $UD3TN2_PID || true
+    kill -TERM $DTN7_PID || true
 
-    if ps -p $UD3TN1_PID > /dev/null
-    then
-        kill -TERM $UD3TN1_PID
-        echo "Waiting for the first uD3TN node to exit gracefully - if it doesn't, check for sanitizer warnings."
-        wait $UD3TN1_PID
-        echo ">>> uD3TN1 LOGFILE"
-        cat "/tmp/ud3tn1.log" || true
-        echo
-    fi
-
-    if ps -p $UD3TN2_PID > /dev/null
-    then
-        kill -TERM $UD3TN2_PID
-        echo "Waiting for the second uD3TN node to exit gracefully - if it doesn't, check for sanitizer warnings."
-        wait $UD3TN2_PID
-        echo ">>> uD3TN2 LOGFILE"
-        cat "/tmp/ud3tn2.log" || true
-        echo
-    fi
-
+    echo
+    echo ">>> uD3TN1 LOGFILE"
+    cat "/tmp/ud3tn1.log" || true
+    echo
+    echo ">>> uD3TN2 LOGFILE"
+    cat "/tmp/ud3tn2.log" || true
+    echo
     echo ">>> DTN7 LOGFILE"
     cat "/tmp/dtn7.log" || true
     echo
-    if ps -p $DTN7_PID > /dev/null
-    then
-        kill -TERM $DTN7_PID
-    fi
 }
 
 rm -f /tmp/dtn7.log /tmp/ud3tn*.log /tmp/received_payload*.txt
 
+# Ensuring cleanup after the script exits
+trap exit_handler EXIT
 
 # Set up instances
 
@@ -69,34 +59,16 @@ rm -f /tmp/dtn7.log /tmp/ud3tn*.log /tmp/received_payload*.txt
 echo "Starting first uD3TN instance ..."
 "$UD3TN_DIR/build/posix/ud3tn" --eid "$UD3TN1_EID" --bp-version "$BP_VERSION" --aap-port 4242 --cla "mtcp:127.0.0.1,4224" > /tmp/ud3tn1.log 2>&1 &
 UD3TN1_PID=$!
-#Check if it started successfully
-if [ $? -ne 0 ]; then
-    echo "Failed to start first uD3TN instance. Exiting."
-    exit 1
-fi
 
 # Start second uD3TN instance (uD3TN2)
 echo "Starting second uD3TN instance ..."
 "$UD3TN_DIR/build/posix/ud3tn" --eid "$UD3TN2_EID" --bp-version "$BP_VERSION" --aap-port 4243 --cla "mtcp:127.0.0.1,4225" > /tmp/ud3tn2.log 2>&1 &
 UD3TN2_PID=$!
-#Check if it started successfully
-if [ $? -ne 0 ]; then
-    echo "Failed to start second uD3TN instance. Exiting."
-    exit 1
-fi
 
 # Start DTN7 instance (along with contact to uD3TN1 via config file for later use)
 echo "Starting DTN7 instance ..."
 dtnd --nodeid "$DTN7_EID" --routing "$DTN7_ROUTING" --cla "$DTN7_CLA" --endpoint "$DTN7_ENDPOINT" --config "$DTN7_CONFIG_FILE" > /tmp/dtn7.log 2>&1 &
 DTN7_PID=$!
-#Check if it started successfully
-if [ $? -ne 0 ]; then
-    echo "Failed to start DTN7. Exiting."
-    exit 1
-fi
-
-# Ensuring cleanup after the script exits
-trap exit_handler EXIT
 
 
 # Scenario 1: uD3TN1 -> DTN7
@@ -153,3 +125,16 @@ echo "Sending bundle from second uD3TN instance, via DTN7, to the first uD3TN in
 timeout 10 stdbuf -oL python "$UD3TN_DIR/tools/aap/aap_receive.py" --tcp localhost 4242 --agentid "$SINK_AGENTID" --count 1 --verify-pl "$PAYLOAD" --newline -vv > /tmp/received_payload_3.txt
 RECEIVED_PAYLOAD_3="$(cat /tmp/received_payload_3.txt)"
 echo "Received payload 3: $RECEIVED_PAYLOAD_3"
+
+
+# Terminating uD3TN and DTN7
+
+echo "Terminating first uD3TN instance ..." && kill -TERM $UD3TN1_PID
+echo "Waiting for the first uD3TN node to exit gracefully - if it doesn't, check for sanitizer warnings."
+wait $UD3TN1_PID
+
+echo "Terminating second uD3TN instance ..." && kill -TERM $UD3TN2_PID
+echo "Waiting for the second uD3TN node to exit gracefully - if it doesn't, check for sanitizer warnings."
+wait $UD3TN2_PID
+
+echo "Terminating DTN7 instance ..." && kill -TERM $DTN7_PID
