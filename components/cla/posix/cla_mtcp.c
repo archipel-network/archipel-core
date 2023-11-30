@@ -289,8 +289,8 @@ static void mtcp_listener_task(void *param)
 		free(cla_addr);
 	}
 
-	// unexpected failure to accept() - exit thread in release mode
-	ASSERT(false);
+	LOG_ERROR("MTCP: Unxepected failure to accept connection - abort!");
+	abort();
 }
 
 static enum ud3tn_result mtcp_launch(struct cla_config *const config)

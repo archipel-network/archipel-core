@@ -516,8 +516,8 @@ static void tcpclv3_listener_task(void *p)
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 	}
 
-	// unexpected failure to accept() - exit thread in release mode
-	ASSERT(false);
+	LOG_ERROR("TCPCLv3: Unxepected failure to accept connection - abort!");
+	abort();
 }
 
 /*
