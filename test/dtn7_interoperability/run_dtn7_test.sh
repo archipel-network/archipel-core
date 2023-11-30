@@ -8,7 +8,7 @@ set -euo pipefail
 # It is recommended to run this script in a Docker image based on the
 # `dtn7-interop` Dockerfile provided with uD3TN as follows:
 
-# $ docker run -it -v "$(pwd):/ud3tn" registry.gitlab.com/d3tn/ud3tn-docker-images/dtn7-interop:0.19.0 bash -c '/ud3tn/test/dockerfiles/prepare_for_test.sh /ud3tn /ud3tn_build && cd /ud3tn_build && source /ud3tn_venv/bin/activate && test/dtn7_interoperability/run_dtn7_test.sh'
+# $ docker run -it -v "$(pwd):/ud3tn" registry.gitlab.com/d3tn/ud3tn-docker-images/dtn7-interop:0.19.0-732d1a0 bash -c '/ud3tn/test/dockerfiles/prepare_for_test.sh /ud3tn /ud3tn_build && cd /ud3tn_build && source /ud3tn_venv/bin/activate && test/dtn7_interoperability/run_dtn7_test.sh'
 
 BP_VERSION=7
 
