@@ -32,9 +32,9 @@ UD3TN2_PID=0
 DTN7_PID=0
 
 exit_handler() {
-    kill -TERM $UD3TN1_PID || true
-    kill -TERM $UD3TN2_PID || true
-    kill -TERM $DTN7_PID || true
+    [ $UD3TN1_PID -ne 0 ] && kill -TERM $UD3TN1_PID || true
+    [ $UD3TN1_PID -ne 0 ] && kill -TERM $UD3TN2_PID || true
+    [ $DTN7_PID -ne 0 ] && kill -TERM $DTN7_PID || true
 
     echo
     echo ">>> uD3TN1 LOGFILE"
