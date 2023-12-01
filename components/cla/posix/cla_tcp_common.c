@@ -56,7 +56,7 @@ enum ud3tn_result cla_tcp_single_config_init(
 	config->num_active_contacts = 0;
 	config->contact_activity_sem = hal_semaphore_init_binary();
 	if (!config->contact_activity_sem) {
-		LOG("TCP: Cannot allocate memory for contact act. semaphore!");
+		LOG_ERROR("TCP: Cannot allocate memory for contact activity semaphore!");
 		return UD3TN_FAIL;
 	}
 
@@ -104,11 +104,11 @@ enum ud3tn_result cla_tcp_read(struct cla_link *link,
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret < 0) {
-		LOGERROR("TCP", "recv()", errno);
+		LOG_ERRNO("TCP", "recv()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 		return UD3TN_FAIL;
 	} else if (ret == 0) {
-		LOGF("TCP: A peer (via CLA %s) has disconnected gracefully!",
+		LOGF_INFO("TCP: A peer (via CLA %s) has disconnected gracefully!",
 		     link->config->vtable->cla_name_get());
 		link->config->vtable->cla_disconnect_handler(link);
 		return UD3TN_FAIL;
@@ -134,7 +134,7 @@ enum ud3tn_result cla_tcp_connect(struct cla_tcp_config *const config,
 	if (config->socket < 0)
 		return UD3TN_FAIL;
 
-	LOGF(
+	LOGF_INFO(
 		"TCP: CLA %s is now connected to [%s]:%s",
 		config->base.vtable->cla_name_get(),
 		node,
@@ -163,13 +163,13 @@ enum ud3tn_result cla_tcp_listen(struct cla_tcp_config *config,
 
 	// Listen for incoming connections.
 	if (listen(config->socket, backlog) < 0) {
-		LOGERROR("TCP", "listen()", errno);
+		LOG_ERRNO("TCP", "listen()", errno);
 		close(config->socket);
 		config->socket = -1;
 		return UD3TN_FAIL;
 	}
 
-	LOGF(
+	LOGF_INFO(
 		"TCP: CLA %s is now listening on [%s]:%s",
 		config->base.vtable->cla_name_get(),
 		node,
@@ -193,7 +193,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 			      &sockaddr_tmp_len)) == -1) {
 		const int err = errno;
 
-		LOGERROR("TCP", "accept()", err);
+		LOG_ERRNO("TCP", "accept()", err);
 
 		// See "Error handling" section of Linux man page
 		if (err != EAGAIN && err != EINTR && err != ENETDOWN &&
@@ -214,7 +214,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 		return -1;
 	}
 
-	LOGF("TCP: Connection accepted from %s (via CLA %s)!",
+	LOGF_INFO("TCP: Connection accepted from %s (via CLA %s)!",
 	     cla_addr, config->base.vtable->cla_name_get());
 
 	if (addr != NULL)
@@ -225,7 +225,7 @@ int cla_tcp_accept_from_socket(struct cla_tcp_config *config,
 	/* Disable the nagle algorithm to prevent delays in responses */
 	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 		       &enable, sizeof(int)) < 0) {
-		LOGERROR("TCP", "setsockopt(TCP_NODELAY)", errno);
+		LOG_ERRNO("TCP", "setsockopt(TCP_NODELAY)", errno);
 	}
 
 	return sock;
@@ -261,7 +261,7 @@ static void handle_established_connection(
 
 	if (cla_tcp_link_init(link, sock, &config->base, cla_addr, true)
 			!= UD3TN_OK) {
-		LOG("TCP: Error creating a link instance!");
+		LOG_ERROR("TCP: Error creating a link instance!");
 	} else {
 		// Notify the BP task of the newly established connection...
 		const struct bundle_agent_interface *bundle_agent_interface =
@@ -287,22 +287,29 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 				 const size_t struct_size)
 {
 	for (;;) {
-		LOGF("TCP: CLA \"%s\": Attempting to connect to \"%s:%s\".",
-		     config->base.base.vtable->cla_name_get(),
-		     config->node, config->service);
+		LOGF_INFO(
+			"TCP: CLA \"%s\": Attempting to connect to \"%s:%s\".",
+			config->base.base.vtable->cla_name_get(),
+			config->node,
+			config->service
+		);
 
 		if (cla_tcp_connect(&config->base,
 				    config->node, config->service) != UD3TN_OK) {
-			LOGF("TCP: CLA \"%s\": Connection failed, will retry in %d ms as long as a contact is ongoing.",
-			     config->base.base.vtable->cla_name_get(),
-			     CLA_TCP_RETRY_INTERVAL_MS);
+			LOGF_WARN(
+				"TCP: CLA \"%s\": Connection failed, will retry in %d ms as long as a contact is ongoing.",
+				config->base.base.vtable->cla_name_get(),
+				CLA_TCP_RETRY_INTERVAL_MS
+			);
 			hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
 		} else {
 			handle_established_connection(config, NULL,
 						      config->base.socket,
 						      struct_size);
-			LOGF("TCP: CLA \"%s\": Connection terminated, will reconnect as soon as a contact occurs.",
-			     config->base.base.vtable->cla_name_get());
+			LOGF_WARN(
+				"TCP: CLA \"%s\": Connection terminated, will reconnect as soon as a contact occurs.",
+				config->base.base.vtable->cla_name_get()
+			);
 		}
 
 		// Wait until _some_ contact starts.
@@ -327,12 +334,14 @@ void cla_tcp_single_listen_task(struct cla_tcp_single_config *config,
 
 		handle_established_connection(config, NULL, sock, struct_size);
 
-		LOGF("TCP: CLA \"%s\" is looking for a new connection now!",
-		     config->base.base.vtable->cla_name_get());
+		LOGF_INFO(
+			"TCP: CLA \"%s\" is looking for a new connection now!",
+			config->base.base.vtable->cla_name_get()
+		);
 	}
 
-	LOG("TCP: Socket connection broke, terminating listener.");
-	ASSERT(0);
+	LOG_ERROR("TCP: Socket connection broke, terminating listener.");
+	abort();
 }
 
 void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
@@ -344,10 +353,13 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 		if (cla_tcp_listen(&config->base,
 				   config->node, config->service,
 				   CLA_TCP_SINGLE_BACKLOG) != UD3TN_OK) {
-			LOGF("TCP: CLA \"%s\" failed to bind to \"%s:%s\".",
-			     config->base.base.vtable->cla_name_get(),
-			     config->node, config->service);
-			ASSERT(0);
+			LOGF_ERROR(
+				"TCP: CLA \"%s\" failed to bind to \"%s:%s\".",
+				config->base.base.vtable->cla_name_get(),
+				config->node,
+				config->service
+			);
+			abort();
 			return;
 		}
 		cla_tcp_single_listen_task(config, struct_size);

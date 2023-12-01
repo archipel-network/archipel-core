@@ -30,15 +30,18 @@ static void smtcp_link_creation_task(void *param)
 {
 	struct cla_tcp_single_config *const smtcp_config = param;
 
-	LOGF("smtcp: Using %s mode",
-	     smtcp_config->tcp_active ? "active" : "passive");
+	LOGF_INFO(
+		"smtcp: Using %s mode",
+		smtcp_config->tcp_active ? "active" : "passive"
+	);
 
 	cla_tcp_single_link_creation_task(
 		smtcp_config,
 		sizeof(struct mtcp_link)
 	);
 
-	ASSERT(0);
+	// Should never get here.
+	abort();
 }
 
 static enum ud3tn_result smtcp_launch(struct cla_config *const config)
@@ -105,7 +108,7 @@ struct cla_config *smtcp_create(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (option_count < 2 || option_count > 3) {
-		LOG("smtcp: Options format has to be: <IP>,<PORT>[,<TCP_ACTIVE>]");
+		LOG_ERROR("smtcp: Options format has to be: <IP>,<PORT>[,<TCP_ACTIVE>]");
 		return NULL;
 	}
 
@@ -113,8 +116,10 @@ struct cla_config *smtcp_create(
 
 	if (option_count > 2) {
 		if (parse_tcp_active(options[2], &tcp_active) != UD3TN_OK) {
-			LOGF("smtcp: Could not parse TCP active flag: %s",
-			     options[2]);
+			LOGF_ERROR(
+				"smtcp: Could not parse TCP active flag: %s",
+				options[2]
+			);
 			return NULL;
 		}
 	}
@@ -123,14 +128,14 @@ struct cla_config *smtcp_create(
 		malloc(sizeof(struct cla_tcp_single_config));
 
 	if (!config) {
-		LOG("smtcp: Memory allocation failed!");
+		LOG_ERROR("smtcp: Memory allocation failed!");
 		return NULL;
 	}
 
 	if (smtcp_init(config, options[0], options[1], tcp_active,
 		       bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("smtcp: Initialization failed!");
+		LOG_ERROR("smtcp: Initialization failed!");
 		return NULL;
 	}
 

@@ -9,6 +9,7 @@
 #include "cla/cla.h"
 
 #include "platform/hal_io.h"
+#include "platform/hal_time.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -207,8 +208,13 @@ static inline void router_get_first_route_frag(
 	mid_frag_sz = bundle_get_mid_fragment_min_size(bundle);
 	next_frag_sz = first_frag_sz;
 	if (next_frag_sz > max_frag_sz || last_frag_sz > max_frag_sz) {
-		LOGF("Router: Cannot fragment because max. frag. size of %lu bytes is smaller than bundle headers (first = %lu, mid = %lu, last = %lu)",
-		     max_frag_sz, next_frag_sz, mid_frag_sz, last_frag_sz);
+		LOGF_INFO(
+			"Router: Cannot fragment because max. frag. size of %lu bytes is smaller than bundle headers (first = %lu, mid = %lu, last = %lu)",
+			max_frag_sz,
+			next_frag_sz,
+			mid_frag_sz,
+			last_frag_sz
+		);
 		return; /* failed */
 	}
 
@@ -217,8 +223,11 @@ static inline void router_get_first_route_frag(
 		min_pay = MIN(remaining_pay, RC.fragment_min_payload);
 		max_pay = max_frag_sz - next_frag_sz;
 		if (max_pay < min_pay) {
-			LOGF("Router: Cannot fragment because minimum amount of payload (%lu bytes) will not fit in fragment with maximum payload size of %lu bytes",
-			     min_pay, max_pay);
+			LOGF_INFO(
+				"Router: Cannot fragment because minimum amount of payload (%lu bytes) will not fit in fragment with maximum payload size of %lu bytes",
+				min_pay,
+				max_pay
+			);
 			break; /* failed: remaining_pay != 0 */
 		}
 		if (remaining_pay <= max_frag_sz - last_frag_sz) {
@@ -275,8 +284,11 @@ struct router_result router_get_first_route(struct bundle *bundle)
 	res.fragments = 0;
 	res.preemption_improved = 0;
 	if (contacts == NULL) {
-		LOGF("Router: Could not determine a node over which the destination \"%s\" for bundle %p is reachable",
-		     bundle->destination, bundle);
+		LOGF_INFO(
+			"Router: Could not determine a node over which the destination \"%s\" for bundle %p is reachable",
+			bundle->destination,
+			bundle
+		);
 		return res;
 	}
 
@@ -297,18 +309,29 @@ struct router_result router_get_first_route(struct bundle *bundle)
 		);
 
 	if (mrfs.max_fragment_size == 0) {
-		LOGF("Router: Contact payload capacity (%lu bytes) too low for bundle %p of size %lu bytes (min. frag. sz. = %lu, payload sz. = %lu)",
-		     mrfs.payload_capacity, bundle, bundle_size,
-		     MAX(first_frag_sz, last_frag_sz),
-		     bundle->payload_block->length);
+		LOGF_DEBUG(
+			"Router: Contact payload capacity (%lu bytes) too low for bundle %p of size %lu bytes (min. frag. sz. = %lu, payload sz. = %lu)",
+			mrfs.payload_capacity,
+			bundle,
+			bundle_size,
+			MAX(first_frag_sz, last_frag_sz),
+			bundle->payload_block->length
+		);
 		goto finish;
 	} else if (mrfs.max_fragment_size != INT32_MAX) {
-		LOGF("Router: Determined max. frag size of %lu bytes for bundle %p of size %lu bytes (payload sz. = %lu)",
-		     mrfs.max_fragment_size, bundle, bundle_size,
-		     bundle->payload_block->length);
+		LOGF_DEBUG(
+			"Router: Determined max. frag size of %lu bytes for bundle %p of size %lu bytes (payload sz. = %lu)",
+			mrfs.max_fragment_size,
+			bundle,
+			bundle_size,
+			bundle->payload_block->length
+		);
 	} else {
-		LOGF("Router: Determined infinite max. frag size for bundle of size %lu bytes (payload sz. = %lu)",
-		     bundle_size, bundle->payload_block->length);
+		LOGF_DEBUG(
+			"Router: Determined infinite max. frag size for bundle of size %lu bytes (payload sz. = %lu)",
+			bundle_size,
+			bundle->payload_block->length
+		);
 	}
 
 	if (bundle_must_not_fragment(bundle) ||
@@ -321,8 +344,12 @@ struct router_result router_get_first_route(struct bundle *bundle)
 			mrfs.max_fragment_size, first_frag_sz, last_frag_sz);
 
 	if (!res.fragments)
-		LOGF("Router: No feasible route found for bundle %p to \"%s\" with size of %lu bytes",
-		     bundle, bundle->destination, bundle_size);
+		LOGF_INFO(
+			"Router: No feasible route found for bundle %p to \"%s\" with size of %lu bytes",
+			bundle,
+			bundle->destination,
+			bundle_size
+		);
 
 finish:
 	while (contacts) {

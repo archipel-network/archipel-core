@@ -18,6 +18,7 @@
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "cbor.h"
 
@@ -192,7 +193,9 @@ int bundle_processor_perform_agent_action(
 	}
 
 	hal_queue_delete(feedback_queue);
-	ASSERT(0); // hal_queue_receive with timeout == -1 should never fail
+	// hal_queue_receive with timeout == -1 should never fail, continue
+	// anyway in release mode
+	ASSERT(false);
 	return -1;
 }
 
@@ -244,9 +247,11 @@ void bundle_processor_task(void * const param)
 		char *const dot = strchr(ctx.local_eid_prefix, '.');
 
 		if (!dot) {
-			LOGF("BundleProcessor: Invalid local EID \"%s\"",
-			     ctx.local_eid_prefix);
-			ASSERT(false);
+			LOGF_ERROR(
+				"BundleProcessor: Invalid local EID \"%s\"",
+				ctx.local_eid_prefix
+			);
+			abort(); // should be a bug, is checked beforehand
 		} else {
 			dot[1] = '\0'; // truncate string after dot
 		}
@@ -267,18 +272,21 @@ void bundle_processor_task(void * const param)
 		p->signaling_queue,
 		routing_table_get_raw_contact_list_ptr());
 	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
-		LOG("BundleProcessor: Contact manager could not be initialized!");
-		ASSERT(false);
+		LOG_ERROR("BundleProcessor: Contact manager could not be initialized!");
+		abort();
 	}
 
 	if (config_agent_setup(p->signaling_queue, ctx.local_eid,
 			       p->allow_remote_configuration, &ctx)) {
-		LOG("BundleProcessor: Config agent could not be initialized!");
-		ASSERT(false);
+		LOG_ERROR("BundleProcessor: Config agent could not be initialized!");
+		abort();
 	}
 
-	LOGF("BundleProcessor: BPA initialized for \"%s\", status reports %s",
-	     p->local_eid, p->status_reporting ? "enabled" : "disabled");
+	LOGF_INFO(
+		"BundleProcessor: BPA initialized for \"%s\", status reports %s",
+		p->local_eid,
+		p->status_reporting ? "enabled" : "disabled"
+	);
 
 	for (;;) {
 		if (hal_queue_receive(p->signaling_queue, &signal,
@@ -371,8 +379,10 @@ static inline void handle_signal(
 		handle_contact_over(ctx, signal.contact);
 		break;
 	default:
-		LOGF("BundleProcessor: Invalid signal (%d) detected",
-		     signal.type);
+		LOGF_WARN(
+			"BundleProcessor: Invalid signal (%d) detected",
+			signal.type
+		);
 		break;
 	}
 }
@@ -398,8 +408,12 @@ static void handle_contact_over(
 static enum ud3tn_result bundle_dispatch(
 	struct bp_context *const ctx, struct bundle *bundle)
 {
-	LOGF("BundleProcessor: Dispatching bundle %p (from = %s, to = %s)",
-	     bundle, bundle->source, bundle->destination);
+	LOGF_DEBUG(
+		"BundleProcessor: Dispatching bundle %p (from = %s, to = %s)",
+		bundle,
+		bundle->source,
+		bundle->destination
+	);
 	/* 5.3-1 */
 	if (bundle_endpoint_is_local(ctx, bundle)) {
 		bundle_deliver_local(ctx, bundle);
@@ -445,7 +459,10 @@ static enum ud3tn_result bundle_forward(
 {
 	/* 4.3.4. Hop Count (BPv7-bis) */
 	if (!hop_count_validation(bundle)) {
-		LOGF("BundleProcessor: Deleting bundle %p: Hop Limit Exceeded", bundle);
+		LOGF_INFO(
+			"BundleProcessor: Deleting bundle %p: Hop Limit Exceeded",
+			bundle
+		);
 		bundle_delete(ctx, bundle, BUNDLE_SR_REASON_HOP_LIMIT_EXCEEDED);
 		return UD3TN_FAIL;
 	}
@@ -493,8 +510,10 @@ static void bundle_forwarding_failed(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
-	LOGF("BundleProcessor: Deleting bundle %p: Forwarding Failed",
-	     bundle);
+	LOGF_INFO(
+		"BundleProcessor: Deleting bundle %p: Forwarding Failed",
+		bundle
+	);
 	bundle_delete(ctx, bundle, reason);
 }
 
@@ -502,8 +521,10 @@ static void bundle_forwarding_failed(
 static void bundle_expired(
 	const struct bp_context *const ctx, struct bundle *bundle)
 {
-	LOGF("BundleProcessor: Deleting bundle %p: Lifetime Expired",
-	     bundle);
+	LOGF_INFO(
+		"BundleProcessor: Deleting bundle %p: Lifetime Expired",
+		bundle
+	);
 	bundle_delete(ctx, bundle, BUNDLE_SR_REASON_LIFETIME_EXPIRED);
 }
 
@@ -550,8 +571,10 @@ static void bundle_receive(struct bp_context *const ctx, struct bundle *bundle)
 					BUNDLE_V6_BLOCK_FLAG_FWD_UNPROC;
 				break;
 			case BUNDLE_HRESULT_DELETED:
-				LOGF("BundleProcessor: Deleting bundle %p: Block Unintelligible",
-				     bundle);
+				LOGF_INFO(
+					"BundleProcessor: Deleting bundle %p: Block Unintelligible",
+					bundle
+				);
 				bundle_delete(
 					ctx,
 					bundle,
@@ -602,8 +625,10 @@ static void bundle_deliver_local(
 
 	/* Check and record knowledge of bundle */
 	if (bundle_record_add_and_check_known(ctx, bundle)) {
-		LOGF("BundleProcessor: Bundle %p was already delivered, dropping.",
-		     bundle);
+		LOGF_DEBUG(
+			"BundleProcessor: Bundle %p was already delivered, dropping.",
+			bundle
+		);
 		// NOTE: We cannot have custody as the CM checks for duplicates
 		bundle_discard(bundle);
 		return;
@@ -623,8 +648,11 @@ static void bundle_deliver_local(
 			get_agent_id(ctx, bundle->destination) == NULL) {
 		// If it is no admin. record and we have no agent to deliver
 		// it to, drop it.
-		LOGF("BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping.",
-		     bundle->source, bundle->destination);
+		LOGF_INFO(
+			"BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping.",
+			bundle->source,
+			bundle->destination
+		);
 		bundle_delete(
 			ctx,
 			bundle,
@@ -673,8 +701,10 @@ static void add_to_reassembly_bundle_list(
 		sizeof(struct reassembly_bundle_list)
 	);
 	if (!new_entry) {
-		LOGF("BundleProcessor: Deleting bundle %p: Cannot store in reassembly list.",
-		     bundle);
+		LOGF_WARN(
+			"BundleProcessor: Deleting bundle %p: Cannot store in reassembly list.",
+			bundle
+		);
 		bundle_delete(ctx, bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return;
 	}
@@ -692,20 +722,29 @@ static void try_reassemble(
 
 	size_t pos_in_bundle = 0;
 
-	LOG("BundleProcessor: Attempting bundle reassembly!");
+	LOG_DEBUG("BundleProcessor: Attempting bundle reassembly!");
 
 	// Check if we can reassemble
 	for (eb = e->bundle_list; eb; eb = eb->next) {
 		b = eb->bundle;
-		if (b->fragment_offset > pos_in_bundle)
+		LOGF_DEBUG(
+			"BundleProcessor: Evaluating fragment %p having size %lu and offset %lu for position %zu.",
+			b,
+			b->payload_block->length,
+			b->fragment_offset,
+			pos_in_bundle
+		);
+		if (b->fragment_offset > pos_in_bundle) {
+			LOG_DEBUG("BundleProcessor: Reassembly not possible, gap detected.");
 			return; // cannot reassemble, has gaps
+		}
 		pos_in_bundle = b->fragment_offset + b->payload_block->length;
 		if (pos_in_bundle >= b->total_adu_length)
 			break; // can reassemble
 	}
 	if (!eb)
 		return;
-	LOG("BundleProcessor: Reassembling bundle!");
+	LOG_DEBUG("BundleProcessor: Reassembling bundle!");
 
 	// Reassemble by memcpy
 	b = e->bundle_list->bundle;
@@ -713,8 +752,10 @@ static void try_reassemble(
 	uint8_t *const payload = malloc(adu_length);
 	bool added_as_known = false;
 
-	if (!payload)
+	if (!payload) {
+		LOG_ERROR("BundleProcessor: Cannot allocate reassembly buffer!");
 		return; // currently not enough memory to reassemble
+	}
 
 	struct bundle_adu adu = bundle_adu_init(b);
 
@@ -770,8 +811,10 @@ static void bundle_attempt_reassembly(
 	struct reassembly_list **r_list_e = &ctx->reassembly_list;
 
 	if (bundle_reassembled_is_known(ctx, bundle)) {
-		LOGF("BundleProcessor: Original bundle for %p was already delivered, dropping.",
-		     bundle);
+		LOGF_DEBUG(
+			"BundleProcessor: Original bundle for %p was already delivered, dropping.",
+			bundle
+		);
 		// Already delivered the original bundle
 		bundle_rem_rc(
 			bundle,
@@ -786,6 +829,10 @@ static void bundle_attempt_reassembly(
 		struct reassembly_list *const e = *r_list_e;
 
 		if (may_reassemble(e->bundle_list->bundle, bundle)) {
+			LOGF_DEBUG(
+				"BundleProcessor: Fragment list for new fragment %p found, updating.",
+				bundle
+			);
 			add_to_reassembly_bundle_list(ctx, e, bundle);
 			try_reassemble(ctx, r_list_e);
 			return;
@@ -798,8 +845,10 @@ static void bundle_attempt_reassembly(
 	);
 
 	if (!new_list) {
-		LOGF("BundleProcessor: Deleting bundle %p: Cannot create reassembly list.",
-		     bundle);
+		LOGF_WARN(
+			"BundleProcessor: Deleting bundle %p: Cannot create reassembly list.",
+			bundle
+		);
 		bundle_delete(ctx, bundle, BUNDLE_SR_REASON_DEPLETED_STORAGE);
 		return;
 	}
@@ -822,8 +871,10 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 		);
 
 		if (record != NULL && record->type == BUNDLE_AR_CUSTODY_SIGNAL) {
-			LOGF("BundleProcessor: Received administrative record of type %u",
-			     record->type);
+			LOGF_DEBUG(
+				"BundleProcessor: Received administrative record of type %u",
+				record->type
+			);
 			bundle_handle_custody_signal(record);
 			bundle_adu_free_members(adu);
 		} else if (record != NULL &&
@@ -854,15 +905,20 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 			);
 
 			ASSERT(agent_id != NULL);
-			LOGF("BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
-			     agent_id, adu.length);
+			LOGF_DEBUG(
+				"BundleProcessor: Received BIBE bundle -> \"%s\"; len(PL) = %d B",
+				agent_id,
+				adu.length
+			);
 			agent_forward(agent_id, adu, ctx);
 		} else if (record != NULL) {
-			LOGF("BundleProcessor: Received administrative record of unknown type %u, discarding.",
-			     record->type);
+			LOGF_INFO(
+				"BundleProcessor: Received administrative record of unknown type %u, discarding.",
+				record->type
+			);
 			bundle_adu_free_members(adu);
 		} else {
-			LOG("BundleProcessor: Received administrative record we cannot parse, discarding.");
+			LOG_INFO("BundleProcessor: Received administrative record we cannot parse, discarding.");
 			bundle_adu_free_members(adu);
 		}
 
@@ -873,8 +929,11 @@ static void bundle_deliver_adu(const struct bp_context *const ctx, struct bundle
 	const char *agent_id = get_agent_id(ctx, adu.destination);
 
 	ASSERT(agent_id != NULL);
-	LOGF("BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
-	     agent_id, adu.length);
+	LOGF_DEBUG(
+		"BundleProcessor: Received local bundle -> \"%s\"; len(PL) = %d B",
+		agent_id,
+		adu.length
+	);
 	agent_forward(agent_id, adu, ctx);
 }
 
@@ -928,8 +987,10 @@ static void bundle_dangling(
 	uint8_t resched = (FAILED_FORWARD_POLICY == POLICY_TRY_RE_SCHEDULE);
 
 	if (!resched) {
-		LOGF("BundleProcessor: Deleting bundle %p: Forwarding failed and policy indicates to drop it.",
-		     bundle);
+		LOGF_INFO(
+			"BundleProcessor: Deleting bundle %p: Forwarding failed and policy indicates to drop it.",
+			bundle
+		);
 		bundle_delete(
 			ctx,
 			bundle,
@@ -972,8 +1033,10 @@ static void send_status_report(
 	if (b != NULL) {
 		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
 		if (bundle_forward(ctx, b) != UD3TN_OK)
-			LOGF("BundleProcessor: Failed sending status report for bundle %p.",
-			     bundle);
+			LOGF_INFO(
+				"BundleProcessor: Failed sending status report for bundle %p.",
+				bundle
+			);
 	}
 }
 
@@ -1030,9 +1093,11 @@ static enum ud3tn_result send_bundle(
 		return UD3TN_OK;
 	}
 
-	LOGF("BundleProcessor: Routing bundle %p failed: %s",
+	LOGF_INFO(
+		"BundleProcessor: Routing bundle %p failed: %s",
 		bundle,
-		get_router_status_str(result));
+		get_router_status_str(result)
+	);
 	if (result == ROUTER_RESULT_EXPIRED)
 		bundle_expired(ctx, bundle);
 	else
@@ -1070,8 +1135,10 @@ static bool hop_count_validation(struct bundle *bundle)
 
 	/* If block data cannot be parsed, ignore it */
 	if (!success) {
-		LOGF("BundleProcessor: Could not parse hop-count block of bundle %p.",
-			bundle);
+		LOGF_INFO(
+			"BundleProcessor: Could not parse hop-count block of bundle %p.",
+			bundle
+		);
 		return true;
 	}
 
@@ -1087,8 +1154,10 @@ static bool hop_count_validation(struct bundle *bundle)
 
 	/* Out of memory - validation passes none the less */
 	if (buffer == NULL) {
-		LOGF("BundleProcessor: Could not increment hop-count of bundle %p.",
-			bundle);
+		LOGF_WARN(
+			"BundleProcessor: Could not increment hop-count of bundle %p.",
+			bundle
+		);
 		return true;
 	}
 

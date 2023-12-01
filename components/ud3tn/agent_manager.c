@@ -52,8 +52,10 @@ int agent_register(struct agent agent, const bool is_subscriber)
 
 	/* check if agent with that sink_id is already existing */
 	if (agent_search(al_ptr, agent.sink_identifier) != NULL) {
-		LOGF("AgentManager: Agent with sink_id %s is already registered! Abort!",
-		     agent.sink_identifier);
+		LOGF_WARN(
+			"AgentManager: Agent with sink_id %s is already registered!",
+			agent.sink_identifier
+		);
 		return -1;
 	}
 
@@ -61,16 +63,20 @@ int agent_register(struct agent agent, const bool is_subscriber)
 
 	if (ag_ex && agent.secret != ag_ex->secret &&
 	    strcmp(agent.secret, ag_ex->secret) != 0) {
-		LOGF("AgentManager: Invalid secret provided for sink_id %s! Abort!",
-		     agent.sink_identifier);
+		LOGF_WARN(
+			"AgentManager: Invalid secret provided for sink_id %s!",
+			agent.sink_identifier
+		);
 		return -1;
 	}
 
 	if (agent_list_add_entry(al_ptr, agent)) // adding failed
 		return -1;
 
-	LOGF("AgentManager: Agent registered for sink \"%s\"",
-	     agent.sink_identifier);
+	LOGF_INFO(
+		"AgentManager: Agent registered for sink \"%s\"",
+		agent.sink_identifier
+	);
 
 	return 0;
 }
@@ -89,8 +95,10 @@ int agent_deregister(const char *sink_identifier, const bool is_subscriber)
 
 	/* check if agent with that sink_id is not existing */
 	if (ag_ptr == NULL) {
-		LOGF("AgentManager: Agent with sink_id %s is not registered! Abort!",
-		     sink_identifier);
+		LOGF_WARN(
+			"AgentManager: Agent with sink_id %s is not registered!",
+			sink_identifier
+		);
 		return -1;
 	}
 
@@ -106,16 +114,19 @@ int agent_forward(const char *sink_identifier, struct bundle_adu data,
 	struct agent *ag_ptr = agent_search(&agent_entry_node, sink_identifier);
 
 	if (ag_ptr == NULL) {
-		LOGF("AgentManager: No agent registered for identifier \"%s\"!",
-				     sink_identifier);
+		LOGF_WARN(
+			"AgentManager: No agent registered for identifier \"%s\"!",
+			sink_identifier
+		);
 		bundle_adu_free_members(data);
 		return -1;
 	}
 
 	if (ag_ptr->callback == NULL) {
-		LOGF(
-		     "AgentManager: Agent \"%s\" registered, but invalid (null) callback function!",
-		     sink_identifier);
+		LOGF_ERROR(
+			"AgentManager: Agent \"%s\" registered, but invalid (null) callback function!",
+			sink_identifier
+		);
 		bundle_adu_free_members(data);
 		return -1;
 	}

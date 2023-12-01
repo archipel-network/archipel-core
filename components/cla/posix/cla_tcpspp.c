@@ -11,6 +11,7 @@
 #include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "spp/spp.h"
 #include "spp/spp_parser.h"
@@ -68,16 +69,19 @@ static void tcpspp_link_creation_task(void *param)
 {
 	struct tcpspp_config *tcpspp_config = (struct tcpspp_config *)param;
 
-	LOGF("tcpspp: Active for APID %d, using %s mode",
-	     tcpspp_config->apid,
-	     tcpspp_config->base.tcp_active ? "active" : "passive");
+	LOGF_INFO(
+		"tcpspp: Active for APID %d, using %s mode",
+		tcpspp_config->apid,
+		tcpspp_config->base.tcp_active ? "active" : "passive"
+	);
 
 	cla_tcp_single_link_creation_task(
 		&tcpspp_config->base,
 		sizeof(struct cla_tcp_link)
 	);
 
-	ASSERT(0);
+	// Should never get here.
+	abort();
 }
 
 static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
@@ -164,9 +168,11 @@ static size_t forward_to_blackhole(struct cla_link *link,
 		(struct tcpspp_config *)link->config;
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 
-	LOGF("tcpspp: Forwarding data for APID %hu (length = %zu) to black hole.",
-	     config->spp_parser.header.apid,
-	     config->spp_parser.data_length);
+	LOGF_DEBUG(
+		"tcpspp: Forwarding data for APID %hu (length = %zu) to black hole.",
+		config->spp_parser.header.apid,
+		config->spp_parser.data_length
+	);
 
 	// Ensure the SPP parser state is set such that we directly trigger
 	// the blackhole parser in `tcpspp_forward_to_specific_parser`.
@@ -201,7 +207,7 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 	if (config->spp_parser.state != SPP_PARSER_STATE_DATA_SUBPARSER) {
 		if (config->spp_parser.state ==
 				SPP_PARSER_STATE_SH_ANCILLARY_SUBPARSER) {
-			LOG("tcpspp: Ancillary data is not supported at the moment, resetting parsers.");
+			LOG_WARN("tcpspp: Ancillary data is not supported at the moment, resetting parsers.");
 			tcpspp_reset_parsers(link);
 			return 0;
 		} else if (config->spp_parser.state ==
@@ -241,7 +247,7 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 				length
 			);
 			if (result == 0) {
-				LOG("tcpspp: Cannot determine bundle version, resetting parsers.");
+				LOG_WARN("tcpspp: Cannot determine bundle version, resetting parsers.");
 				tcpspp_reset_parsers(link);
 			}
 			break;
@@ -285,7 +291,7 @@ size_t tcpspp_forward_to_specific_parser(struct cla_link *link,
 		);
 		break;
 	default:
-		LOG("tcpspp: Invalid payload type detected, resetting parsers.");
+		LOG_WARN("tcpspp: Invalid payload type detected, resetting parsers.");
 		tcpspp_reset_parsers(link);
 		return 0;
 	}
@@ -352,7 +358,7 @@ static void tcpspp_begin_packet(struct cla_link *link, size_t length, char *cla_
 
 	if (tcp_send_all(tcp_link->connection_socket, header_buf,
 			 header_end - &header_buf[0]) == -1) {
-		LOG("tcpspp: Error during sending. Data discarded.");
+		LOG_WARN("tcpspp: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -371,7 +377,7 @@ static void tcpspp_end_packet(struct cla_link *link)
 
 		if (tcp_send_all(tcp_link->connection_socket, crc16_be, 2)
 				== -1) {
-			LOG("tcpspp: Error during sending. Data discarded.");
+			LOG_WARN("tcpspp: Error during sending. Data discarded.");
 			link->config->vtable->cla_disconnect_handler(link);
 		}
 	}
@@ -385,7 +391,7 @@ static void tcpspp_send_packet_data(
 		(struct tcpspp_config *)link->config;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
-		LOG("tcpspp: Error during sending. Data discarded.");
+		LOG_WARN("tcpspp: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 
@@ -434,7 +440,7 @@ static enum ud3tn_result tcpspp_init(
 	config->base.service = strdup(service);
 
 	if (!config->base.node || !config->base.service) {
-		LOG("tcpspp: Failed to copy node/service identifiers!");
+		LOG_ERROR("tcpspp: Failed to copy node/service identifiers!");
 		goto fail_node_service;
 	}
 
@@ -449,14 +455,14 @@ static enum ud3tn_result tcpspp_init(
 
 	config->spp_ctx = spp_new_context();
 	if (!spp_configure_ancillary_data(config->spp_ctx, 0)) {
-		LOG("tcpspp: Failed to configure ancillary data size!");
+		LOG_ERROR("tcpspp: Failed to configure ancillary data size!");
 		goto fail_ctx;
 	}
 
 	if (CLA_TCPSPP_USE_CRC)
-		LOG("tcpspp: Using CRC16-CCITT-FALSE.");
+		LOG_INFO("tcpspp: Using CRC16-CCITT-FALSE.");
 	else
-		LOG("tcpspp: Not using CRC.");
+		LOG_INFO("tcpspp: Not using CRC.");
 
 	if (have_timecode) {
 		config->spp_timecode.with_p_field =
@@ -465,18 +471,18 @@ static enum ud3tn_result tcpspp_init(
 			&config->spp_timecode,
 			&preamble[0], sizeof(preamble)) != 0) {
 			/* preamble uses unknown format */
-			LOG("tcpspp: Failed to configure timecode!");
+			LOG_ERROR("tcpspp: Failed to configure timecode!");
 			goto fail_ctx;
 		} else if (!spp_configure_timecode(
 			config->spp_ctx,
 			&config->spp_timecode)) {
 			/* this can’t actually fail atm, but may in the future
 			 */
-			LOG("tcpspp: Failed to apply timecode!");
+			LOG_ERROR("tcpspp: Failed to apply timecode!");
 			goto fail_ctx;
 		}
 	} else {
-		LOG("tcpspp: Not using timecode.");
+		LOG_INFO("tcpspp: Not using timecode.");
 	}
 
 	return UD3TN_OK;
@@ -511,7 +517,7 @@ struct cla_config *tcpspp_create(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (option_count < 2 || option_count > 4) {
-		LOG("tcpspp: Options format is: <IP>,<PORT>,[<TCP_ACTIVE>[,<APID>]]");
+		LOG_ERROR("tcpspp: Options format is: <IP>,<PORT>,[<TCP_ACTIVE>[,<APID>]]");
 		return NULL;
 	}
 
@@ -519,8 +525,10 @@ struct cla_config *tcpspp_create(
 
 	if (option_count > 2) {
 		if (parse_tcp_active(options[2], &tcp_active) != UD3TN_OK) {
-			LOGF("tcpspp: Could not parse TCP active flag: %s",
-			     options[2]);
+			LOGF_ERROR(
+				"tcpspp: Could not parse TCP active flag: %s",
+				options[2]
+			);
 			return NULL;
 		}
 	}
@@ -529,7 +537,10 @@ struct cla_config *tcpspp_create(
 
 	if (option_count > 3) {
 		if (parse_apid(options[3], &apid) != UD3TN_OK) {
-			LOGF("tcpspp: Could not parse APID: %s", options[3]);
+			LOGF_ERROR(
+				"tcpspp: Could not parse APID: %s",
+				options[3]
+			);
 			return NULL;
 		}
 	}
@@ -537,14 +548,14 @@ struct cla_config *tcpspp_create(
 	struct tcpspp_config *config = malloc(sizeof(struct tcpspp_config));
 
 	if (config == NULL) {
-		LOG("tcpspp: Memory allocation failed!");
+		LOG_ERROR("tcpspp: Memory allocation failed!");
 		return NULL;
 	}
 
 	if (tcpspp_init(config, options[0], options[1], tcp_active, apid,
 			bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("tcpspp: Initialization failed!");
+		LOG_ERROR("tcpspp: Initialization failed!");
 		return NULL;
 	}
 

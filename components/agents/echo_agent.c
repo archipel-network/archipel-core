@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "agents/echo_agent.h"
 
+#include "platform/hal_io.h"
 #include "platform/hal_time.h"
 
 #include "ud3tn/agent_util.h"
@@ -42,6 +43,11 @@ static void callback(struct bundle_adu data, void *p, const void *bp_context)
 	const uint64_t seqnum = allocate_sequence_number(
 		params,
 		time_ms
+	);
+
+	LOGF_DEBUG(
+		"Echo Agent: Responding to echo request from %s.",
+		data.source
 	);
 
 	agent_create_forward_bundle_direct(
