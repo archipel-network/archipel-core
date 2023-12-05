@@ -248,7 +248,7 @@ hdtn-interoperability-test:
 dtn7-interoperability-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/dtn7-interop:0.19.0
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/dtn7-interop:0.19.0-732d1a0
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
         - cd /ud3tn_build
