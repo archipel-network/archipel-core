@@ -410,19 +410,6 @@ unit-test-valgrind:
         - make unittest-posix
         - valgrind --leak-check=no --error-exitcode=1 build/posix/testud3tn
 
-build-valgrind-memory-check:
-    stage: functional_test
-    when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
-    script:
-        - make posix
-        - rm -f ./ud3tn.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn & UD3TN_PID=$!
-        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
-        - kill -TERM $UD3TN_PID
-        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
-        - wait $UD3TN_PID
-
 integration-test-valgrind-memory-check:
     stage: functional_test
     when: always
