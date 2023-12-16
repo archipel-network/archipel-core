@@ -131,6 +131,17 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle, char* previous_
 		LOGF("TX: Bundle %p age block update failed!", bundle);
 }
 
+char* filecla_get_cla_addr_from_contact(struct filecla_contact* contact) {
+	const char* name = contact->cla_config->base.vtable->cla_name_get();
+	const char* path = contact->folder;
+
+	size_t result_len = strlen(name) + 1 + strlen(path) + 1;
+	char* result = malloc(sizeof(char) * result_len);
+	snprintf(result, result_len, "%s:%s", name, path);
+	result[result_len - 1] = '\0'; // Ensure last char is \0 event if sprintf overflows
+	return result;
+}
+
 static void transmission_task(
 	void* param ){
 	struct filecla_contact* contact = (struct filecla_contact*) param;
@@ -189,13 +200,29 @@ static void transmission_task(
 			FILE *f = fopen(filename, "w");
 			if(f == NULL){
 				LOGF("FileCLA : Failed to open file %s in write mode",filename);
-				// BUG should notify system to keep bundle
+				bundle_processor_inform(
+					config->signaling_queue,
+					bundle,
+					BP_SIGNAL_TRANSMISSION_FAILURE,
+					filecla_get_cla_addr_from_contact(contact),
+					NULL,
+					NULL,
+					NULL
+					);
 			} else {
 				prepare_bundle_for_forwarding(bundle, config->local_eid);
 				bundle_serialize(bundle, write_to_file, f);
 				fclose(f);
-
 				LOGF("FileCLA : Bundle written in %s",filename);
+				bundle_processor_inform(
+					config->signaling_queue,
+					bundle,
+					BP_SIGNAL_TRANSMISSION_SUCCESS,
+					filecla_get_cla_addr_from_contact(contact),
+					NULL,
+					NULL,
+					NULL
+					);
 			}
 
 			free(filename);
@@ -357,6 +384,16 @@ static void watching_task(
 			closedir(f);
 		} else {
 			LOGF("FileCLA : Unable to open directory %s", folder);
+			bundle_processor_inform(
+				contact->cla_config->signaling_queue,
+				NULL,
+				BP_SIGNAL_LINK_DOWN,
+				filecla_get_cla_addr_from_contact(contact),
+				NULL,
+				NULL,
+				NULL
+				);
+			break;
 		}
 
 		hal_task_delay(FILECLA_FOLDER_WATCHING_DELAY);
