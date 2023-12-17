@@ -139,7 +139,7 @@ static inline void bundle_rem_rc(struct bundle *bundle,
 static void handle_link_down(
 	const struct bp_context *const ctx, const char* peer_cla_addr
 	);
-#ifndef
+#endif
 
 static void wake_up_contact_manager(QueueIdentifier_t cm_queue,
 				    enum contact_manager_signal cm_signal);
