@@ -313,6 +313,7 @@ static void watching_task(
 	{
 		hal_semaphore_take_blocking(continue_trigger->semaphore);
 		if(!continue_trigger->trigger){
+			contact->should_continue = NULL;
 			hal_semaphore_release(continue_trigger->semaphore);
 			break;
 		}
@@ -384,6 +385,7 @@ static void watching_task(
 
 			closedir(f);
 		} else {
+			contact->should_continue = NULL;
 			LOGF("FileCLA : Unable to open directory %s", folder);
 			bundle_processor_inform(
 				contact->cla_config->signaling_queue,
@@ -496,11 +498,13 @@ static enum ud3tn_result filecla_end_scheduled_contact(
 			c->tx_queue.tx_queue_handle, 
 			&((struct cla_contact_tx_task_command) { TX_COMMAND_FINALIZE, NULL, NULL })
 		);
-		
-		// Turn continue trigger off for watching task
-		hal_semaphore_take_blocking(c->should_continue->semaphore);
-		c->should_continue->trigger = false;
-		hal_semaphore_release(c->should_continue->semaphore);
+
+		if(c->should_continue != NULL){
+			// Turn continue trigger off for watching task
+			hal_semaphore_take_blocking(c->should_continue->semaphore);
+			c->should_continue->trigger = false;
+			hal_semaphore_release(c->should_continue->semaphore);
+		}
 
 		free(c->eid);
 		free(c->folder);

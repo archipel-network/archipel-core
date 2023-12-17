@@ -135,6 +135,12 @@ static inline void bundle_rem_rc(struct bundle *bundle,
 		bundle_discard(bundle);
 }
 
+#ifdef ARCHIPEL_CORE
+static void handle_link_down(
+	const struct bp_context *const ctx, const char* peer_cla_addr
+	);
+#ifndef
+
 static void wake_up_contact_manager(QueueIdentifier_t cm_queue,
 				    enum contact_manager_signal cm_signal);
 static void bundle_resched_func(struct bundle *bundle, const void *ctx);
@@ -390,7 +396,10 @@ static inline void handle_signal(
 		);
 		break;
 	case BP_SIGNAL_LINK_DOWN:
-		// XXX: We do not use the provided CLA address.
+		#ifdef ARCHIPEL_CORE
+		// Disable current contact on first down link
+		handle_link_down(ctx, signal.peer_cla_addr);
+		#endif
 		free(signal.peer_cla_addr);
 		break;
 	case BP_SIGNAL_CONTACT_OVER:
@@ -402,6 +411,33 @@ static inline void handle_signal(
 		break;
 	}
 }
+
+#ifdef ARCHIPEL_CORE
+static void handle_link_down(
+	const struct bp_context *const ctx, const char* peer_cla_addr
+	) {
+
+	struct contact_list* c = (*routing_table_get_raw_contact_list_ptr());
+	do {
+		if(c->data != NULL){
+			if(	c->data->active && 
+				strcmp(c->data->node->cla_addr, peer_cla_addr) == 0
+				){
+					break;
+			}
+		}
+	} while(c->next != NULL && (c = c->next) != NULL);
+
+	if(c != NULL){
+		LOGF("BundleProcessor: Link down on %s, disabling contact...", peer_cla_addr);
+		c->data->to_ms = hal_time_get_timestamp_ms();
+		wake_up_contact_manager(
+			ctx->cm_param.control_queue,
+			CM_SIGNAL_UPDATE_CONTACT_LIST
+		);
+	}
+}
+#endif
 
 static void handle_contact_over(
 	const struct bp_context *const ctx, struct contact *contact)
@@ -520,6 +556,8 @@ static void bundle_forwarding_contraindicated(
 				break;
 			case BUNDLE_SR_REASON_TRANSMISSION_CANCELED:
 				LOGF("BundleProcessor: Transmission cancelled for bundle %p", bundle);
+				break;
+			default:
 				break;
 		}
 
