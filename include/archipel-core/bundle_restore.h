@@ -1,3 +1,5 @@
+#ifdef ARCHIPEL_CORE
+
 #ifndef ARCHIPELC_BUNDLE_RESTORE_H
 #define ARCHIPELC_BUNDLE_RESTORE_H
 
@@ -27,4 +29,5 @@ enum ud3tn_result bundle_restore_for_destination(
     const char* destination
 );
 
+#endif
 #endif

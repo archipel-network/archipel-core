@@ -17,7 +17,9 @@ struct ud3tn_cmdline_options {
 	bool exit_immediately; // after parsing --help or --usage etc.
 	uint64_t mbs; // maximum bundle size
 	uint64_t lifetime_s;
+	#ifdef ARCHIPEL_CORE
 	char *store_folder; // e.g.: /var/cache/archipel-core/
+	#endif
 };
 
 const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[]);

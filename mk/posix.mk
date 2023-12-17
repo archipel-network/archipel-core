@@ -11,6 +11,8 @@ CPU ?=
 
 CPPFLAGS += -DPLATFORM_POSIX -pipe -fPIC
 
+CPPFLAGS += -DARCHIPEL_CORE
+
 ifdef ARCH
   CPPFLAGS += -march=$(ARCH)
 else

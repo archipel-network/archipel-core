@@ -1,3 +1,4 @@
+#ifdef ARCHIPEL_CORE
 #include "archipel-core/bundle_restore.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_io.h"
@@ -55,3 +56,4 @@ enum ud3tn_result bundle_restore_for_destination(
     };
     return hal_queue_try_push_to_back(restore_queue, &signal, -1);
 }
+#endif

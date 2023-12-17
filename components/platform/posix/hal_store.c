@@ -22,6 +22,8 @@
 #include <dirent.h>
 #include <inttypes.h>
 
+#ifdef ARCHIPEL_CORE
+
 #define SEQUENCE_NUMBER_KEY "sequence_number"
 
 struct posix_bundle_store {
@@ -360,3 +362,5 @@ uint64_t hal_store_get_uint64_value(
     free(filepath);
     return value;
 }
+
+#endif

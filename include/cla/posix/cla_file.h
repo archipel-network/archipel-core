@@ -1,3 +1,4 @@
+#ifdef ARCHIPEL_CORE
 #ifndef CLA_FILE
 #define CLA_FILE
 
@@ -12,3 +13,4 @@ struct cla_config *filecla_create(
 	const struct bundle_agent_interface *bundle_agent_interface);
 
 #endif // CLA_FILE
+#endif

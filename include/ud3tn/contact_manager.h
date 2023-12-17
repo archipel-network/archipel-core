@@ -25,7 +25,10 @@ enum contact_manager_signal {
 
 struct contact_manager_params contact_manager_start(
 	QueueIdentifier_t bp_queue,
-	struct contact_list **clistptr,
-	QueueIdentifier_t bundle_restore_queue);
+	struct contact_list **clistptr
+	#ifdef ARCHIPEL_CORE
+	,QueueIdentifier_t bundle_restore_queue
+	#endif
+);
 
 #endif /* CONTACTMANAGER_H_INCLUDED */

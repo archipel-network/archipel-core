@@ -49,8 +49,10 @@ struct bundle_processor_task_parameters {
 	const char *local_eid;
 	bool status_reporting;
 	bool allow_remote_configuration;
+	#ifdef ARCHIPEL_CORE
 	struct bundle_store* bundle_store;
 	QueueIdentifier_t bundle_restore_queue;
+	#endif
 };
 
 void bundle_processor_inform(

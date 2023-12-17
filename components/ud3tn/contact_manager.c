@@ -27,7 +27,9 @@ struct contact_manager_task_parameters {
 	QueueIdentifier_t control_queue;
 	QueueIdentifier_t bp_queue;
 	struct contact_list **contact_list_ptr;
+	#ifdef ARCHIPEL_CORE
 	QueueIdentifier_t restore_queue;
+	#endif
 };
 
 struct contact_info {
@@ -40,7 +42,9 @@ struct contact_manager_context {
 	struct contact_info current_contacts[MAX_CONCURRENT_CONTACTS];
 	int8_t current_contact_count;
 	uint64_t next_contact_time_ms;
+	#ifdef ARCHIPEL_CORE
 	QueueIdentifier_t bundle_restore_queue;
+	#endif
 };
 
 static bool contact_active(
@@ -302,9 +306,11 @@ static uint8_t check_for_contacts(
 			);
 		}
 
+		#ifdef ARCHIPEL_CORE
 		bundle_restore_for_destination(
 			ctx->bundle_restore_queue,
 			added_contacts[i].eid);
+		#endif
 	}
 	for (i = 0; i < removed_count; i++) {
 		LOGF("ContactManager: Scheduled contact with \"%s\" ended (%p).",
@@ -382,7 +388,9 @@ static void contact_manager_task(void *cm_parameters)
 	struct contact_manager_context ctx = {
 		.current_contact_count = 0,
 		.next_contact_time_ms = UINT64_MAX,
+		#ifdef ARCHIPEL_CORE
 		.bundle_restore_queue = parameters->restore_queue
+		#endif
 	};
 
 	if (!parameters) {
@@ -427,8 +435,11 @@ static void contact_manager_task(void *cm_parameters)
 
 struct contact_manager_params contact_manager_start(
 	QueueIdentifier_t bp_queue,
-	struct contact_list **clistptr,
-	QueueIdentifier_t bundle_restore_queue)
+	struct contact_list **clistptr
+	#ifdef ARCHIPEL_CORE
+	,QueueIdentifier_t bundle_restore_queue
+	#endif
+	)
 {
 	struct contact_manager_params ret = {
 		.task_creation_result = UD3TN_FAIL,
@@ -457,7 +468,9 @@ struct contact_manager_params contact_manager_start(
 	cmt_params->control_queue = queue;
 	cmt_params->bp_queue = bp_queue;
 	cmt_params->contact_list_ptr = clistptr;
+	#ifdef ARCHIPEL_CORE
 	cmt_params->restore_queue = bundle_restore_queue;
+	#endif
 	ret.task_creation_result = hal_task_create(
 		contact_manager_task,
 		"cont_man_t",

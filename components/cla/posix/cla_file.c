@@ -1,3 +1,4 @@
+#ifdef ARCHIPEL_CORE
 #include "cla/mtcp_proto.h"
 #include "cla/posix/cla_file.h"
 
@@ -513,3 +514,4 @@ struct cla_config *filecla_create(
 
 	return ((struct cla_config *) config);
 }
+#endif

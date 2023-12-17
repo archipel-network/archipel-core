@@ -266,7 +266,9 @@ void bundle_processor_task(void * const param)
 		.status_reporting = p->status_reporting,
 		.reassembly_list = NULL,
 		.known_bundle_list = NULL,
+		#ifdef ARCHIPEL_CORE
 		.store = p->bundle_store,
+		#endif
 	};
 
 	ASSERT(strlen(ctx.local_eid) > 3);
@@ -296,11 +298,21 @@ void bundle_processor_task(void * const param)
 	/* Init routing tables */
 	ASSERT(routing_table_init() == UD3TN_OK);
 	/* Start contact manager */
+
+	#ifdef ARCHIPEL_CORE
 	ctx.cm_param = contact_manager_start(
 		p->signaling_queue,
 		routing_table_get_raw_contact_list_ptr(),
 		p->bundle_restore_queue
 		);
+	#endif
+	#ifndef ARCHIPEL_CORE
+	ctx.cm_param = contact_manager_start(
+		p->signaling_queue,
+		routing_table_get_raw_contact_list_ptr()
+		);
+	#endif
+
 	if (ctx.cm_param.task_creation_result != UD3TN_OK) {
 		LOG("BundleProcessor: Contact manager could not be initialized!");
 		ASSERT(false);
@@ -496,6 +508,7 @@ static void bundle_forwarding_contraindicated(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
+	#ifdef ARCHIPEL_CORE
 	if(reason == BUNDLE_SR_REASON_NO_KNOWN_ROUTE){
 
 		LOGF("BundleProcessor: No route found for %s", bundle->destination);
@@ -515,7 +528,13 @@ static void bundle_forwarding_contraindicated(
 		/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
 		/* 5.4.1-2 (b): Will not be handled */
 	
-	}	
+	}
+	#endif
+	#ifndef ARCHIPEL_CORE
+		bundle_forwarding_failed(ctx, bundle, reason);
+		/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
+		/* 5.4.1-2 (b): Will not be handled */
+	#endif
 }
 
 /* 5.4.2 */

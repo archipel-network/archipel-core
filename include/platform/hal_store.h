@@ -1,3 +1,4 @@
+#ifdef ARCHIPEL_CORE
 #ifndef HAL_STORE_H_INCLUDED
 #define HAL_STORE_H_INCLUDED
 
@@ -69,3 +70,4 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* popseq);
 void hal_store_popseq_free(struct bundle_store_popseq* popseq); 
 
 #endif /* HAL_STORE_H_INCLUDED */
+#endif /* ARCHIPEL_CORE */

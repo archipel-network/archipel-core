@@ -67,6 +67,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		exit(EXIT_FAILURE);
 	}
 
+	#ifdef ARCHIPEL_CORE
 	/* Initialize persistance store */
 	struct bundle_store* bundle_store = hal_store_init(opt->store_folder);
 	if(bundle_store == NULL){
@@ -98,6 +99,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		LOG("INIT: Bundle restore task could not be started!");
 		exit(EXIT_FAILURE);
 	}
+	#endif
 
 
 	struct bundle_processor_task_parameters *bundle_processor_task_params
@@ -115,10 +117,12 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 			opt->status_reporting;
 	bundle_processor_task_params->allow_remote_configuration =
 			opt->allow_remote_configuration;
+	#ifdef ARCHIPEL_CORE
 	bundle_processor_task_params->bundle_store =
 			bundle_store;
 	bundle_processor_task_params->bundle_restore_queue =
 			bundle_restore_task_config->restore_queue;
+	#endif
 
 	// NOTE: Must be called before launching the BP which calls the function
 	// to register agents from its thread.

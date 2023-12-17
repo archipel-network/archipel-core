@@ -55,7 +55,9 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->allow_remote_configuration = false;
 	result->exit_immediately = false;
 	result->lifetime_s = DEFAULT_BUNDLE_LIFETIME_S;
+	#ifdef ARCHIPEL_CORE
 	result->store_folder = strdup("./" DEFAULT_STORE_LOCATION);
+	#endif
 	// The following values cannot be 0
 	result->mbs = 0;
 	// The strings are set afterwards if not provided as an option
@@ -137,6 +139,8 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			}
 			result->aap_socket = strdup(optarg);
 			break;
+		
+		#ifdef ARCHIPEL_CORE
 		case 'S':
 			if (!optarg || strlen(optarg) < 1) {
 				LOG("Invalid store folder path provided!");
@@ -144,6 +148,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			}
 			result->store_folder = strdup(optarg);
 			break;
+		#endif
 		case 'u':
 			print_usage_text();
 			result->exit_immediately = true;
@@ -222,7 +227,9 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--status-reports", "-r"},
 		{"--allow-remote-config", "-R"},
 		{"--usage", "-u"},
+		#ifdef ARCHIPEL_CORE
 		{"--store", "-S"},
+		#endif
 	};
 
 	const unsigned long aliases_count = sizeof(aliases) / sizeof(*aliases);
@@ -246,7 +253,10 @@ static void print_usage_text(void)
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
 		"    [-R, --allow-remote-config]\n"
 		"    [-s PATH --aap-socket PATH]\n"
-		"    [-S PATH --store PATH] [-u, --usage]\n";
+		#ifdef ARCHIPEL_CORE
+		"    [-S PATH --store PATH] [-u, --usage]\n"
+		#endif
+		;
 
 	hal_io_message_printf(usage_text);
 }
@@ -269,7 +279,9 @@ static void print_help_text(void)
 		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
 		"  -u, --usage                 print usage summary and exit\n"
+		#ifdef ARCHIPEL_CORE
 		"  -S, --store PATH            folder to store persisted bundles in\n"
+		#endif
 		"\n"
 		"Default invocation: ud3tn \\\n"
 		"  -b " STR(DEFAULT_BUNDLE_VERSION) " \\\n"
@@ -278,7 +290,9 @@ static void print_help_text(void)
 		"  -l " STR(DEFAULT_BUNDLE_LIFETIME) " \\\n"
 		"  -m %lu \\\n"
 		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\\\n"
+		#ifdef ARCHIPEL_CORE
 		"  -S $PWD/" DEFAULT_STORE_LOCATION "\n"
+		#endif
 		"\n"
 		"Please report bugs to <contact@d3tn.com>.\n";
 

@@ -42,7 +42,9 @@ const struct available_cla_list_entry AVAILABLE_CLAS[] = {
 	{ "tcpclv3", &tcpclv3_create },
 	{ "tcpspp", &tcpspp_create },
 	{ "bibe", &bibe_create },
+	#ifdef ARCHIPEL_CORE
 	{ "file", &filecla_create },
+	#endif
 };
 
 
