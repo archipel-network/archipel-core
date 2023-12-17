@@ -509,9 +509,19 @@ static void bundle_forwarding_contraindicated(
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
 	#ifdef ARCHIPEL_CORE
-	if(reason == BUNDLE_SR_REASON_NO_KNOWN_ROUTE){
+	if(
+		reason == BUNDLE_SR_REASON_NO_KNOWN_ROUTE ||
+		reason == BUNDLE_SR_REASON_TRANSMISSION_CANCELED
+	){
 
-		LOGF("BundleProcessor: No route found for %s", bundle->destination);
+		switch(reason){
+			case BUNDLE_SR_REASON_NO_KNOWN_ROUTE:
+				LOGF("BundleProcessor: No route found for %s", bundle->destination);
+				break;
+			case BUNDLE_SR_REASON_TRANSMISSION_CANCELED:
+				LOGF("BundleProcessor: Transmission cancelled for bundle %p", bundle);
+				break;
+		}
 
 		enum ud3tn_result result = hal_store_bundle(ctx->store, bundle);
 		if(result != UD3TN_OK) {
