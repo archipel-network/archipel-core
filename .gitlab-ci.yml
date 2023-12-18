@@ -77,6 +77,24 @@ build-freebsd:
     script:
         - gmake werror=yes verbose=yes
 
+build-library:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - rm -f ./ud3tn.socket
+        - make posix-lib
+        - gcc -I include/ -c components/daemon/main.c
+        - gcc -o ud3tn -L. main.o -l:build/posix/libud3tn.so
+        - ./ud3tn --allow-remote-config &
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - pytest test/integration
+
 unit-test-posix-debug:
     stage: functional_test
     when: always
