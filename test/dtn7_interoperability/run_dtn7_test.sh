@@ -57,12 +57,12 @@ trap exit_handler EXIT
 
 # Start first uD3TN instance (uD3TN1)
 echo "Starting first uD3TN instance ..."
-"$UD3TN_DIR/build/posix/ud3tn" --eid "$UD3TN1_EID" --bp-version "$BP_VERSION" --aap-port 4242 --cla "mtcp:127.0.0.1,4224" > /tmp/ud3tn1.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" --eid "$UD3TN1_EID" --bp-version "$BP_VERSION" --aap-port 4242 -S "$UD3TN_DIR/ud3tn1.aap2.socket" --cla "mtcp:127.0.0.1,4224" > /tmp/ud3tn1.log 2>&1 &
 UD3TN1_PID=$!
 
 # Start second uD3TN instance (uD3TN2)
 echo "Starting second uD3TN instance ..."
-"$UD3TN_DIR/build/posix/ud3tn" --eid "$UD3TN2_EID" --bp-version "$BP_VERSION" --aap-port 4243 --cla "mtcp:127.0.0.1,4225" > /tmp/ud3tn2.log 2>&1 &
+"$UD3TN_DIR/build/posix/ud3tn" --eid "$UD3TN2_EID" --bp-version "$BP_VERSION" --aap-port 4243 -S "$UD3TN_DIR/ud3tn2.aap2.socket" --cla "mtcp:127.0.0.1,4225" > /tmp/ud3tn2.log 2>&1 &
 UD3TN2_PID=$!
 
 # Start DTN7 instance (along with contact to uD3TN1 via config file for later use)
