@@ -319,6 +319,7 @@ mtcp-test:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! nc -z localhost 4224; do sleep 0.1; done
         - python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
         - sleep 0.2
