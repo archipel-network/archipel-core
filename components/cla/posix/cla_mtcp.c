@@ -30,6 +30,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+static const char *CLA_NAME = "mtcp";
+
 struct mtcp_config {
 	struct cla_tcp_config base;
 
@@ -187,7 +189,7 @@ static void launch_connection_management_task(
 	if (sock < 0) {
 		contact_params->cla_sock_addr = cla_get_connect_addr(
 			cla_addr,
-			"mtcp"
+			CLA_NAME
 		);
 
 		if (!contact_params->cla_sock_addr) {
@@ -306,7 +308,7 @@ static enum ud3tn_result mtcp_launch(struct cla_config *const config)
 
 static const char *mtcp_name_get(void)
 {
-	return "mtcp";
+	return CLA_NAME;
 }
 
 size_t mtcp_mbs_get(struct cla_config *const config)
@@ -387,7 +389,7 @@ static struct mtcp_contact_parameters *get_contact_parameters(
 {
 	struct mtcp_config *const mtcp_config =
 		(struct mtcp_config *)config;
-	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "mtcp");
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 	if (!cla_sock_addr) {
 		LOG_WARN("MTCP: Invalid address");

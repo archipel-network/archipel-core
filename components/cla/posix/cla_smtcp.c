@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+static const char *CLA_NAME = "smtcp";
 
 static void smtcp_link_creation_task(void *param)
 {
@@ -57,7 +58,7 @@ static enum ud3tn_result smtcp_launch(struct cla_config *const config)
 
 static const char *smtcp_name_get(void)
 {
-	return "smtcp";
+	return CLA_NAME;
 }
 
 const struct cla_vtable smtcp_vtable = {

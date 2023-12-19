@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const char *CLA_NAME = "bibe";
+
 struct bibe_config {
 	struct cla_tcp_config base;
 
@@ -236,7 +238,7 @@ static void launch_connection_management_task(
 	contact_params->config = bibe_config;
 	contact_params->connect_attempt = 0;
 
-	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 	if (!cla_sock_addr) {
 		LOG_WARN("BIBE: Invalid address");
@@ -323,7 +325,7 @@ static enum ud3tn_result bibe_launch(struct cla_config *const config)
 
 static const char *bibe_name_get(void)
 {
-	return "bibe";
+	return CLA_NAME;
 }
 
 size_t bibe_mbs_get(struct cla_config *const config)
@@ -408,7 +410,7 @@ static struct bibe_contact_parameters *get_contact_parameters(
 {
 	struct bibe_config *const bibe_config =
 		(struct bibe_config *)config;
-	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 	if (!cla_sock_addr) {
 		LOG_WARN("BIBE: Invalid address");

@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
+static const char *CLA_NAME = "tcpspp";
+
 // Buffer size for serialization
 #define MAX_SPP_HEADER_SIZE 32
 
@@ -97,7 +99,7 @@ static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
 
 static const char *tcpspp_get_name(void)
 {
-	return "tcpspp";
+	return CLA_NAME;
 }
 
 
