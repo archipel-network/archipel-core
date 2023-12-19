@@ -5,7 +5,9 @@ Though µD3TN is easily portable to further platforms, we currently support only
 
 ![](doc/overview.svg)
 
-A general introduction of µD3TN is available at its project web site at https://d3tn.com/ud3tn.html. µD3TN currently implements:
+A general introduction of µD3TN is available on its project web site at https://d3tn.com/ud3tn.html and in [our video series on YouTube](https://www.youtube.com/watch?v=ETs_BgazRJI&list=PLED8xrzySss-B2966X98dwLLb1BJQu6Ua).
+
+µD3TN currently implements:
 
 - Bundle Protocol version 6 ([RFC 5050](https://datatracker.ietf.org/doc/html/rfc5050)),
 - Bundle Protocol version 7 ([draft version 31](https://datatracker.ietf.org/doc/html/draft-ietf-dtn-bpbis-31)),
