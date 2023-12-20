@@ -1,0 +1,157 @@
+Next Release (v0.13.0)
+----------------------
+
+- Preview version of AAP 2.0 - a new Protobuf-based application interface, with Python tooling equivalent to the AAP 1.0 tools provided in tools/aap2; see doc/aap20.md
+- Added a "data decoder" that can be built using `make data-decoder` and allows for inspecting captured bundles and CLA packets as well as running fuzz testing on the parsers
+- Support for local node IDs not containing a terminating slash (dtn scheme) or a service number (ipn scheme)
+- Moved all compile-time configuration options to config.mk with examples and defaults documented in config.mk.example
+- Introduce configurable log levels - you can now select how verbose the output should be and debug log messages are disabled at compile time for more performant release builds
+- Improved rate limiting for outgoing CLA connections that now also works when operating over SSH tunnels
+- Improved interoperability testing, including tests against HDTN and DTN7-rs
+- Improved static analysis, including automated execution of cppcheck
+- Added a Nix Flake definition and a Nix-based development environment
+- Automated testing on macOS and FreeBSD
+- Pinning of Python dependencies to ensure a deterministic Python environment
+- Several small bug fixes, more tests, and general improvements
+
+v0.12.0 "Loki"
+--------------
+
+- macOS support
+- FreeBSD support
+- ARM and ARM-64 support with Clang and GCC compilers
+- improved interoperability testing with ION 3.7 and 4.1 plus IONe and added documentation for it
+- substantial improvements of the test toolchain, including a Docker image with all dependencies, static analysis, and support for sanitizers
+- aap_echo and aap_ping utilities plus a built-in echo agent to realize basic reachability and latency tests
+- transparent delivery of the bundle creation timestamp to applications via the AAP bundle identifier
+- CBHE (RFC 6260) support for incoming BPv6 bundles
+- improved IPv6 support
+- removal of the unused STM32 target
+- lots of further bug fixes and improvements, internal simplifications, and cleanups
+
+v0.11.0 "Kerwan"
+----------------
+
+- Implement Bundle-in-Bundle Encapsulation convergence layer (in this initial version without custody transfer features)
+- Add proper support for the `ipn:` EID scheme (BPv7 and BPv6 without CBHE)
+- Enable contacts with "infinite" capacity (long-running, high-data-rate contacts where the capacity does not matter anymore are considered to allow for infinite bundles)
+- Add a simple bundle forwarding stress test
+- Make the remote configuration capability a command line flag
+- Fix build of `libud3tn.so` shared library
+- Fix EID validation being too permissive
+- Update license: µD3TN is now additionally provided under the Apache 2.0 license
+
+v0.10.0 "Juliet"
+----------------
+
+- Disallow remote configuration: Config bundles are only accepted via AAP
+- BPv7 compatibility:
+    - Millisecond-based timestamps
+    - Support of Bundle Age extension block
+    - Drop previous node block (unsupported by µD3TN, but has to be removed according to standard)
+- Add a Docker image
+- Use working directory instead of `/tmp` for AAP socket by default
+- Make it possible to use an RX read timeout for unreliable connections
+- Increase maximum number of fragments
+- Bugfixes and documentation improvements (e.g., README, quick start guide)
+
+v0.9.0 "Imbrium"
+----------------
+
+The changes between µPCN v0.8.0 and this release include:
+
+- GitLab publication and renaming to µD3TN
+- Public Continuous Integration pipeline
+- Separation of Python modules into packages pyD3TN and ud3tn-utils
+- Minor bugfixes and documentation improvements
+
+µPCN v0.8.0 "Himalayas"
+-----------------------
+
+- Updated license information
+- Updated command line parser
+- Replaced TCP socket used for AAP by a UNIX domain socket
+- Support for BPv7 draft version 22
+- ION interopability test for BPv7
+- Updated documentation
+
+µPCN v0.7.0 "Galaxius"
+----------------------
+
+- Modified the overall architecture of the communication subsystem
+- MTCP implementation according to https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-00
+- CLA parameters plus parts of the µPCN configration can be provided as CLI parameters
+- Added support for BPv7 draft version 17 (https://tools.ietf.org/html/draft-ietf-dtn-bpbis-17)
+- IPv6 support for CLAs
+- Removed neighbor discovery approach
+- Support for a DTN application API based on an Application Agent Protocol (AAP)
+- Major refactoring of build system
+- New packet format of STM32 USB CLA made compatible with MTCP
+- Replacement of integration tests by new pyupcn-based toolchain
+- ION interopability test
+
+µPCN v0.6.0 "Falsaron"
+----------------------
+
+In this release, an updated version of the Bundle Protocol version 7 draft specification (draft version 10) is available. Furthermore, the transmission and receive subsystem has been restructured to support various convergence layers.
+
+- Update of the BP-bis implementation to RFC draft version 10 (https://tools.ietf.org/html/draft-ietf-dtn-bpbis-10)
+- Integration of the TCPCL convergence layer
+- Support for the Space Packet Protocol (SPP)
+- Partially project restructuring
+- Various bugfixes
+
+µPCN v0.5.0 "Elysium"
+---------------------
+
+The main goal of this release was to include support for the Bundle protocol version 7 draft specification for testing and evaluation purposes.
+
+- Implementation of the BP-bis draft specification defined by https://tools.ietf.org/html/draft-ietf-dtn-bpbis-06
+- Fixing various bugs after running fuzzing tests
+- Support for FreeRTOS 9
+
+µPCN v0.4.0 "Denali"
+--------------------
+
+The main goal of this release was to port µPCN to the POSIX interface.
+
+- Restructured µPCN to make it work against a generic, platform independent interface
+- Add POSIX support
+- Improved Bundle serialization / throughput
+- Extended test tools
+- Several bug fixes
+
+µPCN v0.3.0 "Caloris"
+---------------------
+
+The main goal of this release was to integrate a contact prediction approach.
+
+- Integrated new version of the Ring Road Neighbor Discovery (RRND)
+- Implemented enhanced contact prediction approach based on RRND and SGP4
+- Restructured GroundStationTask - one Task cares for several ground stations
+- Provided static code analysis (make clang-check)
+- Extended test tools
+- Several bug fixes plus performance improvements
+
+µPCN v0.2.0 "Boösaule"
+----------------------
+
+This release focused on stabilizing the initial release.
+
+- Bugfixing, restructuring and cleanup
+- Added trust handling to the ContactManager
+- Extended test infrastructure (e.g. Denial-of-Service test is available)
+- Implemented zero-copy-approach by using a pointer lookup table for often used data (e.g. EIDs)
+- Increased configurability of µPCN
+- Improved error handling
+
+µPCN v0.1.0 "Aeolis"
+--------------------
+
+- Initial release
+- RFC 5050 conformant bundle protocol version 6 implementation
+- Two-stage routing approach with decision optimization between contacts
+- DTN IP Neighbor Discovery (IPND draft 02) with extensions for RX/TX bitrate,
+  AX.25 CLA address and cookie to protect against DoS attacks
+- Unit test suite and integrated debugging tools (mem management, logging, CPU)
+- Test setup for running pre-defined test scenarios with TCP server
