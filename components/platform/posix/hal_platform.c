@@ -22,10 +22,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#if LINUX_SPECIFIC_API
-#include <malloc.h>
-#endif
-
 static char **restart_args;
 
 static void exit_handler(int signal)
