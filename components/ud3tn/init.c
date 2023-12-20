@@ -94,10 +94,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
-		"bundl_proc_t",
-		BUNDLE_PROCESSOR_TASK_PRIORITY,
-		bundle_processor_task_params,
-		DEFAULT_TASK_STACK_SIZE
+		bundle_processor_task_params
 	);
 
 	if (bp_task_result != UD3TN_OK) {

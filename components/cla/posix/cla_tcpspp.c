@@ -88,10 +88,7 @@ static enum ud3tn_result tcpspp_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		tcpspp_link_creation_task,
-		"spp_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 

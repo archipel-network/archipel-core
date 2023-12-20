@@ -40,13 +40,11 @@ static void *execute_pthread_compat(void *task_description)
 }
 
 enum ud3tn_result hal_task_create(
-	void (*task_function)(void *), const char *task_name,
-	int task_priority, void *task_parameters,
-	size_t task_stack_size)
+	void (*task_function)(void *),
+	void *task_parameters)
 {
 	pthread_t thread;
 
-	struct sched_param param;
 	pthread_attr_t tattr;
 	int error_code;
 	struct task_description *desc = malloc(sizeof(*desc));
@@ -79,15 +77,6 @@ enum ud3tn_result hal_task_create(
 		LOG_ERROR("Thread Creation failed!");
 		goto fail_attr;
 	}
-
-#if LINUX_SPECIFIC_API
-	if (task_name) {
-		if (pthread_setname_np(thread, task_name)) {
-			LOG_ERROR("Could not set thread name!");
-			goto fail_attr;
-		}
-	}
-#endif
 
 	/* destroy the attr-object */
 	pthread_attr_destroy(&tattr);

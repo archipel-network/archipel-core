@@ -468,10 +468,7 @@ struct contact_manager_params contact_manager_start(
 	cmt_params->contact_list_ptr = clistptr;
 	ret.task_creation_result = hal_task_create(
 		contact_manager_task,
-		"cont_man_t",
-		CONTACT_MANAGER_TASK_PRIORITY,
-		cmt_params,
-		CONTACT_MANAGER_TASK_STACK_SIZE
+		cmt_params
 	);
 	if (ret.task_creation_result == UD3TN_OK) {
 		ret.semaphore = semaphore;

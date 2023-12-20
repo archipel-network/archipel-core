@@ -179,10 +179,7 @@ enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 
 	const enum ud3tn_result res = hal_task_create(
 		cla_contact_tx_task,
-		NULL,
-		CONTACT_TX_TASK_PRIORITY,
-		link,
-		CONTACT_TX_TASK_STACK_SIZE
+		link
 	);
 
 	// Not launched, no need to wait for exit.

@@ -284,10 +284,7 @@ static void launch_connection_management_task(
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		bibe_link_management_task,
-		"bibe_mgmt_t",
-		CONTACT_MANAGEMENT_TASK_PRIORITY,
-		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE
+		contact_params
 	);
 
 	if (task_creation_result != UD3TN_OK) {

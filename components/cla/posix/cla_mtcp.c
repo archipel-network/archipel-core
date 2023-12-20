@@ -237,10 +237,7 @@ static void launch_connection_management_task(
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		mtcp_link_management_task,
-		"mtcp_mgmt_t",
-		CONTACT_MANAGEMENT_TASK_PRIORITY,
-		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE
+		contact_params
 	);
 
 	if (task_creation_result != UD3TN_OK) {
@@ -297,10 +294,7 @@ static enum ud3tn_result mtcp_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		mtcp_listener_task,
-		"mtcp_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 

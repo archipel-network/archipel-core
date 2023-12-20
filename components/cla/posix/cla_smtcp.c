@@ -48,10 +48,7 @@ static enum ud3tn_result smtcp_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		smtcp_link_creation_task,
-		"smtcp_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 
