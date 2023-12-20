@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
+static const char *CLA_NAME = "tcpclv3";
 
 struct tcpclv3_config {
 	struct cla_tcp_config base;
@@ -404,7 +405,7 @@ static void launch_connection_management_task(
 
 		contact_params->cla_addr = cla_get_connect_addr(
 			cla_addr,
-			"tcpclv3"
+			CLA_NAME
 		);
 
 		if (!contact_params->cla_addr) {
@@ -537,7 +538,7 @@ static enum ud3tn_result tcpclv3_launch(struct cla_config *const config)
 
 static const char *tcpclv3_name_get(void)
 {
-	return "tcpclv3";
+	return CLA_NAME;
 }
 
 static size_t tcpclv3_mbs_get(struct cla_config *const config)
@@ -609,7 +610,7 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 			// Update CLA address in parameters
 			if (param->cla_addr)
 				free(param->cla_addr);
-			param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
+			param->cla_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 			if (!param->cla_addr) {
 				LOG_WARN("TCPCLv3: Invalid address");
