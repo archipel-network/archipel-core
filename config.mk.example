@@ -138,7 +138,8 @@
 #CPPFLAGS += -DCLA_TCP_ALLOW_REUSE_PORT=0
 
 # Maximum number of attempts to create a connection on contact start.
-#CPPFLAGS += -DCLA_TCP_MAX_RETRY_ATTEMPTS=10
+# The default value of 0 means infinite.
+#CPPFLAGS += -DCLA_TCP_MAX_RETRY_ATTEMPTS=0
 
 # The length of the listen backlog for multi-connection TCP CLAs.
 #CPPFLAGS += -DCLA_TCP_MULTI_BACKLOG=64
