@@ -124,7 +124,7 @@ unit-test-posix-macos:
     when: always
     tags: ["macos"]
     script:
-        - make unittest-posix sanitize-strict=yes
+        - make unittest-posix -j4 sanitize-strict=yes
         - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 gtimeout 60 build/posix/testud3tn
 
 unit-test-posix-freebsd:
