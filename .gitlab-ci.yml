@@ -84,7 +84,7 @@ build-library:
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - make posix-lib
         - gcc -I include/ -c components/daemon/main.c
         - gcc -o ud3tn -L. main.o -l:build/posix/libud3tn.so
@@ -142,7 +142,7 @@ integration-test-posix:
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -161,7 +161,7 @@ integration-test-posix-thread-sanitizer:
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize=thread sanitize-strict=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -180,7 +180,7 @@ integration-test-posix-release:
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release optimize=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - build/posix/ud3tn --allow-remote-config &
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -440,7 +440,7 @@ integration-test-valgrind-memory-check:
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -484,7 +484,7 @@ coverage-test:
         - project_dir="$(pwd)"
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build coverage=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - make unittest-posix coverage=yes
         - timeout 60 build/posix/testud3tn
         - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
