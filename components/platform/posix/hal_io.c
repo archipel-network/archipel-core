@@ -12,12 +12,12 @@
 
 #include "ud3tn/result.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <string.h>
 
 static Semaphore_t log_io_semph;
 
@@ -78,13 +78,14 @@ void hal_io_log_perror(int level, const char *component, const char *file,
 	hal_time_print_log_time_string();
 	fprintf(
 		stderr,
-		"[%s] System error reported in %s: ",
+		"[%s] System error reported in %s - %s: %s [%s:%d]\n",
 		get_log_level_name(level),
-		component
+		component,
+		message,
+		strerror(error),
+		file,
+		line
 	);
-	errno = error;
-	perror(message);
-	fprintf(stderr, " [%s:%d]\n", file, line);
 	fflush(stderr);
 	hal_semaphore_release(log_io_semph);
 }
