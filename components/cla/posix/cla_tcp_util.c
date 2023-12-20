@@ -194,13 +194,13 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 		if (client && connect(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
-			LOG_ERRNO("TCP", "connect()", error_code);
+			LOG_ERRNO_INFO("TCP", "connect()", error_code);
 			close(sock);
 			continue;
 		} else if (!client &&
 			   bind(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
-			LOG_ERRNO("TCP", "bind()", error_code);
+			LOG_ERRNO_INFO("TCP", "bind()", error_code);
 			close(sock);
 			continue;
 		}

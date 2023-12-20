@@ -107,7 +107,7 @@ enum ud3tn_result cla_tcp_read(struct cla_link *link,
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret < 0) {
-		LOG_ERRNO("TCP", "recv()", errno);
+		LOG_ERRNO_INFO("TCP", "recv()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 		return UD3TN_FAIL;
 	} else if (ret == 0) {

@@ -947,7 +947,7 @@ struct aap2_agent_config *aap2_agent_setup(
 	}
 
 	if (listen(config->listen_socket, AAP2_AGENT_BACKLOG) < 0) {
-		LOG_ERRNO(
+		LOG_ERRNO_ERROR(
 			"AAP2Agent",
 			"Error listening on provided address!",
 			errno
