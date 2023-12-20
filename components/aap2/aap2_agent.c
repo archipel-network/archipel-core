@@ -13,7 +13,6 @@
 
 #include "cla/posix/cla_tcp_util.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"

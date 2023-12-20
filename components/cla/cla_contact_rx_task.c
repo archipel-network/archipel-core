@@ -6,7 +6,6 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"

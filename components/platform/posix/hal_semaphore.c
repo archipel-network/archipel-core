@@ -7,7 +7,6 @@
  *
  */
 
-#include "platform/hal_config.h"
 #include "platform/hal_semaphore.h"
 #include "platform/posix/hal_types.h"
 

@@ -7,7 +7,6 @@
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
 #include "platform/hal_queue.h"

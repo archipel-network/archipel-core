@@ -13,7 +13,6 @@
 
 #include "cla/cla.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
 #include "platform/hal_queue.h"
