@@ -71,12 +71,16 @@ int poll_recv_timeout(const int socket_fd, const int timeout)
 			LOG_ERRNO("Socket Util", "poll()", err);
 			return -1;
 		}
-		if ((pollfd[0].revents & POLLERR)) {
+		if (pollfd[0].revents & POLLERR) {
 			LOG_WARN("Socket Util: Socket error (e.g. TCP RST) detected.");
 			return -1;
 		}
 		if (pollfd[0].revents & POLLHUP) {
 			LOG_INFO("Socket Util: The peer closed the connection.");
+			return -1;
+		}
+		if (pollfd[0].revents & POLLNVAL) {
+			LOG_INFO("Socket Util: Connection was not open.");
 			return -1;
 		}
 		if (pollfd[0].revents & POLLIN)
