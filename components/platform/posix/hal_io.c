@@ -71,12 +71,17 @@ int hal_io_log_printf(const int level, const char *const file, const int line,
 	return rc;
 }
 
-void hal_io_log_perror(const char *component, const char *file, int line,
-		       const char *message, int error)
+void hal_io_log_perror(int level, const char *component, const char *file,
+		       int line, const char *message, int error)
 {
 	hal_semaphore_take_blocking(log_io_semph);
 	hal_time_print_log_time_string();
-	fprintf(stderr, "[SYSTEM ERROR] in %s: ", component);
+	fprintf(
+		stderr,
+		"[%s] System error reported in %s: ",
+		get_log_level_name(level),
+		component
+	);
 	errno = error;
 	perror(message);
 	fprintf(stderr, " [%s:%d]\n", file, line);

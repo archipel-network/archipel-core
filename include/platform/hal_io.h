@@ -56,6 +56,7 @@ do { \
 	__typeof__(level) level_ = (level); \
 	if (level_ <= LOG_LEVEL) { \
 		hal_io_log_perror( \
+			level_, \
 			component_, \
 			__FILE__, \
 			(int)(__LINE__), \
@@ -96,13 +97,14 @@ int hal_io_log_printf(int level, const char *file, int line,
 
 /**
  * @brief hal_io_log_perror Log a system error (i.e., saved errno).
+ * @param level The log level - a value between 1 (ERROR) and 4 (DEBUG).
  * @param component The component in which the error occurred, e.g., "Router".
  * @param file The file in which the error occurred.
  * @param line The line in which the error occurred.
  * @param message The message passed to perror().
  * @param error The error number obtained from errno.
  */
-void hal_io_log_perror(const char *component, const char *file, int line,
-		       const char *message, int error);
+void hal_io_log_perror(int level, const char *component, const char *file,
+		       int line, const char *message, int error);
 
 #endif /* HAL_IO_H_INCLUDED */
