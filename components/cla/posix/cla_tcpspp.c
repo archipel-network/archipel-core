@@ -79,9 +79,6 @@ static void tcpspp_link_creation_task(void *param)
 		&tcpspp_config->base,
 		sizeof(struct cla_tcp_link)
 	);
-
-	// Should never get here.
-	abort();
 }
 
 static enum ud3tn_result tcpspp_launch(struct cla_config *const config)

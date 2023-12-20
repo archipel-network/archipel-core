@@ -362,11 +362,17 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 				config->node,
 				config->service
 			);
-			abort();
-			return;
+		} else {
+			cla_tcp_single_listen_task(config, struct_size);
 		}
-		cla_tcp_single_listen_task(config, struct_size);
 	}
+
+	LOGF_ERROR(
+		"TCP: CLA \"%s\" link task terminated.",
+		config->base.base.vtable->cla_name_get()
+	);
+	if (CLA_TCP_ABORT_ON_LINK_TASK_TERMINATION)
+		abort();
 }
 
 int cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config)
