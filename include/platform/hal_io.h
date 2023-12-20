@@ -51,14 +51,24 @@ do { \
 #define LOG_DEBUG(message) ((void)0)
 #endif /* DEBUG */
 
-#define LOG_ERRNO(component_, msg_, errno_) \
-	hal_io_log_perror( \
-		component_, \
-		__FILE__, \
-		(int)(__LINE__), \
-		msg_, \
-		errno_ \
-	)
+#define LOG_ERRNO_GENERIC(level, component_, msg_, errno_) \
+do { \
+	__typeof__(level) level_ = (level); \
+	if (level_ <= LOG_LEVEL) { \
+		hal_io_log_perror( \
+			component_, \
+			__FILE__, \
+			(int)(__LINE__), \
+			msg_, \
+			errno_ \
+		); \
+	} \
+} while (0)
+
+#define LOG_ERRNO_ERROR(...) LOG_ERRNO_GENERIC(1, __VA_ARGS__)
+#define LOG_ERRNO_WARN(...) LOG_ERRNO_GENERIC(2, __VA_ARGS__)
+#define LOG_ERRNO_INFO(...) LOG_ERRNO_GENERIC(3, __VA_ARGS__)
+#define LOG_ERRNO LOG_ERRNO_WARN
 
 /**
  * @brief hal_io_init Initialization of underlying OS/HW for I/O

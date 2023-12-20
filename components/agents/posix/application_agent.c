@@ -604,7 +604,11 @@ struct application_agent_config *application_agent_setup(
 	}
 
 	if (listen(config->listen_socket, APPLICATION_AGENT_BACKLOG) < 0) {
-		LOG_ERROR("AppAgent: Error listening on provided address!");
+		LOG_ERRNO_ERROR(
+			"AppAgent",
+			"Error listening on provided address!",
+			errno
+		);
 		free(config);
 		return NULL;
 	}

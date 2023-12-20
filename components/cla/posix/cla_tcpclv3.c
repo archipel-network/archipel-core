@@ -787,8 +787,7 @@ static void tcpclv3_begin_packet(struct cla_link *link, size_t length, char *cla
 
 	if (tcp_send_all(param->link.connection_socket,
 			 header_buffer, sdnv_len + 1) == -1) {
-		LOG_ERRNO("TCPCLv3", "send(segment_header)",
-			 errno);
+		LOG_ERRNO("TCPCLv3", "send(segment_header)", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
