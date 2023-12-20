@@ -40,9 +40,6 @@ static void smtcp_link_creation_task(void *param)
 		smtcp_config,
 		sizeof(struct mtcp_link)
 	);
-
-	// Should never get here.
-	abort();
 }
 
 static enum ud3tn_result smtcp_launch(struct cla_config *const config)

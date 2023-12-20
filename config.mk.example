@@ -130,12 +130,16 @@
 # Setting this can help when broken records may be part of the incoming data.
 #CPPFLAGS += -DCLA_RX_READ_TIMEOUT=0
 
+# Whether to abort() uD3TN in case a TCP CLA terminates finally.
+#CPPFLAGS += -DCLA_TCP_ABORT_ON_LINK_TASK_TERMINATION=0
+
 # Whether to set SO_REUSEPORT on listening TCP sockets. Note that this may have
 # security implications and it is Linux-/BSD-specific.
 #CPPFLAGS += -DCLA_TCP_ALLOW_REUSE_PORT=0
 
 # Maximum number of attempts to create a connection on contact start.
-#CPPFLAGS += -DCLA_TCP_MAX_RETRY_ATTEMPTS=10
+# The default value of 0 means infinite.
+#CPPFLAGS += -DCLA_TCP_MAX_RETRY_ATTEMPTS=0
 
 # The length of the listen backlog for multi-connection TCP CLAs.
 #CPPFLAGS += -DCLA_TCP_MULTI_BACKLOG=64

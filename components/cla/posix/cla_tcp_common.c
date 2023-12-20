@@ -7,6 +7,7 @@
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "ud3tn/common.h"
 #include "ud3tn/result.h"
@@ -40,6 +41,8 @@ enum ud3tn_result cla_tcp_config_init(
 		return UD3TN_FAIL;
 
 	config->socket = -1;
+	config->last_connection_attempt_ms = 0;
+	config->last_connection_attempt_no = 1;
 
 	return UD3TN_OK;
 }
@@ -294,14 +297,14 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 			config->service
 		);
 
+		if (cla_tcp_rate_limit_connection_attempts(&config->base))
+			break;
 		if (cla_tcp_connect(&config->base,
 				    config->node, config->service) != UD3TN_OK) {
 			LOGF_WARN(
-				"TCP: CLA \"%s\": Connection failed, will retry in %d ms as long as a contact is ongoing.",
-				config->base.base.vtable->cla_name_get(),
-				CLA_TCP_RETRY_INTERVAL_MS
+				"TCP: CLA \"%s\": Connection failed, will retry as long as a contact is ongoing.",
+				config->base.base.vtable->cla_name_get()
 			);
-			hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
 		} else {
 			handle_established_connection(config, NULL,
 						      config->base.socket,
@@ -359,11 +362,58 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 				config->node,
 				config->service
 			);
-			abort();
-			return;
+		} else {
+			cla_tcp_single_listen_task(config, struct_size);
 		}
-		cla_tcp_single_listen_task(config, struct_size);
 	}
+
+	LOGF_ERROR(
+		"TCP: CLA \"%s\" link task terminated.",
+		config->base.base.vtable->cla_name_get()
+	);
+	if (CLA_TCP_ABORT_ON_LINK_TASK_TERMINATION)
+		abort();
+}
+
+int cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config)
+{
+	const uint64_t rt_limit_ms = CLA_TCP_RETRY_INTERVAL_MS;
+	const int rt_max_attempts = CLA_TCP_MAX_RETRY_ATTEMPTS;
+	const uint64_t now_ms = hal_time_get_timestamp_ms();
+
+	if (config->last_connection_attempt_ms + rt_limit_ms > now_ms) {
+		if (rt_max_attempts <= 0) {
+			LOGF_WARN(
+				"TCP: Last connection attempt was less than %llu ms ago, delaying next attempt.",
+				rt_limit_ms
+			);
+		} else {
+			if (config->last_connection_attempt_no >=
+					rt_max_attempts) {
+				LOGF_WARN(
+					"TCP: Final retry %d of %d failed.",
+					config->last_connection_attempt_no,
+					rt_max_attempts
+				);
+				return -1;
+			}
+			LOGF_WARN(
+				"TCP: Last connection attempt %d of %d was less than %llu ms ago, delaying next attempt.",
+				config->last_connection_attempt_no,
+				rt_max_attempts,
+				rt_limit_ms
+			);
+			config->last_connection_attempt_no++;
+		}
+		hal_task_delay(rt_limit_ms);
+		config->last_connection_attempt_ms = (
+			hal_time_get_timestamp_ms()
+		);
+	} else {
+		config->last_connection_attempt_ms = now_ms;
+		config->last_connection_attempt_no = 1;
+	}
+	return 0;
 }
 
 struct cla_tx_queue cla_tcp_single_get_tx_queue(

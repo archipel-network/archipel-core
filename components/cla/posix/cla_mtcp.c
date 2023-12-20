@@ -52,7 +52,6 @@ struct mtcp_contact_parameters {
 
 	bool is_outgoing;
 	bool in_contact;
-	int connect_attempt;
 
 	int socket;
 };
@@ -103,7 +102,6 @@ static void mtcp_link_management_task(void *p)
 		if (param->socket > 0) {
 			// NOTE the following function releases and re-locks sem
 			handle_established_connection(param);
-			param->connect_attempt = 0;
 			param->socket = -1;
 		} else {
 			if (param->cla_sock_addr[0] == '\0') {
@@ -113,31 +111,17 @@ static void mtcp_link_management_task(void *p)
 			ASSERT(param->socket < 0);
 			hal_semaphore_release(param->param_semphr);
 
+			if (cla_tcp_rate_limit_connection_attempts(
+					&param->config->base))
+				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr, // only used by us
 				NULL
 			);
 
 			hal_semaphore_take_blocking(param->param_semphr);
-			if (socket < 0) {
-				if (++param->connect_attempt >
-						CLA_TCP_MAX_RETRY_ATTEMPTS) {
-					LOG_WARN("MTCP: Final retry failed.");
-					break;
-				}
-				LOGF_INFO(
-					"MTCP: Delayed retry %d of %d in %d ms",
-					param->connect_attempt,
-					CLA_TCP_MAX_RETRY_ATTEMPTS,
-					CLA_TCP_RETRY_INTERVAL_MS
-				);
-				hal_semaphore_release(param->param_semphr);
-				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_take_blocking(
-					param->param_semphr
-				);
+			if (socket < 0)
 				continue;
-			}
 			param->socket = socket;
 			LOGF_INFO(
 				"MTCP: Connected successfully to \"%s\"",
@@ -184,7 +168,6 @@ static void launch_connection_management_task(
 	}
 
 	contact_params->config = mtcp_config;
-	contact_params->connect_attempt = 0;
 
 	if (sock < 0) {
 		contact_params->cla_sock_addr = cla_get_connect_addr(
