@@ -7,11 +7,6 @@
  *
  */
 
-/* enable linux features when linux OS */
-#if linux
-#define _GNU_SOURCE
-#endif
-
 #include "ud3tn/common.h"
 
 #include "platform/hal_config.h"
@@ -68,35 +63,9 @@ enum ud3tn_result hal_task_create(
 		goto fail;
 	}
 
-	/* set the scheduling policy */
-	if (pthread_attr_setschedpolicy(&tattr, SCHED_RR)) {
-		/* abort if error occurs */
-		LOG_ERROR("Setting the scheduling policy failed!");
-		goto fail_attr;
-	}
-
 	/* Create thread in detached state, so that no cleanup is necessary */
 	if (pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED)) {
 		LOG_ERROR("Setting detached state failed!");
-		goto fail_attr;
-	}
-
-	/* set the scheduling priority (just use the absolute minimum and add */
-	/* the given priority */
-	param.sched_priority = sched_get_priority_min(SCHED_RR) +
-			task_priority;
-	if (pthread_attr_setschedparam(&tattr, &param)) {
-		/* abort if error occurs */
-		LOG_ERROR("Setting the scheduling priority failed!");
-		goto fail_attr;
-	}
-
-	/* update the stack size of the thread (only if greater than 0, */
-	/* otherwise set stack size to the default value */
-	if (task_stack_size != 0 &&
-			pthread_attr_setstacksize(&tattr, task_stack_size)) {
-		/* abort if error occurs */
-		LOG_ERROR("Setting the tasks stack size failed! Wrong value!");
 		goto fail_attr;
 	}
 
