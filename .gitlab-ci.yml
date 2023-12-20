@@ -93,6 +93,7 @@ build-library:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
 
 unit-test-posix-debug:
@@ -147,6 +148,7 @@ integration-test-posix:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -165,6 +167,7 @@ integration-test-posix-thread-sanitizer:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -183,6 +186,7 @@ integration-test-posix-release:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
 
 integration-test-posix-arm64:
@@ -315,6 +319,7 @@ mtcp-test:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! nc -z localhost 4224; do sleep 0.1; done
         - python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
         - sleep 0.2
@@ -441,6 +446,7 @@ integration-test-valgrind-memory-check:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -484,6 +490,7 @@ coverage-test:
         - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
