@@ -57,6 +57,8 @@ struct cla_tcp_config {
 	int socket;
 	/* The last time a connection attempt was made, for rate limiting */
 	uint64_t last_connection_attempt_ms;
+	/* The number of the last connection attempt, for rate limiting */
+	int last_connection_attempt_no;
 };
 
 struct cla_tcp_single_config {
@@ -117,7 +119,7 @@ void cla_tcp_single_listen_task(struct cla_tcp_single_config *config,
 void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 				       const size_t struct_size);
 
-void cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config);
+int cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config);
 
 // For the config vtable...
 

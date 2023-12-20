@@ -70,8 +70,6 @@ struct tcpclv3_contact_parameters {
 	char *eid;
 	char *cla_addr;
 
-	int connect_attempt;
-
 	int socket;
 
 	enum TCPCLV3_STATE state;
@@ -287,9 +285,9 @@ static void tcpclv3_link_management_task(void *p)
 
 			hal_semaphore_release(param->param_semphr);
 
-			cla_tcp_rate_limit_connection_attempts(
-				&param->config->base
-			);
+			if (cla_tcp_rate_limit_connection_attempts(
+					&param->config->base))
+				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_addr,
 				"4556"
@@ -297,23 +295,8 @@ static void tcpclv3_link_management_task(void *p)
 
 			hal_semaphore_take_blocking(param->param_semphr);
 
-			if (socket < 0) {
-				if (++param->connect_attempt >
-						CLA_TCP_MAX_RETRY_ATTEMPTS) {
-					LOG_WARN("TCPCLv3: Final retry failed.");
-					break;
-				}
-				LOGF_INFO("TCPCLv3: Delayed retry %d of %d in %d ms",
-				     param->connect_attempt,
-				     CLA_TCP_MAX_RETRY_ATTEMPTS,
-				     CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_release(param->param_semphr);
-				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_take_blocking(
-					param->param_semphr
-				);
+			if (socket < 0)
 				continue;
-			}
 			LOGF_INFO("TCPCLv3: Connected successfully to \"%s\"",
 			     param->cla_addr);
 			param->socket = socket;
@@ -331,7 +314,6 @@ static void tcpclv3_link_management_task(void *p)
 				break;
 			}
 			param->state = TCPCLV3_CONNECTING;
-			param->connect_attempt = 0;
 		} else {
 			// TCPCLV3_INACTIVE, TCPCLV3_ESTABLISHED
 			// should never happen as we are not created or wait
@@ -388,7 +370,6 @@ static void launch_connection_management_task(
 	}
 
 	contact_params->config = tcpclv3_config;
-	contact_params->connect_attempt = 0;
 
 	if (sock < 0) {
 		ASSERT(eid && cla_addr);
