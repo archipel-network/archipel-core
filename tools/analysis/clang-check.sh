@@ -9,10 +9,13 @@ DIRS=(
     components/aap
     components/aap2
     components/agents
+    components/agents/posix
     components/bundle6
     components/bundle7
     components/cla
+    components/cla/posix
     components/daemon
+    components/platform/posix
     components/spp
     components/ud3tn
 )

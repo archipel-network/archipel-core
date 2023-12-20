@@ -505,7 +505,7 @@ clang-tidy-posix-debug:
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
         - make ccmds-posix -j4
-        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix" "components/agents/posix" "components/cla/posix" "components/platform/posix"
+        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix"
 
 clang-tidy-posix-release:
     stage: code_quality_test
@@ -513,7 +513,7 @@ clang-tidy-posix-release:
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
     script:
         - make ccmds-posix -j4 type=release
-        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix" "components/agents/posix" "components/cla/posix" "components/platform/posix"
+        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix"
 
 cppcheck-static-analyzer:
     stage: code_quality_test
