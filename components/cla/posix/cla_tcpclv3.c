@@ -10,7 +10,6 @@
 #include "bundle6/sdnv.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
@@ -440,10 +439,7 @@ static void launch_connection_management_task(
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		tcpclv3_link_management_task,
-		"tcpclv3_mgmt_t",
-		CONTACT_MANAGEMENT_TASK_PRIORITY,
-		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE
+		contact_params
 	);
 
 	if (task_creation_result != UD3TN_OK) {
@@ -513,10 +509,7 @@ static enum ud3tn_result tcpclv3_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		tcpclv3_listener_task,
-		"tcpclv3_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 

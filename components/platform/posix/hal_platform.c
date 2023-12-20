@@ -7,7 +7,6 @@
  *
  */
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
 #include "platform/hal_time.h"
@@ -21,10 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#if LINUX_SPECIFIC_API
-#include <malloc.h>
-#endif
 
 static char **restart_args;
 

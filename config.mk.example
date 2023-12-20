@@ -205,6 +205,3 @@
 # For release builds, if this is not set, the default value is 2 (WARNING).
 # Note that log level 4 (DEBUG) is only available in debug builds.
 #CPPFLAGS += -DDEFAULT_LOG_LEVEL=3
-
-# Whether to use Linux-specific API functions such as thread naming.
-#CPPFLAGS += -DLINUX_SPECIFIC_API=0

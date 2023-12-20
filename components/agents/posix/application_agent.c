@@ -10,7 +10,6 @@
 
 #include "cla/posix/cla_tcp_util.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
@@ -143,10 +142,7 @@ static void application_agent_listener_task(void *const param)
 
 		const enum ud3tn_result task_creation_result = hal_task_create(
 			application_agent_comm_task,
-			"app_comm_t",
-			APPLICATION_AGENT_TASK_PRIORITY,
-			child_config,
-			DEFAULT_TASK_STACK_SIZE
+			child_config
 		);
 
 		if (task_creation_result != UD3TN_OK) {
@@ -624,10 +620,7 @@ struct application_agent_config *application_agent_setup(
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		application_agent_listener_task,
-		"app_listener_t",
-		APPLICATION_AGENT_TASK_PRIORITY,
-		config,
-		DEFAULT_TASK_STACK_SIZE
+		config
 	);
 
 	if (task_creation_result != UD3TN_OK) {

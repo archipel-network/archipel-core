@@ -6,7 +6,6 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
@@ -482,22 +481,11 @@ static void cla_contact_rx_task(void *const param)
 
 enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
 {
-	static uint8_t ctr = 1;
-	static char tname_buf[6];
-
-	tname_buf[0] = 'r';
-	tname_buf[1] = 'x';
-	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr);
-	ctr++;
-
 	hal_semaphore_take_blocking(link->rx_task_sem);
 
 	const enum ud3tn_result res = hal_task_create(
 		cla_contact_rx_task,
-		tname_buf,
-		CONTACT_RX_TASK_PRIORITY,
-		link,
-		CONTACT_RX_TASK_STACK_SIZE
+		link
 	);
 
 	// Not launched, no need to wait for exit.

@@ -5,7 +5,6 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
@@ -179,10 +178,7 @@ enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 
 	const enum ud3tn_result res = hal_task_create(
 		cla_contact_tx_task,
-		NULL,
-		CONTACT_TX_TASK_PRIORITY,
-		link,
-		CONTACT_TX_TASK_STACK_SIZE
+		link
 	);
 
 	// Not launched, no need to wait for exit.
