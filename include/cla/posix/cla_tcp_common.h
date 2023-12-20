@@ -55,6 +55,8 @@ struct cla_tcp_config {
 
 	/* The handle for the passive or active socket */
 	int socket;
+	/* The last time a connection attempt was made, for rate limiting */
+	uint64_t last_connection_attempt_ms;
 };
 
 struct cla_tcp_single_config {
@@ -114,6 +116,8 @@ void cla_tcp_single_listen_task(struct cla_tcp_single_config *config,
 
 void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 				       const size_t struct_size);
+
+void cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config);
 
 // For the config vtable...
 

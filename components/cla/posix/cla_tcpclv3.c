@@ -287,6 +287,9 @@ static void tcpclv3_link_management_task(void *p)
 
 			hal_semaphore_release(param->param_semphr);
 
+			cla_tcp_rate_limit_connection_attempts(
+				&param->config->base
+			);
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_addr,
 				"4556"

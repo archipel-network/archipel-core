@@ -111,6 +111,9 @@ static void mtcp_link_management_task(void *p)
 			ASSERT(param->socket < 0);
 			hal_semaphore_release(param->param_semphr);
 
+			cla_tcp_rate_limit_connection_attempts(
+				&param->config->base
+			);
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr, // only used by us
 				NULL

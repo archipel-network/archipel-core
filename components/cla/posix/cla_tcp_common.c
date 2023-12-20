@@ -7,6 +7,7 @@
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "ud3tn/common.h"
 #include "ud3tn/result.h"
@@ -40,6 +41,7 @@ enum ud3tn_result cla_tcp_config_init(
 		return UD3TN_FAIL;
 
 	config->socket = -1;
+	config->last_connection_attempt_ms = 0;
 
 	return UD3TN_OK;
 }
@@ -312,6 +314,7 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 			);
 		}
 
+		cla_tcp_rate_limit_connection_attempts(&config->base);
 		// Wait until _some_ contact starts.
 		hal_semaphore_take_blocking(config->contact_activity_sem);
 		hal_semaphore_release(config->contact_activity_sem);
@@ -363,6 +366,25 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 			return;
 		}
 		cla_tcp_single_listen_task(config, struct_size);
+	}
+}
+
+void cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config)
+{
+	const uint64_t rt_limit_ms = CLA_TCP_RETRY_INTERVAL_MS;
+	const uint64_t now_ms = hal_time_get_timestamp_ms();
+
+	if (config->last_connection_attempt_ms + rt_limit_ms > now_ms) {
+		LOGF_WARN(
+			"TCP: Last connection attempt was less than %llu ms ago, delaying next attempt.",
+			rt_limit_ms
+		);
+		hal_task_delay(rt_limit_ms);
+		config->last_connection_attempt_ms = (
+			hal_time_get_timestamp_ms()
+		);
+	} else {
+		config->last_connection_attempt_ms = now_ms;
 	}
 }
 
