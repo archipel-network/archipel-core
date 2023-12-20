@@ -194,6 +194,23 @@ integration-test-posix-arm64:
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
 
+integration-test-posix-macos:
+    stage: functional_test
+    when: always
+    tags: ["macos"]
+    script:
+        - make posix -j4 sanitize-strict=yes optimize=yes
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - make virtualenv
+        - source .venv/bin/activate
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
+
 aap-test:
     stage: functional_test
     when: always
