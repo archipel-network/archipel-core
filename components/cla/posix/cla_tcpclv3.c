@@ -79,6 +79,8 @@ struct tcpclv3_contact_parameters {
 	bool opportunistic;
 
 	struct tcpclv3_parser tcpclv3_parser;
+
+	struct cla_tcp_rate_limit_config rl_config;
 };
 
 /*
@@ -286,7 +288,7 @@ static void tcpclv3_link_management_task(void *p)
 			hal_semaphore_release(param->param_semphr);
 
 			if (cla_tcp_rate_limit_connection_attempts(
-					&param->config->base))
+					&param->rl_config))
 				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_addr,
@@ -409,6 +411,9 @@ static void launch_connection_management_task(
 		contact_params->state = TCPCLV3_CONNECTED;
 		contact_params->opportunistic = true;
 	}
+
+	contact_params->rl_config.last_connection_attempt_ms = 0;
+	contact_params->rl_config.last_connection_attempt_no = 1;
 
 	contact_params->param_semphr = hal_semaphore_init_binary();
 	ASSERT(contact_params->param_semphr != NULL);

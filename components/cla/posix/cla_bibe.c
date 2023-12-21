@@ -62,6 +62,8 @@ struct bibe_contact_parameters {
 	bool in_contact;
 
 	int socket;
+
+	struct cla_tcp_rate_limit_config rl_config;
 };
 
 static enum ud3tn_result handle_established_connection(
@@ -119,7 +121,7 @@ static void bibe_link_management_task(void *p)
 			hal_semaphore_release(param->param_semphr);
 
 			if (cla_tcp_rate_limit_connection_attempts(
-					&param->config->base))
+					&param->rl_config))
 				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr, // only used by us
@@ -223,6 +225,8 @@ static void launch_connection_management_task(
 	contact_params->partner_eid = eid;
 	contact_params->socket = -1;
 	contact_params->in_contact = true;
+	contact_params->rl_config.last_connection_attempt_ms = 0;
+	contact_params->rl_config.last_connection_attempt_no = 1;
 
 	if (!contact_params->cla_sock_addr) {
 		LOG_ERROR("BIBE: Failed to obtain CLA address!");

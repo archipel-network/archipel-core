@@ -53,6 +53,8 @@ struct mtcp_contact_parameters {
 	bool in_contact;
 
 	int socket;
+
+	struct cla_tcp_rate_limit_config rl_config;
 };
 
 
@@ -111,7 +113,7 @@ static void mtcp_link_management_task(void *p)
 			hal_semaphore_release(param->param_semphr);
 
 			if (cla_tcp_rate_limit_connection_attempts(
-					&param->config->base))
+					&param->rl_config))
 				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr, // only used by us
@@ -196,6 +198,9 @@ static void launch_connection_management_task(
 		contact_params->in_contact = false;
 		contact_params->is_outgoing = false;
 	}
+
+	contact_params->rl_config.last_connection_attempt_ms = 0;
+	contact_params->rl_config.last_connection_attempt_no = 1;
 
 	contact_params->param_semphr = hal_semaphore_init_binary();
 	ASSERT(contact_params->param_semphr != NULL);
