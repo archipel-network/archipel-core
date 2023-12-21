@@ -41,8 +41,6 @@ enum ud3tn_result cla_tcp_config_init(
 		return UD3TN_FAIL;
 
 	config->socket = -1;
-	config->last_connection_attempt_ms = 0;
-	config->last_connection_attempt_no = 1;
 
 	return UD3TN_OK;
 }
@@ -57,6 +55,8 @@ enum ud3tn_result cla_tcp_single_config_init(
 
 	config->link = NULL;
 	config->num_active_contacts = 0;
+	config->rl_config.last_connection_attempt_ms = 0;
+	config->rl_config.last_connection_attempt_no = 1;
 	config->contact_activity_sem = hal_semaphore_init_binary();
 	if (!config->contact_activity_sem) {
 		LOG_ERROR("TCP: Cannot allocate memory for contact activity semaphore!");
@@ -297,7 +297,7 @@ void cla_tcp_single_connect_task(struct cla_tcp_single_config *config,
 			config->service
 		);
 
-		if (cla_tcp_rate_limit_connection_attempts(&config->base))
+		if (cla_tcp_rate_limit_connection_attempts(&config->rl_config))
 			break;
 		if (cla_tcp_connect(&config->base,
 				    config->node, config->service) != UD3TN_OK) {
@@ -375,7 +375,8 @@ void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 		abort();
 }
 
-int cla_tcp_rate_limit_connection_attempts(struct cla_tcp_config *config)
+int cla_tcp_rate_limit_connection_attempts(
+	struct cla_tcp_rate_limit_config *config)
 {
 	const uint64_t rt_limit_ms = CLA_TCP_RETRY_INTERVAL_MS;
 	const int rt_max_attempts = CLA_TCP_MAX_RETRY_ATTEMPTS;
