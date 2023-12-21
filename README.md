@@ -148,7 +148,7 @@ Beside the µD3TN daemon binary, two types of library can be built using `make p
 
 ### Test
 
-The µD3TN development is accompanied by extensive testing. For this purpose, you should install `gdb` and a recent version of Python 3 (>= 3.7), plus the, `venv`, `pip`, and `setuptools` packages for your Python version. Our test suite covering static analysis, unit, and integration tests is documented in [`doc/testing.md`](doc/testing.md).
+The µD3TN development is accompanied by extensive testing. For this purpose, you should install `gdb` and a recent version of Python 3 (>= 3.8), plus the, `venv`, `pip`, and `setuptools` packages for your Python version. Our test suite covering static analysis, unit, and integration tests is documented in [`doc/testing.md`](doc/testing.md).
 
 ### Contribute
 
