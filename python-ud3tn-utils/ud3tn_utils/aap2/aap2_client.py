@@ -87,7 +87,10 @@ class AAP2Client(abc.ABC):
     def disconnect(self):
         """Shutdown and close the socket."""
         logger.debug("Terminating connection...")
-        self.socket.shutdown(socket.SHUT_RDWR)
+        try:
+            self.socket.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
         self.socket.close()
 
     def __enter__(self):
