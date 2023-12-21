@@ -5,7 +5,7 @@ stages:
     - code_quality_test
     - publish
 
-image: buildpack-deps:bullseye
+image: buildpack-deps:bookworm
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -25,14 +25,14 @@ build-posix-release:
 build-clang-posix-debug:
     stage: builds
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make werror=yes verbose=yes TOOLCHAIN=clang
 
 build-clang-posix-release:
     stage: builds
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
 
@@ -56,12 +56,12 @@ build-posix-arm64-release:
 build-clang-posix-arm64-debug:
     extends: build-clang-posix-debug
     tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
 
 build-clang-posix-arm64-release:
     extends: build-clang-posix-release
     tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
 
 build-posix-macos-debug:
     extends: build-posix-debug
@@ -80,7 +80,7 @@ build-freebsd:
 build-library:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
@@ -99,7 +99,7 @@ build-library:
 unit-test-posix-debug:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix
         - cd /ud3tn_build
@@ -108,7 +108,7 @@ unit-test-posix-debug:
 unit-test-posix-release:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release sanitize-strict=yes unittest-posix
         - cd /ud3tn_build
@@ -117,7 +117,7 @@ unit-test-posix-release:
 unit-test-posix-arm64:
     extends: unit-test-posix-debug
     tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
 
 unit-test-posix-macos:
     stage: functional_test
@@ -138,7 +138,7 @@ unit-test-posix-freebsd:
 integration-test-posix:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
         - cd /ud3tn_build
@@ -157,7 +157,7 @@ integration-test-posix:
 integration-test-posix-thread-sanitizer:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize=thread sanitize-strict=yes
         - cd /ud3tn_build
@@ -176,7 +176,7 @@ integration-test-posix-thread-sanitizer:
 integration-test-posix-release:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release optimize=yes
         - cd /ud3tn_build
@@ -192,7 +192,7 @@ integration-test-posix-release:
 integration-test-posix-arm64:
     extends: integration-test-posix
     tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
 
 integration-test-posix-macos:
     stage: functional_test
@@ -214,7 +214,7 @@ integration-test-posix-macos:
 aap-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -238,7 +238,7 @@ aap-test:
 aap2-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -326,7 +326,7 @@ dtn7-interoperability-test:
 mtcp-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -347,7 +347,7 @@ mtcp-test:
 fragment-reassembly-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -374,7 +374,7 @@ fragment-reassembly-test:
 ipv6-compatibility-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -407,7 +407,7 @@ ipv6-compatibility-test:
 bibe-internal-forwarding-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -445,7 +445,7 @@ data-decoder-test:
 unit-test-valgrind:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make unittest-posix
         - valgrind --leak-check=no --error-exitcode=1 build/posix/testud3tn
@@ -453,7 +453,7 @@ unit-test-valgrind:
 integration-test-valgrind-memory-check:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
@@ -485,7 +485,7 @@ stylecheck:
 python-stylecheck:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -496,7 +496,7 @@ python-stylecheck:
 coverage-test:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - project_dir="$(pwd)"
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build coverage=yes
@@ -526,7 +526,7 @@ coverage-test:
 clang-tidy-posix-debug:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make ccmds-posix -j4
         - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix"
@@ -534,7 +534,7 @@ clang-tidy-posix-debug:
 clang-tidy-posix-release:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make ccmds-posix -j4 type=release
         - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix"
@@ -542,7 +542,7 @@ clang-tidy-posix-release:
 cppcheck-static-analyzer:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - cppcheck --enable=warning --error-exitcode=2 --inline-suppr -I include -I external/tinycbor/src -I external/util/include components
 
