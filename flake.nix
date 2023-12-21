@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
   };
 
   outputs = { self, nixpkgs }: {
@@ -65,13 +65,13 @@
           python-ud3tn-utils
           ud3tn
           # nixpkgs
-          bear 
           clang-tools
           gdb
           llvmPackages.libcxxClang
           nixpkgs-fmt
           protobuf
           python3Packages.flake8
+          python3Packages.pip
           python3Packages.protobuf
           python3Packages.pytest
           python3Packages.setuptools
