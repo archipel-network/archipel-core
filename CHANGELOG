@@ -1,5 +1,10 @@
-Next Release (v0.13.0)
-----------------------
+Next Release
+------------
+
+It is planned to provide a modular forwarding and routing interface along with two DTN routing algorithms and a persistent storage feature based on SQLite in the next release.
+
+v0.13.0 "Maxwell"
+-----------------
 
 - Preview version of AAP 2.0 - a new Protobuf-based application interface, with Python tooling equivalent to the AAP 1.0 tools provided in tools/aap2; see doc/aap20.md
 - Added a "data decoder" that can be built using `make data-decoder` and allows for inspecting captured bundles and CLA packets as well as running fuzz testing on the parsers
