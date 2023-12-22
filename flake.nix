@@ -17,7 +17,7 @@
       {
         ud3tn = pkgs.stdenv.mkDerivation {
           pname = "ud3tn";
-          version = "0.12.0";
+          version = "0.13.0";
 
           src = pkgs.lib.sourceByRegex ./. [
             "Makefile"
