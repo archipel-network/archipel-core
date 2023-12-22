@@ -1,7 +1,8 @@
 # Dockerfile for building a Debian-based container with Python, Clang, valgrind,
 # cppcheck, and uD3TN Python dependencies for uD3TN's CI
+ARG IMAGE=python:3.8-bookworm
 
-FROM python:3.10-bullseye
+FROM $IMAGE
 
 RUN apt-get update && \
     apt-get dist-upgrade -y && \

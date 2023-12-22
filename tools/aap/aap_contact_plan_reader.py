@@ -133,7 +133,7 @@ def configure_nodes(contactPlan, nodes: dict):
                 )
 
             # checking the type of aap port tcp/socket
-            if type(nodes[planLine[4]][1]) == tuple:
+            if isinstance(nodes[planLine[4]][1], tuple):
                 addr = nodes[planLine[4]][1]
                 with AAPTCPClient(address=addr) as aap_client:
                     aap_client.register()
