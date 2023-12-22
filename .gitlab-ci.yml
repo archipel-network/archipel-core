@@ -135,10 +135,9 @@ unit-test-posix-freebsd:
         - gmake unittest-posix sanitize-strict=yes
         - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
-integration-test-posix:
+.integration-test-posix:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
         - cd /ud3tn_build
@@ -153,6 +152,14 @@ integration-test-posix:
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN_PID
+
+integration-test-posix-python-3.8:
+    extends: .integration-test-posix
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+
+integration-test-posix-python-3.12:
+    extends: .integration-test-posix
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.12-bookworm
 
 integration-test-posix-thread-sanitizer:
     stage: functional_test
@@ -190,7 +197,7 @@ integration-test-posix-release:
         - pytest test/integration
 
 integration-test-posix-arm64:
-    extends: integration-test-posix
+    extends: .integration-test-posix
     tags: ["arm64"]
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
 

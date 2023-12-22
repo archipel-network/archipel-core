@@ -16,6 +16,7 @@ docker build -f test/dockerfiles/ion-interop --build-arg ION_FILE=ion-open-sourc
 #docker build -f test/dockerfiles/ion-interop -t ud3tn-ion-interop:latest .
 docker build -f test/dockerfiles/ione-interop --build-arg ION_FILE=ione-1.0.1.tar.gz -t ud3tn-ione-interop:1.0.1 .
 docker build -f test/dockerfiles/ci-python-clang -t ci-python-clang:3.8-bookworm .
+docker build -f test/dockerfiles/ci-python-clang --build-arg IMAGE=python:3.12-bookworm -t ci-python-clang:3.12-bookworm .
 
 echo "You may now push the images to the registry:"
 echo "\$ docker tag ud3tn-ion-interop:<tag> registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:<tag>"
