@@ -13,42 +13,58 @@ clean::
 	$(RM) -rf build/
 
 ###############################################################################
-# Install
+# Packaging
 ###############################################################################
 
-.PHONY: install-posix
-install-posix: posix
-	-useradd -r archipel
-	mkdir -p /var/run/archipel-core
-	chown archipel:archipel /var/run/archipel-core
-	chmod 775 /var/run/archipel-core
-	mkdir -p /usr/share/archipel-core
-	mkdir -p /etc/archipel-core
-	rm -f /usr/share/archipel-core/archipel-core
-	rm -f /etc/systemd/system/archipel-core.service
-	rm -f /etc/systemd/user/archipel-core.service
-	cp -f build/posix/ud3tn /usr/share/archipel-core/archipel-core
-	cp -f archipel-core.service /etc/systemd/system/
-	cp -f user-archipel-core.service /etc/systemd/user/archipel-core.service
-	ln -f -s /usr/share/archipel-core/archipel-core /usr/bin/archipel-core
-	cd pyd3tn && python3 setup.py install
-	cd python-ud3tn-utils && python3 setup.py install
+PKG_OUT?=build/package/debian
+PKG_VERSION?=$(shell git describe | sed -e s/^v//)
+PKG_ARCH?=amd64
 
-.PHONY: install-linked-posix
-install-linked-posix: posix
-	-useradd -r archipel
-	mkdir -p /var/run/archipel-core
-	chown archipel:archipel /var/run/archipel-core
-	chmod 775 /var/run/archipel-core
-	mkdir -p /etc/archipel-core
-	rm -f /usr/share/archipel-core/archipel-core
-	rm -f /etc/systemd/system/archipel-core.service
-	rm -f /etc/systemd/user/archipel-core.service/archipel-core.service
-	ln -f -s "$(shell pwd)/archipel-core.service" /etc/systemd/system/archipel-core.service
-	ln -f -s "$(shell pwd)/user-archipel-core.service" /etc/systemd/user/archipel-core.service
-	ln -f -s "$(shell pwd)/build/posix/ud3tn" /usr/bin/archipel-core
-	cd pyd3tn && python3 setup.py install
-	cd python-ud3tn-utils && python3 setup.py install
+.PHONY: package-debian
+package-debian: export type = "Release"
+package-debian: posix
+	rm -fr $(PKG_OUT)/archipel-core/
+# Setup structure
+	mkdir -p $(PKG_OUT)/archipel-core/usr/bin
+	mkdir -p $(PKG_OUT)/archipel-core/usr/lib/systemd/system
+	mkdir -p $(PKG_OUT)/archipel-core/usr/lib/systemd/user
+	mkdir -p $(PKG_OUT)/archipel-core/etc/archipel-core
+	mkdir -p $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core
+	mkdir -p $(PKG_OUT)/archipel-core/DEBIAN
+# Copy build artifacts
+	strip --strip-debug --strip-unneeded -o $(PKG_OUT)/archipel-core/usr/bin/archipel-core build/posix/ud3tn
+# Copy documentation
+	cat "LICENSE" > $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core/copyright
+# Copy systemd service files
+	cp -f package/debian/archipel-core/archipel-core.service $(PKG_OUT)/archipel-core/usr/lib/systemd/system/
+	cp -f package/debian/archipel-core/user-archipel-core.service $(PKG_OUT)/archipel-core/usr/lib/systemd/user/archipel-core.service
+# Create control file
+	cat package/debian/archipel-core/control | \
+		VERSION=$(PKG_VERSION) \
+		ARCH=$(PKG_ARCH) \
+		envsubst > $(PKG_OUT)/archipel-core/DEBIAN/control
+# Create conf files
+	cp default-conf.env $(PKG_OUT)/archipel-core/etc/archipel-core/conf.env
+	echo "/etc/archipel-core/conf.env" >> $(PKG_OUT)/archipel-core/DEBIAN/conffiles
+# Create changelog
+	cat CHANGELOG | gzip -c -9 > $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core/changelog.Debian.gz
+# Package build
+	cd $(PKG_OUT) && dpkg-deb --root-owner-group --build archipel-core
+# Package linting
+	lintian $(PKG_OUT)/archipel-core.deb
+
+.PHONY: package-debian
+package-pyd3tn-debian:
+	cd pyd3tn && python3 setup.py --command-packages=stdeb.command sdist_dsc -d ../$(PKG_OUT)/pyd3tn --with-python3=True --no-python2-scripts=True bdist_deb
+	cp $(PKG_OUT)/pyd3tn/*.deb $(PKG_OUT)
+
+.PHONY: package-ud3tn-utils-debian
+package-ud3tn-utils-debian:
+	cd python-ud3tn-utils && python3 setup.py --command-packages=stdeb.command sdist_dsc -d ../$(PKG_OUT)/ud3tn-utils --with-python3=True --no-python2-scripts=True bdist_deb
+	cp $(PKG_OUT)/ud3tn-utils/*.deb $(PKG_OUT)
+
+.PHONY: package-ud3tn-utils-debian
+package-debian-all: package-debian package-pyd3tn-debian package-ud3tn-utils-debian
 
 ###############################################################################
 # Execution and Deployment
