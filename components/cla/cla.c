@@ -16,7 +16,6 @@
 #include "platform/hal_semaphore.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/init.h"
 #include "ud3tn/result.h"
 
@@ -59,7 +58,7 @@ static enum ud3tn_result initialize_single(
 
 	ASSERT(cur_cla_config);
 	if (!colon) {
-		LOG("CLA: Could parse config - options delimiter not found!");
+		LOG_ERROR("CLA: Could not parse config - options delimiter not found!");
 		return UD3TN_FAIL;
 	}
 
@@ -90,7 +89,7 @@ static enum ud3tn_result initialize_single(
 		}
 	}
 	if (!cla_entry) {
-		LOGF("CLA: Specified CLA not found: %s", cla_name);
+		LOGF_ERROR("CLA: Specified CLA not found: %s", cla_name);
 		return UD3TN_FAIL;
 	}
 
@@ -101,13 +100,13 @@ static enum ud3tn_result initialize_single(
 	);
 
 	if (!data) {
-		LOGF("CLA: Could not initialize CLA \"%s\"!", cla_name);
+		LOGF_ERROR("CLA: Could not initialize CLA \"%s\"!", cla_name);
 		return UD3TN_FAIL;
 	}
 
 	data->vtable->cla_launch(data);
 	cla_register(data);
-	LOGF("CLA: Activated CLA \"%s\".", data->vtable->cla_name_get());
+	LOGF_INFO("CLA: Activated CLA \"%s\".", data->vtable->cla_name_get());
 
 	return UD3TN_OK;
 }
@@ -171,26 +170,26 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 	// NOTE: They are already locked on creation!
 	link->rx_task_sem = hal_semaphore_init_binary();
 	if (!link->rx_task_sem) {
-		LOG("CLA: Cannot allocate memory for RX semaphore!");
+		LOG_ERROR("CLA: Cannot allocate memory for RX semaphore!");
 		goto fail_rx_sem;
 	}
 	hal_semaphore_release(link->rx_task_sem);
 	link->tx_task_sem = hal_semaphore_init_binary();
 	if (!link->tx_task_sem) {
-		LOG("CLA: Cannot allocate memory for TX semaphore!");
+		LOG_ERROR("CLA: Cannot allocate memory for TX semaphore!");
 		goto fail_tx_sem;
 	}
 	hal_semaphore_release(link->tx_task_sem);
 
 	link->rx_task_notification = hal_semaphore_init_binary();
 	if (!link->rx_task_notification) {
-		LOG("CLA: Cannot allocate memory for RX notify semaphore!");
+		LOG_ERROR("CLA: Cannot allocate memory for RX notify semaphore!");
 		goto fail_rx_notify_sem;
 	}
 	hal_semaphore_release(link->rx_task_notification);
 
 	if (rx_task_data_init(&link->rx_task_data, config) != UD3TN_OK) {
-		LOG("CLA: Failed to initialize RX task data!");
+		LOG_ERROR("CLA: Failed to initialize RX task data!");
 		goto fail_rx_data;
 	}
 	config->vtable->cla_rx_task_reset_parsers(link);
@@ -204,21 +203,21 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 
 	link->tx_queue_sem = hal_semaphore_init_binary();
 	if (!link->tx_queue_sem) {
-		LOG("CLA: Cannot allocate memory for TX queue semaphore!");
+		LOG_ERROR("CLA: Cannot allocate memory for TX queue semaphore!");
 		goto fail_tx_queue_sem;
 	}
 	hal_semaphore_release(link->tx_queue_sem);
 
 	if (is_rx) {
 		if (cla_launch_contact_rx_task(link) != UD3TN_OK) {
-			LOG("CLA: Failed to start RX task!");
+			LOG_ERROR("CLA: Failed to start RX task!");
 			goto fail_rx_task;
 		}
 	}
 
 	if (is_tx) {
 		if (cla_launch_contact_tx_task(link) != UD3TN_OK) {
-			LOG("CLA: Failed to start TX task!");
+			LOG_ERROR("CLA: Failed to start TX task!");
 			// The RX task already takes care of the link; we MUST
 			// NOT invalidate the associated data. The TX task
 			// semaphore is not locked, so it is properly treated
@@ -236,12 +235,12 @@ enum ud3tn_result cla_link_init(struct cla_link *link,
 			config->bundle_agent_interface;
 		bundle_processor_inform(
 			bundle_agent_interface->bundle_signaling_queue,
-			NULL,
-			BP_SIGNAL_NEW_LINK_ESTABLISHED,
-			cla_get_cla_addr_from_link(link),
-			NULL,
-			NULL,
-			NULL
+			(struct bundle_processor_signal) {
+				.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+				.peer_cla_addr = cla_get_cla_addr_from_link(
+					link
+				),
+			}
 		);
 	}
 
@@ -321,12 +320,10 @@ void cla_generic_disconnect_handler(struct cla_link *link)
 		link->config->bundle_agent_interface;
 	bundle_processor_inform(
 		bundle_agent_interface->bundle_signaling_queue,
-		NULL,
-		BP_SIGNAL_LINK_DOWN,
-		cla_get_cla_addr_from_link(link),
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal) {
+			.type = BP_SIGNAL_LINK_DOWN,
+			.peer_cla_addr = cla_get_cla_addr_from_link(link),
+		}
 	);
 	// TX task will delete its queue and itself
 	cla_contact_tx_task_request_exit(link->tx_queue_handle);
@@ -380,8 +377,8 @@ static void cla_register(struct cla_config *config)
 			return;
 		}
 	}
-	LOGF("CLA: FATAL: Could not globally register CLA \"%s\"", name);
-	ASSERT(0);
+	LOGF_ERROR("CLA: FATAL: Could not globally register CLA \"%s\"", name);
+	abort();
 }
 
 struct cla_config *cla_config_get(const char *cla_addr)
@@ -399,11 +396,16 @@ struct cla_config *cla_config_get(const char *cla_addr)
 			continue;
 		if (memcmp(name, cla_addr, name_len) == 0) {
 			if (!global_instances[i])
-				LOGF("CLA \"%s\" compiled-in but not enabled!",
-				     name);
+				LOGF_WARN(
+					"CLA \"%s\" compiled-in but not enabled!",
+					name
+				);
 			return global_instances[i];
 		}
 	}
-	LOGF("CLA: Could not determine instance for addr.: \"%s\"", cla_addr);
+	LOGF_WARN(
+		"CLA: Could not determine instance for addr.: \"%s\"",
+		cla_addr
+	);
 	return NULL;
 }

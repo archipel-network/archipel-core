@@ -2,9 +2,9 @@
 #include "cla/posix/cla_tcp_util.h"
 
 #include "platform/hal_io.h"
+#include "platform/posix/socket_util.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -45,13 +45,18 @@ char *cla_tcp_sockaddr_to_cla_addr(struct sockaddr *const sockaddr,
 	);
 
 	if (status != 0) {
-		LOGF("TCP: getnameinfo failed: %s\n", gai_strerror(status));
+		LOGF_WARN(
+			"TCP: getnameinfo failed: %s\n",
+			gai_strerror(status)
+		);
 		return NULL;
 	}
 
 	if (sockaddr->sa_family != AF_INET && sockaddr->sa_family != AF_INET6) {
-		LOGF("TCP: getnameinfo returned invalid AF: %hu\n",
-		     sockaddr->sa_family);
+		LOGF_WARN(
+			"TCP: getnameinfo returned invalid AF: %hu\n",
+			sockaddr->sa_family
+		);
 		return NULL;
 	}
 
@@ -107,7 +112,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 	status = getaddrinfo(node_param, service, &hints, &result);
 	if (status != 0) {
-		LOGF(
+		LOGF_WARN(
 			"TCP: getaddrinfo() failed for %s:%s: %s",
 			node,
 			service,
@@ -126,7 +131,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 
 		if (sock == -1) {
 			error_code = errno;
-			LOGERROR("TCP", "socket()", error_code);
+			LOG_ERRNO("TCP", "socket()", error_code);
 			continue;
 		}
 
@@ -134,22 +139,29 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
-			LOGERROR("TCP", "setsockopt(SO_REUSEADDR, 1)",
-				 error_code);
+			LOG_ERRNO(
+				"TCP",
+				"setsockopt(SO_REUSEADDR, 1)",
+				error_code
+			);
 			close(sock);
 			continue;
 		}
 
-#ifdef SO_REUSEPORT
+#if defined(CLA_TCP_ALLOW_REUSE_PORT) && CLA_TCP_ALLOW_REUSE_PORT == 1
+		// NOTE: SO_REUSEPORT is Linux- and BSD-specific.
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
-			LOGERROR("TCP", "setsockopt(SO_REUSEPORT, 1)",
-				 error_code);
+			LOG_ERRNO(
+				"TCP",
+				"setsockopt(SO_REUSEPORT, 1)",
+				error_code
+			);
 			close(sock);
 			continue;
 		}
-#endif // SO_REUSEPORT
+#endif // CLA_TCP_ALLOW_REUSE_PORT
 
 		if (e->ai_family == AF_INET6) {
 			// Some systems may want to only listen for IPv6
@@ -157,8 +169,11 @@ int create_tcp_socket(const char *const node, const char *const service,
 			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
 			    &disable, sizeof(int)) < 0) {
 				error_code = errno;
-				LOGERROR("TCP", "setsockopt(IPV6_V6ONLY, 0)",
-					 error_code);
+				LOG_ERRNO(
+					"TCP",
+					"setsockopt(IPV6_V6ONLY, 0)",
+					 error_code
+				);
 				close(sock);
 				continue;
 			}
@@ -168,21 +183,24 @@ int create_tcp_socket(const char *const node, const char *const service,
 		if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,
 			       &enable, sizeof(int)) < 0) {
 			error_code = errno;
-			LOGERROR("TCP", "setsockopt(TCP_NODELAY, 1)",
-				 error_code);
+			LOG_ERRNO(
+				"TCP",
+				"setsockopt(TCP_NODELAY, 1)",
+				error_code
+			);
 			close(sock);
 			continue;
 		}
 
 		if (client && connect(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
-			LOGERROR("TCP", "connect()", error_code);
+			LOG_ERRNO_INFO("TCP", "connect()", error_code);
 			close(sock);
 			continue;
 		} else if (!client &&
 			   bind(sock, e->ai_addr, e->ai_addrlen) < 0) {
 			error_code = errno;
-			LOGERROR("TCP", "bind()", error_code);
+			LOG_ERRNO_INFO("TCP", "bind()", error_code);
 			close(sock);
 			continue;
 		}
@@ -192,7 +210,7 @@ int create_tcp_socket(const char *const node, const char *const service,
 	}
 
 	if (e == NULL) {
-		LOGF(
+		LOGF_WARN(
 			"TCP: Failed to %s to [%s]:%s",
 			client ? "connect" : "bind",
 			node,
@@ -239,7 +257,7 @@ int cla_tcp_connect_to_cla_addr(const char *const cla_addr,
 		service = strrchr(addr, ']');
 		if (!service || service[1] != ':' || service[2] == 0) {
 			if (!default_service) {
-				LOG("TCP: Service field empty and no default service/port specified, cannot connect");
+				LOG_WARN("TCP: Service field empty and no default service/port specified, cannot connect");
 				free(addr);
 				return -1;
 			}
@@ -256,7 +274,7 @@ int cla_tcp_connect_to_cla_addr(const char *const cla_addr,
 		service = strrchr(addr, ':');
 		if (!service || service[1] == 0) {
 			if (!default_service) {
-				LOG("TCP: Service field empty and no default service/port specified, cannot connect");
+				LOG_WARN("TCP: Service field empty and no default service/port specified, cannot connect");
 				free(addr);
 				return -1;
 			}

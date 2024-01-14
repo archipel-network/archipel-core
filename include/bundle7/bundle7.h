@@ -8,6 +8,10 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+// Default CRC type, see enum bundle_crc_type in bundle.h.
+#ifndef DEFAULT_BPV7_CRC_TYPE
+#define DEFAULT_BPV7_CRC_TYPE BUNDLE_CRC_TYPE_16
+#endif // DEFAULT_CRC_TYPE
 
 /**
  * Returns the number of bytes that will be required for the CBORepresentation

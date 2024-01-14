@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
+#include "ud3tn/router.h"
 
 #include "platform/hal_io.h"
 
@@ -14,10 +14,18 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "platform/hal_store.h"
+
 #define QUOTE(s) #s
 #define STR(s) QUOTE(s)
 
 static struct ud3tn_cmdline_options global_cmd_opts;
+
+#ifdef DEBUG
+#define LOG_LEVELS "1|2|3|4"
+#else // DEBUG
+#define LOG_LEVELS "1|2|3"
+#endif // DEBUG
 
 /**
  * Helper function for parsing a 64-bit unsigned integer from a given C-string.
@@ -50,6 +58,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	result->aap_socket = NULL;
 	result->aap_node = NULL;
 	result->aap_service = NULL;
+	result->aap2_socket = NULL;
 	result->bundle_version = DEFAULT_BUNDLE_VERSION;
 	result->status_reporting = false;
 	result->allow_remote_configuration = false;
@@ -58,6 +67,7 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	#ifdef ARCHIPEL_CORE
 	result->store_folder = strdup("./" DEFAULT_STORE_LOCATION);
 	#endif
+	result->log_level = DEFAULT_LOG_LEVEL;
 	// The following values cannot be 0
 	result->mbs = 0;
 	// The strings are set afterwards if not provided as an option
@@ -69,11 +79,11 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		goto finish;
 
 	shorten_long_cli_options(argc, argv);
-	while ((opt = getopt(argc, argv, ":a:b:c:e:l:m:p:s:rRhuS:")) != -1) {
+	while ((opt = getopt(argc, argv, ":a:b:c:e:l:L:m:p:s:S:rRhuP:")) != -1) {
 		switch (opt) {
 		case 'a':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP node provided!");
+				LOG_ERROR("Invalid AAP node provided!");
 				return NULL;
 			}
 			result->aap_node = strdup(optarg);
@@ -81,14 +91,14 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'b':
 			if (!optarg || strlen(optarg) != 1 || (
 					optarg[0] != '6' && optarg[0] != '7')) {
-				LOG("Invalid BP version provided!");
+				LOG_ERROR("Invalid BP version provided!");
 				return NULL;
 			}
 			result->bundle_version = (optarg[0] == '6') ? 6 : 7;
 			break;
 		case 'c':
 			if (!optarg) {
-				LOG("Invalid CLA options string provided!");
+				LOG_ERROR("Invalid CLA options string provided!");
 				return NULL;
 			}
 			result->cla_options = strdup(optarg);
@@ -96,10 +106,10 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'e':
 			if (!optarg || validate_local_eid(optarg) != UD3TN_OK ||
 					strcmp("dtn:none", optarg) == 0) {
-				LOG("Invalid EID provided!");
+				LOG_ERROR("Invalid EID provided!");
 				return NULL;
 			}
-			result->eid = strdup(optarg);
+			result->eid = preprocess_local_eid(optarg);
 			break;
 		case 'h':
 			print_help_text();
@@ -108,20 +118,32 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 		case 'l':
 			if (parse_uint64(optarg, &result->lifetime_s)
 					!= UD3TN_OK || !result->lifetime_s) {
-				LOG("Invalid lifetime provided!");
+				LOG_ERROR("Invalid lifetime provided!");
 				return NULL;
 			}
+			break;
+		case 'L':
+			if (!optarg || strlen(optarg) != 1 || (
+					optarg[0] != '1' && optarg[0] != '2' &&
+					optarg[0] != '3' &&
+					(!IS_DEBUG_BUILD ||
+					 optarg[0] != '4'))) {
+				LOG_ERROR("Invalid log level provided!");
+				return NULL;
+			}
+			result->log_level = optarg[0] - '0';
+			LOG_LEVEL = optarg[0] - '0';
 			break;
 		case 'm':
 			if (parse_uint64(optarg, &result->mbs)
 					!= UD3TN_OK || !result->mbs) {
-				LOG("Invalid maximum bundle size provided!");
+				LOG_ERROR("Invalid maximum bundle size provided!");
 				return NULL;
 			}
 			break;
 		case 'p':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP port provided!");
+				LOG_ERROR("Invalid AAP port provided!");
 				return NULL;
 			}
 			result->aap_service = strdup(optarg);
@@ -134,32 +156,43 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 			break;
 		case 's':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid AAP unix domain socket provided!");
+				LOG_ERROR("Invalid AAP unix domain socket provided!");
 				return NULL;
 			}
 			result->aap_socket = strdup(optarg);
 			break;
-		
 		#ifdef ARCHIPEL_CORE
-		case 'S':
+		case 'P':
 			if (!optarg || strlen(optarg) < 1) {
-				LOG("Invalid store folder path provided!");
+				LOG_ERROR("Invalid persistance store folder path provided!");
 				return NULL;
 			}
 			result->store_folder = strdup(optarg);
 			break;
 		#endif
+		case 'S':
+			if (!optarg || strlen(optarg) < 1) {
+				LOG_ERROR("Invalid AAP 2.0 unix domain socket provided!");
+				return NULL;
+			}
+			result->aap2_socket = strdup(optarg);
+			break;
 		case 'u':
 			print_usage_text();
 			result->exit_immediately = true;
 			return result;
 		case ':':
-			LOGF("Required argument of option '%s' is missing",
-					argv[option_index + 1]);
+			LOGF_ERROR(
+				"Required argument of option '%s' is missing",
+				argv[option_index + 1]
+			);
 			print_usage_text();
 			return NULL;
 		case '?':
-			LOGF("Invalid option: '%s'", argv[option_index + 1]);
+			LOGF_ERROR(
+				"Invalid option: '%s'",
+				argv[option_index + 1]
+			);
 			print_usage_text();
 			return NULL;
 		}
@@ -168,21 +201,25 @@ const struct ud3tn_cmdline_options *parse_cmdline(int argc, char *argv[])
 	}
 
 finish:
+	// AAP 1.0
 	// use Unix domain socket by default
-	if (!result->aap_socket &&
-	    !result->aap_node &&
-	    !result->aap_service)
+	if (!result->aap_socket && !result->aap_node && !result->aap_service) {
 		result->aap_socket = strdup("./" DEFAULT_AAP_SOCKET_FILENAME);
 	// prefere Unix domain socket over TCP
-	else if (result->aap_socket &&
-		(result->aap_node || result->aap_service))
-		result->aap_node = result->aap_service = NULL;
+	} else if (result->aap_socket && (result->aap_node || result->aap_service)) {
+		result->aap_node = NULL;
+		result->aap_service = NULL;
 	// set default TCP sevice port
-	else if (result->aap_node && !result->aap_service)
+	} else if (result->aap_node && !result->aap_service) {
 		result->aap_service = strdup(DEFAULT_AAP_SERVICE);
 	// set default TCP node IP
-	else if (!result->aap_node && result->aap_service)
+	} else if (!result->aap_node && result->aap_service) {
 		result->aap_node = strdup(DEFAULT_AAP_NODE);
+	}
+
+	// AAP 2.0
+	if (!result->aap2_socket)
+		result->aap2_socket = strdup("./" DEFAULT_AAP2_SOCKET_FILENAME);
 
 	if (!result->eid)
 		result->eid = strdup(DEFAULT_EID);
@@ -218,6 +255,7 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--aap-host", "-a"},
 		{"--aap-port", "-p"},
 		{"--aap-socket", "-s"},
+		{"--aap2-socket", "-S"},
 		{"--bp-version", "-b"},
 		{"--cla", "-c"},
 		{"--eid", "-e"},
@@ -228,13 +266,14 @@ static void shorten_long_cli_options(const int argc, char *argv[])
 		{"--allow-remote-config", "-R"},
 		{"--usage", "-u"},
 		#ifdef ARCHIPEL_CORE
-		{"--store", "-S"},
+		{"--persist", "-P"},
 		#endif
+		{"--log-level", "-L"},
 	};
 
 	const unsigned long aliases_count = sizeof(aliases) / sizeof(*aliases);
 
-	for (unsigned long i = 1; i < (unsigned long) argc; i++) {
+	for (unsigned long i = 1; i < (unsigned long)argc; i++) {
 		for (unsigned long j = 0; j < aliases_count; j++) {
 			if (strcmp(aliases[j].long_form, argv[i]) == 0) {
 				argv[i] = aliases[j].short_form;
@@ -251,12 +290,12 @@ static void print_usage_text(void)
 		"    [-b 6|7, --bp-version 6|7] [-c CLA_OPTIONS, --cla CLA_OPTIONS]\n"
 		"    [-e EID, --eid EID] [-h, --help] [-l SECONDS, --lifetime SECONDS]\n"
 		"    [-m BYTES, --max-bundle-size BYTES] [-r, --status-reports]\n"
-		"    [-R, --allow-remote-config]\n"
-		"    [-s PATH --aap-socket PATH]\n"
+		"    [-R, --allow-remote-config] [-L " LOG_LEVELS ", --log-level " LOG_LEVELS "]\n"
+		"    [-s PATH --aap-socket PATH] [-S PATH --aap2-socket PATH]\n"
 		#ifdef ARCHIPEL_CORE
-		"    [-S PATH --store PATH] [-u, --usage]\n"
+		"    [-P PATH --persist PATH] [-u, --usage]\n"
 		#endif
-		;
+		"    [-u, --usage]\n";
 
 	hal_io_message_printf(usage_text);
 }
@@ -277,7 +316,9 @@ static void print_help_text(void)
 		"  -p, --aap-port PORT         port number of the application agent service\n"
 		"  -r, --status-reports        enable status reporting\n"
 		"  -R, --allow-remote-config   allow configuration via bundles received from CLAs\n"
+		"  -L, --log-level             higher or lower log level " LOG_LEVELS " specifies more or less detailed output\n"
 		"  -s, --aap-socket PATH       path to the UNIX domain socket of the application agent service\n"
+		"  -S, --aap2-socket PATH      path to the UNIX domain socket of the AAP 2.0 service\n"
 		"  -u, --usage                 print usage summary and exit\n"
 		#ifdef ARCHIPEL_CORE
 		"  -S, --store PATH            folder to store persisted bundles in\n"
@@ -288,10 +329,12 @@ static void print_help_text(void)
 		"  -c " STR(DEFAULT_CLA_OPTIONS) " \\\n"
 		"  -e " DEFAULT_EID " \\\n"
 		"  -l " STR(DEFAULT_BUNDLE_LIFETIME) " \\\n"
+		"  -L " STR(DEFAULT_LOG_LEVEL) " \\\n"
 		"  -m %lu \\\n"
-		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\\\n"
+		"  -s $PWD/" DEFAULT_AAP_SOCKET_FILENAME "\n"
+		"  -S $PWD/" DEFAULT_AAP2_SOCKET_FILENAME "\n"
 		#ifdef ARCHIPEL_CORE
-		"  -S $PWD/" DEFAULT_STORE_LOCATION "\n"
+		"  -P $PWD/" DEFAULT_STORE_LOCATION "\n"
 		#endif
 		"\n"
 		"Please report bugs to <contact@d3tn.com>.\n";

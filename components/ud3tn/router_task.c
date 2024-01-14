@@ -2,12 +2,12 @@
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_fragmenter.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/node.h"
 #include "ud3tn/router.h"
 #include "ud3tn/routing_table.h"
 
 #include "platform/hal_io.h"
+#include "platform/hal_time.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -50,7 +50,7 @@ enum ud3tn_result router_process_command(
 
 	if (!node_prepare_and_verify(command->data, cur_time_s)) {
 		free_node(command->data);
-		LOGF("Router: Command (T = %c) is invalid!",
+		LOGF_WARN("Router: Command (T = %c) is invalid!",
 			command->type);
 		free(command);
 		return UD3TN_FAIL;
@@ -61,11 +61,15 @@ enum ud3tn_result router_process_command(
 		rescheduler
 	);
 	if (success) {
-		LOGF("Router: Command (T = %c) processed.",
-			command->type);
+		LOGF_DEBUG(
+			"Router: Command (T = %c) processed.",
+			command->type
+		);
 	} else {
-		LOGF("Router: Processing command (T = %c) failed!",
-			command->type);
+		LOGF_DEBUG(
+			"Router: Processing command (T = %c) failed!",
+			command->type
+		);
 	}
 	free(command);
 
@@ -156,8 +160,6 @@ static struct bundle_processing_result apply_fragmentation(
 		/* Determine minimal fragmented bundle size */
 		if (f == 0)
 			size = bundle_get_first_fragment_min_size(bundle);
-		else if (f == fragments - 1)
-			size = bundle_get_last_fragment_min_size(bundle);
 		else
 			size = bundle_get_mid_fragment_min_size(bundle);
 
@@ -174,8 +176,9 @@ static struct bundle_processing_result apply_fragmentation(
 			// that may lead to fewer actual fragments here.
 			// Just update the count accordingly and do not schedule
 			// the rest.
-			route.fragments = fragments = f + 1;
-			frags[f + 1] = NULL;
+			fragments = f + 1;
+			route.fragments = fragments;
+			frags[fragments] = NULL;
 			break;
 		}
 	}
@@ -185,8 +188,10 @@ static struct bundle_processing_result apply_fragmentation(
 		if (router_add_bundle_to_contact(
 				route.fragment_results[f].contact,
 				frags[f]) != UD3TN_OK) {
-			LOGF("Router: Scheduling bundle %p failed, dropping all fragments.",
-			     bundle);
+			LOGF_INFO(
+				"Router: Scheduling bundle %p failed, dropping all fragments.",
+				bundle
+			);
 			// Remove from all previously-scheduled routes
 			for (g = 0; g < f; g++)
 				router_remove_bundle_from_contact(
@@ -218,19 +223,12 @@ enum router_result_status router_route_bundle(struct bundle *b)
 	if (b != NULL)
 		proc_result = process_bundle(b);
 
-	// b should not be used anymore, may be dropped due to
-	// fragmentation.
-	struct bundle *const b_old_ptr = b;
-
-	b = NULL;
-	if (IS_DEBUG_BUILD)
-		LOGF(
-			"Router: Bundle %p [ %s ] [ frag = %d ]",
-			b_old_ptr,
-			(proc_result.status_or_fragments < 1)
-				? "ERR" : "OK",
-			proc_result.status_or_fragments
-		);
+	LOGF_DEBUG(
+		"Router: Bundle %p [ %s ] [ frag = %d ]",
+		b,
+		(proc_result.status_or_fragments < 1) ? "ERR" : "OK",
+		proc_result.status_or_fragments
+	);
 	if (proc_result.status_or_fragments < 1)
 		return br_to_rrs(proc_result.status_or_fragments);
 	return ROUTER_RESULT_OK;

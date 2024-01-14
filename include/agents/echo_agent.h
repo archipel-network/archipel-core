@@ -6,6 +6,14 @@
 
 #include <stdint.h>
 
+// Default Agent IDs.
+#ifndef AGENT_ID_ECHO_DTN
+#define AGENT_ID_ECHO_DTN "echo"
+#endif // AGENT_ID_ECHO_DTN
+#ifndef AGENT_ID_ECHO_IPN
+#define AGENT_ID_ECHO_IPN "9002"
+#endif // AGENT_ID_ECHO_IPN
+
 int echo_agent_setup(struct bundle_agent_interface *const bai,
 		     const uint64_t lifetime_ms);
 

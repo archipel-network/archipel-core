@@ -23,7 +23,7 @@
  * @brief The Queue_t struct Data structure holding all queue-related info
  */
 typedef struct {
-	// absolut length of the queue (in items)
+	// absolute length of the queue (in items)
 	int item_length;
 	// size of one single item (in bytes)
 	int item_size;
@@ -49,7 +49,7 @@ typedef struct {
 
 /**
  * @brief queueCreate Creates a new queue structure, i.e. allocates the
- *			necessary memory ressources
+ *			necessary memory resources
  * @param queue_length absolute length of the queue (in items)
  * @param item_size size of a single item (in bytes)
  * @return returns a pointer to the queue "object"
@@ -58,7 +58,7 @@ Queue_t *queueCreate(unsigned int queue_length, unsigned int item_size);
 
 /**
  * @brief queueDelete Delete a queue structure, i.e. frees the memory
- *			ressources
+ *			resources
  * @param queue The pointer to the queue structure
  */
 void queueDelete(Queue_t *queue);
@@ -79,7 +79,7 @@ void queueReset(Queue_t *queue);
  *		  will block indefinitely (see hal_semaphore_try_take)
  * @param force Defines if the last element of the queue should be replaced
  *		forcefully (only applied when queue is full)
- * @return Exitcode, if queueing was successfull
+ * @return Exitcode, if queueing was successful
  */
 uint8_t queuePush(Queue_t *queue, const void *item, int64_t timeout,
 		  bool force);
@@ -93,7 +93,7 @@ uint8_t queuePush(Queue_t *queue, const void *item, int64_t timeout,
  *		  (in milliseconds)
  *		  If this value is -1 or larger than 9223372036854, popping
  *		  will block indefinitely (see hal_semaphore_try_take)
- * @return Exitcode, if dequeueing was successfull
+ * @return Exitcode, if dequeueing was successful
  */
 uint8_t queuePop(Queue_t *queue, void *targetBuffer, int64_t timeout);
 

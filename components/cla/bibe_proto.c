@@ -10,7 +10,6 @@
 #include "bundle7/reports.h"
 
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/parser.h"
 #include "cbor.h"
 
@@ -160,14 +159,14 @@ struct bibe_header bibe_encode_header(const char *const dest_eid,
 	free(temp_buffer);
 
 	/* Building and encoding the AAP message */
-	struct aap_message msg;
-
-	msg.type = AAP_MESSAGE_SENDBIBE;
-	msg.eid_length = eid_len;
-	// Discard const, the used AAP functions do not modify the EID.
-	msg.eid = (char *)dest_eid;
-	msg.payload_length = payload_len + bpdu_size;
-	msg.payload = NULL;
+	struct aap_message msg = {
+		.type = AAP_MESSAGE_SENDBIBE,
+		.eid_length = eid_len,
+		// Discard const, the used AAP functions do not modify the EID.
+		.eid = (char *)dest_eid,
+		.payload_length = payload_len + bpdu_size,
+		.payload = NULL,
+	};
 
 	// NOTE: bpdu_size is still included here
 	hdr.hdr_len = aap_get_serialized_size(&msg) - payload_len;

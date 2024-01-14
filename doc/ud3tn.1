@@ -1,4 +1,4 @@
-.TH "uD3TN" "1" "May 23, 2023" "TOOL" ""
+.TH "uD3TN" "1" "December 22, 2023" "TOOL" ""
 .hy
 .SH NAME
 .PP
@@ -34,6 +34,10 @@ display help and exit
 -l, --lifetime SECONDS
 lifetime of a bundle created via AAP
 .TP
+-L, --log-level 1|2|3|4
+specifies how detailed the output will be (higher log level means more
+detailed output)
+.TP
 -m, --max-bundle-size BYTES
 threshold used to determine if a bundle has to be fragmented
 .TP
@@ -49,6 +53,9 @@ allow configuration via bundles received through CLAs
 .TP
 -s, --aap-socket PATH
 path to the UNIX domain socket of the application agent service
+.TP
+-S, --aap2-socket PATH
+path to the UNIX domain socket of the AAP 2.0 service
 .TP
 -u, --usage
 print usage summary and exit

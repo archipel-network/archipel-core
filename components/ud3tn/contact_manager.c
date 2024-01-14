@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/node.h"
 #include "ud3tn/routing_table.h"
@@ -9,12 +8,12 @@
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -80,7 +79,7 @@ static int8_t remove_expired_contacts(
 			if (i != ctx->current_contact_count - 1) {
 				for (c = i; c < ctx->current_contact_count; c++)
 					ctx->current_contacts[c] =
-						ctx->current_contacts[c+1];
+						ctx->current_contacts[c + 1];
 			}
 			ctx->current_contact_count--;
 		}
@@ -98,8 +97,10 @@ static uint8_t check_upcoming(
 
 	// Too many contacts are already active, cannot add another...
 	if (ctx->current_contact_count >= MAX_CONCURRENT_CONTACTS) {
-		LOGF("ContactManager: Cannot start contact with \"%s\", too many contacts are already active",
-		    c->node->eid);
+		LOGF_WARN(
+			"ContactManager: Cannot start contact with \"%s\", too many contacts are already active",
+			c->node->eid
+		);
 		return 0;
 	}
 
@@ -112,14 +113,14 @@ static uint8_t check_upcoming(
 		c->node->eid
 	);
 	if (!ctx->current_contacts[ctx->current_contact_count].eid) {
-		LOG("ContactManager: Failed to copy EID");
+		LOG_ERROR("ContactManager: Failed to copy EID");
 		return 0;
 	}
 	ctx->current_contacts[ctx->current_contact_count].cla_addr = strdup(
 		c->node->cla_addr
 	);
 	if (!ctx->current_contacts[ctx->current_contact_count].cla_addr) {
-		LOG("ContactManager: Failed to copy CLA address");
+		LOG_ERROR("ContactManager: Failed to copy CLA address");
 		free(ctx->current_contacts[ctx->current_contact_count].eid);
 		return 0;
 	}
@@ -189,8 +190,12 @@ static int hand_over_contact_bundles(
 	}
 
 	if (!found) {
-		LOGF("ContactManager: Could not find contact %p to \"%s\" via \"%s\", discarding record",
-		     cinfo.contact, cinfo.eid, cinfo.cla_addr);
+		LOGF_WARN(
+			"ContactManager: Could not find contact %p to \"%s\" via \"%s\", discarding record",
+			cinfo.contact,
+			cinfo.eid,
+			cinfo.cla_addr
+		);
 		// Remove invalid contact info
 		free(cinfo.eid);
 		free(cinfo.cla_addr);
@@ -219,8 +224,10 @@ static int hand_over_contact_bundles(
 	struct cla_config *cla_config = cla_config_get(cinfo.cla_addr);
 
 	if (!cla_config) {
-		LOGF("ContactManager: Could not obtain CLA for address \"%s\"",
-		     cinfo.cla_addr);
+		LOGF_WARN(
+			"ContactManager: Could not obtain CLA for address \"%s\"",
+			cinfo.cla_addr
+		);
 		hal_semaphore_release(semphr);
 		return 1;
 	}
@@ -232,16 +239,21 @@ static int hand_over_contact_bundles(
 	);
 
 	if (!tx_queue.tx_queue_handle) {
-		LOGF("ContactManager: Could not obtain queue for TX to \"%s\" via \"%s\"",
-		     cinfo.eid, cinfo.cla_addr);
+		LOGF_WARN(
+			"ContactManager: Could not obtain queue for TX to \"%s\" via \"%s\"",
+			cinfo.eid,
+			cinfo.cla_addr
+		);
 		// Re-scheduling will be done by routerTask or transmission will
 		// occur after signal of new connection.
 		hal_semaphore_release(semphr);
 		return 1;
 	}
 
-	LOGF("ContactManager: Queuing bundles for contact with \"%s\".",
-	     cinfo.eid);
+	LOGF_INFO(
+		"ContactManager: Queuing bundles for contact with \"%s\".",
+		cinfo.eid
+	);
 
 	struct cla_contact_tx_task_command command = {
 		.type = TX_COMMAND_BUNDLES,
@@ -287,17 +299,21 @@ static uint8_t check_for_contacts(
 	ASSERT(ctx->next_contact_time_ms > current_timestamp_ms);
 
 	for (i = 0; i < added_count; i++) {
-		LOGF("ContactManager: Scheduled contact with \"%s\" started (%p).",
-		     added_contacts[i].eid,
-		     added_contacts[i].contact);
+		LOGF_INFO(
+			"ContactManager: Scheduled contact with \"%s\" started (%p).",
+			added_contacts[i].eid,
+			added_contacts[i].contact
+		);
 
 		struct cla_config *cla_config = cla_config_get(
 			added_contacts[i].cla_addr
 		);
 
 		if (!cla_config) {
-			LOGF("ContactManager: Could not obtain CLA for address \"%s\"",
-			     added_contacts[i].cla_addr);
+			LOGF_WARN(
+				"ContactManager: Could not obtain CLA for address \"%s\"",
+				added_contacts[i].cla_addr
+			);
 		} else {
 			cla_config->vtable->cla_start_scheduled_contact(
 				cla_config,
@@ -313,17 +329,21 @@ static uint8_t check_for_contacts(
 		#endif
 	}
 	for (i = 0; i < removed_count; i++) {
-		LOGF("ContactManager: Scheduled contact with \"%s\" ended (%p).",
-		     removed_contacts[i].eid,
-		     removed_contacts[i].contact);
+		LOGF_INFO(
+			"ContactManager: Scheduled contact with \"%s\" ended (%p).",
+			removed_contacts[i].eid,
+			removed_contacts[i].contact
+		);
 
 		struct cla_config *cla_config = cla_config_get(
 			removed_contacts[i].cla_addr
 		);
 
 		if (!cla_config) {
-			LOGF("ContactManager: Could not obtain CLA for address \"%s\"",
-			     removed_contacts[i].cla_addr);
+			LOGF_WARN(
+				"ContactManager: Could not obtain CLA for address \"%s\"",
+				removed_contacts[i].cla_addr
+			);
 		} else {
 			cla_config->vtable->cla_end_scheduled_contact(
 				cla_config,
@@ -358,12 +378,10 @@ static void manage_contacts(
 			/* The contact has to be deleted first... */
 			bundle_processor_inform(
 				bp_queue,
-				NULL,
-				BP_SIGNAL_CONTACT_OVER,
-				NULL,
-				NULL,
-				removed_list[i].contact,
-				NULL
+				(struct bundle_processor_signal) {
+					.type = BP_SIGNAL_CONTACT_OVER,
+					.contact = removed_list[i].contact,
+				}
 			);
 		}
 	}
@@ -380,8 +398,8 @@ static void manage_contacts(
 
 static void contact_manager_task(void *cm_parameters)
 {
-	struct contact_manager_task_parameters *parameters
-		= (struct contact_manager_task_parameters *)cm_parameters;
+	struct contact_manager_task_parameters *parameters =
+		(struct contact_manager_task_parameters *)cm_parameters;
 	enum contact_manager_signal signal = CM_SIGNAL_NONE;
 	uint64_t cur_time_ms, next_time_ms;
 	int64_t delay_ms;
@@ -394,9 +412,8 @@ static void contact_manager_task(void *cm_parameters)
 	};
 
 	if (!parameters) {
-		LOG("ContactManager: Cannot start, parameters not defined");
-		ASSERT(false);
-		return;
+		LOG_ERROR("ContactManager: Cannot start, parameters not defined");
+		abort();
 	}
 	for (;;) {
 		if (signal != CM_SIGNAL_NONE) {
@@ -473,10 +490,7 @@ struct contact_manager_params contact_manager_start(
 	#endif
 	ret.task_creation_result = hal_task_create(
 		contact_manager_task,
-		"cont_man_t",
-		CONTACT_MANAGER_TASK_PRIORITY,
-		cmt_params,
-		CONTACT_MANAGER_TASK_STACK_SIZE
+		cmt_params
 	);
 	if (ret.task_creation_result == UD3TN_OK) {
 		ret.semaphore = semaphore;

@@ -10,7 +10,6 @@
 #include "bundle7/parser.h"
 #include "bundle6/parser.h"
 #include "ud3tn/result.h"
-#include "ud3tn/config.h"
 #include "platform/hal_store.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
@@ -42,14 +41,14 @@ struct posix_bundle_store_popseq {
 
 struct bundle_store* hal_store_init(const char* identifier) {
     if(mkdir(identifier, S_IRWXG|S_IRWXU) && errno != EEXIST){
-        LOGF("Bundle Store : Failed to create folder %s (error %d)", identifier, errno);
+        LOGF_ERROR("Bundle Store : Failed to create folder %s (error %d)", identifier, errno);
         return NULL;
     }
 
     char* values_path = malloc(sizeof(char) * (strlen(identifier) + 7 + 1));
     sprintf(values_path, "%s/values", identifier);
     if(mkdir(values_path, S_IRWXG|S_IRWXU) && errno != EEXIST){
-        LOGF("Bundle Store : Failed to create folder %s (error %d)", values_path, errno);
+        LOGF_ERROR("Bundle Store : Failed to create folder %s (error %d)", values_path, errno);
         return NULL;
     }
     free(values_path);
@@ -57,7 +56,7 @@ struct bundle_store* hal_store_init(const char* identifier) {
     char* data_path = malloc(sizeof(char) * (strlen(identifier) + 5 + 1));
     sprintf(data_path, "%s/data", identifier);
     if(mkdir(data_path, S_IRWXG|S_IRWXU) && errno != EEXIST){
-        LOGF("Bundle Store : Failed to create folder %s (error %d)", data_path, errno);
+        LOGF_ERROR("Bundle Store : Failed to create folder %s (error %d)", data_path, errno);
         return NULL;
     }
     free(data_path);
@@ -94,7 +93,7 @@ void write_bundle_to_file(void* file, const void * b, const size_t size){
 	const uint8_t* buffer = (const uint8_t*) b;
 
 	if(fwrite(buffer, 1, size, f) != size) {
-		LOG("FileCLA : failed to write file buffer");
+		LOG_ERROR("FileCLA : failed to write file buffer");
 	}
 }
 
@@ -152,7 +151,7 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundl
         return_result = bundle_serialize(bundle, write_bundle_to_file, fd);
         fclose(fd);
     } else {
-        LOGF("Bundle Store : Failed to create file %s (error %d)", path, errno);
+        LOGF_ERROR("Bundle Store : Failed to create file %s (error %d)", path, errno);
     }
 
     free(path);
@@ -268,7 +267,7 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
                 continue; // Error reading file
             }
 
-            while((len = fread(&buffer, sizeof(char), FILECLA_READ_BUFFER_SIZE, file)) > 0){
+            while((len = fread(&buffer, sizeof(char), HAL_STORE_READ_BUFFER_SIZE, file)) > 0){
                 
 				struct parser *basedata;
                 
@@ -289,7 +288,7 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
 
             if(next_bundle != NULL){
                 if(remove(filename)){
-                    LOGF("Bundle Store : Error removeing file %s", filename);
+                    LOGF_ERROR("Bundle Store : Error removing file %s", filename);
                 }
                 break;
             }
@@ -325,12 +324,12 @@ enum ud3tn_result hal_store_set_uint64_value(
 
     FILE* file = fopen(filepath, "w");
     if(file == NULL){
-        LOGF("Bundle Store : Failed to write value %s in file %s", key, filepath);
+        LOGF_ERROR("Bundle Store : Failed to write value %s in file %s", key, filepath);
         result = UD3TN_FAIL;
     } else {
         size_t n = fwrite(&value, sizeof(uint64_t), 1, file);
         if(n < 1){
-            LOGF("Bundle Store : Failed to write value %s in file %s", key, filepath);
+            LOGF_ERROR("Bundle Store : Failed to write value %s in file %s", key, filepath);
             result = UD3TN_FAIL;
         }
         fclose(file);
@@ -353,7 +352,7 @@ uint64_t hal_store_get_uint64_value(
     if(file != NULL){
         size_t n = fread(&value, sizeof(uint64_t), 1, file);
         if(n < 1){
-            LOGF("Bundle Store : Failed to read value %s in file %s", key, filepath);
+            LOGF_ERROR("Bundle Store : Failed to read value %s in file %s", key, filepath);
             value = default_value;
         }
         fclose(file);

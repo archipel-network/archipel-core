@@ -5,16 +5,23 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
+
+#if defined(CLA_TX_RATE_LIMIT) && CLA_TX_RATE_LIMIT != 0
+static const int rate_sleep_time_ms = 1000 / CLA_TX_RATE_LIMIT;
+#else // CLA_TX_RATE_LIMIT
+static const int rate_sleep_time_ms;
+#endif // CLA_TX_RATE_LIMIT
 
 // BPv7 5.4-4 / RFC5050 5.4-5
 static void prepare_bundle_for_forwarding(struct bundle *bundle)
@@ -39,7 +46,26 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle)
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
 	// possible moment ... the bundle age value MUST be increased ..."
 	if (bundle_age_update(bundle, dwell_time_ms) == UD3TN_FAIL)
-		LOGF("TX: Bundle %p age block update failed!", bundle);
+		LOGF_ERROR("TX: Bundle %p age block update failed!", bundle);
+}
+
+static void bp_inform_tx(QueueIdentifier_t signaling_queue,
+			 struct bundle *const b,
+			 struct cla_link *const link,
+			 const bool success)
+{
+	bundle_processor_inform(
+		signaling_queue,
+		(struct bundle_processor_signal) {
+			.type = (
+				success
+				? BP_SIGNAL_TRANSMISSION_SUCCESS
+				: BP_SIGNAL_TRANSMISSION_FAILURE
+			),
+			.bundle = b,
+			.peer_cla_addr = cla_get_cla_addr_from_link(link),
+		}
+	);
 }
 
 static void cla_contact_tx_task(void *param)
@@ -52,9 +78,6 @@ static void cla_contact_tx_task(void *param)
 		link->config->vtable->cla_send_packet_data;
 	QueueIdentifier_t signaling_queue =
 		link->config->bundle_agent_interface->bundle_signaling_queue;
-#ifdef CLA_TX_RATE_LIMIT
-	const int rate_sleep_time_ms = 1000 / CLA_TX_RATE_LIMIT;
-#endif // CLA_TX_RATE_LIMIT
 
 	for (;;) {
 		if (hal_queue_receive(link->tx_queue_handle,
@@ -69,7 +92,7 @@ static void cla_contact_tx_task(void *param)
 			struct bundle *b = rbl->data;
 
 			prepare_bundle_for_forwarding(b);
-			LOGF(
+			LOGF_DEBUG(
 				"TX: Sending bundle %p via CLA %s",
 				b,
 				link->config->vtable->cla_name_get()
@@ -87,24 +110,18 @@ static void cla_contact_tx_task(void *param)
 			link->config->vtable->cla_end_packet(link);
 
 			if (s == UD3TN_OK) {
-				bundle_processor_inform(
+				bp_inform_tx(
 					signaling_queue,
 					b,
-					BP_SIGNAL_TRANSMISSION_SUCCESS,
-					cla_get_cla_addr_from_link(link),
-					NULL,
-					NULL,
-					NULL
+					link,
+					true
 				);
 			} else {
-				bundle_processor_inform(
+				bp_inform_tx(
 					signaling_queue,
 					b,
-					BP_SIGNAL_TRANSMISSION_FAILURE,
-					cla_get_cla_addr_from_link(link),
-					NULL,
-					NULL,
-					NULL
+					link,
+					false
 				);
 			}
 
@@ -114,9 +131,8 @@ static void cla_contact_tx_task(void *param)
 			// Free the bundle list from the command step-by-step.
 			free(tmp);
 
-#ifdef CLA_TX_RATE_LIMIT
-			hal_task_delay(rate_sleep_time_ms);
-#endif // CLA_TX_RATE_LIMIT
+			if (rate_sleep_time_ms)
+				hal_task_delay(rate_sleep_time_ms);
 		}
 
 		// Free the attached CLA address - a copy is made by the
@@ -136,14 +152,11 @@ static void cla_contact_tx_task(void *param)
 			while (rbl) {
 				struct bundle *b = rbl->data;
 
-				bundle_processor_inform(
+				bp_inform_tx(
 					signaling_queue,
 					b,
-					BP_SIGNAL_TRANSMISSION_FAILURE,
-					cla_get_cla_addr_from_link(link),
-					NULL,
-					NULL,
-					NULL
+					link,
+					false
 				);
 
 				struct routed_bundle_list *tmp = rbl;
@@ -165,10 +178,7 @@ enum ud3tn_result cla_launch_contact_tx_task(struct cla_link *link)
 
 	const enum ud3tn_result res = hal_task_create(
 		cla_contact_tx_task,
-		NULL,
-		CONTACT_TX_TASK_PRIORITY,
-		link,
-		CONTACT_TX_TASK_STACK_SIZE
+		link
 	);
 
 	// Not launched, no need to wait for exit.

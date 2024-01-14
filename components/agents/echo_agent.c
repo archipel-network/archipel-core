@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "agents/echo_agent.h"
 
+#include "platform/hal_io.h"
 #include "platform/hal_time.h"
 
 #include "ud3tn/agent_util.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 
 #include <stdbool.h>
@@ -45,6 +45,11 @@ static void callback(struct bundle_adu data, void *p, const void *bp_context)
 		time_ms
 	);
 
+	LOGF_DEBUG(
+		"Echo Agent: Responding to echo request from %s.",
+		data.source
+	);
+
 	agent_create_forward_bundle_direct(
 		bp_context,
 		params->local_eid,
@@ -77,12 +82,20 @@ int echo_agent_setup(struct bundle_agent_interface *const bai,
 	params->last_bundle_timestamp_s = 0;
 	params->last_bundle_sequence_number = 0;
 
+	const struct agent agent = {
+		.sink_identifier = (
+			params->is_ipn
+			? AGENT_ID_ECHO_IPN
+			: AGENT_ID_ECHO_DTN
+		),
+		.callback = callback,
+		.param = params,
+	};
+
 	return bundle_processor_perform_agent_action(
 		bai->bundle_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		params->is_ipn ? AGENT_ID_ECHO_IPN : AGENT_ID_ECHO_DTN,
-		callback,
-		params,
+		agent,
 		false
 	);
 }

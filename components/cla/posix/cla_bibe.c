@@ -3,17 +3,16 @@
 #include "aap/aap_parser.h"
 #include "aap/aap_serializer.h"
 
+#include "cla/bibe_proto.h"
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 #include "cla/posix/cla_bibe.h"
-#include "cla/bibe_proto.h"
 #include "cla/posix/cla_tcp_common.h"
 #include "cla/posix/cla_tcp_util.h"
 
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
@@ -23,7 +22,6 @@
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
@@ -36,6 +34,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+static const char *CLA_NAME = "bibe";
 
 struct bibe_config {
 	struct cla_tcp_config base;
@@ -60,9 +60,10 @@ struct bibe_contact_parameters {
 	const char *partner_eid;
 
 	bool in_contact;
-	int connect_attempt;
 
 	int socket;
+
+	struct cla_tcp_rate_limit_config rl_config;
 };
 
 static enum ud3tn_result handle_established_connection(
@@ -74,7 +75,7 @@ static enum ud3tn_result handle_established_connection(
 			      &bibe_config->base, param->cla_sock_addr,
 			      true)
 			!= UD3TN_OK) {
-		LOG("bibe: Error initializing CLA link!");
+		LOG_ERROR("BIBE: Error initializing CLA link!");
 		return UD3TN_FAIL;
 	}
 
@@ -101,7 +102,7 @@ static void bibe_link_management_task(void *p)
 
 	ASSERT(param->cla_sock_addr != NULL);
 	if (!param->cla_sock_addr) {
-		LOG("bibe: Empty CLA address, cannot launch management task");
+		LOG_WARN("BIBE: Empty CLA address, cannot launch management task");
 		goto fail;
 	}
 
@@ -110,44 +111,35 @@ static void bibe_link_management_task(void *p)
 		if (param->socket > 0) {
 			// NOTE the following function releases and re-locks sem
 			handle_established_connection(param);
-			param->connect_attempt = 0;
 			param->socket = -1;
 		} else {
 			if (param->cla_sock_addr[0] == '\0') {
-				LOG("bibe: Empty CLA address, cannot initiate connection");
+				LOG_WARN("BIBE: Empty CLA address, cannot initiate connection");
 				break;
 			}
 			ASSERT(param->socket < 0);
 			hal_semaphore_release(param->param_semphr);
 
+			if (cla_tcp_rate_limit_connection_attempts(
+					&param->rl_config))
+				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr, // only used by us
 				NULL
 			);
 
 			hal_semaphore_take_blocking(param->param_semphr);
-			if (socket < 0) {
-				if (++param->connect_attempt >
-						CLA_TCP_MAX_RETRY_ATTEMPTS) {
-					LOG("bibe: Final retry failed.");
-					break;
-				}
-				LOGF("bibe: Delayed retry %d of %d in %d ms",
-				     param->connect_attempt,
-				     CLA_TCP_MAX_RETRY_ATTEMPTS,
-				     CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_release(param->param_semphr);
-				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_take_blocking(
-					param->param_semphr
-				);
+			if (socket < 0)
 				continue;
-			}
 			param->socket = socket;
 
 			const struct aap_message register_bibe = {
 				.type = AAP_MESSAGE_REGISTER,
-				.eid = get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN ? "2925" : "bibe",
+				.eid = (
+					get_eid_scheme(param->partner_eid) == EID_SCHEME_IPN
+					? "2925"
+					: "bibe"
+				),
 				.eid_length = 4,
 			};
 			struct tcp_write_to_socket_param wsp = {
@@ -162,31 +154,22 @@ static void bibe_link_management_task(void *p)
 				true
 			);
 			if (wsp.errno_) {
-				LOGERROR("bibe", "send()", wsp.errno_);
+				LOG_ERRNO("BIBE", "send()", wsp.errno_);
 				close(param->socket);
-				if (++param->connect_attempt >
-						CLA_TCP_MAX_RETRY_ATTEMPTS) {
-					LOG("bibe: Final retry failed.");
-					break;
-				}
-				LOGF("bibe: Delayed retry %d of %d in %d ms",
-				     param->connect_attempt,
-				     CLA_TCP_MAX_RETRY_ATTEMPTS,
-				     CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_release(param->param_semphr);
-				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_take_blocking(
-					param->param_semphr
-				);
+				param->socket = -1;
 				continue;
 			}
-			LOGF("bibe: Connected successfully to \"%s\"",
-			     param->cla_sock_addr);
+			LOGF_INFO(
+				"BIBE: Connected successfully to \"%s\"",
+				param->cla_sock_addr
+			);
 		}
 	} while (param->in_contact);
 
-	LOGF("bibe: Terminating contact link manager for \"%s\"",
-	     param->cla_sock_addr);
+	LOGF_INFO(
+		"BIBE: Terminating contact link manager for \"%s\"",
+		param->cla_sock_addr
+	);
 
 	// Unblock parallel threads that thought to re-use the link while
 	// telling them it is not usable anymore by invalidating the socket.
@@ -218,17 +201,16 @@ static void launch_connection_management_task(
 		malloc(sizeof(struct bibe_contact_parameters));
 
 	if (!contact_params) {
-		LOG("bibe: Failed to allocate memory!");
+		LOG_ERROR("BIBE: Failed to allocate memory!");
 		return;
 	}
 
 	contact_params->config = bibe_config;
-	contact_params->connect_attempt = 0;
 
-	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 	if (!cla_sock_addr) {
-		LOG("bibe: Invalid address");
+		LOG_WARN("BIBE: Invalid address");
 		free(contact_params);
 		return;
 	}
@@ -243,16 +225,18 @@ static void launch_connection_management_task(
 	contact_params->partner_eid = eid;
 	contact_params->socket = -1;
 	contact_params->in_contact = true;
+	contact_params->rl_config.last_connection_attempt_ms = 0;
+	contact_params->rl_config.last_connection_attempt_no = 1;
 
 	if (!contact_params->cla_sock_addr) {
-		LOG("bibe: Failed to obtain CLA address!");
+		LOG_ERROR("BIBE: Failed to obtain CLA address!");
 		goto fail;
 	}
 
 	contact_params->param_semphr = hal_semaphore_init_binary();
 	ASSERT(contact_params->param_semphr != NULL);
 	if (contact_params->param_semphr == NULL) {
-		LOG("bibe: Failed to create semaphore!");
+		LOG_ERROR("BIBE: Failed to create semaphore!");
 		goto fail;
 	}
 	// NOTE that the binary semaphore (mutex) is locked after creation.
@@ -267,20 +251,17 @@ static void launch_connection_management_task(
 		contact_params
 	);
 	if (!htab_entry) {
-		LOG("bibe: Error creating htab entry!");
+		LOG_ERROR("BIBE: Error creating htab entry!");
 		goto fail_sem;
 	}
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		bibe_link_management_task,
-		"bibe_mgmt_t",
-		CONTACT_MANAGEMENT_TASK_PRIORITY,
-		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE
+		contact_params
 	);
 
 	if (task_creation_result != UD3TN_OK) {
-		LOG("bibe: Error creating management task!");
+		LOG_ERROR("BIBE: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->cla_sock_addr);
 			ASSERT(htab_remove(
@@ -312,7 +293,7 @@ static enum ud3tn_result bibe_launch(struct cla_config *const config)
 
 static const char *bibe_name_get(void)
 {
-	return "bibe";
+	return CLA_NAME;
 }
 
 size_t bibe_mbs_get(struct cla_config *const config)
@@ -397,10 +378,10 @@ static struct bibe_contact_parameters *get_contact_parameters(
 {
 	struct bibe_config *const bibe_config =
 		(struct bibe_config *)config;
-	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "bibe");
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 	if (!cla_sock_addr) {
-		LOG("bibe: Invalid address");
+		LOG_WARN("BIBE: Invalid address");
 		return NULL;
 	}
 
@@ -485,8 +466,10 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 	if (param) {
 		hal_semaphore_take_blocking(param->param_semphr);
 		if (param->socket > 0 || param->in_contact) {
-			LOGF("bibe: Associating open connection with \"%s\" to new contact",
-			     cla_addr);
+			LOGF_INFO(
+				"BIBE: Associating open connection with \"%s\" to new contact",
+				cla_addr
+			);
 			param->in_contact = true;
 
 			const struct bundle_agent_interface *bai =
@@ -498,12 +481,12 @@ static enum ud3tn_result bibe_start_scheduled_contact(
 			if (link_active) {
 				bundle_processor_inform(
 					bai->bundle_signaling_queue,
-					NULL,
-					BP_SIGNAL_NEW_LINK_ESTABLISHED,
-					strdup(cla_addr),
-					NULL,
-					NULL,
-					NULL
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+						.peer_cla_addr = strdup(
+							cla_addr
+						),
+					}
 				);
 			}
 
@@ -541,8 +524,10 @@ static enum ud3tn_result bibe_end_scheduled_contact(
 		hal_semaphore_take_blocking(param->param_semphr);
 		param->in_contact = false;
 		if (param->socket >= 0) {
-			LOGF("bibe: Terminating connection with \"%s\"",
-			     cla_addr);
+			LOGF_INFO(
+				"BIBE: Terminating connection with \"%s\"",
+				cla_addr
+			);
 			// Shutting down the socket to force the lower layers
 			// Application Agent to deregister the "bibe" sink.
 			shutdown(param->socket, SHUT_RDWR);
@@ -573,7 +558,7 @@ void bibe_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 
 	if (tcp_send_all(tcp_link->connection_socket,
 			 hdr.data, hdr.hdr_len) == -1) {
-		LOG("bibe: Error during sending. Data discarded.");
+		LOG_ERROR("BIBE: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 
@@ -592,7 +577,7 @@ void bibe_send_packet_data(
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
-		LOG("bibe: Error during sending. Data discarded.");
+		LOG_ERROR("BIBE: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -632,11 +617,13 @@ static enum ud3tn_result bibe_init(
 	// Set base_config vtable
 	config->base.base.vtable = &bibe_vtable;
 
+	config->param_htab_sem = hal_semaphore_init_binary();
+	if (!config->param_htab_sem)
+		return UD3TN_FAIL;
+	hal_semaphore_release(config->param_htab_sem);
+
 	htab_init(&config->param_htab, CLA_TCP_PARAM_HTAB_SLOT_COUNT,
 		  config->param_htab_elem);
-
-	config->param_htab_sem = hal_semaphore_init_binary();
-	hal_semaphore_release(config->param_htab_sem);
 
 	config->node = node;
 	config->service = service;
@@ -651,7 +638,7 @@ struct cla_config *bibe_create(
 	struct bibe_config *config = malloc(sizeof(struct bibe_config));
 
 	if (!config) {
-		LOG("bibe: Memory allocation failed!");
+		LOG_ERROR("BIBE: Memory allocation failed!");
 		return NULL;
 	}
 	// TODO: Allow for passing of options indicating
@@ -660,7 +647,7 @@ struct cla_config *bibe_create(
 	if (bibe_init(config, options[0], options[1],
 		      bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("bibe: Initialization failed!");
+		LOG_ERROR("BIBE: Initialization failed!");
 		return NULL;
 	}
 

@@ -4,7 +4,6 @@
 
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 
 #include "platform/hal_io.h"
@@ -34,8 +33,10 @@ static void callback(struct bundle_adu data, void *param, const void *ctx)
 
 		if (!node_id || strncmp(ca_param->local_eid, node_id,
 					strlen(ca_param->local_eid)) != 0) {
-			LOGF("ConfigAgent: Dropped config message from foreign endpoint \"%s\"",
-			     data.source);
+			LOGF_WARN(
+				"ConfigAgent: Dropped config message from foreign endpoint \"%s\"",
+				data.source
+			);
 			free(node_id);
 			return;
 		}
@@ -68,15 +69,24 @@ int config_agent_setup(
 	struct config_agent_params *const ca_param = malloc(
 		sizeof(struct config_agent_params)
 	);
+
 	ca_param->local_eid = local_eid;
 	ca_param->allow_remote_configuration = allow_remote_configuration;
+
+	const struct agent agent = {
+		.sink_identifier = (
+			is_ipn
+			? AGENT_ID_CONFIG_IPN
+			: AGENT_ID_CONFIG_DTN
+		),
+		.callback = callback,
+		.param = ca_param,
+	};
 
 	return bundle_processor_perform_agent_action(
 		bundle_processor_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		is_ipn ? AGENT_ID_CONFIG_IPN : AGENT_ID_CONFIG_DTN,
-		callback,
-		ca_param,
+		agent,
 		false
 	);
 }

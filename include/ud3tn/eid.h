@@ -4,7 +4,10 @@
 
 #include "ud3tn/result.h"
 
+#include <limits.h>
 #include <stdint.h>
+
+#define EID_MAX_LEN (INT16_MAX - 1)
 
 enum eid_scheme {
 	EID_SCHEME_UNKNOWN,
@@ -41,6 +44,18 @@ enum ud3tn_result validate_dtn_eid_demux(const char *demux);
 enum ud3tn_result validate_local_eid(const char *eid);
 
 /**
+ * Pre-processes local node IDs specified by users such that they have a
+ * consistent internal representation, e.g., by adding a trailing slash for
+ * dtn-scheme EIDs. Note that this does not replace the need for validating the
+ * EID afterwards.
+ *
+ * @param eid EID string
+ *
+ * @return A copy of eid, potentially modified to make it a valid local node ID.
+ */
+char *preprocess_local_eid(const char *eid);
+
+/**
  * Determine the EID scheme for the given EID string.
  *
  * @param eid EID string
@@ -71,6 +86,7 @@ const char *parse_ipn_ull(const char *const cur, uint64_t *const out);
 enum ud3tn_result validate_ipn_eid(
 	const char *const eid,
 	uint64_t *const node_out, uint64_t *const service_out);
+
 /**
  * Get the node ID for a given EID.
  *
@@ -81,5 +97,16 @@ enum ud3tn_result validate_ipn_eid(
  *         name. On error, NULL is returned.
  */
 char *get_node_id(const char *const eid);
+
+/**
+ * Obtain a pointer to the agent ID for a given EID. Assumes that the provided
+ * EID is valid.
+ *
+ * @param eid EID string
+ *
+ * @return A pointer to the start of the agent ID inside the given EID string,
+ *         NULL on error.
+ */
+const char *get_agent_id_ptr(const char *const eid);
 
 #endif // EID_H_INCLUDED

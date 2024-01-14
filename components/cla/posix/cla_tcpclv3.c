@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
-#define _POSIX_C_SOURCE 200809L
-#define _DEFAULT_SOURCE
-
 #include "cla/cla.h"
 #include "cla/cla_contact_tx_task.h"
 #include "cla/posix/cla_tcp_common.h"
@@ -13,16 +10,14 @@
 #include "bundle6/sdnv.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 
-#include "ud3tn/cmdline.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
@@ -38,6 +33,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
+static const char *CLA_NAME = "tcpclv3";
 
 struct tcpclv3_config {
 	struct cla_tcp_config base;
@@ -74,8 +70,6 @@ struct tcpclv3_contact_parameters {
 	char *eid;
 	char *cla_addr;
 
-	int connect_attempt;
-
 	int socket;
 
 	enum TCPCLV3_STATE state;
@@ -85,6 +79,8 @@ struct tcpclv3_contact_parameters {
 	bool opportunistic;
 
 	struct tcpclv3_parser tcpclv3_parser;
+
+	struct cla_tcp_rate_limit_config rl_config;
 };
 
 /*
@@ -112,7 +108,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 
 	if (tcp_send_all(socket, header, header_len) == -1) {
 		free(header);
-		LOGERROR("TCPCLv3", "send(header)", errno);
+		LOG_ERRNO("TCPCLv3", "send(header)", errno);
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
@@ -129,7 +125,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 	if (tcp_recv_all(socket, header_buf, 8) <= 0 ||
 			memcmp(header_buf, "dtn!", 4) != 0 ||
 			header_buf[4] < 0x03) {
-		LOG("TCPCLv3: Did not receive proper \"dtn!\" magic!");
+		LOG_WARN("TCPCLv3: Did not receive proper \"dtn!\" magic!");
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
@@ -143,7 +139,7 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 			recv(socket, &cur_byte, 1, 0) == 1)
 		sdnv_read_u32(&sdnv_state, &peer_eid_len, cur_byte);
 	if (sdnv_state.status != SDNV_DONE) {
-		LOG("TCPCLv3: Error receiving EID length SDNV!");
+		LOG_WARN("TCPCLv3: Error receiving EID length SDNV!");
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
@@ -151,8 +147,10 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 	char *eid_buf = malloc(peer_eid_len + 1);
 
 	if (!eid_buf) {
-		LOGF("TCPCLv3: Error allocating memory (%u byte(s)) for EID!",
-		     peer_eid_len);
+		LOGF_ERROR(
+			"TCPCLv3: Error allocating memory (%u byte(s)) for EID!",
+			peer_eid_len
+		);
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
@@ -160,16 +158,21 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 	if (tcp_recv_all(socket, eid_buf,
 			 peer_eid_len) != (int64_t)peer_eid_len) {
 		free(eid_buf);
-		LOGF("TCPCLv3: Error receiving peer EID of len %u byte(s)",
-		     peer_eid_len);
+		LOGF_WARN(
+			"TCPCLv3: Error receiving peer EID of len %u byte(s)",
+			peer_eid_len
+		);
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
 	}
 
 	eid_buf[peer_eid_len] = '\0';
 	if (validate_eid(eid_buf) != UD3TN_OK) {
-		LOGF("TCPCLv3: Received invalid peer EID of len %u: \"%s\"",
-		     peer_eid_len, eid_buf);
+		LOGF_WARN(
+			"TCPCLv3: Received invalid peer EID of len %u: \"%s\"",
+			peer_eid_len,
+			eid_buf
+		);
 		free(eid_buf);
 		hal_semaphore_take_blocking(param->param_semphr);
 		return UD3TN_FAIL;
@@ -177,13 +180,19 @@ static enum ud3tn_result cla_tcpclv3_perform_handshake(
 
 	hal_semaphore_take_blocking(param->param_semphr);
 
-	LOGF("TCPCLv3: Handshake performed with \"%s\", reports EID \"%s\"",
-	     param->cla_addr ? param->cla_addr : "<incoming>", eid_buf);
+	LOGF_INFO(
+		"TCPCLv3: Handshake performed with \"%s\", reports EID \"%s\"",
+		param->cla_addr ? param->cla_addr : "<incoming>",
+		eid_buf
+	);
 	if (param->eid) {
 		// We did already configure a value for the EID (via a contact)
 		if (strcmp(param->eid, eid_buf) != 0) {
-			LOGF("TCPCLv3: Warning: EID \"%s\" differs from configured EID \"%s\", using own configuration",
-			     eid_buf, param->eid);
+			LOGF_WARN(
+				"TCPCLv3: EID \"%s\" differs from configured EID \"%s\", using own configuration",
+				eid_buf,
+				param->eid
+			);
 		}
 		free(eid_buf);
 	} else {
@@ -212,8 +221,10 @@ static enum ud3tn_result handle_established_connection(
 		// Another connection exists. We replace it as primary
 		// connection used for TX, assuming the newest connection is
 		// always the one to be used.
-		LOGF("TCPCLv3: Taking over management of connection with \"%s\"",
-		     param->eid);
+		LOGF_INFO(
+			"TCPCLv3: Taking over management of connection with \"%s\"",
+			param->eid
+		);
 		htab_remove(&tcpclv3_config->param_htab, param->eid);
 		if (!other->opportunistic) {
 			// Take over the "planned" status
@@ -237,7 +248,7 @@ static enum ud3tn_result handle_established_connection(
 			      &tcpclv3_config->base, param->cla_addr,
 			      true)
 			!= UD3TN_OK) {
-		LOG("TCPCLv3: Error initializing CLA link!");
+		LOG_ERROR("TCPCLv3: Error initializing CLA link!");
 		param->state = TCPCLV3_CONNECTING;
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 		return UD3TN_FAIL;
@@ -270,12 +281,15 @@ static void tcpclv3_link_management_task(void *p)
 		if (param->state == TCPCLV3_CONNECTING) {
 			if (param->opportunistic || !param->cla_addr ||
 			    param->cla_addr[0] == '\0') {
-				LOG("TCPCLv3: No CLA address present, not initiating connection attempt");
+				LOG_WARN("TCPCLv3: No CLA address present, not initiating connection attempt");
 				break;
 			}
 
 			hal_semaphore_release(param->param_semphr);
 
+			if (cla_tcp_rate_limit_connection_attempts(
+					&param->rl_config))
+				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_addr,
 				"4556"
@@ -283,24 +297,9 @@ static void tcpclv3_link_management_task(void *p)
 
 			hal_semaphore_take_blocking(param->param_semphr);
 
-			if (socket < 0) {
-				if (++param->connect_attempt >
-						CLA_TCP_MAX_RETRY_ATTEMPTS) {
-					LOG("TCPCLv3: Final retry failed.");
-					break;
-				}
-				LOGF("TCPCLv3: Delayed retry %d of %d in %d ms",
-				     param->connect_attempt,
-				     CLA_TCP_MAX_RETRY_ATTEMPTS,
-				     CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_release(param->param_semphr);
-				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_take_blocking(
-					param->param_semphr
-				);
+			if (socket < 0)
 				continue;
-			}
-			LOGF("TCPCLv3: Connected successfully to \"%s\"",
+			LOGF_INFO("TCPCLv3: Connected successfully to \"%s\"",
 			     param->cla_addr);
 			param->socket = socket;
 			param->state = TCPCLV3_CONNECTED;
@@ -309,25 +308,26 @@ static void tcpclv3_link_management_task(void *p)
 			if (cla_tcpclv3_perform_handshake(param) == UD3TN_OK)
 				handle_established_connection(param);
 			if (param->opportunistic) {
-				LOG("TCPCLv3: Link marked as opportunistic, not initiating reconnection attempt");
+				LOG_INFO("TCPCLv3: Link marked as opportunistic, not initiating reconnection attempt");
 				break;
 			}
 			if (!param->cla_addr || param->cla_addr[0] == '\0') {
-				LOG("TCPCLv3: No CLA address present, not initiating reconnection attempt");
+				LOG_INFO("TCPCLv3: No CLA address present, not initiating reconnection attempt");
 				break;
 			}
 			param->state = TCPCLV3_CONNECTING;
-			param->connect_attempt = 0;
 		} else {
 			// TCPCLV3_INACTIVE, TCPCLV3_ESTABLISHED
 			// should never happen as we are not created or wait
-			ASSERT(0);
+			abort();
 		}
 	}
-	LOGF("TCPCLv3: Terminating contact link manager%s%s%s",
-	     param->eid ? " for \"" : "",
-	     param->eid ? param->eid : "",
-	     param->eid ? "\"" : "");
+	LOGF_INFO(
+		"TCPCLv3: Terminating contact link manager%s%s%s",
+		param->eid ? " for \"" : "",
+		param->eid ? param->eid : "",
+		param->eid ? "\"" : ""
+	);
 
 	// Unblock parallel threads that thought to re-use the link while
 	// telling them it is not usable anymore by invalidating the socket
@@ -367,35 +367,34 @@ static void launch_connection_management_task(
 		malloc(sizeof(struct tcpclv3_contact_parameters));
 
 	if (!contact_params) {
-		LOG("TCPCLv3: Failed to allocate memory!");
+		LOG_ERROR("TCPCLv3: Failed to allocate memory!");
 		return;
 	}
 
 	contact_params->config = tcpclv3_config;
-	contact_params->connect_attempt = 0;
 
 	if (sock < 0) {
 		ASSERT(eid && cla_addr);
 		if (!eid || !cla_addr) {
-			LOG("TCPCLv3: Invalid parameters!");
+			LOG_ERROR("TCPCLv3: Invalid parameters!");
 			free(contact_params);
 			return;
 		}
 		contact_params->eid = strdup(eid);
 
 		if (!contact_params->eid) {
-			LOG("TCPCLv3: Failed to copy EID!");
+			LOG_ERROR("TCPCLv3: Failed to copy EID!");
 			free(contact_params);
 			return;
 		}
 
 		contact_params->cla_addr = cla_get_connect_addr(
 			cla_addr,
-			"tcpclv3"
+			CLA_NAME
 		);
 
 		if (!contact_params->cla_addr) {
-			LOG("TCPCLv3: Invalid address");
+			LOG_ERROR("TCPCLv3: Invalid address");
 			free(contact_params->eid);
 			free(contact_params);
 			return;
@@ -413,16 +412,19 @@ static void launch_connection_management_task(
 		contact_params->opportunistic = true;
 	}
 
+	contact_params->rl_config.last_connection_attempt_ms = 0;
+	contact_params->rl_config.last_connection_attempt_no = 1;
+
 	contact_params->param_semphr = hal_semaphore_init_binary();
 	ASSERT(contact_params->param_semphr != NULL);
 	if (contact_params->param_semphr == NULL) {
-		LOG("TCPCLv3: Failed to create semaphore!");
+		LOG_ERROR("TCPCLv3: Failed to create semaphore!");
 		goto fail;
 	}
 	// NOTE that the binary semaphore (mutex) is locked after creation.
 
 	if (!tcpclv3_parser_init(&contact_params->tcpclv3_parser)) {
-		LOG("TCPCLv3: Error initializing parser!");
+		LOG_ERROR("TCPCLv3: Error initializing parser!");
 		goto fail_sem;
 	}
 
@@ -435,21 +437,18 @@ static void launch_connection_management_task(
 			contact_params
 		);
 		if (!htab_entry) {
-			LOG("TCPCLv3: Error creating htab entry!");
+			LOG_ERROR("TCPCLv3: Error creating htab entry!");
 			goto fail_sem;
 		}
 	}
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		tcpclv3_link_management_task,
-		"tcpclv3_mgmt_t",
-		CONTACT_MANAGEMENT_TASK_PRIORITY,
-		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE
+		contact_params
 	);
 
 	if (task_creation_result != UD3TN_OK) {
-		LOG("TCPCLv3: Error creating management task!");
+		LOG_ERROR("TCPCLv3: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->eid);
 			ASSERT(htab_remove(
@@ -503,8 +502,8 @@ static void tcpclv3_listener_task(void *p)
 		hal_semaphore_release(tcpclv3_config->param_htab_sem);
 	}
 
-	// unexpected failure to accept() - exit thread in release mode
-	ASSERT(0);
+	LOG_ERROR("TCPCLv3: Unxepected failure to accept connection - abort!");
+	abort();
 }
 
 /*
@@ -515,16 +514,13 @@ static enum ud3tn_result tcpclv3_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		tcpclv3_listener_task,
-		"tcpclv3_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 
 static const char *tcpclv3_name_get(void)
 {
-	return "tcpclv3";
+	return CLA_NAME;
 }
 
 static size_t tcpclv3_mbs_get(struct cla_config *const config)
@@ -588,16 +584,18 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 	if (param != NULL) {
 		hal_semaphore_take_blocking(param->param_semphr);
 		if (param->state != TCPCLV3_INACTIVE) {
-			LOGF("TCPCLv3: Associating open connection with \"%s\" to new contact",
-			eid);
+			LOGF_INFO(
+				"TCPCLv3: Associating open connection with \"%s\" to new contact",
+				eid
+			);
 			param->opportunistic = false;
 			// Update CLA address in parameters
 			if (param->cla_addr)
 				free(param->cla_addr);
-			param->cla_addr = cla_get_connect_addr(cla_addr, "tcpclv3");
+			param->cla_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 			if (!param->cla_addr) {
-				LOG("TCPCLv3: Invalid address");
+				LOG_WARN("TCPCLv3: Invalid address");
 				hal_semaphore_release(param->param_semphr);
 				hal_semaphore_release(tcpclv3_config->param_htab_sem);
 				return UD3TN_FAIL;
@@ -615,12 +613,12 @@ static enum ud3tn_result tcpclv3_start_scheduled_contact(
 			if (link_active) {
 				bundle_processor_inform(
 					bai->bundle_signaling_queue,
-					NULL,
-					BP_SIGNAL_NEW_LINK_ESTABLISHED,
-					strdup(cla_addr),
-					NULL,
-					NULL,
-					NULL
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+						.peer_cla_addr = strdup(
+							cla_addr
+						),
+					}
 				);
 			}
 
@@ -657,8 +655,10 @@ static enum ud3tn_result tcpclv3_end_scheduled_contact(
 	if (param != NULL) {
 		hal_semaphore_take_blocking(param->param_semphr);
 		if (!param->opportunistic) {
-			LOGF("TCPCLv3: Marking active contact with \"%s\" as opportunistic",
-			     eid);
+			LOGF_INFO(
+				"TCPCLv3: Marking active contact with \"%s\" as opportunistic",
+				eid
+			);
 			param->opportunistic = true;
 		}
 		hal_semaphore_release(param->param_semphr);
@@ -770,8 +770,7 @@ static void tcpclv3_begin_packet(struct cla_link *link, size_t length, char *cla
 
 	if (tcp_send_all(param->link.connection_socket,
 			 header_buffer, sdnv_len + 1) == -1) {
-		LOGERROR("TCPCLv3", "send(segment_header)",
-			 errno);
+		LOG_ERRNO("TCPCLv3", "send(segment_header)", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -795,7 +794,7 @@ static void tcpclv3_send_packet_data(
 	ASSERT(param->state == TCPCLV3_ESTABLISHED);
 
 	if (tcp_send_all(param->link.connection_socket, data, length) == -1) {
-		LOGERROR("TCPCLv3", "send()", errno);
+		LOG_ERRNO("TCPCLv3", "send()", errno);
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -839,17 +838,23 @@ static enum ud3tn_result tcpclv3_init(
 	/* set base_config vtable */
 	config->base.base.vtable = &tcpclv3_vtable;
 
+	config->param_htab_sem = hal_semaphore_init_binary();
+	if (!config->param_htab_sem)
+		return UD3TN_FAIL;
+	hal_semaphore_release(config->param_htab_sem);
+
 	htab_init(&config->param_htab, CLA_TCP_PARAM_HTAB_SLOT_COUNT,
 		  config->param_htab_elem);
-
-	config->param_htab_sem = hal_semaphore_init_binary();
-	hal_semaphore_release(config->param_htab_sem);
 
 	/* Start listening */
 	if (cla_tcp_listen(&config->base, node, service,
 			   CLA_TCP_MULTI_BACKLOG)
-			!= UD3TN_OK)
+			!= UD3TN_OK) {
+		hal_semaphore_take_blocking(config->param_htab_sem);
+		htab_trunc(&config->param_htab);
+		hal_semaphore_delete(config->param_htab_sem);
 		return UD3TN_FAIL;
+	}
 
 	return UD3TN_OK;
 }
@@ -859,21 +864,21 @@ struct cla_config *tcpclv3_create(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (option_count != 2) {
-		LOG("TCPCLv3: Options format has to be: <IP>,<PORT>");
+		LOG_ERROR("TCPCLv3: Options format has to be: <IP>,<PORT>");
 		return NULL;
 	}
 
 	struct tcpclv3_config *config = malloc(sizeof(struct tcpclv3_config));
 
 	if (!config) {
-		LOG("TCPCLv3: Memory allocation failed!");
+		LOG_ERROR("TCPCLv3: Memory allocation failed!");
 		return NULL;
 	}
 
 	if (tcpclv3_init(config, options[0], options[1],
 			 bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("TCPCLv3: Initialization failed!");
+		LOG_ERROR("TCPCLv3: Initialization failed!");
 		return NULL;
 	}
 

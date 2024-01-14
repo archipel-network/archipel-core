@@ -9,14 +9,12 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
 
-#include "ud3tn/cmdline.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/result.h"
 
 #include <sys/socket.h>
@@ -26,36 +24,34 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+static const char *CLA_NAME = "smtcp";
 
 static void smtcp_link_creation_task(void *param)
 {
 	struct cla_tcp_single_config *const smtcp_config = param;
 
-	LOGF("smtcp: Using %s mode",
-	     smtcp_config->tcp_active ? "active" : "passive");
+	LOGF_INFO(
+		"smtcp: Using %s mode",
+		smtcp_config->tcp_active ? "active" : "passive"
+	);
 
 	cla_tcp_single_link_creation_task(
 		smtcp_config,
 		sizeof(struct mtcp_link)
 	);
-
-	ASSERT(0);
 }
 
 static enum ud3tn_result smtcp_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		smtcp_link_creation_task,
-		"smtcp_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 
 static const char *smtcp_name_get(void)
 {
-	return "smtcp";
+	return CLA_NAME;
 }
 
 const struct cla_vtable smtcp_vtable = {
@@ -106,7 +102,7 @@ struct cla_config *smtcp_create(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (option_count < 2 || option_count > 3) {
-		LOG("smtcp: Options format has to be: <IP>,<PORT>[,<TCP_ACTIVE>]");
+		LOG_ERROR("smtcp: Options format has to be: <IP>,<PORT>[,<TCP_ACTIVE>]");
 		return NULL;
 	}
 
@@ -114,8 +110,10 @@ struct cla_config *smtcp_create(
 
 	if (option_count > 2) {
 		if (parse_tcp_active(options[2], &tcp_active) != UD3TN_OK) {
-			LOGF("smtcp: Could not parse TCP active flag: %s",
-			     options[2]);
+			LOGF_ERROR(
+				"smtcp: Could not parse TCP active flag: %s",
+				options[2]
+			);
 			return NULL;
 		}
 	}
@@ -124,14 +122,14 @@ struct cla_config *smtcp_create(
 		malloc(sizeof(struct cla_tcp_single_config));
 
 	if (!config) {
-		LOG("smtcp: Memory allocation failed!");
+		LOG_ERROR("smtcp: Memory allocation failed!");
 		return NULL;
 	}
 
 	if (smtcp_init(config, options[0], options[1], tcp_active,
 		       bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("smtcp: Initialization failed!");
+		LOG_ERROR("smtcp: Initialization failed!");
 		return NULL;
 	}
 

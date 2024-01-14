@@ -74,7 +74,7 @@ class AAPMessage:
         # Bundle ID
         if self.msg_type in (AAPMessageType.SENDCONFIRM,
                              AAPMessageType.CANCELBUNDLE):
-            msg.append(struct.pack("!Q", len(self.bundle_id)))
+            msg.append(struct.pack("!Q", self.bundle_id))
 
         return b"".join(msg)
 

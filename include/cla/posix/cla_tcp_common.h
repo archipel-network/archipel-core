@@ -18,6 +18,35 @@
 #define CLA_OPTION_TCP_ACTIVE "true"
 #define CLA_OPTION_TCP_PASSIVE "false"
 
+// Length of the listen backlog for single-connection CLAs
+#ifndef CLA_TCP_SINGLE_BACKLOG
+#define CLA_TCP_SINGLE_BACKLOG 1
+#endif // CLA_TCP_SINGLE_BACKLOG
+
+// Length of the listen backlog for multi-connection CLAs
+#ifndef CLA_TCP_MULTI_BACKLOG
+#define CLA_TCP_MULTI_BACKLOG 64
+#endif // CLA_TCP_MULTI_BACKLOG
+
+// On contact start, outgoing connections are attempted. If the first attempt
+// fails, it is retried in the given interval up to the given maximum number
+// of attempts.
+#ifndef CLA_TCP_RETRY_INTERVAL_MS
+#define CLA_TCP_RETRY_INTERVAL_MS 1000
+#endif // CLA_TCP_RETRY_INTERVAL_MS
+#ifndef CLA_TCP_MAX_RETRY_ATTEMPTS
+#define CLA_TCP_MAX_RETRY_ATTEMPTS 0
+#endif // CLA_TCP_MAX_RETRY_ATTEMPTS
+
+#ifndef CLA_TCP_ABORT_ON_LINK_TASK_TERMINATION
+#define CLA_TCP_ABORT_ON_LINK_TASK_TERMINATION 0
+#endif // CLA_TCP_ABORT_ON_LINK_TASK_TERMINATION
+
+// The number of slots in the TCP CLA hash tables (e.g. for TCPCLv3 and MTCP)
+#ifndef CLA_TCP_PARAM_HTAB_SLOT_COUNT
+#define CLA_TCP_PARAM_HTAB_SLOT_COUNT 32
+#endif // CLA_TCP_PARAM_HTAB_SLOT_COUNT
+
 struct cla_tcp_link {
 	struct cla_link base;
 
@@ -30,6 +59,13 @@ struct cla_tcp_config {
 
 	/* The handle for the passive or active socket */
 	int socket;
+};
+
+struct cla_tcp_rate_limit_config {
+	/* The last time a connection attempt was made, for rate limiting */
+	uint64_t last_connection_attempt_ms;
+	/* The number of the last connection attempt, for rate limiting */
+	int last_connection_attempt_no;
 };
 
 struct cla_tcp_single_config {
@@ -46,6 +82,9 @@ struct cla_tcp_single_config {
 
 	/* Semaphore for waiting until (some) contact is active. */
 	Semaphore_t contact_activity_sem;
+
+	/* Outgoing connection rate limiting */
+	struct cla_tcp_rate_limit_config rl_config;
 
 	/* The address/port to bind/connect to. */
 	const char *node;
@@ -89,6 +128,9 @@ void cla_tcp_single_listen_task(struct cla_tcp_single_config *config,
 
 void cla_tcp_single_link_creation_task(struct cla_tcp_single_config *config,
 				       const size_t struct_size);
+
+int cla_tcp_rate_limit_connection_attempts(
+	struct cla_tcp_rate_limit_config *config);
 
 // For the config vtable...
 

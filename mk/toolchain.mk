@@ -19,16 +19,6 @@ RANLIB   := $(GCC_TOOLCHAIN_PREFIX)ranlib
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objdump
 OBJCOPY  := $(GCC_TOOLCHAIN_PREFIX)objcopy
 
-# OS DETECTION
-
-UNAME_S := $(shell uname -s)
-
-ifeq ($(UNAME_S),Darwin)
-  EXPECT_MACOS_LINKER ?= 1
-else
-  EXPECT_MACOS_LINKER ?= 0
-endif
-
 # COMMON FLAGS
 
 CPPFLAGS += $(ARCH_FLAGS) -MMD -Iinclude $(EXTERNAL_INCLUDES)

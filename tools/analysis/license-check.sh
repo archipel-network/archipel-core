@@ -10,10 +10,14 @@ SPDX_LICENSE_STR="SPDX-License-Identifier: $(head -n 1 LICENSE)"
 echo 'Searching for SPDX expression "'"$SPDX_LICENSE_STR"'"'
 
 DIRS="components doc dockerfiles include mk pyd3tn python-ud3tn-utils tools test"
-FILES=$(find $DIRS -type f \( -name "*.[ch]" -o -name "*.py" -o -name "*.rs" -o -name "*.sh" \) )
+FILES=$(find $DIRS -type f \( -name "*.[ch]" -o -name "*.options" -o -name "*.proto" -o -name "*.py" -o -name "*.rs" -o -name "*.sh" \) )
 declare -a MISSING_SPDX_FILES
 
 for file in $FILES; do
+  if [[ "$file" == *"/generated/"* ]]; then
+    # File generated from other source files - skip it.
+    continue
+  fi
   head -n 2 "$file" | grep -q --fixed-strings "$SPDX_LICENSE_STR"
   if [ $? -ne 0 ]; then
     MISSING_SPDX_FILES+=("$file")

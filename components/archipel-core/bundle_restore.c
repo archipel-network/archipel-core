@@ -4,6 +4,7 @@
 #include "platform/hal_io.h"
 #include "ud3tn/bundle_processor.h"
 #include <stdlib.h>
+#include <string.h>
 
 void bundle_restore_task(void* conf){
     struct bundle_restore_config* config = 
@@ -11,16 +12,16 @@ void bundle_restore_task(void* conf){
 
     struct bundle_restore_signal signal;
     enum ud3tn_result result;
-    LOG("BundleRestore : Bundle restore task started");
+    LOG_INFO("BundleRestore : Bundle restore task started");
     for (;;)
     {
         result = hal_queue_receive(config->restore_queue, &signal, -1);
         if(result == UD3TN_FAIL){
-            LOG("BundleRestore : Error receiving message on queue");
+            LOG_ERROR("BundleRestore : Error receiving message on queue");
             continue;
         }
         if(signal.type == BUNDLE_RESTORE_DEST){
-            LOGF("BundleRestore : Should restore for %s", signal.destination);
+            LOGF_INFO("BundleRestore : Should restore for %s", signal.destination);
 
             struct bundle_store_popseq* seq = 
                 hal_store_popseq(config->store);
@@ -29,12 +30,10 @@ void bundle_restore_task(void* conf){
             while((bundle = hal_store_popseq_next(seq)) != NULL){
                 bundle_processor_inform(
                     config->processor_signaling_queue,
-                    bundle,
-                    BP_SIGNAL_BUNDLE_INCOMING,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_BUNDLE_INCOMING,
+						.bundle = bundle
+                    }
                 );
             }
 

@@ -9,17 +9,15 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
 #include "platform/hal_types.h"
 
-#include "ud3tn/cmdline.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/cmdline.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/result.h"
 #include "ud3tn/simplehtab.h"
 
@@ -30,6 +28,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+static const char *CLA_NAME = "mtcp";
 
 struct mtcp_config {
 	struct cla_tcp_config base;
@@ -51,9 +51,10 @@ struct mtcp_contact_parameters {
 
 	bool is_outgoing;
 	bool in_contact;
-	int connect_attempt;
 
 	int socket;
+
+	struct cla_tcp_rate_limit_config rl_config;
 };
 
 
@@ -66,7 +67,7 @@ static enum ud3tn_result handle_established_connection(
 			      &mtcp_config->base, param->cla_sock_addr,
 			      param->is_outgoing)
 			!= UD3TN_OK) {
-		LOG("MTCP: Error initializing CLA link!");
+		LOG_ERROR("MTCP: Error initializing CLA link!");
 		return UD3TN_FAIL;
 	}
 
@@ -93,7 +94,7 @@ static void mtcp_link_management_task(void *p)
 
 	ASSERT(param->cla_sock_addr != NULL);
 	if (!param->cla_sock_addr) {
-		LOG("MTCP: Empty CLA address, cannot launch management task");
+		LOG_ERROR("MTCP: Empty CLA address, cannot launch management task");
 		goto fail;
 	}
 
@@ -102,46 +103,37 @@ static void mtcp_link_management_task(void *p)
 		if (param->socket > 0) {
 			// NOTE the following function releases and re-locks sem
 			handle_established_connection(param);
-			param->connect_attempt = 0;
 			param->socket = -1;
 		} else {
 			if (param->cla_sock_addr[0] == '\0') {
-				LOG("MTCP: Empty CLA address, cannot initiate connection");
+				LOG_ERROR("MTCP: Empty CLA address, cannot initiate connection");
 				break;
 			}
 			ASSERT(param->socket < 0);
 			hal_semaphore_release(param->param_semphr);
 
+			if (cla_tcp_rate_limit_connection_attempts(
+					&param->rl_config))
+				break;
 			const int socket = cla_tcp_connect_to_cla_addr(
 				param->cla_sock_addr, // only used by us
 				NULL
 			);
 
 			hal_semaphore_take_blocking(param->param_semphr);
-			if (socket < 0) {
-				if (++param->connect_attempt >
-						CLA_TCP_MAX_RETRY_ATTEMPTS) {
-					LOG("MTCP: Final retry failed.");
-					break;
-				}
-				LOGF("MTCP: Delayed retry %d of %d in %d ms",
-				     param->connect_attempt,
-				     CLA_TCP_MAX_RETRY_ATTEMPTS,
-				     CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_release(param->param_semphr);
-				hal_task_delay(CLA_TCP_RETRY_INTERVAL_MS);
-				hal_semaphore_take_blocking(
-					param->param_semphr
-				);
+			if (socket < 0)
 				continue;
-			}
 			param->socket = socket;
-			LOGF("MTCP: Connected successfully to \"%s\"",
-			     param->cla_sock_addr);
+			LOGF_INFO(
+				"MTCP: Connected successfully to \"%s\"",
+				param->cla_sock_addr
+			);
 		}
 	} while (param->in_contact);
-	LOGF("MTCP: Terminating contact link manager for \"%s\"",
-	     param->cla_sock_addr);
+	LOGF_INFO(
+		"MTCP: Terminating contact link manager for \"%s\"",
+		param->cla_sock_addr
+	);
 
 	// Unblock parallel threads that thought to re-use the link while
 	// telling them it is not usable anymore by invalidating the socket.
@@ -172,21 +164,20 @@ static void launch_connection_management_task(
 		malloc(sizeof(struct mtcp_contact_parameters));
 
 	if (!contact_params) {
-		LOG("MTCP: Failed to allocate memory!");
+		LOG_ERROR("MTCP: Failed to allocate memory!");
 		return;
 	}
 
 	contact_params->config = mtcp_config;
-	contact_params->connect_attempt = 0;
 
 	if (sock < 0) {
 		contact_params->cla_sock_addr = cla_get_connect_addr(
 			cla_addr,
-			"mtcp"
+			CLA_NAME
 		);
 
 		if (!contact_params->cla_sock_addr) {
-			LOG("MTCP: Invalid address");
+			LOG_WARN("MTCP: Invalid address");
 			free(contact_params);
 			return;
 		}
@@ -198,7 +189,7 @@ static void launch_connection_management_task(
 		contact_params->cla_sock_addr = strdup(cla_addr);
 
 		if (!contact_params->cla_sock_addr) {
-			LOG("MTCP: Failed to allocate memory!");
+			LOG_ERROR("MTCP: Failed to allocate memory!");
 			free(contact_params);
 			return;
 		}
@@ -208,10 +199,13 @@ static void launch_connection_management_task(
 		contact_params->is_outgoing = false;
 	}
 
+	contact_params->rl_config.last_connection_attempt_ms = 0;
+	contact_params->rl_config.last_connection_attempt_no = 1;
+
 	contact_params->param_semphr = hal_semaphore_init_binary();
 	ASSERT(contact_params->param_semphr != NULL);
 	if (contact_params->param_semphr == NULL) {
-		LOG("MTCP: Failed to create semaphore!");
+		LOG_ERROR("MTCP: Failed to create semaphore!");
 		goto fail;
 	}
 	// NOTE that the binary semaphore (mutex) is locked after creation.
@@ -226,20 +220,17 @@ static void launch_connection_management_task(
 		contact_params
 	);
 	if (!htab_entry) {
-		LOG("MTCP: Error creating htab entry!");
+		LOG_ERROR("MTCP: Error creating htab entry!");
 		goto fail_sem;
 	}
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		mtcp_link_management_task,
-		"mtcp_mgmt_t",
-		CONTACT_MANAGEMENT_TASK_PRIORITY,
-		contact_params,
-		CONTACT_MANAGEMENT_TASK_STACK_SIZE
+		contact_params
 	);
 
 	if (task_creation_result != UD3TN_OK) {
-		LOG("MTCP: Error creating management task!");
+		LOG_ERROR("MTCP: Error creating management task!");
 		if (htab_entry) {
 			ASSERT(contact_params->cla_sock_addr);
 			ASSERT(htab_remove(
@@ -284,24 +275,21 @@ static void mtcp_listener_task(void *param)
 		free(cla_addr);
 	}
 
-	// unexpected failure to accept() - exit thread in release mode
-	ASSERT(0);
+	LOG_ERROR("MTCP: Unxepected failure to accept connection - abort!");
+	abort();
 }
 
 static enum ud3tn_result mtcp_launch(struct cla_config *const config)
 {
 	return hal_task_create(
 		mtcp_listener_task,
-		"mtcp_listen_t",
-		CONTACT_LISTEN_TASK_PRIORITY,
-		config,
-		CONTACT_LISTEN_TASK_STACK_SIZE
+		config
 	);
 }
 
 static const char *mtcp_name_get(void)
 {
-	return "mtcp";
+	return CLA_NAME;
 }
 
 size_t mtcp_mbs_get(struct cla_config *const config)
@@ -382,10 +370,10 @@ static struct mtcp_contact_parameters *get_contact_parameters(
 {
 	struct mtcp_config *const mtcp_config =
 		(struct mtcp_config *)config;
-	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, "mtcp");
+	char *const cla_sock_addr = cla_get_connect_addr(cla_addr, CLA_NAME);
 
 	if (!cla_sock_addr) {
-		LOG("MTCP: Invalid address");
+		LOG_WARN("MTCP: Invalid address");
 		return NULL;
 	}
 
@@ -454,8 +442,10 @@ static enum ud3tn_result mtcp_start_scheduled_contact(
 	if (param != NULL) {
 		hal_semaphore_take_blocking(param->param_semphr);
 		if (param->socket > 0 || param->in_contact) {
-			LOGF("MTCP: Associating open connection with \"%s\" to new contact",
-			     cla_addr);
+			LOGF_INFO(
+				"MTCP: Associating open connection with \"%s\" to new contact",
+				cla_addr
+			);
 			param->in_contact = true;
 
 			const struct bundle_agent_interface *bai =
@@ -467,12 +457,12 @@ static enum ud3tn_result mtcp_start_scheduled_contact(
 			if (link_active) {
 				bundle_processor_inform(
 					bai->bundle_signaling_queue,
-					NULL,
-					BP_SIGNAL_NEW_LINK_ESTABLISHED,
-					strdup(cla_addr),
-					NULL,
-					NULL,
-					NULL
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_NEW_LINK_ESTABLISHED,
+						.peer_cla_addr = strdup(
+							cla_addr
+						),
+					}
 				);
 			}
 			hal_semaphore_release(mtcp_config->param_htab_sem);
@@ -513,14 +503,18 @@ static enum ud3tn_result mtcp_end_scheduled_contact(
 		if (param->socket > 0) {
 			hal_semaphore_release(param->param_semphr);
 			if (CLA_MTCP_CLOSE_AFTER_CONTACT) {
-				LOGF("MTCP: Terminating connection with \"%s\"",
-				     cla_addr);
+				LOGF_INFO(
+					"MTCP: Terminating connection with \"%s\"",
+					cla_addr
+				);
 				link->config->vtable->cla_disconnect_handler(
 					link
 				);
 			} else {
-				LOGF("MTCP: Marking open connection with \"%s\" as opportunistic",
-				     cla_addr);
+				LOGF_INFO(
+					"MTCP: Marking open connection with \"%s\" as opportunistic",
+					cla_addr
+				);
 			}
 		} else {
 			hal_semaphore_release(param->param_semphr);
@@ -542,7 +536,7 @@ void mtcp_begin_packet(struct cla_link *link, size_t length, char *cla_addr)
 	const size_t hdr_len = mtcp_encode_header(buffer, BUFFER_SIZE, length);
 
 	if (tcp_send_all(tcp_link->connection_socket, buffer, hdr_len) == -1) {
-		LOG("MTCP: Error during sending. Data discarded.");
+		LOG_WARN("MTCP: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -559,7 +553,7 @@ void mtcp_send_packet_data(
 	struct cla_tcp_link *const tcp_link = (struct cla_tcp_link *)link;
 
 	if (tcp_send_all(tcp_link->connection_socket, data, length) == -1) {
-		LOG("MTCP: Error during sending. Data discarded.");
+		LOG_WARN("MTCP: Error during sending. Data discarded.");
 		link->config->vtable->cla_disconnect_handler(link);
 	}
 }
@@ -599,16 +593,22 @@ static enum ud3tn_result mtcp_init(
 	/* set base_config vtable */
 	config->base.base.vtable = &mtcp_vtable;
 
+	config->param_htab_sem = hal_semaphore_init_binary();
+	if (!config->param_htab_sem)
+		return UD3TN_FAIL;
+	hal_semaphore_release(config->param_htab_sem);
+
 	htab_init(&config->param_htab, CLA_TCP_PARAM_HTAB_SLOT_COUNT,
 		  config->param_htab_elem);
 
-	config->param_htab_sem = hal_semaphore_init_binary();
-	hal_semaphore_release(config->param_htab_sem);
-
 	/* Start listening */
 	if (cla_tcp_listen(&config->base, node, service,
-			   CLA_TCP_MULTI_BACKLOG) != UD3TN_OK)
+			   CLA_TCP_MULTI_BACKLOG) != UD3TN_OK) {
+		hal_semaphore_take_blocking(config->param_htab_sem);
+		htab_trunc(&config->param_htab);
+		hal_semaphore_delete(config->param_htab_sem);
 		return UD3TN_FAIL;
+	}
 
 	return UD3TN_OK;
 }
@@ -618,21 +618,21 @@ struct cla_config *mtcp_create(
 	const struct bundle_agent_interface *bundle_agent_interface)
 {
 	if (option_count != 2) {
-		LOG("MTCP: Options format has to be: <IP>,<PORT>");
+		LOG_ERROR("MTCP: Options format has to be: <IP>,<PORT>");
 		return NULL;
 	}
 
 	struct mtcp_config *config = malloc(sizeof(struct mtcp_config));
 
 	if (!config) {
-		LOG("MTCP: Memory allocation failed!");
+		LOG_ERROR("MTCP: Memory allocation failed!");
 		return NULL;
 	}
 
 	if (mtcp_init(config, options[0], options[1],
 		      bundle_agent_interface) != UD3TN_OK) {
 		free(config);
-		LOG("MTCP: Initialization failed!");
+		LOG_ERROR("MTCP: Initialization failed!");
 		return NULL;
 	}
 

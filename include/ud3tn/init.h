@@ -8,6 +8,11 @@
 
 #include <stdint.h>
 
+// Default length of the queue toward the BP.
+#ifndef BUNDLE_QUEUE_LENGTH
+#define BUNDLE_QUEUE_LENGTH 10
+#endif // BUNDLE_QUEUE_LENGTH
+
 /**
  * @brief init
  * @param argc the argument count as provided to main(...)

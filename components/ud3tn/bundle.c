@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/bundle.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 
 // RFC 5050
 #include "bundle6/bundle6.h"
@@ -33,7 +32,7 @@ static inline void bundle_reset_internal(struct bundle *bundle)
 	bundle->report_to = NULL;
 	bundle->current_custodian = NULL;
 
-	bundle->crc_type = DEFAULT_CRC_TYPE;
+	bundle->crc_type = DEFAULT_BPV7_CRC_TYPE;
 	bundle->creation_timestamp_ms = 0;
 	bundle->reception_timestamp_ms = 0;
 	bundle->sequence_number = 0;
@@ -175,18 +174,15 @@ enum bundle_routing_priority bundle_get_routing_priority(
 {
 	// If there are any retention constaints for the bundle or the bundle
 	// has expedited priority (RFC 5050-only)
-	if (HAS_FLAG(bundle->ret_constraints,
-			BUNDLE_RET_CONSTRAINT_FLAG_OWN)
-		|| HAS_FLAG(bundle->ret_constraints,
-			BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED)
-		|| (bundle->protocol_version == 6
-			&& HAS_FLAG(bundle->proc_flags,
-				BUNDLE_V6_FLAG_EXPEDITED_PRIORITY)))
+	if (HAS_FLAG(bundle->ret_constraints, BUNDLE_RET_CONSTRAINT_FLAG_OWN) ||
+	    HAS_FLAG(bundle->ret_constraints, BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED) ||
+	    (bundle->protocol_version == 6 &&
+	     HAS_FLAG(bundle->proc_flags, BUNDLE_V6_FLAG_EXPEDITED_PRIORITY)))
 		return BUNDLE_RPRIO_HIGH;
 	// BPv7-bis bundles without retention constraints are routed with
 	// normal priority
-	else if (bundle->protocol_version == 7
-		|| HAS_FLAG(bundle->proc_flags, BUNDLE_V6_FLAG_NORMAL_PRIORITY))
+	else if (bundle->protocol_version == 7 ||
+		 HAS_FLAG(bundle->proc_flags, BUNDLE_V6_FLAG_NORMAL_PRIORITY))
 		return BUNDLE_RPRIO_NORMAL;
 	else
 		return BUNDLE_RPRIO_LOW;
@@ -542,14 +538,22 @@ bool bundle_is_equal_parent(
 
 struct bundle_adu bundle_adu_init(const struct bundle *bundle)
 {
-	return (struct bundle_adu){
-		.protocol_version = bundle->protocol_version,
-		.proc_flags = bundle->proc_flags & ~BUNDLE_FLAG_IS_FRAGMENT,
-		.source = strdup(bundle->source),
-		.destination = strdup(bundle->destination),
-		.payload = NULL,
-		.length = 0
-	};
+	struct bundle_adu bundle_adu;
+
+	// Force initialize also the alignment gaps in the structure
+	// so we can safely pass it via pipe queue
+	memset(&bundle_adu, 0, sizeof(struct bundle_adu));
+
+	bundle_adu.protocol_version = bundle->protocol_version;
+	bundle_adu.proc_flags = bundle->proc_flags & ~BUNDLE_FLAG_IS_FRAGMENT;
+	bundle_adu.source = strdup(bundle->source);
+	bundle_adu.destination = strdup(bundle->destination);
+	bundle_adu.payload = NULL;
+	bundle_adu.length = 0;
+	bundle_adu.bundle_creation_timestamp_ms = bundle->creation_timestamp_ms;
+	bundle_adu.bundle_sequence_number = bundle->sequence_number;
+
+	return bundle_adu;
 }
 
 struct bundle_adu bundle_to_adu(struct bundle *bundle)

@@ -2,10 +2,13 @@ include mk/toolchain.mk
 
 # COMPONENTS
 
-EXTERNAL_INCLUDES += -Iexternal/tinycbor/src \
-                     -Iexternal/util/include
+EXTERNAL_INCLUDES += -Iexternal/nanopb \
+                     -Iexternal/tinycbor/src \
+                     -Iexternal/util/include \
+                     -Igenerated
 
 $(eval $(call addComponentWithRules,components/aap))
+$(eval $(call addComponentWithRules,components/aap2))
 $(eval $(call addComponentWithRules,components/agents))
 $(eval $(call addComponentWithRules,components/agents/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/bundle6))
@@ -16,6 +19,17 @@ $(eval $(call addComponentWithRules,components/platform/$(PLATFORM)))
 $(eval $(call addComponentWithRules,components/spp))
 $(eval $(call addComponentWithRules,components/ud3tn))
 $(eval $(call addComponentWithRules,components/archipel-core))
+
+NANOPB_SOURCES := \
+	pb_common.c \
+	pb_encode.c \
+	pb_decode.c
+
+# Allow nanopb to do malloc(). We use pointer-based strings and lists; see
+# also components/aap2/aap2.options.
+CPPFLAGS += -DPB_ENABLE_MALLOC
+
+$(eval $(call addComponentWithRules,external/nanopb,$(NANOPB_SOURCES)))
 
 TINYCBOR_SOURCES := \
 	cborerrorstrings.c \
@@ -30,10 +44,13 @@ TINYCBOR_SOURCES := \
 $(eval $(call addComponentWithRules,external/tinycbor/src,$(TINYCBOR_SOURCES)))
 $(eval $(call addComponentWithRules,external/util/src))
 
+$(eval $(call addComponentWithRules,generated/aap2))
+
 # LIB
 
 $(eval $(call generateComponentRules,components/daemon))
 $(eval $(call generateComponentRules,test/unit))
+$(eval $(call generateComponentRules,test/decoder))
 
 build/$(PLATFORM)/libud3tn.so: LIBS = $(LIBS_libud3tn.so)
 build/$(PLATFORM)/libud3tn.so: $(LIBS_libud3tn.so) | build/$(PLATFORM)
@@ -71,6 +88,16 @@ build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/src
 build/$(PLATFORM)/testud3tn: EXTERNAL_INCLUDES += -Iexternal/unity/extras/fixture/src
 build/$(PLATFORM)/testud3tn: LIBS = $(LIBS_testud3tn)
 build/$(PLATFORM)/testud3tn: $(LIBS_testud3tn) | build/$(PLATFORM)
+	$(call cmd,link)
+
+# DECODER EXECUTABLE
+
+$(eval $(call addComponent,ud3tndecode,test/decoder))
+
+build/$(PLATFORM)/ud3tndecode: build/$(PLATFORM)/libud3tn.a
+build/$(PLATFORM)/ud3tndecode: LDFLAGS += $(LDFLAGS_EXECUTABLE)
+build/$(PLATFORM)/ud3tndecode: LIBS = $(LIBS_ud3tndecode) build/$(PLATFORM)/libud3tn.a
+build/$(PLATFORM)/ud3tndecode: $(LIBS_ud3tndecode) | build/$(PLATFORM)
 	$(call cmd,link)
 
 # GENERAL RULES

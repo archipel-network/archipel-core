@@ -23,52 +23,62 @@ static inline int sdnv_validate_byte_u32
 	/* ´fall out´ when left-shifting by 7... */
 	/* a SDNV for the max. u32 0xFFFFFFFF would be 0x8FFFFFFF7F and */
 	/* after reading 4 bits the *value would be equal to 0x1FFFFFF */
-	return (state->bytes_parsed < 4)
-			|| (state->bytes_parsed == 4 && *value <= 0x1FFFFFF);
+	return (
+		(state->bytes_parsed < 4) ||
+		(state->bytes_parsed == 4 && *value <= 0x1FFFFFF)
+	);
 }
 
 static inline int sdnv_validate_byte_u8
 	(struct sdnv_state *state, uint8_t *value)
 {
 	/* max. SDNV: 0x817F */
-	return (state->bytes_parsed < 1)
-			|| (state->bytes_parsed == 1 && *value <= 0x1);
+	return (
+		(state->bytes_parsed < 1) ||
+		(state->bytes_parsed == 1 && *value <= 0x1)
+	);
 }
 
 static inline int sdnv_validate_byte_u16
 	(struct sdnv_state *state, uint16_t *value)
 {
 	/* max. SDNV: 0x83FF7F */
-	return (state->bytes_parsed < 2)
-			|| (state->bytes_parsed == 2 && *value <= 0x1FF);
+	return (
+		(state->bytes_parsed < 2) ||
+		(state->bytes_parsed == 2 && *value <= 0x1FF)
+	);
 }
 
 static inline int sdnv_validate_byte_u64
 	(struct sdnv_state *state, uint64_t *value)
 {
 	/* max. SDNV: 0x81FFFFFFFFFFFFFFFF7F */
-	return (state->bytes_parsed < 9)
-			|| (state->bytes_parsed == 9
-				&& *value <= 0x1FFFFFFFFFFFFFF);
+	return (
+		(state->bytes_parsed < 9) ||
+		(state->bytes_parsed == 9 && *value <= 0x1FFFFFFFFFFFFFF)
+	);
 }
 
 #define sdnv_read_generic(state, value, byte, validate_function) \
 do { \
-	if (!validate_function(state, value)) { \
-		state->error  = SDNV_ERROR_OVERFLOW; \
-		state->status = SDNV_ERROR; \
-	} else if (state->status == SDNV_DONE) { \
-		state->error  = SDNV_ERROR_ALREADY_DONE; \
-		state->status = SDNV_ERROR; \
+	__typeof__(state) _state = (state); \
+	__typeof__(value) _value = (value); \
+	__typeof__(byte) _byte = (byte); \
+	if (!(validate_function)(_state, _value)) { \
+		_state->error  = SDNV_ERROR_OVERFLOW; \
+		_state->status = SDNV_ERROR; \
+	} else if (_state->status == SDNV_DONE) { \
+		_state->error  = SDNV_ERROR_ALREADY_DONE; \
+		_state->status = SDNV_ERROR; \
 	} else { \
-		if (state->bytes_parsed == 0) \
-			*value = 0; \
+		if (_state->bytes_parsed == 0) \
+			*_value = 0; \
 		else \
-			*value <<= 7; \
-		*value |= (byte & SDNV_VALUE_MASK); \
-		if (!(byte & SDNV_MARKER_MASK)) \
-			state->status = SDNV_DONE; \
-		++state->bytes_parsed; \
+			*_value <<= 7; \
+		*_value |= (_byte & SDNV_VALUE_MASK); \
+		if (!(_byte & SDNV_MARKER_MASK)) \
+			_state->status = SDNV_DONE; \
+		++_state->bytes_parsed; \
 	} \
 } while (0)
 
@@ -150,12 +160,15 @@ int_fast8_t sdnv_get_size_u64(uint64_t value)
 
 #define sdnv_write_generic(sdnv_bytes, buffer, value) \
 do { \
-	uint8_t *last_byte = buffer + sdnv_bytes - 1; \
-	for (uint8_t *b = last_byte; b >= buffer; b--) { \
-		(*b) = (value & SDNV_VALUE_MASK) | SDNV_MARKER_MASK; \
-		value >>= 7; \
+	__typeof__(sdnv_bytes) _sdnv_bytes = (sdnv_bytes); \
+	__typeof__(buffer) _buffer = (buffer); \
+	__typeof__(value) _value = (value); \
+	uint8_t *_last_byte = _buffer + _sdnv_bytes - 1; \
+	for (uint8_t *_b = _last_byte; _b >= _buffer; _b--) { \
+		(*_b) = (_value & SDNV_VALUE_MASK) | SDNV_MARKER_MASK; \
+		_value >>= 7; \
 	} \
-	(*last_byte) &= SDNV_VALUE_MASK; \
+	(*_last_byte) &= SDNV_VALUE_MASK; \
 } while (0)
 
 int_fast8_t sdnv_write_u8(uint8_t *buffer, uint8_t value)

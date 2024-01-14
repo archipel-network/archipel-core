@@ -6,12 +6,13 @@
 #include "ud3tn/init.h"
 #include "ud3tn/router.h"
 
+#include "aap2/aap2_agent.h"
+
 #include "agents/application_agent.h"
 #include "agents/echo_agent.h"
 
 #include "cla/cla.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_platform.h"
 #include "platform/hal_queue.h"
@@ -24,27 +25,31 @@
 #include <string.h>
 
 static struct bundle_agent_interface bundle_agent_interface;
+uint8_t LOG_LEVEL = DEFAULT_LOG_LEVEL;
 
-// Reference kept for program runtime
+// References kept for program runtime
 static struct application_agent_config *aa_cfg;
+static struct aap2_agent_config *aa2_cfg;
 
 void init(int argc, char *argv[])
 {
 	hal_platform_init(argc, argv);
-	LOG("INIT: uD3TN starting up...");
+	LOG_INFO("INIT: uD3TN starting up...");
 }
 
 void start_tasks(const struct ud3tn_cmdline_options *const opt)
 {
 	if (!opt) {
-		LOG("INIT: Error parsing options, terminating...");
+		LOG_ERROR("INIT: Error parsing options, terminating...");
 		exit(EXIT_FAILURE);
 	}
 
 	if (opt->exit_immediately)
 		exit(EXIT_SUCCESS);
 
-	LOGF("INIT: Configured to use EID \"%s\" and BPv%d",
+	LOG_LEVEL = opt->log_level;
+
+	LOGF_INFO("INIT: Configured to use EID \"%s\" and BPv%d",
 	     opt->eid, opt->bundle_version);
 
 	if (opt->mbs) {
@@ -59,19 +64,20 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	bundle_agent_interface.local_eid = opt->eid;
 
 	/* Initialize queues to communicate with the subsystems */
-	bundle_agent_interface.bundle_signaling_queue
-			= hal_queue_create(BUNDLE_QUEUE_LENGTH,
-				sizeof(struct bundle_processor_signal));
+	bundle_agent_interface.bundle_signaling_queue = hal_queue_create(
+		BUNDLE_QUEUE_LENGTH,
+		sizeof(struct bundle_processor_signal)
+	);
 	if (!bundle_agent_interface.bundle_signaling_queue) {
-		LOG("INIT: Allocation of `bundle_signaling_queue` failed");
-		exit(EXIT_FAILURE);
+		LOG_ERROR("INIT: Allocation of `bundle_signaling_queue` failed");
+		abort();
 	}
 
 	#ifdef ARCHIPEL_CORE
 	/* Initialize persistance store */
 	struct bundle_store* bundle_store = hal_store_init(opt->store_folder);
 	if(bundle_store == NULL){
-		LOG("INIT: Bundle persistance store could not be initialized!");
+		LOG_ERROR("INIT: Bundle persistance store could not be initialized!");
 		exit(EXIT_FAILURE);
 	}
 
@@ -90,24 +96,20 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	const enum ud3tn_result restore_task_result = hal_task_create(
 		bundle_restore_task,
-		"bundle_restore_t",
-		BUNDLE_RESTORE_TASK_PRIORITY,
-		bundle_restore_task_config,
-		DEFAULT_TASK_STACK_SIZE
+		bundle_restore_task_config
 	);
 	if (restore_task_result != UD3TN_OK) {
-		LOG("INIT: Bundle restore task could not be started!");
+		LOG_ERROR("INIT: Bundle restore task could not be started!");
 		exit(EXIT_FAILURE);
 	}
 	#endif
-
-
-	struct bundle_processor_task_parameters *bundle_processor_task_params
-		= malloc(sizeof(struct bundle_processor_task_parameters));
+	
+	struct bundle_processor_task_parameters *bundle_processor_task_params =
+		malloc(sizeof(struct bundle_processor_task_parameters));
 
 	if (!bundle_processor_task_params) {
-		LOG("INIT: Allocation of `bundle_processor_task_params` failed");
-		exit(EXIT_FAILURE);
+		LOG_ERROR("INIT: Allocation of `bundle_processor_task_params` failed");
+		abort();
 	}
 	bundle_processor_task_params->signaling_queue =
 			bundle_agent_interface.bundle_signaling_queue;
@@ -130,15 +132,12 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,
-		"bundl_proc_t",
-		BUNDLE_PROCESSOR_TASK_PRIORITY,
-		bundle_processor_task_params,
-		DEFAULT_TASK_STACK_SIZE
+		bundle_processor_task_params
 	);
 
 	if (bp_task_result != UD3TN_OK) {
-		LOG("INIT: Bundle processor task could not be started!");
-		exit(EXIT_FAILURE);
+		LOG_ERROR("INIT: Bundle processor task could not be started!");
+		abort();
 	}
 
 	int result;
@@ -149,12 +148,12 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	);
 
 	if (result) {
-		LOG("INIT: Echo agent could not be initialized!");
-		exit(EXIT_FAILURE);
+		LOG_ERROR("INIT: Echo agent could not be initialized!");
+		abort();
 	}
 
 	if (opt->allow_remote_configuration)
-		LOG("!! WARNING !! Remote configuration capability ENABLED!");
+		LOG_WARN("!! WARNING !! Remote configuration capability ENABLED!");
 
 	aa_cfg = application_agent_setup(
 		&bundle_agent_interface,
@@ -166,15 +165,29 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	);
 
 	if (!aa_cfg) {
-		LOG("INIT: Application agent could not be initialized!");
-		exit(EXIT_FAILURE);
+		LOG_ERROR("INIT: Application agent could not be initialized!");
+		abort();
+	}
+
+	aa2_cfg = aap2_agent_setup(
+		&bundle_agent_interface,
+		opt->aap2_socket,
+		NULL,
+		NULL,
+		opt->bundle_version,
+		opt->lifetime_s * 1000
+	);
+
+	if (!aa2_cfg) {
+		LOG_ERROR("INIT: AAP2 agent could not be initialized!");
+		abort();
 	}
 
 	/* Initialize the communication subsystem (CLA) */
 	if (cla_initialize_all(opt->cla_options,
 			       &bundle_agent_interface) != UD3TN_OK) {
-		LOG("INIT: CLA subsystem could not be initialized!");
-		exit(EXIT_FAILURE);
+		LOG_ERROR("INIT: CLA subsystem could not be initialized!");
+		abort();
 	}
 }
 
@@ -183,6 +196,5 @@ int start_os(void)
 {
 	hal_task_start_scheduler();
 	/* Should never get here! */
-	ASSERT(0);
-	__builtin_unreachable();
+	abort();
 }

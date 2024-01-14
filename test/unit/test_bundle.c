@@ -3,7 +3,6 @@
 #include "bundle7/bundle7.h"
 
 #include "ud3tn/bundle.h"
-#include "ud3tn/config.h"
 
 #include "testud3tn_unity.h"
 
@@ -82,7 +81,7 @@ TEST(bundle, bundle_reset)
 	TEST_ASSERT_EQUAL(bundle->report_to, NULL);
 	TEST_ASSERT_EQUAL(bundle->current_custodian, NULL);
 
-	TEST_ASSERT_EQUAL(bundle->crc_type, DEFAULT_CRC_TYPE);
+	TEST_ASSERT_EQUAL(bundle->crc_type, DEFAULT_BPV7_CRC_TYPE);
 	TEST_ASSERT_EQUAL(bundle->creation_timestamp_ms, 0);
 	TEST_ASSERT_EQUAL(bundle->reception_timestamp_ms, 0);
 	TEST_ASSERT_EQUAL(bundle->sequence_number, 0);
@@ -266,19 +265,48 @@ TEST(bundle, bundle_dup)
 	TEST_ASSERT_EQUAL_STRING(bundle->destination, bundle_duplication->destination);
 	TEST_ASSERT_EQUAL_STRING(bundle->source, bundle_duplication->source);
 	TEST_ASSERT_EQUAL_STRING(bundle->report_to, bundle_duplication->report_to);
-	TEST_ASSERT_EQUAL_STRING(bundle->current_custodian, bundle_duplication->current_custodian);
+	TEST_ASSERT_EQUAL_STRING(bundle->current_custodian,
+				 bundle_duplication->current_custodian);
 
 	TEST_ASSERT_EQUAL(bundle->crc_type, bundle_duplication->crc_type);
-	TEST_ASSERT_EQUAL(bundle->creation_timestamp_ms, bundle_duplication->creation_timestamp_ms);
-	TEST_ASSERT_EQUAL(bundle->reception_timestamp_ms, bundle_duplication->reception_timestamp_ms);
+	TEST_ASSERT_EQUAL(bundle->creation_timestamp_ms,
+			  bundle_duplication->creation_timestamp_ms);
+	TEST_ASSERT_EQUAL(bundle->reception_timestamp_ms,
+			  bundle_duplication->reception_timestamp_ms);
 	TEST_ASSERT_EQUAL(bundle->sequence_number, bundle_duplication->sequence_number);
 	TEST_ASSERT_EQUAL(bundle->lifetime_ms, bundle_duplication->lifetime_ms);
 	TEST_ASSERT_EQUAL(bundle->fragment_offset, bundle_duplication->fragment_offset);
 	TEST_ASSERT_EQUAL(bundle->total_adu_length, bundle_duplication->total_adu_length);
-	TEST_ASSERT_EQUAL(bundle->primary_block_length, bundle_duplication->primary_block_length);
+	TEST_ASSERT_EQUAL(bundle->primary_block_length,
+			  bundle_duplication->primary_block_length);
 
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(bundle->blocks->data, bundle_duplication->blocks->data, sizeof(bundle->blocks->data));
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(bundle->payload_block->data, bundle_duplication->payload_block->data, sizeof(bundle->payload_block->data));
+	const struct bundle_block_list *cur_block = bundle->blocks;
+	const struct bundle_block_list *cur_dup_block = bundle_duplication->blocks;
+
+	while (cur_block) {
+		TEST_ASSERT_NOT_NULL(cur_dup_block);
+		TEST_ASSERT_EQUAL(cur_block->data->length, cur_dup_block->data->length);
+		TEST_ASSERT_EQUAL(cur_block->data->flags, cur_dup_block->data->flags);
+		TEST_ASSERT_EQUAL(cur_block->data->number, cur_dup_block->data->number);
+		TEST_ASSERT_EQUAL(cur_block->data->type, cur_dup_block->data->type);
+		TEST_ASSERT_EQUAL_UINT8_ARRAY(
+			cur_block->data->data,
+			cur_dup_block->data->data,
+			cur_block->data->length
+		);
+		if (cur_block->data->type == BUNDLE_BLOCK_TYPE_PAYLOAD) {
+			TEST_ASSERT_EQUAL_PTR(
+				bundle->payload_block,
+				cur_block->data
+			);
+			TEST_ASSERT_EQUAL_PTR(
+				bundle_duplication->payload_block,
+				cur_dup_block->data
+			);
+		}
+		cur_block = cur_block->next;
+		cur_dup_block = cur_dup_block->next;
+	}
 
 	bundle_free(bundle);
 	bundle_free(bundle_duplication);
@@ -335,7 +363,6 @@ TEST(bundle, bundle_list_entry_create)
 	TEST_ASSERT_EQUAL(bundle_list->data, bundle);
 	TEST_ASSERT_NULL(bundle_list->next);
 	bundle_free(bundle);
-
 }
 
 TEST(bundle, bundle_list_entry_free)
@@ -370,15 +397,18 @@ TEST(bundle, bundle_block_find_first_by_type)
 	blocks->next = bundle_block_entry_create(payload2);
 	blocks->next->next = bundle_block_entry_create(hop_c);
 
-	test_block = bundle_block_find_first_by_type(blocks, BUNDLE_BLOCK_TYPE_PAYLOAD);
+	test_block = bundle_block_find_first_by_type(blocks,
+						     BUNDLE_BLOCK_TYPE_PAYLOAD);
 
 	TEST_ASSERT_EQUAL(payload1, test_block);
 
-	test_block = bundle_block_find_first_by_type(blocks, BUNDLE_BLOCK_TYPE_HOP_COUNT);
+	test_block = bundle_block_find_first_by_type(blocks,
+						     BUNDLE_BLOCK_TYPE_HOP_COUNT);
 
 	TEST_ASSERT_EQUAL(hop_c, test_block);
 
-	test_block = bundle_block_find_first_by_type(blocks, BUNDLE_BLOCK_TYPE_PREVIOUS_NODE);
+	test_block = bundle_block_find_first_by_type(blocks,
+						     BUNDLE_BLOCK_TYPE_PREVIOUS_NODE);
 	TEST_ASSERT_NULL(test_block);
 }
 
@@ -405,7 +435,6 @@ TEST(bundle, bundle_block_entry_free)
 
 	bundle_block_list = bundle_block_entry_create(b);
 	bundle_block_entry_free(bundle_block_list);
-
 }
 
 TEST(bundle, bundle_block_dup)
@@ -435,10 +464,10 @@ TEST(bundle, bundle_block_dup)
 	TEST_ASSERT_EQUAL(block->number, bundle_block_duplication->number);
 	TEST_ASSERT_EQUAL(block->flags, bundle_block_duplication->flags);
 	TEST_ASSERT_EQUAL(block->length, bundle_block_duplication->length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(block->data, bundle_block_duplication->data, sizeof(block->length));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(block->data, bundle_block_duplication->data,
+				      block->length);
 	TEST_ASSERT_EQUAL(block->eid_refs, bundle_block_duplication->eid_refs);
 	TEST_ASSERT_EQUAL(block->crc_type, bundle_block_duplication->crc_type);
-
 }
 
 TEST(bundle, bundle_block_entry_dup)
@@ -446,15 +475,17 @@ TEST(bundle, bundle_block_entry_dup)
 	struct bundle_block_list *e = NULL;
 	struct bundle_block *b = bundle_block_create(BUNDLE_BLOCK_TYPE_PAYLOAD);
 	struct bundle_block_list *copy = NULL;
-	uint8_t data = 5;
+	const size_t DATA_LENGTH = 1;
+	uint8_t *data = malloc(DATA_LENGTH);
 
-	b->data = &data;
-	TEST_ASSERT_NULL(bundle_block_entry_dup(e));
+	TEST_ASSERT_NULL(bundle_block_entry_dup(NULL));
 
+	data[0] = 5;
+	b->data = data;
 	e = bundle_block_entry_create(b);
 	copy = bundle_block_entry_dup(e);
 
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(e->data, copy->data, sizeof(data));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(e->data, copy->data, DATA_LENGTH);
 	TEST_ASSERT_EQUAL(e->next, copy->next);
 }
 
@@ -588,18 +619,23 @@ TEST(bundle, bundle_get_fragment_min_size)
 	memcpy(block->data, payload, sizeof(payload));
 	bundle->payload_block = block;
 
-	TEST_ASSERT_EQUAL(bundle6_get_first_fragment_min_size(bundle), bundle_get_first_fragment_min_size(bundle));
-	TEST_ASSERT_EQUAL(bundle6_get_mid_fragment_min_size(bundle), bundle_get_mid_fragment_min_size(bundle));
-	TEST_ASSERT_EQUAL(bundle6_get_last_fragment_min_size(bundle), bundle_get_last_fragment_min_size(bundle));
+	TEST_ASSERT_EQUAL(bundle6_get_first_fragment_min_size(bundle),
+			  bundle_get_first_fragment_min_size(bundle));
+	TEST_ASSERT_EQUAL(bundle6_get_mid_fragment_min_size(bundle),
+			  bundle_get_mid_fragment_min_size(bundle));
+	TEST_ASSERT_EQUAL(bundle6_get_last_fragment_min_size(bundle),
+			  bundle_get_last_fragment_min_size(bundle));
 
 	bundle->protocol_version = 7;
 
-	TEST_ASSERT_EQUAL(bundle7_get_first_fragment_min_size(bundle), bundle_get_first_fragment_min_size(bundle));
-	TEST_ASSERT_EQUAL(bundle7_get_last_fragment_min_size(bundle), bundle_get_mid_fragment_min_size(bundle));
-	TEST_ASSERT_EQUAL(bundle7_get_last_fragment_min_size(bundle), bundle_get_last_fragment_min_size(bundle));
+	TEST_ASSERT_EQUAL(bundle7_get_first_fragment_min_size(bundle),
+			  bundle_get_first_fragment_min_size(bundle));
+	TEST_ASSERT_EQUAL(bundle7_get_last_fragment_min_size(bundle),
+			  bundle_get_mid_fragment_min_size(bundle));
+	TEST_ASSERT_EQUAL(bundle7_get_last_fragment_min_size(bundle),
+			  bundle_get_last_fragment_min_size(bundle));
 
 	bundle_free(bundle);
-
 }
 
 TEST(bundle, bundle_get_expiration_time_s)
@@ -610,7 +646,8 @@ TEST(bundle, bundle_get_expiration_time_s)
 	bundle->reception_timestamp_ms = 0;
 	bundle->lifetime_ms = 86400;
 
-	TEST_ASSERT_EQUAL(((1 + 86400 + 500) / 1000), bundle_get_expiration_time_s(bundle));
+	TEST_ASSERT_EQUAL(((1 + 86400 + 500) / 1000),
+			  bundle_get_expiration_time_s(bundle));
 
 	bundle->creation_timestamp_ms = 0;
 	TEST_ASSERT_EQUAL(0, bundle_get_expiration_time_s(bundle));
@@ -671,13 +708,13 @@ TEST(bundle, bundle_age_update)
 	memcpy(block->data, bundle_age, sizeof(bundle_age));
 
 	TEST_ASSERT_EQUAL(UD3TN_OK, bundle_age_update(bundle, 5));
-
 }
 
 TEST(bundle, bundle_get_unique_identifier)
 {
 	struct bundle *bundle = bundle_init();
-	struct bundle_unique_identifier *bundle_id = malloc(sizeof(struct bundle_unique_identifier));
+	struct bundle_unique_identifier *bundle_id =
+		malloc(sizeof(struct bundle_unique_identifier));
 
 	bundle->source = strdup("ipn:243.350");
 
@@ -711,13 +748,13 @@ TEST(bundle, bundle_get_unique_identifier)
 	TEST_ASSERT_EQUAL(bundle_id->sequence_number, bundle_id_2.sequence_number);
 	TEST_ASSERT_EQUAL(bundle_id->fragment_offset, bundle_id_2.fragment_offset);
 	TEST_ASSERT_EQUAL(bundle_id->payload_length, bundle_id_2.payload_length);
-
 }
 
 TEST(bundle, bundle_free_unique_identifier)
 {
 	struct bundle *bundle = bundle_init();
-	struct bundle_unique_identifier *bundle_id = malloc(sizeof(struct bundle_unique_identifier));
+	struct bundle_unique_identifier *bundle_id =
+		malloc(sizeof(struct bundle_unique_identifier));
 
 	bundle->source = strdup("ipn:243.350");
 	bundle_id->creation_timestamp_ms = 0;
@@ -733,7 +770,8 @@ TEST(bundle, bundle_free_unique_identifier)
 TEST(bundle, bundle_is_equal)
 {
 	struct bundle *bundle = bundle_init();
-	struct bundle_unique_identifier *bundle_id = malloc(sizeof(struct bundle_unique_identifier));
+	struct bundle_unique_identifier *bundle_id =
+		malloc(sizeof(struct bundle_unique_identifier));
 
 	struct bundle_block *block = bundle_block_create(BUNDLE_BLOCK_TYPE_PAYLOAD);
 
@@ -851,7 +889,6 @@ TEST(bundle, bundle_to_adu)
 	TEST_ASSERT_EQUAL(adu.proc_flags, bundle->proc_flags);
 
 	bundle_adu_free_members(adu);
-
 }
 
 

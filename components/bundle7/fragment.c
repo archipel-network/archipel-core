@@ -39,12 +39,10 @@ struct bundle *bundle7_fragment_bundle(struct bundle *working_bundle,
 	struct bundle_block_list *prev = NULL;
 
 	while (cur_block != NULL) {
-		if (
-			bundle_block_must_be_replicated(cur_block->data)
-			&& cur_block->data->type != BUNDLE_BLOCK_TYPE_PAYLOAD
-		) {
-			struct bundle_block_list *entry
-				= bundle_block_entry_dup(cur_block);
+		if (bundle_block_must_be_replicated(cur_block->data) &&
+		    cur_block->data->type != BUNDLE_BLOCK_TYPE_PAYLOAD) {
+			struct bundle_block_list *entry =
+				bundle_block_entry_dup(cur_block);
 
 			// Something went south, free all replicated blocks
 			if (entry == NULL) {
@@ -72,10 +70,10 @@ struct bundle *bundle7_fragment_bundle(struct bundle *working_bundle,
 		bundle_free(remainder);
 		return NULL;
 	}
-	remainder->payload_block->length
-		= working_bundle->payload_block->length - first_payload_length;
-	remainder->payload_block->data
-		= malloc(remainder->payload_block->length);
+	remainder->payload_block->length =
+		working_bundle->payload_block->length - first_payload_length;
+	remainder->payload_block->data =
+		malloc(remainder->payload_block->length);
 	if (remainder->payload_block->data == NULL) {
 		bundle_free(remainder);
 		return NULL;
@@ -88,7 +86,8 @@ struct bundle *bundle7_fragment_bundle(struct bundle *working_bundle,
 
 	// Link last block with payload block
 	struct bundle_block_list *payload_entry = bundle_block_entry_create(
-		remainder->payload_block);
+		remainder->payload_block
+	);
 
 	if (payload_entry == NULL) {
 		bundle_free(remainder);
@@ -102,20 +101,19 @@ struct bundle *bundle7_fragment_bundle(struct bundle *working_bundle,
 
 	// Set total ADU length if not already fragmented
 	if (!bundle_is_fragmented(working_bundle))
-		working_bundle->total_adu_length
-			= working_bundle->payload_block->length;
+		working_bundle->total_adu_length =
+			working_bundle->payload_block->length;
 
 	// Shorten first fragment's payload block
-	working_bundle->payload_block->data
-		= realloc(working_bundle->payload_block->data,
-			first_payload_length);
+	working_bundle->payload_block->data =
+		realloc(working_bundle->payload_block->data, first_payload_length);
 
 	assert(working_bundle->payload_block->data != NULL);
 
 	// Set correct lengths and offsets
 	working_bundle->payload_block->length = first_payload_length;
-	remainder->fragment_offset
-		= working_bundle->fragment_offset + first_payload_length;
+	remainder->fragment_offset =
+		working_bundle->fragment_offset + first_payload_length;
 	remainder->total_adu_length = working_bundle->total_adu_length;
 
 	// Set fragment flag
@@ -123,9 +121,8 @@ struct bundle *bundle7_fragment_bundle(struct bundle *working_bundle,
 	remainder->proc_flags |= BUNDLE_FLAG_IS_FRAGMENT;
 
 	// Recalculate primary block sizes
-	if (bundle_recalculate_header_length(working_bundle) == UD3TN_FAIL
-			|| bundle_recalculate_header_length(remainder)
-				== UD3TN_FAIL)
+	if (bundle_recalculate_header_length(working_bundle) == UD3TN_FAIL ||
+	    bundle_recalculate_header_length(remainder) == UD3TN_FAIL)
 		return NULL;
 
 	return remainder;

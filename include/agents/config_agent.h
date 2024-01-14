@@ -11,6 +11,14 @@
 #define CONFIG_AGENT_QUEUE_SIZE 10
 #define CONFIG_AGENT_TASK_PRIORITY 2
 
+// Default Agent IDs.
+#ifndef AGENT_ID_CONFIG_DTN
+#define AGENT_ID_CONFIG_DTN "config"
+#endif // AGENT_ID_CONFIG_DTN
+#ifndef AGENT_ID_CONFIG_IPN
+#define AGENT_ID_CONFIG_IPN "9000"
+#endif // AGENT_ID_CONFIG_IPN
+
 struct config_agent_item {
 	uint8_t *data;
 	size_t data_length;

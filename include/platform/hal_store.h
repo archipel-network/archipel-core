@@ -2,6 +2,9 @@
 #ifndef HAL_STORE_H_INCLUDED
 #define HAL_STORE_H_INCLUDED
 
+#define DEFAULT_STORE_LOCATION "archipel-core-bundles"
+#define HAL_STORE_READ_BUFFER_SIZE 2048
+
 #include "ud3tn/result.h"
 #include "ud3tn/bundle.h"
 

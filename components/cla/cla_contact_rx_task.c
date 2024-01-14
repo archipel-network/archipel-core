@@ -6,7 +6,6 @@
 #include "bundle6/parser.h"
 #include "bundle7/parser.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
@@ -14,14 +13,13 @@
 
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/eid.h"
 
 #include <signal.h>
 #include <stdlib.h>
 #include <errno.h>
 
-#ifdef CLA_RX_READ_TIMEOUT
+#if defined(CLA_RX_READ_TIMEOUT) && CLA_RX_READ_TIMEOUT != 0
 static const unsigned long CLA_RX_READ_TIMEOUT_MS = CLA_RX_READ_TIMEOUT;
 #else // CLA_RX_READ_TIMEOUT
 static const unsigned long CLA_RX_READ_TIMEOUT_MS;
@@ -32,8 +30,8 @@ static void bundle_send(struct bundle *bundle, void *param)
 	struct cla_config *const config = param;
 
 	if (!bundle) {
-		LOG("Tried to send NULL bundle");
-		ASSERT(false);
+		LOG_ERROR("Tried to send NULL bundle");
+		ASSERT(false); // we can continue in release mode
 		return;
 	}
 
@@ -49,25 +47,27 @@ static void bundle_send(struct bundle *bundle, void *param)
 		free(source_node_id);
 
 		if (cmp_result == 0) {
-			LOGF("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
+			LOGF_WARN("CLA: Dropping bundle from \"%s\" (EID spoofing detected)",
 			bundle->source);
 			bundle_free(bundle);
 			return;
 		}
 	}
 
-	LOGF("CLA: Received new bundle %p from \"%s\" to \"%s\" via CLA %s",
-	     bundle, bundle->source, bundle->destination,
-	     config->vtable->cla_name_get());
+	LOGF_DEBUG(
+		"CLA: Received new bundle %p from \"%s\" to \"%s\" via CLA %s",
+		bundle,
+		bundle->source,
+		bundle->destination,
+		config->vtable->cla_name_get()
+	);
 	bundle_processor_inform(
 		config->bundle_agent_interface->bundle_signaling_queue,
-		bundle,
-		BP_SIGNAL_BUNDLE_INCOMING,
-		// TODO: Pass CLA address of sending peer #108
-		NULL,
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal){
+			.type = BP_SIGNAL_BUNDLE_INCOMING,
+			.bundle = bundle,
+			// TODO: Pass CLA address of sending peer #108
+		}
 	);
 }
 
@@ -159,10 +159,11 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
 
 		if (rx_data->cur_parser->status != PARSER_STATUS_GOOD) {
 			if (rx_data->cur_parser->status == PARSER_STATUS_ERROR)
-				LOG("RX: Parser failed, reset.");
+				LOG_WARN("RX: Parser failed, reset.");
 			link->config->vtable->cla_rx_task_reset_parsers(
 				link
 			);
+			break;
 		} else if (HAS_FLAG(rx_data->cur_parser->flags,
 				    PARSER_FLAG_BULK_READ)) {
 			/* Bulk read requested - not handled by us. */
@@ -189,13 +190,13 @@ static uint8_t *buffer_read(struct cla_link *link, uint8_t *stream)
  * buffer (NULL pointer) and the bulk read flag cleared to trigger further
  * processing.
  *
- * Bytes in the current input buffer are considered and copied appropriatly --
+ * Bytes in the current input buffer are considered and copied appropriately --
  * meaning that non-parsed input bytes are copied into the bulk read buffer and
  * the remaining bytes are read directly from the input stream.
  * @return Pointer to the position up to the input buffer is consumed after the
  *         operation.
  */
-static uint8_t *bulk_read(struct cla_link *link)
+uint8_t *rx_bulk_read(struct cla_link *link)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 	uint8_t *parsed;
@@ -228,7 +229,6 @@ static uint8_t *bulk_read(struct cla_link *link)
 			rx_data->input_buffer.start +
 			rx_data->cur_parser->next_bytes
 		);
-	}
 
 	/*
 	 *
@@ -248,7 +248,7 @@ static uint8_t *bulk_read(struct cla_link *link)
 	 *                               |
 	 *                    pointer for HAL read operation
 	 */
-	else {
+	} else {
 		size_t filled = rx_data->input_buffer.end -
 				rx_data->input_buffer.start;
 
@@ -293,8 +293,10 @@ static uint8_t *bulk_read(struct cla_link *link)
 
 				if (time_since_last_rx >
 						CLA_RX_READ_TIMEOUT_MS) {
-					LOGF("RX: Timeout after %llu ms in bulk read mode, reset.",
-					     time_since_last_rx);
+					LOGF_WARN(
+						"RX: Timeout after %llu ms in bulk read mode, reset.",
+						time_since_last_rx
+					);
 					link->config->vtable
 						->cla_rx_task_reset_parsers(
 							link
@@ -330,7 +332,7 @@ static uint8_t *bulk_read(struct cla_link *link)
 
 	if (rx_data->cur_parser->status != PARSER_STATUS_GOOD) {
 		if (rx_data->cur_parser->status == PARSER_STATUS_ERROR)
-			LOG("RX: Parser failed after bulk read, reset.");
+			LOG_WARN("RX: Parser failed after bulk read, reset.");
 		link->config->vtable->cla_rx_task_reset_parsers(link);
 	}
 
@@ -348,7 +350,7 @@ static uint8_t *bulk_read(struct cla_link *link)
  *
  * @return Number of bytes remaining in the input buffer after the operation.
  */
-static uint8_t *chunk_read(struct cla_link *link)
+uint8_t *rx_chunk_read(struct cla_link *link)
 {
 	struct rx_task_data *const rx_data = &link->rx_task_data;
 	// Receive Step - Receive data from I/O system into buffer
@@ -386,8 +388,10 @@ static uint8_t *chunk_read(struct cla_link *link)
 		);
 
 		if (time_since_last_rx > CLA_RX_READ_TIMEOUT_MS) {
-			LOGF("RX: New data received after %llu seconds, start parsing.",
-			     time_since_last_rx);
+			LOGF_WARN(
+				"RX: New data received after %llu seconds, restarting parsers.",
+				time_since_last_rx
+			);
 			link->config->vtable->cla_rx_task_reset_parsers(link);
 		}
 	}
@@ -409,9 +413,9 @@ static void cla_contact_rx_task(void *const param)
 
 	while (!hal_semaphore_is_blocked(link->rx_task_notification)) {
 		if (HAS_FLAG(rx_data->cur_parser->flags, PARSER_FLAG_BULK_READ))
-			parsed = bulk_read(link);
+			parsed = rx_bulk_read(link);
 		else
-			parsed = chunk_read(link);
+			parsed = rx_chunk_read(link);
 
 		/* The whole input buffer was consumed, reset it. */
 		if (parsed == rx_data->input_buffer.end) {
@@ -464,7 +468,7 @@ static void cla_contact_rx_task(void *const param)
 		 */
 		} else if (rx_data->input_buffer.end ==
 			 rx_data->input_buffer.start + CLA_RX_BUFFER_SIZE) {
-			LOG("RX: WARNING, RX buffer is full.");
+			LOG_WARN("RX: RX buffer is full and does not clear. Resetting all parsers!");
 			link->config->vtable->cla_rx_task_reset_parsers(
 				link
 			);
@@ -477,21 +481,11 @@ static void cla_contact_rx_task(void *const param)
 
 enum ud3tn_result cla_launch_contact_rx_task(struct cla_link *link)
 {
-	static uint8_t ctr = 1;
-	static char tname_buf[6];
-
-	tname_buf[0] = 'r';
-	tname_buf[1] = 'x';
-	snprintf(tname_buf + 2, sizeof(tname_buf) - 2, "%hhu", ctr++);
-
 	hal_semaphore_take_blocking(link->rx_task_sem);
 
 	const enum ud3tn_result res = hal_task_create(
 		cla_contact_rx_task,
-		tname_buf,
-		CONTACT_RX_TASK_PRIORITY,
-		link,
-		CONTACT_RX_TASK_STACK_SIZE
+		link
 	);
 
 	// Not launched, no need to wait for exit.

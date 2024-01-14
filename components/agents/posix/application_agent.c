@@ -10,7 +10,6 @@
 
 #include "cla/posix/cla_tcp_util.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
@@ -19,10 +18,10 @@
 #include "platform/hal_types.h"
 
 #include "platform/posix/pipe_queue_util.h"
+#include "platform/posix/socket_util.h"
 
 #include "ud3tn/agent_util.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/eid.h"
@@ -37,11 +36,15 @@
 #include <poll.h>
 #include <unistd.h>
 
-#include <sys/socket.h>
-#include <sys/un.h>
-
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+// The BIBE BPDU type code, which was different in BIBE draft v1 (used by ION).
+#if defined(BIBE_CL_DRAFT_1_COMPATIBILITY) && BIBE_CL_DRAFT_1_COMPATIBILITY != 0
+static const uint8_t BIBE_TYPECODE = 7;
+#else // BIBE_CL_DRAFT_1_COMPATIBILITY
+static const uint8_t BIBE_TYPECODE = 3;
+#endif // BIBE_CL_DRAFT_1_COMPATIBILITY
 
 struct application_agent_config {
 	const struct bundle_agent_interface *bundle_agent_interface;
@@ -82,35 +85,37 @@ static void application_agent_listener_task(void *const param)
 		);
 
 		if (conn_fd == -1) {
-			LOGERROR("AppAgent", "accept()", errno);
+			LOG_ERRNO("AppAgent", "accept()", errno);
 			continue;
 		}
 
 		switch (incoming.ss_family) {
 		case AF_UNIX:
-			LOG("AppAgent: Accepted connection from UNIX Domain Socket.");
+			LOG_INFO("AppAgent: Accepted connection from UNIX Domain Socket.");
 			break;
 		case AF_INET: {
 			struct sockaddr_in *in =
 				(struct sockaddr_in *)&incoming;
-			LOGF("AppAgent: Accepted connection from '%s'.",
-			     inet_ntop(in->sin_family, &in->sin_addr,
-				       addrstrbuf, sizeof(addrstrbuf))
+			LOGF_INFO(
+				"AppAgent: Accepted connection from '%s'.",
+				inet_ntop(in->sin_family, &in->sin_addr,
+					  addrstrbuf, sizeof(addrstrbuf))
 			);
 			break;
 		}
 		case AF_INET6: {
 			struct sockaddr_in6 *in =
 				(struct sockaddr_in6 *)&incoming;
-			LOGF("AppAgent: Accepted connection from '%s'.",
-			     inet_ntop(in->sin6_family, &in->sin6_addr,
-				       addrstrbuf, sizeof(addrstrbuf))
+			LOGF_INFO(
+				"AppAgent: Accepted connection from '%s'.",
+				inet_ntop(in->sin6_family, &in->sin6_addr,
+					  addrstrbuf, sizeof(addrstrbuf))
 			);
 			break;
 		}
 		default:
 			close(conn_fd);
-			LOG("AppAgent: Unknown address family. Connection closed!");
+			LOG_WARN("AppAgent: Unknown address family for incoming connection. Connection closed!");
 			continue;
 		}
 
@@ -118,7 +123,7 @@ static void application_agent_listener_task(void *const param)
 			sizeof(struct application_agent_comm_config)
 		);
 		if (!child_config) {
-			LOG("AppAgent: Error allocating memory for config!");
+			LOG_ERROR("AppAgent: Error allocating memory for config!");
 			close(conn_fd);
 			continue;
 		}
@@ -126,17 +131,22 @@ static void application_agent_listener_task(void *const param)
 		child_config->socket_fd = conn_fd;
 		child_config->last_bundle_timestamp_ms = 0;
 		child_config->last_bundle_sequence_number = 0;
+		child_config->registered_agent_id = NULL;
+
+		if (pipe(child_config->bundle_pipe_fd) == -1) {
+			LOG_ERRNO("AppAgent", "pipe()", errno);
+			close(conn_fd);
+			free(child_config);
+			continue;
+		}
 
 		const enum ud3tn_result task_creation_result = hal_task_create(
 			application_agent_comm_task,
-			"app_comm_t",
-			APPLICATION_AGENT_TASK_PRIORITY,
-			child_config,
-			DEFAULT_TASK_STACK_SIZE
+			child_config
 		);
 
 		if (task_creation_result != UD3TN_OK) {
-			LOG("AppAgent: Error starting comm. task!");
+			LOG_ERROR("AppAgent: Error starting comm. task!");
 			close(conn_fd);
 			free(child_config);
 		}
@@ -173,7 +183,7 @@ static int send_message(const int socket_fd,
 
 	aap_serialize(msg, tcp_write_to_socket, &wsp, true);
 	if (wsp.errno_)
-		LOGERROR("AppAgent", "send()", wsp.errno_);
+		LOG_ERRNO("AppAgent", "send()", wsp.errno_);
 	return -wsp.errno_;
 }
 
@@ -186,12 +196,15 @@ static void agent_msg_recv(struct bundle_adu data, void *param,
 		(struct application_agent_comm_config *)param
 	);
 
-	LOGF("AppAgent: Got Bundle for sink \"%s\" from \"%s\", forwarding.",
-	     config->registered_agent_id, data.source);
+	LOGF_DEBUG(
+		"AppAgent: Got Bundle for sink \"%s\" from \"%s\", forwarding.",
+		config->registered_agent_id,
+		data.source
+	);
 
 	if (pipeq_write_all(config->bundle_pipe_fd[1],
 			    &data, sizeof(struct bundle_adu)) <= 0) {
-		LOGERROR("AppAgent", "write()", errno);
+		LOG_ERRNO("AppAgent", "write()", errno);
 		bundle_adu_free_members(data);
 	}
 }
@@ -202,31 +215,36 @@ static int register_sink(char *sink_identifier,
 	return bundle_processor_perform_agent_action(
 		config->parent->bundle_agent_interface->bundle_signaling_queue,
 		BP_SIGNAL_AGENT_REGISTER,
-		sink_identifier,
-		agent_msg_recv,
-		config,
+		(struct agent){
+			.sink_identifier = sink_identifier,
+			.callback = agent_msg_recv,
+			.param = config,
+		},
 		true
 	);
 }
 
 static void deregister_sink(struct application_agent_comm_config *config)
 {
-	if (config->registered_agent_id) {
-		LOGF("AppAgent: De-registering agent ID \"%s\".",
-		     config->registered_agent_id);
+	if (!config->registered_agent_id)
+		return;
 
-		bundle_processor_perform_agent_action(
-			config->parent->bundle_agent_interface->bundle_signaling_queue,
-			BP_SIGNAL_AGENT_DEREGISTER,
-			config->registered_agent_id,
-			NULL,
-			NULL,
-			true
-		);
+	LOGF_INFO(
+		"AppAgent: De-registering agent ID \"%s\".",
+		config->registered_agent_id
+	);
 
-		free(config->registered_agent_id);
-		config->registered_agent_id = NULL;
-	}
+	bundle_processor_perform_agent_action(
+		config->parent->bundle_agent_interface->bundle_signaling_queue,
+		BP_SIGNAL_AGENT_DEREGISTER,
+		(struct agent){
+			.sink_identifier = config->registered_agent_id,
+		},
+		true
+	);
+
+	free(config->registered_agent_id);
+	config->registered_agent_id = NULL;
 }
 
 static uint64_t allocate_sequence_number(
@@ -254,14 +272,16 @@ static int16_t process_aap_message(
 		return result;
 
 	switch (msg.type) {
-
 	case AAP_MESSAGE_REGISTER:
-		LOGF("AppAgent: Received registration request for ID \"%s\".",
-		     msg.eid);
+		LOGF_INFO(
+			"AppAgent: Received registration request for ID \"%s\".",
+			msg.eid
+		);
 
 		deregister_sink(config);
 
 		if (register_sink(msg.eid, config)) {
+			LOG_INFO("AppAgent: Registration request declined.");
 			response.type = AAP_MESSAGE_NACK;
 		} else {
 			config->registered_agent_id = msg.eid;
@@ -272,23 +292,24 @@ static int16_t process_aap_message(
 
 	case AAP_MESSAGE_SENDBUNDLE:
 	case AAP_MESSAGE_SENDBIBE:
-		LOGF("AppAgent: Received %s (l = %zu) for %s via AAP.",
-		     msg.type == AAP_MESSAGE_SENDBIBE ? "BIBE BPDU" : "bundle",
-		     msg.payload_length, msg.eid);
+		LOGF_DEBUG(
+			"AppAgent: Received %s (l = %zu) for %s via AAP.",
+			(
+				msg.type == AAP_MESSAGE_SENDBIBE
+				? "BIBE BPDU"
+				: "bundle"
+			),
+			msg.payload_length,
+			msg.eid
+		);
 
 		if (!config->registered_agent_id) {
-			LOG("AppAgent: No agent ID registered, dropping!");
+			LOG_WARN("AppAgent: No agent ID registered, dropping!");
 			break;
 		}
 
 		if (msg.type == AAP_MESSAGE_SENDBIBE) {
-			LOG("AppAgent: ADU is a BPDU, prepending AR header!");
-
-			#ifdef BIBE_CL_DRAFT_1_COMPATIBILITY
-				uint8_t typecode = 7;
-			#else
-				uint8_t typecode = 3;
-			#endif
+			LOG_DEBUG("AppAgent: ADU is a BPDU, prepending AR header!");
 
 			const size_t ar_size = msg.payload_length + 2;
 			uint8_t *const ar_bytes = malloc(ar_size);
@@ -298,8 +319,8 @@ static int16_t process_aap_message(
 				msg.payload,
 				msg.payload_length
 			);
-			ar_bytes[0] = 0x82;     // CBOR array of length 2
-			ar_bytes[1] = typecode; // Integer (record type)
+			ar_bytes[0] = 0x82;          // CBOR array of length 2
+			ar_bytes[1] = BIBE_TYPECODE; // Integer (record type)
 
 			free(msg.payload);
 			msg.payload = ar_bytes;
@@ -331,10 +352,10 @@ static int16_t process_aap_message(
 		msg.payload = NULL;
 
 		if (!bundle) {
-			LOG("AppAgent: Bundle creation failed!");
+			LOG_ERROR("AppAgent: Bundle creation failed!");
 			response.type = AAP_MESSAGE_NACK;
 		} else {
-			LOGF("AppAgent: Injected new bundle %p.", bundle);
+			LOGF_DEBUG("AppAgent: Injected new bundle %p.", bundle);
 			response.type = AAP_MESSAGE_SENDCONFIRM;
 			response.bundle_id = (
 				1ULL << 63 | // reserved bit MUST be 1
@@ -348,17 +369,19 @@ static int16_t process_aap_message(
 		break;
 
 	case AAP_MESSAGE_CANCELBUNDLE:
-		LOGF("AppAgent: Received bundle cancellation request for bundle #%llu.",
-		     (uint64_t)msg.bundle_id);
+		LOGF_DEBUG(
+			"AppAgent: Received bundle cancellation request for bundle #%llu.",
+			(uint64_t)msg.bundle_id
+		);
 
 		// TODO: Signal to Bundle Processor + implement handling of it
-		LOG("AppAgent: Bundle cancellation failed (NOT IMPLEMENTED)!");
+		LOG_ERROR("AppAgent: Bundle cancellation failed (NOT IMPLEMENTED)!");
 
 		response.type = AAP_MESSAGE_NACK;
 		break;
 
 	case AAP_MESSAGE_PING:
-		LOGF(
+		LOGF_DEBUG(
 			"AppAgent: Received PING from \"%s\"",
 			config->registered_agent_id
 			? config->registered_agent_id
@@ -368,8 +391,10 @@ static int16_t process_aap_message(
 		break;
 
 	default:
-		LOGF("AppAgent: Cannot handle AAP messages of type %d!",
-		     msg.type);
+		LOGF_WARN(
+			"AppAgent: Cannot handle AAP messages of type %d!",
+			msg.type
+		);
 		break;
 	}
 
@@ -398,7 +423,7 @@ static ssize_t receive_from_socket(
 	);
 	if (recv_result <= 0) {
 		if (recv_result < 0)
-			LOGERROR("AppAgent", "recv()", errno);
+			LOG_ERRNO("AppAgent", "recv()", errno);
 		return -1;
 	}
 	bytes_available += recv_result;
@@ -413,7 +438,7 @@ static ssize_t receive_from_socket(
 				aap_parser_extract_message(parser)
 			);
 		else
-			LOG("AppAgent: Failed parsing received AAP message!");
+			LOG_ERROR("AppAgent: Failed parsing received AAP message!");
 		aap_parser_reset(parser);
 	}
 
@@ -445,18 +470,33 @@ static int send_bundle(const int socket_fd, struct bundle_adu data)
 	return send_result;
 }
 
+static void shutdown_bundle_pipe(int bundle_pipe_fd[2])
+{
+	struct bundle_adu data;
+
+	while (poll_recv_timeout(bundle_pipe_fd[0], 0)) {
+		if (pipeq_read_all(bundle_pipe_fd[0],
+				   &data, sizeof(struct bundle_adu)) <= 0) {
+			LOG_ERRNO("AppAgent", "read()", errno);
+			break;
+		}
+
+		LOGF_WARN(
+			"AppAgent: Dropping unsent bundle from '%s'.",
+			data.source
+		);
+		bundle_adu_free_members(data);
+	}
+
+	close(bundle_pipe_fd[0]);
+	close(bundle_pipe_fd[1]);
+}
+
 static void application_agent_comm_task(void *const param)
 {
 	struct application_agent_comm_config *const config = (
 		(struct application_agent_comm_config *)param
 	);
-
-	config->registered_agent_id = NULL;
-
-	if (pipe(config->bundle_pipe_fd) == -1) {
-		LOGERROR("AppAgent", "pipe()", errno);
-		goto pipe_creation_error;
-	}
 
 	char *local_eid = config->parent->bundle_agent_interface->local_eid;
 	const struct aap_message welcome = {
@@ -484,7 +524,7 @@ static void application_agent_comm_task(void *const param)
 
 	for (;;) {
 		if (poll(pollfd, ARRAY_LENGTH(pollfd), -1) == -1) {
-			LOGERROR("AppAgent", "poll()", errno);
+			LOG_ERRNO("AppAgent", "poll()", errno);
 			// Try again if interrupted by a signal, else fail.
 			if (errno == EINTR)
 				continue;
@@ -492,7 +532,7 @@ static void application_agent_comm_task(void *const param)
 		}
 		if (pollfd[0].revents & POLLERR ||
 		    pollfd[1].revents & POLLERR) {
-			LOG("AppAgent: Socket error (e.g. TCP RST) detected.");
+			LOG_WARN("AppAgent: Socket error (e.g. TCP RST) detected.");
 			break;
 		}
 		if (pollfd[0].revents & POLLIN) {
@@ -513,7 +553,7 @@ static void application_agent_comm_task(void *const param)
 			if (pipeq_read_all(config->bundle_pipe_fd[0],
 					   &data,
 					   sizeof(struct bundle_adu)) <= 0) {
-				LOGERROR("AppAgent", "read()", errno);
+				LOG_ERRNO("AppAgent", "read()", errno);
 				break;
 			}
 			if (send_bundle(config->socket_fd, data) < 0)
@@ -523,56 +563,12 @@ static void application_agent_comm_task(void *const param)
 
 	aap_parser_deinit(&parser);
 done:
-	close(config->bundle_pipe_fd[0]);
-	close(config->bundle_pipe_fd[1]);
-pipe_creation_error:
 	deregister_sink(config);
+	shutdown_bundle_pipe(config->bundle_pipe_fd);
 	shutdown(config->socket_fd, SHUT_RDWR);
 	close(config->socket_fd);
 	free(config);
-	LOG("AppAgent: Closed connection.");
-}
-
-static int create_unix_domain_socket(const char *path)
-{
-	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (sock == -1) {
-		LOGERROR("AppAgent", "socket(AF_UNIX)", errno);
-		return -1;
-	}
-
-	struct sockaddr_un addr = {
-		.sun_family = AF_UNIX,
-	};
-	const int rv1 = snprintf(
-		addr.sun_path,
-		sizeof(addr.sun_path),
-		"%s",
-		path
-	);
-
-	if (rv1 <= 0 || (unsigned int)rv1 > sizeof(addr.sun_path)) {
-		LOGF(
-			"AppAgent: Invalid socket path, len = %d, maxlen = %zu",
-			rv1,
-			sizeof(addr.sun_path)
-		);
-		return -1;
-	}
-
-	unlink(path);
-	int rv2 = bind(
-		sock,
-		(const struct sockaddr *)&addr,
-		sizeof(struct sockaddr_un)
-	);
-	if (rv2 == -1) {
-		LOGERROR("AppAgent", "bind(unix_domain_socket)", errno);
-		return -1;
-	}
-
-	return sock;
+	LOG_INFO("AppAgent: Closed connection.");
 }
 
 struct application_agent_config *application_agent_setup(
@@ -586,7 +582,7 @@ struct application_agent_config *application_agent_setup(
 	);
 
 	if (!config) {
-		LOG("AppAgent: Error allocating memory for task config!");
+		LOG_ERROR("AppAgent: Error allocating memory for task config!");
 		return NULL;
 	}
 
@@ -598,21 +594,25 @@ struct application_agent_config *application_agent_setup(
 			create_unix_domain_socket(socket_path);
 
 	if (config->listen_socket < 0)  {
-		LOG("AppAgent: Error binding to provided address!");
+		LOG_ERROR("AppAgent: Error binding to provided address!");
 		free(config);
 		return NULL;
 	}
 
 	if (listen(config->listen_socket, APPLICATION_AGENT_BACKLOG) < 0) {
-		LOG("AppAgent: Error listening on provided address!");
+		LOG_ERRNO_ERROR(
+			"AppAgent",
+			"Error listening on provided address!",
+			errno
+		);
 		free(config);
 		return NULL;
 	}
 
 	if (node && service)
-		LOGF("AppAgent: Listening on [%s]:%s", node, service);
+		LOGF_INFO("AppAgent: Listening on [%s]:%s", node, service);
 	else
-		LOGF("AppAgent: Listening on %s", socket_path);
+		LOGF_INFO("AppAgent: Listening on %s", socket_path);
 
 	config->bundle_agent_interface = bundle_agent_interface;
 	config->bp_version = bp_version;
@@ -620,14 +620,11 @@ struct application_agent_config *application_agent_setup(
 
 	const enum ud3tn_result task_creation_result = hal_task_create(
 		application_agent_listener_task,
-		"app_listener_t",
-		APPLICATION_AGENT_TASK_PRIORITY,
-		config,
-		DEFAULT_TASK_STACK_SIZE
+		config
 	);
 
 	if (task_creation_result != UD3TN_OK) {
-		LOG("AppAgent: Error creating listener task!");
+		LOG_ERROR("AppAgent: Error creating listener task!");
 		free(config);
 		return NULL;
 	}

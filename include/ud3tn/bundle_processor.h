@@ -10,6 +10,17 @@
 #include "platform/hal_types.h"
 #include "platform/hal_store.h"
 
+// Contact dropping / failed forwarding policy
+enum failed_forwarding_policy {
+	POLICY_DROP,
+	POLICY_TRY_RE_SCHEDULE
+};
+
+// Default policy for re-scheduling bundles on dropped contacts, etc.
+#ifndef FAILED_FORWARD_POLICY
+#define FAILED_FORWARD_POLICY POLICY_DROP
+#endif // FAILED_FORWARD_POLICY
+
 // Interface to the bundle agent, provided to other agents and the CLA.
 struct bundle_agent_interface {
 	char *local_eid;
@@ -26,6 +37,8 @@ enum bundle_processor_signal_type {
 	BP_SIGNAL_NEW_LINK_ESTABLISHED,
 	BP_SIGNAL_LINK_DOWN,
 	BP_SIGNAL_CONTACT_OVER,
+	BP_SIGNAL_AGENT_REGISTER_RPC,
+	BP_SIGNAL_AGENT_DEREGISTER_RPC,
 };
 
 // for performing (de)register operations
@@ -57,12 +70,7 @@ struct bundle_processor_task_parameters {
 
 void bundle_processor_inform(
 	QueueIdentifier_t bundle_processor_signaling_queue,
-	struct bundle *bundle,
-	enum bundle_processor_signal_type type,
-	char *peer_cla_addr,
-	struct agent_manager_parameters *agent_manager_params,
-	struct contact *contact,
-	struct router_command *router_cmd);
+	const struct bundle_processor_signal signal);
 
 /**
  * @brief Instruct the BP to interact with the agent manager state
@@ -70,20 +78,13 @@ void bundle_processor_inform(
  * @param bundle_processor_signaling_queue Handle to the signaling queue of
  *	the BP task
  * @param type BP_SIGNAL_AGENT_REGISTER or BP_SIGNAL_AGENT_DRREGISTER
- * @param sink_identifier Unique string to identify an agent, must not be NULL
- * @param callback Logic to be executed every time a bundle should be
- *	delivered to the agent (BP_SIGNAL_AGENT_REGISTER only)
- * @param param Use this to pass additional arguments to callback
- *	(BP_SIGNAL_AGENT_REGISTER only)
+ * @param agent The agent parameters to be passed to the BP
  * @param wait_for_feedback If true, block and wait for the feedback of the BP
  */
 int bundle_processor_perform_agent_action(
-	QueueIdentifier_t bundle_processor_signaling_queue,
+	QueueIdentifier_t signaling_queue,
 	enum bundle_processor_signal_type type,
-	const char *sink_identifier,
-	void (*const callback)(struct bundle_adu data, void *param,
-			       const void *bp_context),
-	void *param,
+	const struct agent agent,
 	bool wait_for_feedback);
 
 // Forward declaration of internal opaque struct. Only to be used by agents

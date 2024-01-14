@@ -5,7 +5,7 @@ stages:
     - code_quality_test
     - publish
 
-image: buildpack-deps:bullseye
+image: buildpack-deps:bookworm
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -25,51 +25,81 @@ build-posix-release:
 build-clang-posix-debug:
     stage: builds
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make werror=yes verbose=yes TOOLCHAIN=clang
 
 build-clang-posix-release:
     stage: builds
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
+
+build-nix-x86_64-linux:
+    stage: builds
+    when: always
+    image: nixos/nix:2.18.1
+    script:
+        - nix build --experimental-features 'nix-command flakes' '.?submodules=1#ud3tn'
+        - nix build --experimental-features 'nix-command flakes' '.?submodules=1#pyd3tn'
+        - nix build --experimental-features 'nix-command flakes' '.?submodules=1#python-ud3tn-utils'
 
 build-posix-arm64-debug:
-    stage: builds
-    when: always
+    extends: build-posix-debug
     tags: ["arm64"]
-    script:
-        - make werror=yes verbose=yes
 
 build-posix-arm64-release:
-    stage: builds
-    when: always
+    extends: build-posix-release
     tags: ["arm64"]
-    script:
-        - make -j4 type=release optimize=yes werror=yes verbose=yes
 
 build-clang-posix-arm64-debug:
-    stage: builds
-    when: always
+    extends: build-clang-posix-debug
     tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
-    script:
-        - make werror=yes verbose=yes TOOLCHAIN=clang
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
 
 build-clang-posix-arm64-release:
-    stage: builds
-    when: always
+    extends: build-clang-posix-release
     tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
+
+build-posix-macos-debug:
+    extends: build-posix-debug
+    tags: ["macos"]
+
+build-posix-macos-release:
+    extends: build-posix-release
+    tags: ["macos"]
+
+build-freebsd:
+    extends: build-posix-debug
+    tags: ["freebsd"]
     script:
-        - make type=release optimize=yes werror=yes verbose=yes TOOLCHAIN=clang
+        - gmake werror=yes verbose=yes
+
+build-library:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
+        - cd /ud3tn_build
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
+        - make posix-lib
+        - gcc -I include/ -c components/daemon/main.c
+        - gcc -o ud3tn -L. main.o -l:build/posix/libud3tn.so
+        - ./ud3tn --allow-remote-config &
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - pytest test/integration
 
 unit-test-posix-debug:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix
         - cd /ud3tn_build
@@ -78,61 +108,73 @@ unit-test-posix-debug:
 unit-test-posix-release:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
-        - timeout 60 make type=release coverage=yes run-unittest-posix
-        - source /ud3tn_venv/bin/activate
-        - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
-    coverage: /^\s*lines:\s*\d+.\d+\%/
-    artifacts:
-        name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
-        expire_in: 2 days
-        reports:
-            coverage_report:
-                coverage_format: cobertura
-                path: coverage.xml
-
-unit-test-posix-arm64:
-    stage: functional_test
-    when: always
-    tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes unittest-posix
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release sanitize-strict=yes unittest-posix
         - cd /ud3tn_build
         - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
 
-integration-test-posix:
+unit-test-posix-arm64:
+    extends: unit-test-posix-debug
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
+
+unit-test-posix-macos:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    tags: ["macos"]
+    script:
+        - make unittest-posix -j4 sanitize-strict=yes
+        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 gtimeout 60 build/posix/testud3tn
+
+unit-test-posix-freebsd:
+    stage: functional_test
+    when: always
+    tags: ["freebsd"]
+    script:
+        - gmake unittest-posix sanitize-strict=yes
+        - ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 build/posix/testud3tn
+
+.integration-test-posix:
+    stage: functional_test
+    when: always
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN_PID
 
+integration-test-posix-python-3.8:
+    extends: .integration-test-posix
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+
+integration-test-posix-python-3.12:
+    extends: .integration-test-posix
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.12-bookworm
+
 integration-test-posix-thread-sanitizer:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize=thread sanitize-strict=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -141,32 +183,36 @@ integration-test-posix-thread-sanitizer:
 integration-test-posix-release:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build type=release optimize=yes
         - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - build/posix/ud3tn --allow-remote-config &
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
 
 integration-test-posix-arm64:
+    extends: .integration-test-posix
+    tags: ["arm64"]
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm-arm64
+
+integration-test-posix-macos:
     stage: functional_test
     when: always
-    tags: ["arm64"]
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye-arm64
+    tags: ["macos"]
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build TOOLCHAIN=clang sanitize-strict=yes
-        - cd /ud3tn_build
-        - rm -f ./ud3tn.socket
+        - make posix -j4 sanitize-strict=yes optimize=yes
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
-        - source /ud3tn_venv/bin/activate
-        - pip install -e "pyd3tn"
-        - pip install -e "python-ud3tn-utils"
+        - make virtualenv
+        - source .venv/bin/activate
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
         - pytest test/integration
         - kill -TERM $UD3TN_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
@@ -175,7 +221,7 @@ integration-test-posix-arm64:
 aap-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -186,14 +232,35 @@ aap-test:
         - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
         - python tools/aap/aap_test.py
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 & UD3TN2_PID=$!
-        - while ! nc -z localhost 4242; do sleep 0.1; done
-        - python tools/aap/aap_test.py --tcp '::1' 4242
         - kill -TERM $UD3TN1_PID
-        - kill -TERM $UD3TN2_PID
         - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN1_PID
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -e "dtn://ud3tn2.dtn/" -a '::1' -p 4242 -S ud3tn2.aap2.socket & UD3TN2_PID=$!
+        - while ! nc -z localhost 4242; do sleep 0.1; done
+        - python tools/aap/aap_test.py --tcp '::1' 4242
+        - kill -TERM $UD3TN2_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
         - wait $UD3TN2_PID
+
+aap2-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - rm -f ./ud3tn.aap2.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn & UD3TN1_PID=$!
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - python tools/aap2/aap2_ping.py dtn://ud3tn.dtn/echo -t 1 -c 1
+        - python tools/aap2/aap2_ping.py dtn://ud3tn.dtn/1 -a 1 -t 1 -c 1
+        - (sleep 1 && python tools/aap2/aap2_send.py -a 1 -s secret dtn://ud3tn.dtn/1 hello) & timeout 3 python tools/aap2/aap2_receive.py -a 1 -s secret -c 1 --verify-pl hello
+        - kill -TERM $UD3TN1_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN1_PID
 
 ion-ipn-bpv6-interoperability-test:
     stage: functional_test
@@ -216,14 +283,8 @@ ion-ipn-bpv7-interoperability-test:
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
 
 ione-ipn-bpv7-interoperability-test:
-    stage: functional_test
-    when: always
+    extends: ion-ipn-bpv7-interoperability-test
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
-    script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
-        - cd /ud3tn_build
-        - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 ipn
 
 ion-dtn-bpv6-interoperability-test:
     stage: functional_test
@@ -246,19 +307,33 @@ ion-dtn-bpv7-interoperability-test:
         - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 dtn
 
 ione-dtn-bpv7-interoperability-test:
+    extends: ion-dtn-bpv7-interoperability-test
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
+
+hdtn-interoperability-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/hdtn-interop:1.0.0
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
         - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/minimal_forwarding_test/run.sh 7 dtn
+        - bash test/run_hdtn_test.sh
+
+dtn7-interoperability-test:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/dtn7-interop:0.19.0-732d1a0
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes
+        - cd /ud3tn_build
+        - source /ud3tn_venv/bin/activate
+        - bash test/dtn7_interoperability/run_dtn7_test.sh
 
 mtcp-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -268,6 +343,7 @@ mtcp-test:
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! nc -z localhost 4224; do sleep 0.1; done
         - python tools/cla/mtcp_test.py -t mtcp --payload TESTPAYLOAD &
         - timeout -v 5 python tools/cla/mtcp_sink.py --count 1 --verify-pl TESTPAYLOAD
         - sleep 0.2
@@ -278,14 +354,14 @@ mtcp-test:
 fragment-reassembly-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
         - rm -f ./ud3tn1.socket
         - rm -f ./ud3tn2.socket
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket & UD3TN1_PID=$!
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4222" -e "dtn://ud3tn1.dtn/" -s ud3tn1.socket -S ud3tn1.aap2.socket & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:*,4223" -e "dtn://ud3tn2.dtn/" -s ud3tn2.socket -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
@@ -305,14 +381,14 @@ fragment-reassembly-test:
 ipv6-compatibility-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
         # IPv6 and IPv4
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 & UD3TN1_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4222" -e "dtn://ud3tn1.dtn/" -a '::' -p 4242 -S ud3tn1.aap2.socket & UD3TN1_PID=$!
         # IPv4-only
-        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 & UD3TN2_PID=$!
+        - UBSAN_OPTIONS=print_stacktrace=1 build/posix/ud3tn -c "mtcp:::,4223" -e "dtn://ud3tn2.dtn/" -a '127.0.0.1' -p 4243 -S ud3tn2.aap2.socket & UD3TN2_PID=$!
         # Create venv and wait for uD3TN ports to be open
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
@@ -338,7 +414,7 @@ ipv6-compatibility-test:
 bibe-internal-forwarding-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize-strict=yes
         - cd /ud3tn_build
@@ -350,20 +426,55 @@ ion-bibe-interoperability-test:
     when: always
     image: registry.gitlab.com/d3tn/ud3tn-docker-images/ion-interop:4.1.2
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY=1"
         - cd /ud3tn_build
         - source /ud3tn_venv/bin/activate
         - bash test/ion_interoperability/bibe_forwarding_test/run.sh
 
 ione-bibe-interoperability-test:
+    extends: ion-bibe-interoperability-test
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
+
+data-decoder-test:
     stage: functional_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ione-interop:1.0.1
     script:
-        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build sanitize=yes "CFLAGS=-DBIBE_CL_DRAFT_1_COMPATIBILITY"
+        - make clean
+        - make data-decoder
+        - build/posix/ud3tndecode -7 test/decoder/examples/bpv7_test/bpv7_1.bin
+        - build/posix/ud3tndecode -6 test/decoder/examples/bpv6_test/bpv6_1.bin
+        - build/posix/ud3tndecode -s test/decoder/examples/spp_test/spp_1.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_ping_packet.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_sendbundle_packet.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_sendconfirm_packet.bin
+        - build/posix/ud3tndecode -a test/decoder/examples/aap_test/test_aap_welcome_packet.bin
+
+unit-test-valgrind:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+    script:
+        - make unittest-posix
+        - valgrind --leak-check=no --error-exitcode=1 build/posix/testud3tn
+
+integration-test-valgrind-memory-check:
+    stage: functional_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+    script:
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build
         - cd /ud3tn_build
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
+        - UBSAN_OPTIONS=print_stacktrace=1 valgrind --leak-check=yes --error-exitcode=1 --errors-for-leak-kinds=definite build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
         - source /ud3tn_venv/bin/activate
-        - bash test/ion_interoperability/bibe_forwarding_test/run.sh
+        - pip install -e "pyd3tn"
+        - pip install -e "python-ud3tn-utils"
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
 
 license-check:
     stage: code_quality_test
@@ -381,29 +492,66 @@ stylecheck:
 python-stylecheck:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - source /ud3tn_venv/bin/activate
         - pip install -e "pyd3tn"
         - pip install -e "python-ud3tn-utils"
         - pip install -e "python-ud3tn-utils"
-        - python -m flake8 pyd3tn python-ud3tn-utils test/integration tools/aap tools/cla --max-complexity=12
+        - python -m flake8 pyd3tn python-ud3tn-utils test/integration tools/aap tools/aap2 tools/cla --max-complexity=12 --exclude=generated
+
+coverage-test:
+    stage: code_quality_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+    script:
+        - project_dir="$(pwd)"
+        - bash test/dockerfiles/prepare_for_test.sh . /ud3tn_build coverage=yes
+        - cd /ud3tn_build
+        - rm -f ./ud3tn.socket ./ud3tn.aap2.socket
+        - make unittest-posix coverage=yes
+        - timeout 60 build/posix/testud3tn
+        - build/posix/ud3tn --allow-remote-config & UD3TN_PID=$!
+        - source /ud3tn_venv/bin/activate
+        - while ! [ -r ./ud3tn.socket ]; do sleep 0.1; done
+        - while ! [ -r ./ud3tn.aap2.socket ]; do sleep 0.1; done
+        - pytest test/integration
+        - kill -TERM $UD3TN_PID
+        - echo "Waiting for uD3TN to exit gracefully - if it doesn't, check for sanitizer warnings."
+        - wait $UD3TN_PID
+        - gcovr --xml-pretty --exclude-unreachable-branches --gcov-ignore-parse-errors --print-summary -o coverage.xml --root .
+        - cp -v coverage.xml "$project_dir/"
+    coverage: /^\s*lines:\s*\d+.\d+\%/
+    artifacts:
+        name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
+        expire_in: 2 days
+        reports:
+            coverage_report:
+                coverage_format: cobertura
+                path: coverage.xml
 
 clang-tidy-posix-debug:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make ccmds-posix -j4
-        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix" "components/agents/posix" "components/cla/posix" "components/platform/posix"
+        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix"
 
 clang-tidy-posix-release:
     stage: code_quality_test
     when: always
-    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.10-bullseye
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
     script:
         - make ccmds-posix -j4 type=release
-        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix" "components/agents/posix" "components/cla/posix" "components/platform/posix"
+        - bash ./tools/analysis/clang-check.sh "clang-tidy-13 --use-color" "posix"
+
+cppcheck-static-analyzer:
+    stage: code_quality_test
+    when: always
+    image: registry.gitlab.com/d3tn/ud3tn-docker-images/ci-python-clang:3.8-bookworm
+    script:
+        - cppcheck --enable=warning --error-exitcode=2 --inline-suppr -I include -I external/tinycbor/src -I external/util/include components
 
 publish-docker-image:
     stage: publish

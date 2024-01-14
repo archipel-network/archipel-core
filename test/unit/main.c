@@ -19,7 +19,7 @@ void test_task(void *args)
 {
 	static const char *argv[1] = { "testud3tn" };
 
-	LOG("Starting testsuite...");
+	LOG_INFO("Starting testsuite...");
 	hal_io_message_printf("\n");
 
 	/* Disable the logger spamming out output */
@@ -28,10 +28,10 @@ void test_task(void *args)
 
 	hal_io_message_printf("\n");
 	if (!test_errors) {
-		LOG("uD3TN unittests succeeded.");
+		LOG_INFO("uD3TN unittests succeeded.");
 		exit(EXIT_SUCCESS);
 	} else {
-		LOGF("uD3TN unittests resulted in %d error(s).", test_errors);
+		LOGF_ERROR("uD3TN unittests resulted in %d error(s).", test_errors);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -42,7 +42,7 @@ int main(void)
 
 	init(1, argv);
 
-	hal_task_create(test_task, "test_task", 0, NULL, 0);
+	hal_task_create(test_task, NULL);
 
 	return start_os();
 }

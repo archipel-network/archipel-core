@@ -6,8 +6,8 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define SPP_TC_UNSEGMENTED_BASE_UNIT_MAX_OCTETS (4+3)
-#define SPP_TC_UNSEGMENTED_FRACTIONAL_MAX_OCTETS (3+3)
+#define SPP_TC_UNSEGMENTED_BASE_UNIT_MAX_OCTETS (4 + 3)
+#define SPP_TC_UNSEGMENTED_FRACTIONAL_MAX_OCTETS (3 + 3)
 
 enum spp_tc_parser_status {
 	SPP_TC_PARSER_GOOD = 0,

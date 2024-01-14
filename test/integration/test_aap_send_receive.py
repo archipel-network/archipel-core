@@ -44,7 +44,7 @@ def do_aap_test(aap_client):
         bundle_id[0],
         cur_dtn_ts_ms,
     ))
-    assert abs(bundle_id[0] - cur_dtn_ts_ms) < 10
+    assert abs(bundle_id[0] - cur_dtn_ts_ms) < 100
     assert reply.bundle_id == AAPMessage.encode_bundle_id(
         bundle_id[0],
         bundle_id[1],

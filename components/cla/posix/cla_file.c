@@ -2,15 +2,14 @@
 #include "cla/mtcp_proto.h"
 #include "cla/posix/cla_file.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
 #include "platform/hal_task.h"
+#include "platform/hal_time.h"
 
 #include "ud3tn/bundle_processor.h"
 #include "ud3tn/common.h"
-#include "ud3tn/config.h"
 #include "ud3tn/simplehtab.h"
 #include "cla/cla_contact_tx_task.h"
 #include "ud3tn/result.h"
@@ -91,7 +90,7 @@ void write_to_file(void* file, const void * b, const size_t size){
 	const uint8_t* buffer = (const uint8_t*) b;
 
 	if(fwrite(buffer, 1, size, f) != size) {
-		LOG("FileCLA : failed to write file buffer");
+		LOG_ERROR("FileCLA : failed to write file buffer");
 	}
 }
 
@@ -129,7 +128,7 @@ static void prepare_bundle_for_forwarding(struct bundle *bundle, char* previous_
 	// BPv7 5.4-4: "If the bundle has a bundle age block ... at the last
 	// possible moment ... the bundle age value MUST be increased ..."
 	if (bundle_age_update(bundle, dwell_time_ms) == UD3TN_FAIL)
-		LOGF("TX: Bundle %p age block update failed!", bundle);
+		LOGF_ERROR("TX: Bundle %p age block update failed!", bundle);
 }
 
 char* filecla_get_cla_addr_from_contact(struct filecla_contact* contact) {
@@ -156,7 +155,7 @@ static void transmission_task(
 	char* folder = strdup(contact->folder);
 	struct filecla_config* config = contact->cla_config;
 		
-	LOGF("FileCLA: Transmission task started for \"%s\"", contact->eid);
+	LOGF_INFO("FileCLA: Transmission task started for \"%s\"", contact->eid);
 
 	struct cla_contact_tx_task_command cmd;
 	int result;
@@ -200,30 +199,26 @@ static void transmission_task(
 
 			FILE *f = fopen(filename, "w");
 			if(f == NULL){
-				LOGF("FileCLA : Failed to open file %s in write mode",filename);
+				LOGF_ERROR("FileCLA : Failed to open file %s in write mode",filename);
 				bundle_processor_inform(
 					config->signaling_queue,
-					bundle,
-					BP_SIGNAL_TRANSMISSION_FAILURE,
-					filecla_get_cla_addr_from_contact(contact),
-					NULL,
-					NULL,
-					NULL
-					);
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_TRANSMISSION_FAILURE,
+						.bundle = bundle,
+						.peer_cla_addr = filecla_get_cla_addr_from_contact(contact),
+					});
 			} else {
 				prepare_bundle_for_forwarding(bundle, config->local_eid);
 				bundle_serialize(bundle, write_to_file, f);
 				fclose(f);
-				LOGF("FileCLA : Bundle written in %s",filename);
+				LOGF_INFO("FileCLA : Bundle written in %s",filename);
 				bundle_processor_inform(
 					config->signaling_queue,
-					bundle,
-					BP_SIGNAL_TRANSMISSION_SUCCESS,
-					filecla_get_cla_addr_from_contact(contact),
-					NULL,
-					NULL,
-					NULL
-					);
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_TRANSMISSION_SUCCESS,
+						.bundle = bundle,
+						.peer_cla_addr = filecla_get_cla_addr_from_contact(contact),
+					});
 			}
 
 			free(filename);
@@ -271,18 +266,16 @@ static void inject_bundle(struct bundle *bundle, void* p)
 		blocks = &(*blocks)->next;
 	}
 
-	LOGF("FileCLA : Bundle red from %s (source: %s)", params->file_path, bundle->source);
+	LOGF_INFO("FileCLA : Bundle red from %s (source: %s)", params->file_path, bundle->source);
 	if(remove(params->file_path) != 0){
-		LOGF("FileCLA : Unable to remove file %s", params->file_path);
+		LOGF_ERROR("FileCLA : Unable to remove file %s", params->file_path);
 	};
 	bundle_processor_inform(
 		params->signaling_queue,
-		bundle,
-		BP_SIGNAL_BUNDLE_INCOMING,
-		NULL,
-		NULL,
-		NULL,
-		NULL
+		(struct bundle_processor_signal) {
+			.type = BP_SIGNAL_BUNDLE_INCOMING,
+			.bundle = bundle
+		}
 	);
 }
 
@@ -308,7 +301,7 @@ static void watching_task(
 
 	uint8_t buffer[FILECLA_READ_BUFFER_SIZE];
 
-	LOGF("FileCLA: Watching task started for \"%s\" on folder %s", contact->eid, contact->folder);
+	LOGF_INFO("FileCLA: Watching task started for \"%s\" on folder %s", contact->eid, contact->folder);
 	for (;;)
 	{
 		hal_semaphore_take_blocking(continue_trigger->semaphore);
@@ -353,9 +346,9 @@ static void watching_task(
 
 								if(basedata->status == PARSER_STATUS_ERROR){
 									if(basedata->flags & PARSER_FLAG_CRC_INVALID){
-										LOGF("FileCLA : Invalid CRC for %s", file_path);
+										LOGF_ERROR("FileCLA : Invalid CRC for %s", file_path);
 									} else {
-										LOGF("FileCLA : Parsing error for %s", file_path);
+										LOGF_ERROR("FileCLA : Parsing error for %s", file_path);
 									}
 									break;
 								}
@@ -370,11 +363,11 @@ static void watching_task(
 							}
 
 						} else {
-							LOGF("FileCLA : Unable to open file %s", file_path);
+							LOGF_ERROR("FileCLA : Unable to open file %s", file_path);
 						}
 							
 					} else {
-						LOGF("FileCLA : Could not get bundle version from file name of %s", file_path);
+						LOGF_ERROR("FileCLA : Could not get bundle version from file name of %s", file_path);
 					}
 
 				}
@@ -386,16 +379,13 @@ static void watching_task(
 			closedir(f);
 		} else {
 			contact->should_continue = NULL;
-			LOGF("FileCLA : Unable to open directory %s", folder);
+			LOGF_WARN("FileCLA : Unable to open directory %s", folder);
 			bundle_processor_inform(
 				contact->cla_config->signaling_queue,
-				NULL,
-				BP_SIGNAL_LINK_DOWN,
-				filecla_get_cla_addr_from_contact(contact),
-				NULL,
-				NULL,
-				NULL
-				);
+				(struct bundle_processor_signal) {
+					.type = BP_SIGNAL_LINK_DOWN,
+					.peer_cla_addr = filecla_get_cla_addr_from_contact(contact),
+				});
 			break;
 		}
 
@@ -436,27 +426,17 @@ static enum ud3tn_result filecla_start_scheduled_contact(
 	htab_add(&file_config->contacts, c->eid, c);
 	hal_semaphore_release(file_config->contacts_semaphore);
 
-	char *tx_name = malloc(sizeof(char) + 16 + strlen(eid) + 1);
-	sprintf(tx_name, "filecla_writing_%s", eid);
 	hal_task_create(
 		transmission_task,
-		tx_name,
-		CONTACT_TX_TASK_PRIORITY,
-		c,
-		CONTACT_TX_TASK_STACK_SIZE
+		c
 	);
 
-	char *watching_name = malloc(sizeof(char) + 17 + strlen(eid) + 1);
-	sprintf(watching_name, "filecla_watching_%s", eid);
 	hal_task_create(
 		watching_task,
-		watching_name,
-		CONTACT_RX_TASK_PRIORITY,
-		c,
-		CONTACT_RX_TASK_STACK_SIZE
+		c
 	);
 
-	LOGF("FileCLA: New file contact \"%s\" in folder %s", c->eid, c->folder);
+	LOGF_INFO("FileCLA: New file contact \"%s\" in folder %s", c->eid, c->folder);
 	return UD3TN_OK;
 }
 
@@ -471,7 +451,7 @@ static struct cla_tx_queue filecla_get_tx_queue(
 	struct filecla_contact *c = htab_get(&file_config->contacts, eid);
 	hal_semaphore_release(file_config->contacts_semaphore);
 	if(c == NULL){
-		LOGF("FileCLA: Unavailable contact for \"%s\"", eid);
+		LOGF_ERROR("FileCLA: Unavailable contact for \"%s\"", eid);
 		return (struct cla_tx_queue){ NULL, NULL };
 	}
 
@@ -511,7 +491,7 @@ static enum ud3tn_result filecla_end_scheduled_contact(
 		free(c);
 	}
 
-	LOGF("FileCLA: Cleared contact \"%s\"", eid);
+	LOGF_INFO("FileCLA: Cleared contact \"%s\"", eid);
 	return UD3TN_OK;
 }
 
@@ -538,7 +518,7 @@ struct cla_config *filecla_create(
 
 	struct filecla_config *config = malloc(sizeof(struct filecla_config));
 	if (!config) {
-		LOG("FileCLA: Memory allocation failed!");
+		LOG_ERROR("FileCLA: Memory allocation failed!");
 		return NULL;
 	}
 

@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 // HANDSHAKING
 
@@ -98,14 +99,14 @@ void tcpclv3_parser_read_byte(struct tcpclv3_parser *parser, const uint8_t byte)
 			if (parser->type == TCPCLV3_TYPE_DATA_SEGMENT) {
 				parser->stage = TCPCLV3_FORWARD_BUNDLE;
 			} else {
-				LOG("tcpclv3_parser: wrong type detected");
+				LOG_WARN("tcpclv3_parser: wrong type detected");
 				parser->basedata.status = PARSER_STATUS_ERROR;
 				tcpclv3_parser_reset(parser);
 			}
 			sdnv_reset(&parser->sdnv_state);
 			break;
 		case SDNV_ERROR:
-			LOG("tcpclv3_parser: SDNV error");
+			LOG_WARN("tcpclv3_parser: SDNV error");
 			sdnv_reset(&parser->sdnv_state);
 			parser->basedata.status = PARSER_STATUS_ERROR;
 			break;

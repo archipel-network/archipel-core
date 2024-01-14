@@ -11,7 +11,10 @@
 
 #define HASHL(key, len) (hashlittle(key, len, 0) & 0xFFFF)
 /* Gets length of string, should be optimized out... */
-#define HASH(key) (HASHL(key, strlen(key)))
+#define HASH(key) ({ \
+	__typeof__(key) _key = (key); \
+	HASHL(_key, strlen(_key)); \
+})
 
 void htab_init(struct htab *tab, const uint16_t slot_count,
 	       struct htab_entrylist *entrylist[])
@@ -103,8 +106,8 @@ static struct htab_entrylist **get_elist_ptr_by_hash(
 		}
 	} else {
 		while (*cur_elem != NULL) {
-			if ((*cur_elem)->key == key
-					|| strcmp((*cur_elem)->key, key) == 0)
+			if ((*cur_elem)->key == key ||
+			    strcmp((*cur_elem)->key, key) == 0)
 				break;
 			cur_elem = &((*cur_elem)->next);
 		}

@@ -65,6 +65,9 @@ struct spp_context_t *spp_new_context(void)
 {
 	struct spp_context_t *ctx = malloc(sizeof(struct spp_context_t));
 
+	if (!ctx)
+		return NULL;
+
 	ctx->ancillary_data_len = 0;
 	ctx->timecode = NULL;
 	return ctx;

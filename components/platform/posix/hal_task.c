@@ -7,18 +7,13 @@
  *
  */
 
-/* enable linux features when linux OS */
-#if linux
-#define _GNU_SOURCE
-#endif
-
 #include "ud3tn/common.h"
 
-#include "platform/hal_config.h"
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
 #include "platform/hal_time.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -44,58 +39,30 @@ static void *execute_pthread_compat(void *task_description)
 }
 
 enum ud3tn_result hal_task_create(
-	void (*task_function)(void *), const char *task_name,
-	int task_priority, void *task_parameters,
-	size_t task_stack_size)
+	void (*task_function)(void *),
+	void *task_parameters)
 {
 	pthread_t thread;
 
-	struct sched_param param;
 	pthread_attr_t tattr;
 	int error_code;
 	struct task_description *desc = malloc(sizeof(*desc));
 
 	if (desc == NULL) {
-		LOG("Allocating the task attribute structure failed!");
+		LOG_ERROR("Allocating the task attribute structure failed!");
 		goto fail;
 	}
 
 	/* initialize an attribute to the default value */
 	if (pthread_attr_init(&tattr)) {
 		/* abort if error occurs */
-		LOG("Initializing the task's attributes failed!");
+		LOG_ERROR("Initializing the task's attributes failed!");
 		goto fail;
-	}
-
-	/* set the scheduling policy */
-	if (pthread_attr_setschedpolicy(&tattr, SCHED_RR)) {
-		/* abort if error occurs */
-		LOG("Setting the scheduling policy failed!");
-		goto fail_attr;
 	}
 
 	/* Create thread in detached state, so that no cleanup is necessary */
 	if (pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED)) {
-		LOG("Setting detached state failed!");
-		goto fail_attr;
-	}
-
-	/* set the scheduling priority (just use the absolute minimum and add */
-	/* the given priority */
-	param.sched_priority = sched_get_priority_min(SCHED_RR) +
-			task_priority;
-	if (pthread_attr_setschedparam(&tattr, &param)) {
-		/* abort if error occurs */
-		LOG("Setting the scheduling priority failed!");
-		goto fail_attr;
-	}
-
-	/* update the stack size of the thread (only if greater than 0, */
-	/* otherwise set stack size to the default value */
-	if (task_stack_size != 0 &&
-			pthread_attr_setstacksize(&tattr, task_stack_size)) {
-		/* abort if error occurs */
-		LOG("Setting the tasks stack size failed! Wrong value!");
+		LOG_ERROR("Setting detached state failed!");
 		goto fail_attr;
 	}
 
@@ -106,18 +73,9 @@ enum ud3tn_result hal_task_create(
 				    execute_pthread_compat, desc);
 
 	if (error_code) {
-		LOG("Thread Creation failed!");
+		LOG_ERROR("Thread Creation failed!");
 		goto fail_attr;
 	}
-
-#if LINUX_SPECIFIC_API
-	if (task_name) {
-		if (pthread_setname_np(thread, task_name)) {
-			LOG("Could not set thread name!");
-			goto fail_attr;
-		}
-	}
-#endif
 
 	/* destroy the attr-object */
 	pthread_attr_destroy(&tattr);
@@ -146,5 +104,18 @@ void hal_task_start_scheduler(void)
 
 void hal_task_delay(int delay)
 {
-	usleep(delay*1000);
+	if (delay < 0)
+		return;
+
+	struct timespec req = {
+		.tv_sec = delay / 1000,
+		.tv_nsec = (delay % 1000) * 1000000
+	};
+	struct timespec rem;
+
+	while (nanosleep(&req, &rem)) {
+		if (errno != EINTR)
+			break;
+		req = rem;
+	}
 }
