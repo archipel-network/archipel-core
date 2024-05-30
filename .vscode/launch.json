@@ -8,31 +8,31 @@
             "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/posix/ud3tn",
-            "args": ["-e", "dtn://dev.dtn/", "-c", "tcpclv3:*,0"],
+            "program": "${workspaceFolder}/build/achipel-core",
+            "args": ["-L", "3", "-e", "dtn://dev.dtn/", "-c", "tcpclv3:*,0"],
             "environment": [{ "name": "config", "value": "Debug" }],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Make posix"
+            "preLaunchTask": "CMake Build"
         },
         {
             "name": "Debug file CLA",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/posix/ud3tn",
-            "args": ["-e", "dtn://source.filecla.dtn/", "-c", "file:"],
+            "program": "${workspaceFolder}/build/achipel-core",
+            "args": ["-L", "3", "-e", "dtn://source.filecla.dtn/", "-c", "file:"],
             "environment": [{ "name": "config", "value": "Debug" }],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Make posix"
+            "preLaunchTask": "CMake Build"
         },
         {
             "name": "Debug file CLA (destination)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/posix/ud3tn",
-            "args": ["-e", "dtn://destination.filecla.dtn/", "-c", "file:"],
+            "program": "${workspaceFolder}/build/achipel-core",
+            "args": ["-L", "3", "-e", "dtn://destination.filecla.dtn/", "-c", "file:"],
             "environment": [{ "name": "config", "value": "Debug" }],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Make posix"
+            "preLaunchTask": "CMake Build"
         }
     ]
 }

@@ -35,8 +35,8 @@ __pycache__
 # JetBrains IDEs
 .idea/
 # CMake + CMake-based IDEs
-/CMakeLists.txt
 /cmake-build-*
+/cmake-build
 # Atom Text Editor
 .atomignore
 *.cson
