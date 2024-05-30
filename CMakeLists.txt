@@ -119,16 +119,45 @@ if(UNIX)
 )
 endif(UNIX)
 
-target_link_libraries("archipel-core" "protobuf-nanopb-static")
+target_link_libraries("archipel-core" "nanopb")
 target_link_libraries("archipel-core" "tinycbor")
 target_link_libraries("archipel-core" "util")
+
+# Build DEB package
+if(UNIX)
+    install(TARGETS archipel-core RUNTIME DESTINATION "usr/bin")
+    install(FILES "package/debian/archipel-core/archipel-core.service" DESTINATION "usr/lib/systemd/system" RENAME "archipel-core.service")
+    install(FILES "package/debian/archipel-core/user-archipel-core.service" DESTINATION "usr/lib/systemd/user" RENAME "archipel-core.service")
+    install(FILES "default-conf.env" DESTINATION "etc/archipel-core" RENAME "conf.env")
+    install(FILES "LICENSE" DESTINATION "usr/share/doc/archipel-core" RENAME "copyright")
+
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_NAME "archipel-core")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "net")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "EpicKiwi <me@epickiwi.fr>")
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "DTN node for the Archipel Network
+An experimental fork of µD3TN focused on the creation of a frugal delay tolerant network.")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/archipel-network/archipel-core")
+    include(CPack)
+endif(UNIX)
 
 # ==============
 #  MARK: Externals
 # ==============
 
 # Externel nanopb static library (protobuf-nanopb-static)
-add_subdirectory("external/nanopb")
+set(nanopb_BUILD_GENERATOR OFF)
+set(nanopb_MSVC_STATIC_RUNTIME OFF)
+add_library("nanopb" STATIC
+    "external/nanopb/pb.h"
+    "external/nanopb/pb_common.h"
+    "external/nanopb/pb_common.c"
+    "external/nanopb/pb_encode.h"
+    "external/nanopb/pb_encode.c"
+    "external/nanopb/pb_decode.h"
+    "external/nanopb/pb_decode.c"
+)
+target_include_directories("nanopb" PUBLIC "external/nanopb")
 
 # CMake config for tinycbor
 add_library("tinycbor")
