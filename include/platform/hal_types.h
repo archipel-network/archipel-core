@@ -3,4 +3,9 @@
 /* As we want to support simple porting to further platform,
  * platform dependent types may be used here.
  */
-#include "platform/posix/hal_types.h"
+
+#if ESP
+    #include "platform/esp-idf/hal_types.h"
+#elif unix
+    #include "platform/posix/hal_types.h"
+#endif

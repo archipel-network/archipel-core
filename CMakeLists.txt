@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.5)
 
 cmake_policy(SET CMP0076 NEW)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 execute_process(COMMAND git describe --tags --abbrev=0 OUTPUT_VARIABLE GIT_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-project("Archipel_core" VERSION ${GIT_VERSION})
+project("Archipel_core" LANGUAGES C VERSION ${GIT_VERSION})
+
+if(ESP_PLATFORM)
+    include($ENV{IDF_PATH}/tools/cmake/idf.cmake)
+    idf_build_process("esp32c3"
+        COMPONENTS freertos
+    )
+endif(ESP_PLATFORM)
 
 # ==============
 #  MARK: Archipel Core
@@ -13,6 +21,10 @@ add_executable("archipel-core")
 
 # Enable Archipel Core features
 target_compile_definitions("archipel-core" PRIVATE "ARCHIPEL_CORE")
+
+if(ESP_PLATFORM)
+    target_compile_definitions("archipel-core" PRIVATE "ESP")
+endif(ESP_PLATFORM)
 
 # Define DEBUG in debug build type
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -26,9 +38,6 @@ target_include_directories("archipel-core" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/g
 
 # Add cross-platform sources files
 target_sources("archipel-core" PUBLIC
-    # AAP2
-    "components/aap2/aap2_agent.c"
-    "generated/aap2/aap2.pb.c" # Generated Protobuf file
     # AAP
     "components/aap/aap.c"
     "components/aap/aap_parser.c"
@@ -91,8 +100,11 @@ target_sources("archipel-core" PUBLIC
     "components/ud3tn/simplehtab.c"
 )
 
-if(UNIX)
+if(UNIX AND NOT ESP_PLATFORM)
     target_sources("archipel-core" PUBLIC
+    # AAP2
+    "components/aap2/aap2_agent.c"
+    "generated/aap2/aap2.pb.c" # Generated Protobuf file
     # AAP
     "components/agents/posix/application_agent.c"
     # CLA
@@ -117,14 +129,17 @@ if(UNIX)
     "components/platform/posix/simple_queue.c"
     "components/platform/posix/socket_util.c"
 )
-endif(UNIX)
+endif(UNIX AND NOT ESP_PLATFORM)
 
 target_link_libraries("archipel-core" "nanopb")
 target_link_libraries("archipel-core" "tinycbor")
 target_link_libraries("archipel-core" "util")
+if(ESP_PLATFORM)
+    target_link_libraries("archipel-core" "idf::freertos")
+endif(ESP_PLATFORM)
 
 # Build DEB package
-if(UNIX)
+if(UNIX AND NOT ESP_PLATFORM)
     install(TARGETS archipel-core RUNTIME DESTINATION "usr/bin")
     install(FILES "package/debian/archipel-core/archipel-core.service" DESTINATION "usr/lib/systemd/system" RENAME "archipel-core.service")
     install(FILES "package/debian/archipel-core/user-archipel-core.service" DESTINATION "usr/lib/systemd/user" RENAME "archipel-core.service")
@@ -139,7 +154,7 @@ if(UNIX)
 An experimental fork of µD3TN focused on the creation of a frugal delay tolerant network.")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/archipel-network/archipel-core")
     include(CPack)
-endif(UNIX)
+endif(UNIX AND NOT ESP_PLATFORM)
 
 # ==============
 #  MARK: Externals
@@ -174,10 +189,17 @@ target_sources("tinycbor" PUBLIC
     "external/tinycbor/src/cborpretty_stdio.c"
     "external/tinycbor/src/cbortojson.c"
     "external/tinycbor/src/cborvalidation.c"
-    "external/tinycbor/src/open_memstream.c"
 )
+if(NOT ESP_PLATFORM)
+    target_sources("tinycbor" PUBLIC "external/tinycbor/src/open_memstream.c")
+endif(NOT ESP_PLATFORM)
 
 # Util library
 add_library("util")
 target_include_directories("util" PUBLIC "external/util/include")
 target_sources("util" PUBLIC "external/util/src/htab_hash.c")
+
+
+if(ESP_PLATFORM)
+    idf_build_executable("archipel-core")
+endif(ESP_PLATFORM)

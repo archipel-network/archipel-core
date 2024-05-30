@@ -18,5 +18,19 @@
         "--ignore REPEATED_WORD",
         "--typedefsfile ./tools/analysis/stylecheck_typedefs.txt"
     ],
-    "C_Cpp.default.defines": ["ARCHIPEL_CORE"]
+    "C_Cpp.default.defines": [
+        "ARCHIPEL_CORE"
+    ],
+    "idf.adapterTargetName": "esp32c3",
+    "idf.openOcdConfigs": [
+        "board/esp32c3-ftdi.cfg"
+    ],
+    "idf.cmakeCompilerArgs": [
+        "-DCMAKE_TOOLCHAIN_FILE=$IDF_PATH/tools/cmake/toolchain-esp32c3.cmake",
+        "-DESP_TARGET=esp32c3",
+        "-G",
+        "Ninja",
+        "-DPYTHON_DEPS_CHECKED=1",
+        "-DESP_PLATFORM=1"
+    ]
 }

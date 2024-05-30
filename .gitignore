@@ -62,3 +62,4 @@ archipel-core-bundles
 
 # directories created by fuzzer
 /outdata 
+sdkconfig*
