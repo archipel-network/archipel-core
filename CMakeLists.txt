@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 cmake_policy(SET CMP0076 NEW)
 
-project("Archipel_core")
+execute_process(COMMAND git describe --tags --abbrev=0 OUTPUT_VARIABLE GIT_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+project("Archipel_core" VERSION ${GIT_VERSION})
 
 # ==============
 #  MARK: Archipel Core
