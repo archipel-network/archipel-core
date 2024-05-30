@@ -17,7 +17,7 @@ clean::
 ###############################################################################
 
 PKG_OUT?=build/package/debian
-PKG_VERSION?=$(shell git describe | sed -e s/^v//)
+PKG_VERSION?=$(shell git describe --tags | sed -e s/^v//)
 PKG_ARCH?=amd64
 
 .PHONY: package-debian
