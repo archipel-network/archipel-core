@@ -9,7 +9,7 @@ project("Archipel_core" LANGUAGES C VERSION ${GIT_VERSION})
 if(ESP_PLATFORM)
     include($ENV{IDF_PATH}/tools/cmake/idf.cmake)
     idf_build_process("esp32c3"
-        COMPONENTS freertos
+        COMPONENTS freertos log
     )
 endif(ESP_PLATFORM)
 
@@ -131,6 +131,19 @@ if(UNIX AND NOT ESP_PLATFORM)
 )
 endif(UNIX AND NOT ESP_PLATFORM)
 
+if(ESP_PLATFORM)
+    target_sources("archipel-core" PUBLIC
+    # Platform HAL
+    "components/platform/esp-idf/hal_io.c"
+    "components/platform/esp-idf/hal_platform.c"
+    "components/platform/esp-idf/hal_queue.c"
+    "components/platform/esp-idf/hal_semaphore.c"
+    "components/platform/esp-idf/hal_store.c"
+    "components/platform/esp-idf/hal_task.c"
+    "components/platform/esp-idf/hal_time.c"
+)
+endif(ESP_PLATFORM)
+
 target_link_libraries("archipel-core" "nanopb")
 target_link_libraries("archipel-core" "tinycbor")
 target_link_libraries("archipel-core" "util")
@@ -198,7 +211,6 @@ endif(NOT ESP_PLATFORM)
 add_library("util")
 target_include_directories("util" PUBLIC "external/util/include")
 target_sources("util" PUBLIC "external/util/src/htab_hash.c")
-
 
 if(ESP_PLATFORM)
     idf_build_executable("archipel-core")

@@ -6,9 +6,14 @@
 #include "ud3tn/init.h"
 #include "ud3tn/router.h"
 
+#ifdef unix
 #include "aap2/aap2_agent.h"
+#endif
 
+#ifdef unix
 #include "agents/application_agent.h"
+#endif
+
 #include "agents/echo_agent.h"
 
 #include "cla/cla.h"
@@ -27,9 +32,11 @@
 static struct bundle_agent_interface bundle_agent_interface;
 uint8_t LOG_LEVEL = DEFAULT_LOG_LEVEL;
 
+#ifdef unix
 // References kept for program runtime
 static struct application_agent_config *aa_cfg;
 static struct aap2_agent_config *aa2_cfg;
+#endif
 
 void init(int argc, char *argv[])
 {
@@ -155,6 +162,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 	if (opt->allow_remote_configuration)
 		LOG_WARN("!! WARNING !! Remote configuration capability ENABLED!");
 
+	#ifdef unix
 	aa_cfg = application_agent_setup(
 		&bundle_agent_interface,
 		opt->aap_socket,
@@ -182,6 +190,7 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 		LOG_ERROR("INIT: AAP2 agent could not be initialized!");
 		abort();
 	}
+	#endif
 
 	/* Initialize the communication subsystem (CLA) */
 	if (cla_initialize_all(opt->cla_options,
