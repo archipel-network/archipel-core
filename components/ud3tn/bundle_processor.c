@@ -425,25 +425,26 @@ static void handle_link_down(
 
 	struct contact_list* c = (*routing_table_get_raw_contact_list_ptr());
 
-	if(c != NULL){
-		LOGF_INFO("BundleProcessor: Link down on %s, disabling contact...", peer_cla_addr);
+	if(c == NULL)
+		return
 
-		do {
-			if(c->data != NULL){
-				if(	c->data->active && 
-					strcmp(c->data->node->cla_addr, peer_cla_addr) == 0
-					){
-						break;
-				}
+	LOGF_INFO("BundleProcessor: Link down on %s, disabling contact...", peer_cla_addr);
+
+	do {
+		if(c->data != NULL){
+			if(	c->data->active && 
+				strcmp(c->data->node->cla_addr, peer_cla_addr) == 0
+				){
+					break;
 			}
-		} while(c->next != NULL && (c = c->next) != NULL);
+		}
+	} while(c->next != NULL && (c = c->next) != NULL);
 
-		c->data->to_ms = hal_time_get_timestamp_ms();
-		wake_up_contact_manager(
-			ctx->cm_param.control_queue,
-			CM_SIGNAL_UPDATE_CONTACT_LIST
-		);
-	}
+	c->data->to_ms = hal_time_get_timestamp_ms();
+	wake_up_contact_manager(
+		ctx->cm_param.control_queue,
+		CM_SIGNAL_UPDATE_CONTACT_LIST
+	);
 }
 #endif
 
