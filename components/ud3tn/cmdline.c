@@ -321,7 +321,7 @@ static void print_help_text(void)
 		"  -S, --aap2-socket PATH      path to the UNIX domain socket of the AAP 2.0 service\n"
 		"  -u, --usage                 print usage summary and exit\n"
 		#ifdef ARCHIPEL_CORE
-		"  -S, --store PATH            folder to store persisted bundles in\n"
+		"  -P, --store PATH            folder to store persisted bundles in\n"
 		#endif
 		"\n"
 		"Default invocation: ud3tn \\\n"
