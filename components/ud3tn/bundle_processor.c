@@ -414,23 +414,30 @@ static inline void handle_signal(
 }
 
 #ifdef ARCHIPEL_CORE
+/**
+ * Perform cleanup after a link has becoming down
+ * 
+ * Called after a `BP_SIGNAL_LINK_DOWN` is sent on `bundle_processor_signaling_queue`
+ */
 static void handle_link_down(
 	const struct bp_context *const ctx, const char* peer_cla_addr
 	) {
 
 	struct contact_list* c = (*routing_table_get_raw_contact_list_ptr());
-	do {
-		if(c->data != NULL){
-			if(	c->data->active && 
-				strcmp(c->data->node->cla_addr, peer_cla_addr) == 0
-				){
-					break;
-			}
-		}
-	} while(c->next != NULL && (c = c->next) != NULL);
 
 	if(c != NULL){
 		LOGF_INFO("BundleProcessor: Link down on %s, disabling contact...", peer_cla_addr);
+
+		do {
+			if(c->data != NULL){
+				if(	c->data->active && 
+					strcmp(c->data->node->cla_addr, peer_cla_addr) == 0
+					){
+						break;
+				}
+			}
+		} while(c->next != NULL && (c = c->next) != NULL);
+
 		c->data->to_ms = hal_time_get_timestamp_ms();
 		wake_up_contact_manager(
 			ctx->cm_param.control_queue,
