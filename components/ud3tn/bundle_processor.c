@@ -426,7 +426,7 @@ static void handle_link_down(
 	struct contact_list* c = (*routing_table_get_raw_contact_list_ptr());
 
 	if(c == NULL)
-		return
+		return;
 
 	LOGF_INFO("BundleProcessor: Link down on %s, disabling contact...", peer_cla_addr);
 
