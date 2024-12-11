@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -142,6 +143,8 @@ char* filecla_get_cla_addr_from_contact(struct filecla_contact* contact) {
 	return result;
 }
 
+uint64_t cla_sequence_number = 0;
+
 static void transmission_task(
 	void* param ){
 	struct filecla_contact* contact = (struct filecla_contact*) param;
@@ -178,24 +181,42 @@ static void transmission_task(
 			struct bundle* bundle = bundlelist->data;
 			
 			char seq_num[25];
-			sprintf(seq_num, "%ld", bundle->sequence_number);
-
 			char protocol_version[5];
-			sprintf(protocol_version, "%d", bundle->protocol_version);
-
 			char *source_eid = strdup(bundle->source);
-
 			eid_to_filename(source_eid);
+			char file_exists;
+			char* filename = NULL;
 
-			uint64_t filename_size =	sizeof(char) * (
-										strlen(folder) + 1 + // Folder path + '/'
-										strlen(seq_num) + 1 + // Sequence number + '_'
-										strlen(source_eid) + // bundle source
-										7 + strlen(protocol_version) + // extension .bundle6 or .bundle7
-										1); // ending \0
-			
-			char* filename = malloc(filename_size);
-			sprintf(filename, "%s/%s_%s.bundle%s", folder, seq_num, source_eid, protocol_version); // TODO Use Bundle_unique_identifier
+			// Build a filename that is not currently in use in folder
+			do {
+
+				sprintf(seq_num, "%ld", cla_sequence_number);
+				cla_sequence_number = (cla_sequence_number % (UINT64_MAX-1)) + 1;
+				sprintf(protocol_version, "%d", bundle->protocol_version);
+
+				uint64_t filename_size =	sizeof(char) * (
+											strlen(folder) + 1 + // Folder path + '/'
+											strlen(seq_num) + 1 + // Sequence number + '_'
+											strlen(source_eid) + // bundle source
+											7 + strlen(protocol_version) + // extension .bundle6 or .bundle7
+											1); // ending \0
+				
+				if(filename != NULL){
+					free(filename);
+				}
+
+				filename = malloc(filename_size);
+				sprintf(filename, "%s/%s_%s.bundle%s", folder, seq_num, source_eid, protocol_version); // TODO Use Bundle_unique_identifier
+				
+				FILE *f = fopen(filename, "r");
+				if(f == NULL){
+					file_exists = 0;
+				} else {
+					fclose(f);
+					file_exists = 1;
+				}
+
+			} while(file_exists);
 
 			FILE *f = fopen(filename, "w");
 			if(f == NULL){
