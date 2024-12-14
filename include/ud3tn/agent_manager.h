@@ -3,6 +3,7 @@
 #define AGENT_MANAGER_H_INCLUDED
 
 #include "ud3tn/bundle.h"
+#include "platform/hal_types.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -25,7 +26,7 @@ struct agent_list {
  *
  * @not_thread_safe
  */
-void agent_manager_init(const char *const ud3tn_local_eid);
+void agent_manager_init(const char *const ud3tn_local_eid, QueueIdentifier_t restore_queue);
 
 /**
  * @brief agent_forward Invoke the callback associated with the specified
@@ -62,5 +63,12 @@ int agent_register(struct agent agent, bool is_subscriber);
  * @not_thread_safe
  */
 int agent_deregister(const char *sink_identifier, bool is_subscriber);
+
+/**
+ * @brief Check if named agent is currently registered
+ * @param agent_id identifier of agent to check presence
+ * @return true if agent is registered, false if not
+ */
+bool is_agent_available(const char *agent_id);
 
 #endif /* AGENT_MANAGER_H_INCLUDED */

@@ -128,7 +128,10 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	// NOTE: Must be called before launching the BP which calls the function
 	// to register agents from its thread.
-	agent_manager_init(bundle_agent_interface.local_eid);
+	agent_manager_init(
+		bundle_agent_interface.local_eid,
+		bundle_restore_task_config->restore_queue
+	);
 
 	const enum ud3tn_result bp_task_result = hal_task_create(
 		bundle_processor_task,

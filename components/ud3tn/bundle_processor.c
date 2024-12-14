@@ -717,6 +717,23 @@ static enum bundle_handling_result handle_unknown_block_flags(
 static void bundle_deliver_local(
 	struct bp_context *const ctx, struct bundle *bundle)
 {
+	const char* agent_id = get_agent_id(ctx, bundle->destination);
+
+	/* Check if there is an agent available to process this bundle */
+	if(!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) &&
+		!is_agent_available(agent_id)){
+
+		enum ud3tn_result result = hal_store_bundle(ctx->store, bundle);
+		if(result != UD3TN_OK) {
+			LOGF_ERROR("BundleProcessor: Failed to persist bundle %p, dropping.", bundle);
+		} else {
+			LOGF_INFO("BundleProcessor: Persisted bundle %p for later dispatch", bundle);
+			bundle_free(bundle);
+			return;
+		}
+
+	}
+
 	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
 
 	/* Check and record knowledge of bundle */
@@ -740,8 +757,7 @@ static void bundle_deliver_local(
 		);
 	}
 
-	if (!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) &&
-			get_agent_id(ctx, bundle->destination) == NULL) {
+	if (!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) && agent_id == NULL) {
 		// If it is no admin. record and we have no agent to deliver
 		// it to, drop it.
 		LOGF_INFO(

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/agent_manager.h"
+#include "platform/posix/hal_types.h"
 #include "ud3tn/bundle.h"
 #include "ud3tn/eid.h"
 
 #include "agents/config_agent.h"
 #include "agents/application_agent.h"
+#include "archipel-core/bundle_restore.h"
 
 #include "platform/hal_io.h"
 
@@ -25,10 +27,12 @@ static struct agent_list **agent_search_ptr(struct agent_list **al_ptr,
 static struct agent_list *agent_entry_node;
 static struct agent_list *rpc_ag_entry_node;
 static const char *local_eid;
+static QueueIdentifier_t bundle_restore_queue;
 
-void agent_manager_init(const char *const ud3tn_local_eid)
+void agent_manager_init(const char *const ud3tn_local_eid, QueueIdentifier_t restore_queue)
 {
 	local_eid = ud3tn_local_eid;
+	bundle_restore_queue = restore_queue;
 }
 
 int agent_register(struct agent agent, const bool is_subscriber)
@@ -78,6 +82,8 @@ int agent_register(struct agent agent, const bool is_subscriber)
 		agent.sink_identifier
 	);
 
+	bundle_restore_for_destination(bundle_restore_queue, local_eid);
+
 	return 0;
 }
 
@@ -106,6 +112,10 @@ int agent_deregister(const char *sink_identifier, const bool is_subscriber)
 		return -1;
 
 	return 0;
+}
+
+bool is_agent_available(const char *agent_id) {
+	return agent_search(&agent_entry_node, agent_id) != NULL;
 }
 
 int agent_forward(const char *sink_identifier, struct bundle_adu data,
