@@ -8,3 +8,4 @@ Description: DTN node for the Archipel Network
   An experimental fork of µD3TN focused on the creation of a frugal delay tolerant network.
 Homepage: https://github.com/archipel-network/archipel-core
 Depends: libc6
+Pre-Depends: uuid-runtime
