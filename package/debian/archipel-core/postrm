@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if [ "$1" = purge ]; then
+    rm -rf /etc/archipel-core
+    userdel archipel
+fi
+
+rm -rf /var/lib/archipel-core

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+
+if ! id -u archipel >/dev/null 2>&1; then
+    useradd --system archipel
+fi
+
+set -e
+
+if [ ! -f /etc/archipel-core/conf.env ]; then
+    mkdir -p /etc/archipel-core/
+    echo "# Name of your node on the Archipel network" > /etc/archipel-core/conf.env
+    echo "# a node id is a string formatted as a domain name ('/', '@', ':' characters are forbidden)" >> /etc/archipel-core/conf.env
+    echo "NODE_ID=$(uuidgen).dtn" >> /etc/archipel-core/conf.env
+fi
+
+systemctl daemon-reload

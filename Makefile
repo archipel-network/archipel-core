@@ -37,15 +37,17 @@ package-debian: posix
 	cat "LICENSE" > $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core/copyright
 # Copy systemd service files
 	cp -f package/debian/archipel-core/archipel-core.service $(PKG_OUT)/archipel-core/usr/lib/systemd/system/
-	cp -f package/debian/archipel-core/user-archipel-core.service $(PKG_OUT)/archipel-core/usr/lib/systemd/user/archipel-core.service
+	cp -f package/debian/archipel-core/archipel.slice $(PKG_OUT)/archipel-core/usr/lib/systemd/system/
 # Create control file
 	cat package/debian/archipel-core/control | \
 		VERSION=$(PKG_VERSION) \
 		ARCH=$(PKG_ARCH) \
 		envsubst > $(PKG_OUT)/archipel-core/DEBIAN/control
+	cp -f package/debian/archipel-core/postinst $(PKG_OUT)/archipel-core/DEBIAN/
+	cp -f package/debian/archipel-core/postrm $(PKG_OUT)/archipel-core/DEBIAN/
 # Create conf files
-	cp default-conf.env $(PKG_OUT)/archipel-core/etc/archipel-core/conf.env
-	echo "/etc/archipel-core/conf.env" >> $(PKG_OUT)/archipel-core/DEBIAN/conffiles
+#	cp default-conf.env $(PKG_OUT)/archipel-core/etc/archipel-core/conf.env
+#	echo "/etc/archipel-core/conf.env" >> $(PKG_OUT)/archipel-core/DEBIAN/conffiles
 # Create changelog
 	cat CHANGELOG | gzip -c -9 > $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core/changelog.Debian.gz
 # Package build
@@ -53,7 +55,7 @@ package-debian: posix
 # Package linting
 	lintian $(PKG_OUT)/archipel-core.deb
 
-.PHONY: package-debian
+.PHONY: package-pyd3tn-debian
 package-pyd3tn-debian:
 	cd pyd3tn && python3 setup.py --command-packages=stdeb.command sdist_dsc -d ../$(PKG_OUT)/pyd3tn --with-python3=True --no-python2-scripts=True bdist_deb
 	cp $(PKG_OUT)/pyd3tn/*.deb $(PKG_OUT)

@@ -1,0 +1,7 @@
+[Unit]
+Description=Archipel delay tolerant network
+
+[Slice]
+
+[Install]
+WantedBy=multi-user.target
