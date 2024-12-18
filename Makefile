@@ -18,7 +18,7 @@ clean::
 
 PKG_OUT?=build/package/debian
 PKG_VERSION?=$(shell git describe --tags | sed -e s/^v//)
-PKG_ARCH?=amd64
+PKG_ARCH?=$(shell dpkg --print-architecture)
 
 .PHONY: package-debian
 package-debian: export type = "Release"
@@ -45,6 +45,7 @@ package-debian: posix
 		envsubst > $(PKG_OUT)/archipel-core/DEBIAN/control
 	cp -f package/debian/archipel-core/postinst $(PKG_OUT)/archipel-core/DEBIAN/
 	cp -f package/debian/archipel-core/postrm $(PKG_OUT)/archipel-core/DEBIAN/
+	cp -f package/debian/archipel-core/prerm $(PKG_OUT)/archipel-core/DEBIAN/
 # Create conf files
 #	cp default-conf.env $(PKG_OUT)/archipel-core/etc/archipel-core/conf.env
 #	echo "/etc/archipel-core/conf.env" >> $(PKG_OUT)/archipel-core/DEBIAN/conffiles
