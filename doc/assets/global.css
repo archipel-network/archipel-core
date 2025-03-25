@@ -1,0 +1,367 @@
+:root {
+    font-family: 'Fira Code', monospace;
+    color: white;
+    background: black;
+    font-size: 10pt;
+}
+
+main {
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 25px;
+    padding-top: 15vh;
+    padding-bottom: 25vh;
+}
+
+@media print {
+    main {
+        padding: 0;
+    }
+
+    :root {
+        font-size: 0.75rem;
+    }
+}
+
+@media screen and (max-width: 900px){
+    main {
+        padding-top: 100px;
+    }
+}
+
+body > nav a {
+    text-decoration: none;
+}
+
+@media print {
+    body > nav {
+        display: none;
+    }
+}
+
+/* Title */
+
+h1 {
+    font-size: 3rem;
+    margin: 0;
+    margin-bottom: 100px;
+}
+
+h1 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+h1>* {
+    position: relative;
+    padding-left: 5px;
+    padding-right: 5px;
+
+    /* Reverted in @supports rule */
+    color: var(--background-color);
+}
+
+@keyframes header-over-enter {
+    from {
+        width: 0%;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
+h1 > *::before {
+    animation: 0.3s header-over-enter 0.5s;
+    animation-fill-mode: backwards;
+    animation-delay: 1s;
+}
+
+h1 > *::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+
+    /* Reverted in @supports rule */
+    background: var(--text-color);
+    z-index: -1;
+}
+
+@supports (backdrop-filter: invert(1)) {
+
+    h1 > * {
+        color: revert;
+        background: var(--background-color);
+    }
+
+    h1 > *::before {
+        background: transparent;
+        z-index: 0;
+        backdrop-filter: invert(1);
+    }
+
+}
+
+h1 small, h2 small, h3 small {
+    display: block;
+    width: fit-content;
+    font-weight: normal;
+    font-size: 0.75em;
+}
+
+h1 small {
+    font-size: 0.5em;
+}
+
+h2 {
+    font-size: 1.75rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+h1, h2, h3 {
+    break-after: avoid;
+}
+
+
+h2 a:first-child:last-child {
+    text-decoration: none;
+}
+
+/* paragraph */
+
+p {
+    line-height: 1.75;
+    margin-bottom: 2em;
+}
+
+hr {
+    margin-bottom: 100px;
+    border: none;
+}
+
+a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+a:not([href]){
+    text-decoration: none;
+}
+
+strong {
+    font-weight: bold;
+    color: black;
+    background: white;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    text-decoration-color: black;
+}
+
+em {
+    font-weight: bold;
+    font-style: normal;
+}
+
+code {
+    font-size: inherit;
+    font-family: inherit;
+    border: solid 1px rgba(255, 255, 255, 0.5);
+    padding: 0.05em 0.25em;
+}
+
+pre {
+    font-size: 1rem;
+    margin-top: 4em;
+    margin-bottom: 0;
+}
+
+pre + p {
+    margin-top: 4em;
+}
+
+pre code {
+    border: none;
+    border-left: 4px solid white;
+    display: block;
+    padding: 0.5em 1em;
+}
+
+pre output {
+    border: none;
+    border-left: 4px dotted white;
+    display: block;
+    padding: 1em 1em;
+    padding-top: 1.5em;
+}
+
+pre + pre {
+    margin-top: 0;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+
+@media print {
+
+    hr {
+        margin-bottom: 50px;
+        border: none;
+    }
+}
+
+.more {
+    text-align: right;
+}
+
+p.more {
+    margin-top: 5em;
+}
+
+/* Articles */
+
+article {
+    margin-top: 100px;
+    margin-bottom: 100px;
+    break-inside: avoid;
+}
+
+article:first-child {
+    margin-top: 0;
+}
+
+@media print {
+    article {
+        margin-top: 75px;
+        margin-bottom: 75px;
+    }
+}
+
+article nav,
+article > a:last-child {
+    text-align: right;
+    font-size: 0.9em;
+    margin-top: 50px;
+    display: block;
+    line-height: 2;
+}
+
+/* tags */
+
+.tag {
+    display: inline-block;
+    padding: 0.05em 0.5em;
+    font-size: 0.9em;
+    background-color: white;
+    color: black;
+    font-weight: bold;
+}
+
+@media print {
+    .tag {
+        border: solid 1px black;
+        font-weight: normal;
+    }
+}
+
+/* lists */
+
+ul {
+    padding-left: 2em;
+}
+
+ul li {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+    line-height: 1.5;
+}
+
+ul ::marker{
+    content: "-> ";
+}
+
+i img {
+    height: 1em;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    transform: translateY(0.2em);
+}
+
+i.status {
+    font-style: normal;
+}
+
+/* notes */
+
+.note {
+    font-style: italic;
+    padding: 0.5em;
+}
+
+.note[property="archipel:requiresInspection"] {
+    background-color: rgba(255, 162, 0, 0.198);
+    color: rgb(255, 162, 0);
+}
+
+/* tasks */
+
+article[typeof="archipel:Task"] {
+    border: solid 1px currentColor;
+    padding: 25px;
+    border-top-right-radius: 3rem;
+}
+
+article[typeof="archipel:Task"] .note[property="archipel:requiresInspection"] {
+    margin-left: -25px;
+    margin-right: -25px;
+    padding-left: 25px;
+    padding-right: 25px;
+}
+
+article[typeof="archipel:Task"]::before {
+    content: "↺";
+    font-size: 3rem;
+    line-height: 0.7;
+    float: right;
+    display: block;
+}
+
+article[typeof="archipel:Task"] h2 {
+    margin: 0;
+}
+
+article[typeof="archipel:Task"] > :last-child {
+    margin-bottom: 0;
+}
+
+article[typeof="archipel:Task"] footer {
+    font-size: 0.9em;
+}
+
+article[typeof="archipel:Task"] footer * {
+    margin: 0;
+}
+:is([typeof="archipel:SourceRef"], [property="archipel:startedIn"]) code {
+    border: none;
+    padding: 0;
+    display: inline;
+    font-style: italic;
+}
+
+[typeof="archipel:SourceRef"] code a {
+    text-decoration: none;
+}

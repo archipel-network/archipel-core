@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en" prefix="archipel: https://archipelproject.net/voc/#">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks &mdash; Archipel Core</title>
+    <link rel="stylesheet" href="assets/global.css">
+    <style>
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: min-content;
+            gap: 4em;
+        }
+
+        main > * {
+            margin: 0;
+        }
+
+        main h1 {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+<body resource="tasks.html">
+    <main>
+        <h1>
+            <span property="rdfs:label">Tasks</span>
+            <small property="rdfs:comment">List of running tasks of Archipel core</small>
+        </h1>
+
+        <!--
+        MARK: bundle_restore_task
+        -->
+        <article id="bundle_restore_task" resource="#bundle_restore_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >bundle_restore_task</h2>
+            <p property="rdfs:comment">Read bundle from store and restore them on request on <a property="archipel:consumes" href="queues.html#bundle_restore_config-restore_queue"><code>struct bundle_restore_config.restore_queue</code></a>.</p>
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/ud3tn/init.c">
+                        components/ud3tn/init.c</a>:<span property="archipel:line">93</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/archipel-core/bundle_restore.c">
+                        components/archipel-core/bundle_restore.c</a>:<span property="archipel:line">9</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: bundle_processor_task
+        -->
+        <article id="bundle_processor_task" resource="#bundle_processor_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >bundle_processor_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/ud3tn/init.c">
+                        components/ud3tn/init.c</a>:<span property="archipel:line">136</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/ud3tn/bundle_processor.c">
+                        components/ud3tn/bundle_processor.c</a>:<span property="archipel:line">236</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: contact_manager_task
+        -->
+        <article id="contact_manager_task" resource="#contact_manager_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >contact_manager_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/ud3tn/contact_manager.c">
+                        components/ud3tn/contact_manager.c</a>:<span property="archipel:line">491</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/ud3tn/contact_manager.c">
+                        components/ud3tn/contact_manager.c</a>:<span property="archipel:line">399</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: tcpspp_link_creation_task
+        -->
+        <article id="tcpspp_link_creation_task" resource="#tcpspp_link_creation_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >tcpspp_link_creation_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_tcpspp.c">
+                        components/cla/posix/cla_tcpspp.c</a>:<span property="archipel:line">87</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_tcpspp.c">
+                        components/cla/posix/cla_tcpspp.c</a>:<span property="archipel:line">69</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: tcpclv3_listener_task
+        -->
+        <article id="tcpclv3_listener_task" resource="#tcpclv3_listener_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >tcpclv3_listener_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_tcpclv3.c">
+                        components/cla/posix/cla_tcpclv3.c</a>:<span property="archipel:line">515</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_tcpclv3.c">
+                        components/cla/posix/cla_tcpclv3.c</a>:<span property="archipel:line">481</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: smtcp_link_creation_task
+        -->
+        <article id="smtcp_link_creation_task" resource="#smtcp_link_creation_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >smtcp_link_creation_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_smtcp.c">
+                        components/cla/posix/cla_smtcp.c</a>:<span property="archipel:line">46</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_smtcp.c">
+                        components/cla/posix/cla_smtcp.c</a>:<span property="archipel:line">46</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: mtcp_listener_task
+        -->
+        <article id="mtcp_listener_task" resource="#mtcp_listener_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >mtcp_listener_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_mtcp.c">
+                        components/cla/posix/cla_mtcp.c</a>:<span property="archipel:line">284</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_mtcp.c">
+                        components/cla/posix/cla_mtcp.c</a>:<span property="archipel:line">253</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: file_cla_transmission_task
+        -->
+        <article id="file_cla_transmission_task" resource="#file_cla_transmission_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >file_cla_transmission_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_file.c">
+                        components/cla/posix/cla_file.c</a>:<span property="archipel:line">450</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_file.c">
+                        components/cla/posix/cla_file.c</a>:<span property="archipel:line">148</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: file_cla_watching_task
+        -->
+        <article id="file_cla_watching_task" resource="#file_cla_watching_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >file_cla_watching_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_file.c">
+                        components/cla/posix/cla_file.c</a>:<span property="archipel:line">456</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_file.c">
+                        components/cla/posix/cla_file.c</a>:<span property="archipel:line">303</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: bibe_link_management_task
+        -->
+        <article id="bibe_link_management_task" resource="#bibe_link_management_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >bibe_link_management_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/posix/cla_bibe.c">
+                        components/cla/posix/cla_bibe.c</a>:<span property="archipel:line">258</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/posix/cla_bibe.c">
+                        components/cla/posix/cla_bibe.c</a>:<span property="archipel:line">99</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: application_agent_listener_task
+        -->
+        <article id="application_agent_listener_task" resource="#application_agent_listener_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >application_agent_listener_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/agents/posix/application_agent.c">
+                        components/agents/posix/application_agent.c</a>:<span property="archipel:line">621</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/agents/posix/application_agent.c">
+                        components/agents/posix/application_agent.c</a>:<span property="archipel:line">70</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: application_agent_comm_task
+        -->
+        <article id="application_agent_comm_task" resource="#application_agent_comm_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >application_agent_comm_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p>
+                    Started by <a property="archipel:startedIn" href="#application_agent_listener_task"><code>application_agent_listener_task</code></a>
+                    <span property="archipel:startedIn" typeof="archipel:SourceRef">
+                        in <code><a property="archipel:file" href="../components/agents/posix/application_agent.c">
+                            components/agents/posix/application_agent.c</a>:<span property="archipel:line">143</span></code>
+                    </span>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/agents/posix/application_agent.c">
+                        components/agents/posix/application_agent.c</a>:<span property="archipel:line">495</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: aap2_agent_listener_task
+        -->
+        <article id="aap2_agent_listener_task" resource="#aap2_agent_listener_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >aap2_agent_listener_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/aap2/aap2_agent.c">
+                        components/aap2/aap2_agent.c</a>:<span property="archipel:line">964</span></code>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/aap2/aap2_agent.c">
+                        components/aap2/aap2_agent.c</a>:<span property="archipel:line">93</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: aap2_agent_comm_task
+        -->
+        <article id="aap2_agent_comm_task" resource="#aap2_agent_comm_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >aap2_agent_comm_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <footer>
+                <p>
+                    Started by <a property="archipel:startedIn" href="#aap2_agent_listener_task"><code>aap2_agent_listener_task</code></a>
+                    <span property="archipel:startedIn" typeof="archipel:SourceRef">
+                        in <code><a property="archipel:file" href="../components/aap2/aap2_agent.c">
+                            components/aap2/aap2_agent.c</a>:<span property="archipel:line">176</span></code>
+                    </span>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/aap2/aap2_agent.c">
+                        components/aap2/aap2_agent.c</a>:<span property="archipel:line">780</span></code>
+                </p>
+            </footer>
+        </article>
+        
+    </main>
+
+    <footer>
+        <div class="note"><strong>TODO:</strong> Add every task started with cla_launch_contact_tx_task(</div>
+    </footer>
+</body>
+</html>

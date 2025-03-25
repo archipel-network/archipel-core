@@ -145,7 +145,7 @@ char* filecla_get_cla_addr_from_contact(struct filecla_contact* contact) {
 
 uint64_t cla_sequence_number = 0;
 
-static void transmission_task(
+static void file_cla_transmission_task(
 	void* param ){
 	struct filecla_contact* contact = (struct filecla_contact*) param;
 
@@ -300,7 +300,7 @@ static void inject_bundle(struct bundle *bundle, void* p)
 	);
 }
 
-static void watching_task(
+static void file_cla_watching_task(
 	void* param ){
 
 	struct filecla_contact* contact = (struct filecla_contact*) param;
@@ -448,12 +448,12 @@ static enum ud3tn_result filecla_start_scheduled_contact(
 	hal_semaphore_release(file_config->contacts_semaphore);
 
 	hal_task_create(
-		transmission_task,
+		file_cla_transmission_task,
 		c
 	);
 
 	hal_task_create(
-		watching_task,
+		file_cla_watching_task,
 		c
 	);
 
