@@ -166,7 +166,13 @@
         -->
         <article id="file_cla_transmission_task" resource="#file_cla_transmission_task" typeof="archipel:Task">
             <h2 property="rdfs:label" >file_cla_transmission_task</h2>
-            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <p>Part of <a href="./file_cla_protocol.md">File CLA</a>.</p>
+
+            <p>
+                This task writes bundles in shared folder between nodes configured in contact.
+                Each bundle routed through this CLA is written in contact folder and then released.
+            </p>
             
             <footer>
                 <p property="archipel:startedIn" typeof="archipel:SourceRef">
@@ -185,7 +191,14 @@
         -->
         <article id="file_cla_watching_task" resource="#file_cla_watching_task" typeof="archipel:Task">
             <h2 property="rdfs:label" >file_cla_watching_task</h2>
-            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <p>Part of <a href="./file_cla_protocol.md">File CLA</a>.</p>
+
+            <p>
+                This task poll for new bundles available in conmtact shared folder.
+                If new bundles are available they are parsed and injected in node system and triggering a routing.
+                (Routing that can loop back to the same shared folder if necessary).
+            </p>
             
             <footer>
                 <p property="archipel:startedIn" typeof="archipel:SourceRef">
@@ -299,11 +312,51 @@
                 </p>
             </footer>
         </article>
+
+        <!--
+        MARK: cla_contact_tx_task
+        -->
+        <article id="cla_contact_tx_task" resource="#cla_contact_tx_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >cla_contact_tx_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <p>Started for each active contact link.</p>
+
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/cla.c">
+                        components/cla/cla.c</a>:<span property="archipel:line">219</span></code>
+                    </span>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/cla_contact_tx_task.c">
+                        components/cla/cla_contact_tx_task.c</a>:<span property="archipel:line">71</span></code>
+                </p>
+            </footer>
+        </article>
+
+        <!--
+        MARK: cla_contact_rx_task
+        -->
+        <article id="cla_contact_rx_task" resource="#cla_contact_rx_task" typeof="archipel:Task">
+            <h2 property="rdfs:label" >cla_contact_rx_task</h2>
+            <p class="note" property="archipel:requiresInspection" content="true">Requires more inspection and understanding</p>
+            
+            <p>Started for each active contact link.</p>
+
+            <footer>
+                <p property="archipel:startedIn" typeof="archipel:SourceRef">
+                    Started in <code><a property="archipel:file" href="../components/cla/cla.c">
+                        components/cla/cla.c</a>:<span property="archipel:line">212</span></code>
+                    </span>
+                </p>
+                <p property="archipel:runningIn" typeof="archipel:SourceRef">
+                    Running in <code><a property="archipel:file" href="../components/cla/cla_contact_tx_task.c">
+                        components/cla/cla_contact_tx_task.c</a>:<span property="archipel:line">407</span></code>
+                </p>
+            </footer>
+        </article>
         
     </main>
-
-    <footer>
-        <div class="note"><strong>TODO:</strong> Add every task started with cla_launch_contact_tx_task(</div>
-    </footer>
 </body>
 </html>
