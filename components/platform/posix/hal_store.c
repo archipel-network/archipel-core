@@ -9,12 +9,15 @@
 
 #include "bundle7/parser.h"
 #include "bundle6/parser.h"
+#include "ud3tn/common.h"
+#include "ud3tn/parser.h"
 #include "ud3tn/result.h"
 #include "platform/hal_store.h"
 #include "platform/hal_io.h"
 #include "platform/hal_semaphore.h"
+#include <stddef.h>
+#include <string.h>
 #include <sys/stat.h>
-#include "ud3tn/eid.h"
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -225,14 +228,20 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
     uintmax_t seqnum;
     char protocol_version;
     size_t len = 0;
+    size_t buffer_offset = 0;
+    size_t parsed_bytes = 0;
     uint8_t buffer[HAL_STORE_READ_BUFFER_SIZE];
 
+    
     while ((entry = readdir(popseq->dir)) != NULL)
     {
+        bundle6_parser_reset(&b6_parser);
+        bundle7_parser_reset(&b7_parser);
+
         if(entry->d_type != 8 /* DT_REG */){
             continue; // Not a file
         }
-
+        
         for(size_t i = 0; i<256; i++){
             if(entry->d_name[i] == '-'){
                 if(i+1<256){
@@ -250,7 +259,8 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
             seqnum_buf[i] = entry->d_name[i];
         }
         seqnum = strtoumax(&seqnum_buf[0], NULL, 10);
-
+        
+        
         if(seqnum <= popseq->max_sequence_number){
 
             char* filename = malloc(sizeof(char) * (
@@ -263,36 +273,93 @@ struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
             FILE* file = fopen( filename,"r");
 
             if(file == NULL){
+                LOGF_ERROR("Storage: Error opening file %s: %d (%s)", filename, errno, strerror(errno));
                 free(filename);
                 continue; // Error reading file
             }
 
-            while((len = fread(&buffer, sizeof(char), HAL_STORE_READ_BUFFER_SIZE, file)) > 0){
-                
-				struct parser *basedata;
-                
-                if(protocol_version == '7'){
-                    bundle7_parser_read(&b7_parser, buffer, len);
-                    basedata = b7_parser.basedata;
-                } else if(protocol_version == '6'){
-                    bundle6_parser_read(&b6_parser, buffer, len);
-                    basedata = b6_parser.basedata;
+            struct parser *basedata = NULL;
+            do {
+
+                if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
+
+                    LOGF_DEBUG("BULK READ REMANING of %d bytes", basedata->next_bytes);
+
+                    len = fread(basedata->next_buffer, sizeof(char), basedata->next_bytes, file);
+                    if(len == 0)
+                        break; // Unexpected end
+
+                    basedata->next_buffer += len;
+                    basedata->next_bytes -= len;
+
+                    // We done filled the buffer
+                    if(basedata->next_bytes == 0){
+                        // Disable bulk read
+                        basedata->flags &= ~PARSER_FLAG_BULK_READ;
+                        // Feed with empty buffer
+                        if(protocol_version == '7'){
+                            bundle7_parser_read(&b7_parser, NULL, 0);
+                        } else if(protocol_version == '6'){
+                            bundle6_parser_read(&b6_parser, NULL, 0);
+                        }
+
+                        len = 0;
+                        buffer_offset = 0;
+                    }
+
+                } else {
+                    if((len-buffer_offset) == 0){
+                        /// All data was red by parser, refill from stream
+                        len = fread(&buffer, sizeof(char), HAL_STORE_READ_BUFFER_SIZE, file);
+                        buffer_offset = 0;
+                        if(len == 0)
+                            break;
+                    }
+
+                    if(protocol_version == '7'){
+                        parsed_bytes = bundle7_parser_read(&b7_parser, buffer+buffer_offset, len-buffer_offset);
+                        basedata = b7_parser.basedata;
+                    } else if(protocol_version == '6'){
+                        parsed_bytes = bundle6_parser_read(&b6_parser, buffer+buffer_offset, len-buffer_offset);
+                        basedata = b6_parser.basedata;
+                    }
+
+                    buffer_offset += parsed_bytes;
+
+                    LOGF_DEBUG("PARSED %d bytes of data", parsed_bytes);
+
+                    if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
+                        // Bulk read requested (data needs to be red in a pre_allocated buffer)
+                        LOGF_DEBUG("BULK READ of %d bytes requested", basedata->next_bytes);
+    
+                        if(len-buffer_offset > 0){
+                            size_t bytes_to_copy = MIN(len-buffer_offset, basedata->next_bytes);
+                            memcpy(basedata->next_buffer, buffer+buffer_offset, bytes_to_copy);
+                            basedata->next_buffer += bytes_to_copy;
+                            basedata->next_bytes -= bytes_to_copy;
+                            buffer_offset -= bytes_to_copy;
+                            LOGF_DEBUG("MOVED %d bytes from local buffer", bytes_to_copy);
+                        }
+    
+                    }
                 }
 
-                if(basedata->status == PARSER_STATUS_ERROR){
-                    break; // Parsing error
-                }
-            }
-
+            } while(basedata == NULL || basedata->status == PARSER_STATUS_GOOD);
+            
             fclose(file);
-
+                
+            if(basedata != NULL && basedata->status != PARSER_STATUS_DONE){
+                LOGF_ERROR("Storage: Error parsing bundle file %s", filename);
+            }
+            
             if(next_bundle != NULL){
                 if(remove(filename)){
-                    LOGF_ERROR("Bundle Store : Error removing file %s", filename);
+                    LOGF_ERROR("Bundle Store : Error removing file %s: %d (%s)", filename, errno, strerror(errno));
                 }
+                free(filename);
                 break;
             }
-
+            
             free(filename);
         }
     }
