@@ -1,3 +1,4 @@
+#include <stddef.h>
 #ifdef ARCHIPEL_CORE
 #include "cla/mtcp_proto.h"
 #include "cla/posix/cla_file.h"
@@ -311,6 +312,7 @@ static void file_cla_watching_task(
 	struct bundle_injection_params parser_params = {
 		.local_eid = contact->cla_config->local_eid,
 		.signaling_queue = contact->cla_config->signaling_queue,
+		// .file_path assigned later
 	};
 
 	struct bundle7_parser b7_parser;
@@ -335,7 +337,6 @@ static void file_cla_watching_task(
 
 		DIR *f = opendir(folder);
 		if(f != NULL){
-
 			struct dirent *entry;
 			while((entry = readdir(f)) != NULL){
 				
@@ -350,30 +351,78 @@ static void file_cla_watching_task(
 
 						FILE* file = fopen(file_path, "r");
 						if(file != NULL){
+
 							parser_params.file_path = file_path;
+							
+							struct parser *basedata = NULL;
+							size_t len = 0;
+							size_t parsed_bytes = 0;
+							size_t buffer_offset = 0;
+							do {
 
-							size_t len;
-							while((len = fread(&buffer, sizeof(char), FILECLA_READ_BUFFER_SIZE, file)) > 0){
+								if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
+									LOGF_DEBUG("BULK READ REMANING of %d bytes", basedata->next_bytes);
 
-								struct parser *basedata;
+									len = fread(basedata->next_buffer, sizeof(char), basedata->next_bytes, file);
+									if(len == 0)
+										break; // Unexpected end
 
-								if(bundle_ver == '6'){
-									bundle6_parser_read(&b6_parser, buffer, len);
-									basedata = b6_parser.basedata;
-								} else if(bundle_ver == '7') {
-									bundle7_parser_read(&b7_parser, buffer, len);
-									basedata = b7_parser.basedata;
-								}
+									basedata->next_buffer += len;
+									basedata->next_bytes -= len;
 
-								if(basedata->status == PARSER_STATUS_ERROR){
-									if(basedata->flags & PARSER_FLAG_CRC_INVALID){
-										LOGF_ERROR("FileCLA : Invalid CRC for %s", file_path);
-									} else {
-										LOGF_ERROR("FileCLA : Parsing error for %s", file_path);
+									// We done filled the buffer
+									if(basedata->next_bytes == 0){
+										// Disable bulk read
+										basedata->flags &= ~PARSER_FLAG_BULK_READ;
+										// Feed with empty buffer
+										if(bundle_ver == '7'){
+											bundle7_parser_read(&b7_parser, NULL, 0);
+										} else if(bundle_ver == '6'){
+											bundle6_parser_read(&b6_parser, NULL, 0);
+										}
+
+										len = 0;
+										buffer_offset = 0;
 									}
-									break;
+
+								} else {
+									if((len-buffer_offset) == 0){
+										/// All data was red by parser, refill from stream
+										len = fread(buffer, sizeof(char), FILECLA_READ_BUFFER_SIZE, file);
+										buffer_offset = 0;
+										if(len == 0)
+											break;
+									}
+
+									if(bundle_ver == '7'){
+										parsed_bytes = bundle7_parser_read(&b7_parser, buffer+buffer_offset, len-buffer_offset);
+										basedata = b7_parser.basedata;
+									} else if(bundle_ver == '6'){
+										parsed_bytes = bundle6_parser_read(&b6_parser, buffer+buffer_offset, len-buffer_offset);
+										basedata = b6_parser.basedata;
+									}
+
+									buffer_offset += parsed_bytes;
+
+									LOGF_DEBUG("PARSED %d bytes of data", parsed_bytes);
+
+									if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
+										// Bulk read requested (data needs to be red in a pre_allocated buffer)
+										LOGF_DEBUG("BULK READ of %d bytes requested", basedata->next_bytes);
+					
+										if(len-buffer_offset > 0){
+											size_t bytes_to_copy = MIN(len-buffer_offset, basedata->next_bytes);
+											memcpy(basedata->next_buffer, buffer+buffer_offset, bytes_to_copy);
+											basedata->next_buffer += bytes_to_copy;
+											basedata->next_bytes -= bytes_to_copy;
+											buffer_offset -= bytes_to_copy;
+											LOGF_DEBUG("MOVED %d bytes from local buffer", bytes_to_copy);
+										}
+					
+									}
 								}
-							}
+
+							} while(basedata == NULL || basedata->status == PARSER_STATUS_GOOD);
 							
 							fclose(file);
 
