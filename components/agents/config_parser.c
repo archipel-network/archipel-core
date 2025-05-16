@@ -115,13 +115,7 @@ static bool read_cla_addr(
 	struct config_parser *parser, char **cla_addr_ptr, const char byte)
 {
 	if (
-		(byte >= '0' && byte <= '9') ||
-		(byte >= 'A' && byte <= 'Z') ||
-		(byte >= 'a' && byte <= 'z') ||
-		(byte == ':') || (byte == '.') ||
-		(byte == '[') || (byte == ']') ||
-		(byte == '#') || (byte == '/') ||
-		(byte == '-')
+		byte != CLA_ADDR_END_DELIMITER
 	) {
 		(*cla_addr_ptr)[parser->current_index++] = byte;
 		if (parser->current_index >= DEFAULT_CLA_ADDR_BUFFER_SIZE)
