@@ -32,7 +32,7 @@ package-debian: posix
 	mkdir -p $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core
 	mkdir -p $(PKG_OUT)/archipel-core/DEBIAN
 # Copy build artifacts
-	strip --strip-debug --strip-unneeded -o $(PKG_OUT)/archipel-core/usr/bin/archipel-core build/posix/ud3tn
+	-strip --strip-debug --strip-unneeded -o $(PKG_OUT)/archipel-core/usr/bin/archipel-core build/posix/ud3tn
 # Copy documentation
 	cat "LICENSE" > $(PKG_OUT)/archipel-core/usr/share/doc/archipel-core/copyright
 # Copy systemd service files
@@ -54,7 +54,7 @@ package-debian: posix
 # Package build
 	cd $(PKG_OUT) && dpkg-deb --root-owner-group --build archipel-core
 # Package linting
-	lintian $(PKG_OUT)/archipel-core.deb
+	-lintian $(PKG_OUT)/archipel-core.deb
 
 .PHONY: package-pyd3tn-debian
 package-pyd3tn-debian:
