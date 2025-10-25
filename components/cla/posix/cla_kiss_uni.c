@@ -14,6 +14,9 @@
 #include "cla/cla.h"
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
+#include "platform/hal_queue.h"
+#include "platform/hal_semaphore.h"
+#include "cla/cla_contact_tx_task.h"
 #include "errno.h"
 
 #define KISS_FEND ((char) 0xC0)
@@ -25,8 +28,13 @@
 
 struct kissunicla_config {
     struct cla_config base;
+
+    // Serial configuration
     char serial_device_path[PATH_MAX];
     speed_t serial_device_speed;
+
+    // Transmission handling
+    struct cla_tx_queue tx_queue;
 };
 
 /* Returns a unique identifier of the CLA as part of the CLA address */
@@ -48,17 +56,15 @@ struct kissunicla_runtime {
 };
 
 void kissunicla_receive_kiss_frame(struct kissunicla_runtime* runtime, char* buffer, size_t buffer_size) {
-    if(buffer_size > 0){
-        /*for(size_t i = 0; i<buffer_size; i++){
-            if(buffer[i] == '\0'){
-                buffer[i] = '0';
-            }
-        }*/
-        buffer[buffer_size] = '\0';
-        LOGF_INFO("Received KISS frame %s (%d length) !", buffer, buffer_size);
-    } else {
-        LOG_INFO("Received KISS frame <empty> !");
-    }
+    // TODO Parse and receive
+    buffer[buffer_size] = '\0';
+    LOGF_INFO("Received KISS frame %s (%d length) !", buffer, buffer_size);
+}
+
+enum ud3tn_result kissunicla_send_kiss_frame(struct kissunicla_runtime* runtime, struct bundle* bundle){
+    //TODO Serialize and send
+    LOG_INFO("Received bundle to send");
+    return UD3TN_OK;
 }
 
 int kissunicla_open_serial_port(struct kissunicla_config* config){
@@ -181,6 +187,47 @@ void kissunicla_listen(void * param){
     abort();
 }
 
+void kissunicla_send(void * param){
+    struct kissunicla_runtime* runtime = (struct kissunicla_runtime*) param;
+
+    struct cla_contact_tx_task_command com;
+    while(true){
+        if(hal_queue_receive(runtime->config->tx_queue.tx_queue_handle, &com, -1) == UD3TN_FAIL){
+            continue;
+        }
+
+        if(com.type == TX_COMMAND_BUNDLES){
+            struct routed_bundle_list* bundle_list_item = com.bundles;
+            while(bundle_list_item != NULL) {
+                enum ud3tn_result result = kissunicla_send_kiss_frame(runtime, bundle_list_item->data);
+
+                if(result == UD3TN_FAIL){
+                    bundle_processor_inform(
+                        runtime->config->base.bundle_agent_interface->bundle_signaling_queue,
+                        (struct bundle_processor_signal) {
+                            .type = BP_SIGNAL_TRANSMISSION_FAILURE,
+                            .bundle = bundle_list_item->data,
+                            .peer_cla_addr = "kiss+uni:",
+                        }
+                    );
+                } else {
+                    bundle_processor_inform(
+                        runtime->config->base.bundle_agent_interface->bundle_signaling_queue,
+                        (struct bundle_processor_signal) {
+                            .type = BP_SIGNAL_TRANSMISSION_SUCCESS,
+                            .bundle = bundle_list_item->data,
+                            .peer_cla_addr = "kiss+uni:",
+                        }
+                    );
+                }
+
+                bundle_list_item = bundle_list_item->next;
+            }
+        }
+    }
+
+}
+
 /* Starts the TX/RX tasks and, e.g., the socket listener */
 static enum ud3tn_result kissunicla_launch(struct cla_config *const config)
 {
@@ -195,6 +242,11 @@ static enum ud3tn_result kissunicla_launch(struct cla_config *const config)
         goto error_free_runtime;
     }
 
+    if(hal_task_create(kissunicla_send, runtime) != UD3TN_OK){
+        LOG_ERROR("KISSUNI CLA: Failed to start send task");
+        goto error_free_runtime;
+    }
+
 	return UD3TN_OK;
 
     error_free_runtime:
@@ -202,10 +254,16 @@ static enum ud3tn_result kissunicla_launch(struct cla_config *const config)
         return UD3TN_FAIL;
 }
 
+struct cla_tx_queue kissunicla_get_tx_queue(struct cla_config* config, const char* _eid, const char* _cla_addr) {
+    struct kissunicla_config* local_config = (struct kissunicla_config*) config;
+    return local_config->tx_queue;
+}
+
 const struct cla_vtable kissunicla_vtable = {
     .cla_name_get = kissunicla_name_get,
     .cla_mbs_get = kissunicla_mbs_get,
     .cla_launch = kissunicla_launch,
+    .cla_get_tx_queue = kissunicla_get_tx_queue
 };
 
 struct cla_config *kissunicla_create(
@@ -457,11 +515,18 @@ struct cla_config *kissunicla_create(
         free(opt);
     }
 
+    config->tx_queue.tx_queue_sem = hal_semaphore_init_binary();
+    config->tx_queue.tx_queue_handle = hal_queue_create(
+        CONTACT_TX_TASK_QUEUE_LENGTH * 10,
+        sizeof(struct cla_contact_tx_task_command)
+    );
+    hal_semaphore_release(config->tx_queue.tx_queue_sem);
+
     return (struct cla_config*) config;
 
     error_free_config:
-    free(config);
-    return NULL;
+        free(config);
+        return NULL;
 }
 
 #endif
