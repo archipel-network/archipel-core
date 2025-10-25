@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/posix/ud3tn",
-            "args": ["-e", "dtn://dev.dtn/", "-c", "tcpclv3:*,0"],
+            "args": ["-e", "dtn://dev.dtn/", "-c", "tcpclv3:*,0", "-P", "/var/lib/archipel-core/bundles"],
             "environment": [{ "name": "config", "value": "Debug" }],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Make posix"
@@ -20,6 +20,16 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/posix/ud3tn",
             "args": ["-e", "dtn://source.filecla.dtn/", "-c", "file:"],
+            "environment": [{ "name": "config", "value": "Debug" }],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Make posix"
+        },
+        {
+            "name": "Debug kiss uni CLA",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/posix/ud3tn",
+            "args": ["-e", "dtn://source.kissuni.dtn/", "-c", "kiss+uni:/dev/ttyACM2,speed=1152000"],
             "environment": [{ "name": "config", "value": "Debug" }],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Make posix"

@@ -8,6 +8,7 @@
 #include "cla/posix/cla_tcpspp.h"
 #include "cla/posix/cla_bibe.h"
 #include "cla/posix/cla_file.h"
+#include "cla/posix/cla_kiss_uni.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_task.h"
@@ -43,6 +44,7 @@ const struct available_cla_list_entry AVAILABLE_CLAS[] = {
 	{ "bibe", &bibe_create },
 	#ifdef ARCHIPEL_CORE
 	{ "file", &filecla_create },
+	{ "kiss+uni", &kissunicla_create },
 	#endif
 };
 
