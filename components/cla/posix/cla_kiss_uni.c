@@ -61,6 +61,48 @@ void kissunicla_receive_kiss_frame(struct kissunicla_runtime* runtime, char* buf
     }
 }
 
+int kissunicla_open_serial_port(struct kissunicla_config* config){
+    int device_fd = open(config->serial_device_path, O_RDWR | O_NOCTTY);
+    if(device_fd < 0){
+        LOGF_ERROR("KISSUNI CLA: Failed to open %s: %s", config->serial_device_path, strerror(errno));
+        return UD3TN_FAIL;
+    }
+    int serial_device = device_fd;
+
+    if(isatty(serial_device)){
+
+        struct termios ttyconfig;
+        if(tcgetattr(serial_device, &ttyconfig) < 0){
+            LOGF_ERROR("Failed to get current configuration of %s: %s", config->serial_device_path, strerror(errno));
+            goto error_close_fd;
+        }
+
+        if(config->serial_device_speed != 0){
+            if(cfsetspeed(&ttyconfig, config->serial_device_speed) < 0){
+                LOGF_ERROR("Failed set speed of %s to %d: %s", config->serial_device_path, config->serial_device_speed, strerror(errno));
+            }
+        }
+
+        cfmakeraw(&ttyconfig);
+
+        if(tcsetattr(serial_device, TCSAFLUSH, &ttyconfig) < 0){
+                LOGF_ERROR("Failed to configure %s: %s", config->serial_device_path, strerror(errno));
+        }
+
+        LOGF_INFO("KISSUNI CLA: Opened and configured serial %s", config->serial_device_path);
+
+    } else {
+        LOGF_WARN("KISSUNI CLA: %s is not a tty, no serial configuration needed", config->serial_device_path);
+        LOGF_INFO("KISSUNI CLA: Opened serial %s", config->serial_device_path);
+    }
+
+    return device_fd;
+
+    error_close_fd:
+        close(device_fd);
+        return -1;
+}
+
 void kissunicla_listen(void * param){
     struct kissunicla_runtime* runtime = (struct kissunicla_runtime*) param;
 
@@ -71,54 +113,71 @@ void kissunicla_listen(void * param){
     ssize_t byte_received;
 
     do {
-        byte_received = read(
-            runtime->serial_device,
-            buffer,
-            KISS_CHUNK_SIZE);
 
-        if(byte_received == 0){
-            LOGF_ERROR("KISSUNI CLA: Received EOF on %s (Device isn't available anymore ?)", runtime->config->serial_device_path);
-            break;
-        } else if(byte_received < 0){
-            LOGF_ERROR("KISSUNI CLA: Failed to read from %s: %s", runtime->config->serial_device_path, strerror(errno));
-            break;
+        if(runtime->serial_device < 0){
+            runtime->serial_device = kissunicla_open_serial_port(runtime->config);
         }
 
-        char escape_mode = 0;
-        for(ssize_t i = 0; i<byte_received; i++){
-            char value = buffer[i];
-            if(escape_mode){
-                switch(value){
-                    case KISS_TFEND:
-                        value = KISS_FEND;
-                        break;
-                    case KISS_TFESC:
-                        value = KISS_FESC;
-                        break;
-                }
-                escape_mode = 0;
-            } else if(value == KISS_FESC){
-                escape_mode = 1;
-                continue;
-            }
+        if(runtime->serial_device >= 0){
+            do {
+                byte_received = read(
+                    runtime->serial_device,
+                    buffer,
+                    KISS_CHUNK_SIZE);
 
-            if(value != KISS_FEND){
-                if(next_frame_length > KISS_BUFFER_SIZE){
-                    next_frame_length = KISS_BUFFER_SIZE;
-                    LOGF_WARN("KISSUNI CLA: Received frame that exceeds maximum frame buffer (%d bytes)", KISS_BUFFER_SIZE);
-                } else {
-                    next_frame[next_frame_length] = value;
+                if(byte_received == 0){
+                    LOGF_ERROR("KISSUNI CLA: Received EOF on %s (Device isn't available anymore ?)", runtime->config->serial_device_path);
+                    break;
+                } else if(byte_received < 0){
+                    LOGF_ERROR("KISSUNI CLA: Failed to read from %s: %s", runtime->config->serial_device_path, strerror(errno));
+                    break;
                 }
-                next_frame_length++;
-            } else {
-                if(next_frame_length > 0 && next_frame[0] == 0){
-                    kissunicla_receive_kiss_frame(runtime, &next_frame[1], next_frame_length-1);
+
+                char escape_mode = 0;
+                for(ssize_t i = 0; i<byte_received; i++){
+                    char value = buffer[i];
+                    if(escape_mode){
+                        switch(value){
+                            case KISS_TFEND:
+                                value = KISS_FEND;
+                                break;
+                            case KISS_TFESC:
+                                value = KISS_FESC;
+                                break;
+                        }
+                        escape_mode = 0;
+                    } else if(value == KISS_FESC){
+                        escape_mode = 1;
+                        continue;
+                    }
+
+                    if(value != KISS_FEND){
+                        if(next_frame_length > KISS_BUFFER_SIZE){
+                            next_frame_length = KISS_BUFFER_SIZE;
+                            LOGF_WARN("KISSUNI CLA: Received frame that exceeds maximum frame buffer (%d bytes)", KISS_BUFFER_SIZE);
+                        } else {
+                            next_frame[next_frame_length] = value;
+                        }
+                        next_frame_length++;
+                    } else {
+                        if(next_frame_length > 0 && next_frame[0] == 0){
+                            kissunicla_receive_kiss_frame(runtime, &next_frame[1], next_frame_length-1);
+                        }
+                        next_frame_length = 0;
+                    }
                 }
-                next_frame_length = 0;
-            }
+
+            } while(byte_received >= 0);
+
+            close(runtime->serial_device);
+            runtime->serial_device = -1;
         }
 
-    } while(byte_received >= 0);
+        // If we're here, device was disconnected and closed
+
+        hal_task_delay(10000);
+
+    } while(true);
     abort();
 }
 
@@ -127,45 +186,9 @@ static enum ud3tn_result kissunicla_launch(struct cla_config *const config)
 {
     struct kissunicla_config* local_config = (struct kissunicla_config*) config;
 
-    int device_fd = open(local_config->serial_device_path, O_RDWR | O_NOCTTY);
-    if(device_fd < 0){
-        LOGF_ERROR("KISSUNI CLA: Failed to open %s: %s", local_config->serial_device_path, strerror(errno));
-        return UD3TN_FAIL;
-    }
-    int serial_device = device_fd;
-
-    if(isatty(serial_device)){
-
-        struct termios ttyconfig;
-        if(tcgetattr(serial_device, &ttyconfig) < 0){
-            LOGF_ERROR("Failed to get current configuration of %s: %s", local_config->serial_device_path, strerror(errno));
-            goto error_close_fd;
-        }
-
-        if(local_config->serial_device_speed != 0){
-            if(cfsetspeed(&ttyconfig, local_config->serial_device_speed) < 0){
-                LOGF_ERROR("Failed set speed of %s to %d: %s", local_config->serial_device_path, local_config->serial_device_speed, strerror(errno));
-            }
-        } else {
-            local_config->serial_device_speed = cfgetospeed(&ttyconfig);
-        }
-
-        cfmakeraw(&ttyconfig);
-
-        if(tcsetattr(serial_device, TCSAFLUSH, &ttyconfig) < 0){
-                LOGF_ERROR("Failed to configure %s: %s", local_config->serial_device_path, strerror(errno));
-        }
-
-        LOGF_INFO("KISSUNI CLA: Opened and configured serial %s", local_config->serial_device_path);
-
-    } else {
-        LOGF_WARN("KISSUNI CLA: %s is not a tty, no serial configuration needed", local_config->serial_device_path);
-        LOGF_INFO("KISSUNI CLA: Opened serial %s", local_config->serial_device_path);
-    }
-
     struct kissunicla_runtime* runtime = malloc(sizeof(struct kissunicla_runtime));
     runtime->config = local_config;
-    runtime->serial_device = serial_device;
+    runtime->serial_device = -1;
 
     if(hal_task_create(kissunicla_listen, runtime) != UD3TN_OK){
         LOG_ERROR("KISSUNI CLA: Failed to start listen task");
@@ -176,8 +199,6 @@ static enum ud3tn_result kissunicla_launch(struct cla_config *const config)
 
     error_free_runtime:
         free(runtime);
-    error_close_fd:
-        close(device_fd);
         return UD3TN_FAIL;
 }
 
