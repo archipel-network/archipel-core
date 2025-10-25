@@ -179,12 +179,21 @@ void kissunicla_listen(void * param){
             runtime->serial_device = -1;
         }
 
-        // If we're here, device was disconnected and closed
+        // At this point, device was closed (because EOF or read failure)
 
         hal_task_delay(10000);
 
     } while(true);
     abort();
+}
+
+/**
+* Allocate a new cla address
+*/
+char* kissunicla_get_cla_addr(){
+    char* buffer = malloc(sizeof(char) * 10);
+    strcpy(buffer, "kiss+uni:");
+    return buffer;
 }
 
 void kissunicla_send(void * param){
@@ -207,7 +216,7 @@ void kissunicla_send(void * param){
                         (struct bundle_processor_signal) {
                             .type = BP_SIGNAL_TRANSMISSION_FAILURE,
                             .bundle = bundle_list_item->data,
-                            .peer_cla_addr = "kiss+uni:",
+                            .peer_cla_addr = kissunicla_get_cla_addr(),
                         }
                     );
                 } else {
@@ -216,7 +225,7 @@ void kissunicla_send(void * param){
                         (struct bundle_processor_signal) {
                             .type = BP_SIGNAL_TRANSMISSION_SUCCESS,
                             .bundle = bundle_list_item->data,
-                            .peer_cla_addr = "kiss+uni:",
+                            .peer_cla_addr = kissunicla_get_cla_addr(),
                         }
                     );
                 }
@@ -259,11 +268,27 @@ struct cla_tx_queue kissunicla_get_tx_queue(struct cla_config* config, const cha
     return local_config->tx_queue;
 }
 
+static enum ud3tn_result kissunicla_start_scheduled_contact(
+	struct cla_config *_config,
+	const char *_eid,
+	const char *_cla_addr ){
+    return UD3TN_OK;
+}
+
+static enum ud3tn_result kissunicla_end_scheduled_contact(
+	struct cla_config *_config,
+	const char *_eid,
+	const char *_cla_addr ){
+    return UD3TN_OK;
+}
+
 const struct cla_vtable kissunicla_vtable = {
     .cla_name_get = kissunicla_name_get,
     .cla_mbs_get = kissunicla_mbs_get,
     .cla_launch = kissunicla_launch,
-    .cla_get_tx_queue = kissunicla_get_tx_queue
+    .cla_get_tx_queue = kissunicla_get_tx_queue,
+    .cla_start_scheduled_contact = kissunicla_start_scheduled_contact,
+    .cla_end_scheduled_contact = kissunicla_end_scheduled_contact
 };
 
 struct cla_config *kissunicla_create(
