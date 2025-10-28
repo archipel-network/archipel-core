@@ -4,6 +4,7 @@
 
 //! If a [Bundle] is larger than a single PDU, the [Bundle] needs to be divided into multiple segments
 
+pub mod message;
 pub mod receiver;
 pub mod sender;
 
