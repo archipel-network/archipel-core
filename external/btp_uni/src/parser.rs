@@ -240,26 +240,151 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
-    use crate::{message::{METADATA_FLAG, MessageHeader, MessageType, Metadata}, parser::Parser};
+    use crate::{TransferIdentifier, message::{METADATA_FLAG, MessageContent, MessageHeader, MessageType, Metadata}, parser::{ParseError, Parser}};
 
 
     #[test]
-    fn indefinite_padding_message_header(){
-        assert_eq!(
-            Parser::new()
-                .parse_message_header(&[
+    fn indefinite_padding_message(){
+        let bytes = [
                     0x0, // Type
                     0x0, // Flags & length
-                    0x0, 0x0 // length
-                ]),
-            Ok((MessageHeader {
-                kind: MessageType::IndefinitePadding,
-                flags: 0,
-                length: 0,
-                content_length: 0,
-                metadata: None
-            }, 1))
-        );
+                    0x0, 0x0, // length
+                    0x0, 0x0, 0x0, 0x0, 0x1, 
+                ];
+
+        let (message, bytes_red) = Parser::new()
+            .parse_message(&bytes)
+            .expect("Parse should not fail");
+
+        let MessageContent::IndefinitePadding(padding_content) = message.content else {
+            panic!("Expected Indefinite length padding message");
+        };
+        
+        assert_eq!(message.metadata, None);
+        assert_eq!(bytes_red, 8);
+        assert_eq!(padding_content.len(), 7);
+    }
+
+    #[test]
+    fn bundle_message(){
+        let bytes = [
+                    0x2, // Type
+                    0x0, // Flags & length
+                    0x0, 121, // length
+                    // Bundle content
+                    0x9f,0x89,0x07,0x00,0x01,0x82,0x01,0x71,0x2f,0x2f,0x65,0x78,0x61,0x6d,0x70,0x6c,0x65,0x2e,0x6f,0x72,0x67,0x2f,0x6c,0x6f,0x67,0x82,0x01,0x78,0x33,0x2f,
+                    0x2f,0x65,0x70,0x69,0x63,0x6b,0x69,0x77,0x69,0x2e,0x64,0x74,0x6e,0x2f,0x36,0x65,0x31,0x34,0x32,0x39,0x37,0x32,0x2d,0x35,0x35,0x65,0x32,0x2d,0x34,0x33,
+                    0x63,0x37,0x2d,0x38,0x64,0x62,0x32,0x2d,0x37,0x31,0x65,0x31,0x63,0x65,0x38,0x31,0x66,0x33,0x31,0x62,0x82,0x01,0x00,0x82,0x1b,0x00,0x00,0x00,0xbd,0xc4,
+                    0x7b,0xae,0x02,0x01,0x1a,0x05,0x26,0x5c,0x00,0x42,0x58,0xbc,0x85,0x01,0x01,0x00,0x00,0x4c,0x48,0x65,0x6c,0x6c,0x6f,0x20,0x77,0x6f,0x72,0x6c,0x64,0x0a,
+                    0xff
+                ];
+
+        let (message, bytes_red) = Parser::new()
+            .parse_message(&bytes)
+            .expect("Parse should not fail");
+
+        let MessageContent::BundleMessage(bundle_content) = message.content else {
+            panic!("Expected bundle message");
+        };
+        
+        assert_eq!(message.metadata, None);
+        assert_eq!(bytes_red, 125);
+        assert_eq!(bundle_content.len(), 121);
+    }
+
+    #[test]
+    fn transfer_start_message(){
+        let bytes = [
+                    0x3, // Type
+                    METADATA_FLAG << 4, // Flags (with metadata) & length
+                    0x0, 26, // length
+                    // Bundle length metadata
+                    1, 1, 121,
+                    0x0, 0x0, 0x0, 64, // Transfer number
+                    0x0, 0x0, 0x0, 8, // Segment index
+                    // Bundle content
+                    0x9f,0x89,0x07,0x00,0x01,0x82,0x01,0x71,0x2f,0x2f,0x65,0x78,0x61,0x6d,0x70
+                ];
+
+        let (message, bytes_red) = Parser::new()
+            .parse_message(&bytes)
+            .expect("Parse should not fail");
+
+        let MessageContent::TransferStart(start_message) = message.content else {
+            panic!("Expected a transfer start message");
+        };
+        
+        assert_eq!(bytes_red, 30);
+        assert_eq!(message.metadata, Some(Metadata::BundleLength(121)));
+        assert_eq!(start_message.transfert_number, TransferIdentifier(64));
+        assert_eq!(start_message.segment_index, 8);
+        assert_eq!(start_message.data.len(), 15);
+    }
+
+    #[test]
+    fn transfer_segment_message(){
+        let bytes = [
+                    0x4, // Type
+                    0, // Flags (with metadata) & length
+                    0x0, 23, // length
+                    0x0, 0x0, 0x0, 64, // Transfer number
+                    0x0, 0x0, 0x0, 7, // Segment index
+                    // Bundle content
+                    0x6c,0x65,0x2e,0x6f,0x72,0x67,0x2f,0x6c,0x6f,0x67,0x82,0x01,0x78,0x33,0x2f
+                ];
+
+        let (message, bytes_red) = Parser::new()
+            .parse_message(&bytes)
+            .expect("Parse should not fail");
+
+        let MessageContent::TransferSegment(start_message) = message.content else {
+            panic!("Expected a transfer segment message");
+        };
+        
+        assert_eq!(bytes_red, 27);
+        assert_eq!(message.metadata, None);
+        assert_eq!(start_message.transfert_number, TransferIdentifier(64));
+        assert_eq!(start_message.segment_index, 7);
+        assert_eq!(start_message.data.len(), 15);
+    }
+
+    #[test]
+    fn transfer_cancel_message(){
+        let bytes = [
+                    0x5, // Type
+                    0, // Flags (with metadata) & length
+                    0x0, 4, // length
+                    0x0, 0x0, 0x0, 64, // Transfer number
+                ];
+
+        let (message, bytes_red) = Parser::new()
+            .parse_message(&bytes)
+            .expect("Parse should not fail");
+
+        let MessageContent::TransferCancel(cancel_message) = message.content else {
+            panic!("Expected a transfer cancel message");
+        };
+        
+        assert_eq!(bytes_red, 8);
+        assert_eq!(message.metadata, None);
+        assert_eq!(cancel_message.transfert_number, TransferIdentifier(64));
+    }
+    #[test]
+    fn incomplete_input(){
+        let bytes = [
+                    0x3, // Type
+                    METADATA_FLAG << 4, // Flags (with metadata) & length
+                    0x0, 26, // length
+                    // Bundle length metadata
+                    1, 1, 121,
+                    0x0, /* ...incomplete input... */
+                ];
+
+        let Err(error) = Parser::new()
+            .parse_message(&bytes) else {
+                panic!("Parsing should fail");
+        };
+        assert_eq!(error, ParseError::IncompleteInput)
     }
 
     #[test]
