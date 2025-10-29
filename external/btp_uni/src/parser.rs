@@ -38,6 +38,14 @@ impl TryFrom<u8> for MessageType {
     }
 }
 
+macro_rules! parser_get {
+    ($source:expr, $range:expr) => {
+        $source.get($range)
+            .ok_or(ParseError::IncompleteInput)
+            .and_then(|it| it.try_into().map_err(|_| ParseError::IncompleteInput))
+    };
+}
+
 impl Parser {
 
     /// Create a new parser
@@ -69,7 +77,8 @@ impl Parser {
             return Err(ParseError::MaybeIncompleteInput)
         }
 
-        let content_buffer = &buffer[header_length..(header_length+content_length as usize)];
+        let content_buffer = &buffer.get(header_length..(header_length+content_length as usize))
+            .ok_or(ParseError::IncompleteInput)?;
         if content_buffer.len() < content_length as usize {
             return Err(ParseError::IncompleteInput)
         }
@@ -90,12 +99,10 @@ impl Parser {
                 ))
             },
             MessageType::TransferStart => {
-                let transfert_number_bytes: [u8; 4] = content_buffer[0..4]
-                    .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                let transfert_number_bytes: [u8; 4] = parser_get!(content_buffer, 0..4)?;
                 let transfert_number = u32::from_be_bytes(transfert_number_bytes);
 
-                let segment_index_bytes: [u8; 4] = content_buffer[4..8]
-                    .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                let segment_index_bytes: [u8; 4] = parser_get!(content_buffer, 4..8)?;
                 let segment_index = u32::from_be_bytes(segment_index_bytes);
 
                 Ok((
@@ -108,12 +115,10 @@ impl Parser {
                 ))
             },
             MessageType::TransferSegment => {
-                let transfert_number_bytes: [u8; 4] = content_buffer[0..4]
-                    .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                let transfert_number_bytes: [u8; 4] = parser_get!(content_buffer, 0..4)?;
                 let transfert_number = u32::from_be_bytes(transfert_number_bytes);
 
-                let segment_index_bytes: [u8; 4] = content_buffer[4..8]
-                    .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                let segment_index_bytes: [u8; 4] = parser_get!(content_buffer, 4..8)?;
                 let segment_index = u32::from_be_bytes(segment_index_bytes);
 
                 Ok((
@@ -130,8 +135,7 @@ impl Parser {
                     return Err(ParseError::InvalidContent);
                 }
 
-                let transfert_number_bytes: [u8; 4] = content_buffer[0..4]
-                    .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                let transfert_number_bytes: [u8; 4] = parser_get!(content_buffer, 0..4)?;
                 let transfert_number = u32::from_be_bytes(transfert_number_bytes);
 
                 Ok((
@@ -146,9 +150,7 @@ impl Parser {
 
     /// Parse a message header from a buffer
     pub fn parse_message_header(&mut self, buffer: &[u8]) -> Result<(MessageHeader, usize), ParseError> {
-        let kind_bytes: [u8;1] = buffer[0..1]
-            .try_into().map_err(|_| ParseError::IncompleteInput)?;
-
+        let kind_bytes: [u8;1] = parser_get!(buffer, 0..1)?;
         let kind = MessageType::try_from(u8::from_be_bytes(kind_bytes))
             .map_err(|other| ParseError::UnknownType(other))?;
     
@@ -162,12 +164,11 @@ impl Parser {
             }, 1));
         }
 
-        let flags_bytes: [u8;1] = buffer[1..2]
-            .try_into().map_err(|_| ParseError::IncompleteInput)?;
+        let flags_bytes: [u8;1] = parser_get!(buffer, 1..2)?;
 
         let flags: u8 = ( u8::from_be_bytes(flags_bytes) & 0b11110000 ) >> 4;
 
-        let length_byte: [u8; 3] = buffer[1..4].try_into().map_err(|_| ParseError::IncompleteInput)?;
+        let length_byte: [u8; 3] = parser_get!(buffer, 1..4)?;
         let mut length_bytes_buffer = [0_u8;4];
         length_bytes_buffer.as_mut_slice()[1..4].copy_from_slice(&length_byte);
         length_bytes_buffer[1] &= 0b00001111;
@@ -196,37 +197,31 @@ impl Parser {
 
     /// Parse a single metadata item in a buffer
     pub fn parse_metadata(&mut self, buffer: &[u8]) -> Result<(Metadata, usize), ParseError> {
-        let kind_bytes = buffer[0..1]
-            .try_into().map_err(|_| ParseError::IncompleteInput)?;
+        let kind_bytes = parser_get!(buffer, 0..1)?;
         let kind = u8::from_be_bytes(kind_bytes);
 
-        let length_bytes = buffer[1..2]
-            .try_into().map_err(|_| ParseError::IncompleteInput)?;
+        let length_bytes = parser_get!(buffer, 1..2)?;
         let length = u8::from_be_bytes(length_bytes);
 
         return match kind {
             1 => match length {
                 1 => {
-                    let bytes: [u8; 1] = buffer[2..3]
-                        .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                    let bytes: [u8; 1] = parser_get!(buffer, 2..3)?;
                     let bundle_length = u8::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 3))
                 },
                 2 => {
-                    let bytes: [u8; 2] = buffer[2..4]
-                        .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                    let bytes: [u8; 2] = parser_get!(buffer, 2..4)?;
                     let bundle_length = u16::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 4))
                 },
                 4 => {
-                    let bytes: [u8; 4] = buffer[2..6]
-                        .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                    let bytes: [u8; 4] = parser_get!(buffer, 2..6)?;
                     let bundle_length = u32::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 6))
                 },
                 8 => {
-                    let bytes: [u8; 8] = buffer[2..10]
-                        .try_into().map_err(|_| ParseError::IncompleteInput)?;
+                    let bytes: [u8; 8] = parser_get!(buffer, 2..10)?;
                     let bundle_length = u64::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 10))
                 },
