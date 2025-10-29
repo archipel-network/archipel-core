@@ -4,6 +4,7 @@
 
 //! If a [Bundle] is larger than a single PDU, the [Bundle] needs to be divided into multiple segments
 
+pub mod parser;
 pub mod message;
 pub mod receiver;
 pub mod sender;
@@ -76,7 +77,7 @@ impl TransferWindow {
 /// An identifier to a transfer
 ///
 /// A transfer is mapped to a segmentation of a single [Bundle]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TransferIdentifier(u32);
 
 impl TransferIdentifier {
