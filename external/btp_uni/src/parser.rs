@@ -1,6 +1,6 @@
 //! Parser for Bundle Transport Protocol unidirectional messages
 
-use crate::{TransferIdentifier, message::{METADATA_FLAG, Message, MessageHeader, MessageType, Metadata, TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage}};
+use crate::{TransferIdentifier, message::{METADATA_FLAG, Message, MessageContent, MessageHeader, MessageType, Metadata, TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage}};
 
 /// Parser struct
 pub struct Parser;
@@ -58,7 +58,10 @@ impl Parser {
                     padding_length += 1;
                 } else {
                     return Ok((
-                        Message::IndefinitePadding(&buffer[header_length..(header_length+padding_length)]),
+                        Message {
+                            content: MessageContent::IndefinitePadding(&buffer[header_length..(header_length+padding_length)]),
+                            metadata: header.metadata
+                        },
                         header_length+padding_length
                     ));
                 }
@@ -76,13 +79,13 @@ impl Parser {
                 panic!("Idefinite padding message should be handled before"),
             MessageType::DefinitePadding => {
                 Ok((
-                    Message::DefinitePadding(content_buffer),
+                    Message { content: MessageContent::DefinitePadding(content_buffer), metadata: header.metadata },
                     header_length+content_length as usize
                 ))
             },
             MessageType::Bundle => {
                 Ok((
-                    Message::BundleMessage(content_buffer),
+                    Message { content: MessageContent::BundleMessage(content_buffer), metadata: header.metadata },
                     header_length+content_length as usize
                 ))
             },
@@ -96,11 +99,11 @@ impl Parser {
                 let segment_index = u32::from_be_bytes(segment_index_bytes);
 
                 Ok((
-                    Message::TransferStart(TransfertStartMessage {
+                    Message { content: MessageContent::TransferStart(TransfertStartMessage {
                         transfert_number: TransferIdentifier(transfert_number),
                         segment_index: segment_index,
                         data: &content_buffer[8..]
-                    }),
+                    }), metadata: header.metadata },
                     header_length+content_length as usize
                 ))
             },
@@ -114,11 +117,11 @@ impl Parser {
                 let segment_index = u32::from_be_bytes(segment_index_bytes);
 
                 Ok((
-                    Message::TransferSegment(TransfertSegmentMessage {
+                    Message { content: MessageContent::TransferSegment(TransfertSegmentMessage {
                         transfert_number: TransferIdentifier(transfert_number),
                         segment_index: segment_index,
                         data: &content_buffer[8..]
-                    }),
+                    }), metadata: header.metadata },
                     header_length+content_length as usize
                 ))
             },
@@ -132,9 +135,9 @@ impl Parser {
                 let transfert_number = u32::from_be_bytes(transfert_number_bytes);
 
                 Ok((
-                    Message::TransferCancel(TransfertCancelMessage {
+                    Message { content: MessageContent::TransferCancel(TransfertCancelMessage {
                         transfert_number: TransferIdentifier(transfert_number)
-                    }),
+                    }), metadata: header.metadata},
                     header_length+4
                 ))
             },

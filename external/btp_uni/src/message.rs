@@ -89,8 +89,8 @@ pub struct TransfertCancelMessage {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// A message sent or received
-pub enum Message<'a> {
+/// Content of message
+pub enum MessageContent<'a> {
     /// An indefinite length padding message (section 8.6)
     IndefinitePadding(&'a [u8]),
     /// A padding message (section 8.5)
@@ -103,6 +103,14 @@ pub enum Message<'a> {
     TransferSegment(TransfertSegmentMessage<'a>),
     /// A transfert cancellation message (section 8.4)
     TransferCancel(TransfertCancelMessage)
+}
+
+/// A message sent or received
+pub struct Message<'a> {
+    /// Content of this message
+    pub content: MessageContent<'a>,
+    /// Optional metadata of this message
+    pub metadata: Option<Metadata>
 }
 
 #[cfg(test)]
