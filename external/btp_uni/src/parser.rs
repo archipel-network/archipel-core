@@ -1,6 +1,6 @@
-use crate::{TransferIdentifier, message::{METADATA_FLAG, Message, MessageHeader, MessageType, Metadata, TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage}};
+//! Parser for Bundle Transport Protocol unidirectional messages
 
-///! Parser for Bundle Transport Protocol unidirectional messages
+use crate::{TransferIdentifier, message::{METADATA_FLAG, Message, MessageHeader, MessageType, Metadata, TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage}};
 
 /// Parser struct
 pub struct Parser;
