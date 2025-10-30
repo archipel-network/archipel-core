@@ -1,6 +1,12 @@
 //! Parser for Bundle Transport Protocol unidirectional messages
 
-use crate::{TransferIdentifier, message::{METADATA_FLAG, Message, MessageContent, MessageHeader, MessageType, Metadata, TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage}};
+use crate::{
+    TransferIdentifier,
+    message::{
+        METADATA_FLAG, Message, MessageContent, MessageHeader, MessageType, Metadata,
+        TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage,
+    },
+};
 
 /// Parser struct
 pub struct Parser;
@@ -19,7 +25,7 @@ pub enum ParseError {
     /// Parsing of Bundle length metadata failed
     InvalidBundleLengthMetadata,
     /// Invalid message content
-    InvalidContent
+    InvalidContent,
 }
 
 impl TryFrom<u8> for MessageType {
@@ -33,165 +39,177 @@ impl TryFrom<u8> for MessageType {
             3 => Ok(Self::TransferStart),
             4 => Ok(Self::TransferSegment),
             5 => Ok(Self::TransferCancel),
-            other => Err(other)
+            other => Err(other),
         }
     }
 }
 
 macro_rules! parser_get {
     ($source:expr, $range:expr) => {
-        $source.get($range)
+        $source
+            .get($range)
             .ok_or(ParseError::IncompleteInput)
             .and_then(|it| it.try_into().map_err(|_| ParseError::IncompleteInput))
     };
 }
 
 impl Parser {
-
     /// Create a new parser
     pub fn new() -> Self {
         Parser
     }
-    
+
     /// Parse a full message with content slice
-    pub fn parse_message<'a>(&mut self, buffer: &'a [u8]) -> Result<(Message<'a>, usize), ParseError> {
-        let (header, header_length) = self.parse_message_header(buffer)?;
-        let content_length = header.content_length;
-        
+    pub fn parse_message<'a>(
+        &mut self,
+        buffer: &'a [u8],
+    ) -> Result<(Message<'a>, usize), ParseError> {
+        let (header, mut bytes_read) = self.parse_message_header(buffer)?;
+        let (metadata, metadata_length) = if (header.flags & METADATA_FLAG) == METADATA_FLAG {
+            let (meta, length) = self.parse_metadata(&buffer[4..])?;
+            bytes_read += length;
+            (Some(meta), length)
+        } else {
+            (None, 0)
+        };
+
+        let content_length = header.length as usize - metadata_length;
+
         // Special case for indefinite padding message
         if matches!(header.kind, MessageType::IndefinitePadding) {
             let mut padding_length = 0;
-            for char in &buffer[header_length..] {
-                if char == &('\0' as u8) {
+            for char in &buffer[bytes_read..] {
+                if char == &b'\0' {
                     padding_length += 1;
                 } else {
                     return Ok((
                         Message {
-                            content: MessageContent::IndefinitePadding(&buffer[header_length..(header_length+padding_length)]),
-                            metadata: header.metadata
+                            content: MessageContent::IndefinitePadding(
+                                &buffer[bytes_read..(bytes_read + padding_length)],
+                            ),
+                            metadata,
                         },
-                        header_length+padding_length
+                        bytes_read + padding_length,
                     ));
                 }
             }
-            return Err(ParseError::MaybeIncompleteInput)
+            return Err(ParseError::MaybeIncompleteInput);
         }
 
-        let content_buffer = &buffer.get(header_length..(header_length+content_length as usize))
+        let content_buffer = &buffer
+            .get(bytes_read..(bytes_read + content_length))
             .ok_or(ParseError::IncompleteInput)?;
-        if content_buffer.len() < content_length as usize {
-            return Err(ParseError::IncompleteInput)
-        }
 
         match header.kind {
-            MessageType::IndefinitePadding => 
-                panic!("Idefinite padding message should be handled before"),
-            MessageType::DefinitePadding => {
-                Ok((
-                    Message { content: MessageContent::DefinitePadding(content_buffer), metadata: header.metadata },
-                    header_length+content_length as usize
-                ))
-            },
-            MessageType::Bundle => {
-                Ok((
-                    Message { content: MessageContent::BundleMessage(content_buffer), metadata: header.metadata },
-                    header_length+content_length as usize
-                ))
-            },
+            MessageType::IndefinitePadding => {
+                panic!("Idefinite padding message should be handled before")
+            }
+            MessageType::DefinitePadding => Ok((
+                Message {
+                    content: MessageContent::DefinitePadding(content_buffer),
+                    metadata,
+                },
+                bytes_read + content_length,
+            )),
+            MessageType::Bundle => Ok((
+                Message {
+                    content: MessageContent::BundleMessage(content_buffer),
+                    metadata,
+                },
+                bytes_read + content_length,
+            )),
             MessageType::TransferStart => {
-                let transfert_number_bytes: [u8; 4] = parser_get!(content_buffer, 0..4)?;
-                let transfert_number = u32::from_be_bytes(transfert_number_bytes);
-
-                let segment_index_bytes: [u8; 4] = parser_get!(content_buffer, 4..8)?;
-                let segment_index = u32::from_be_bytes(segment_index_bytes);
+                let transfert_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
+                let segment_index = u32::from_be_bytes(parser_get!(content_buffer, 4..8)?);
 
                 Ok((
-                    Message { content: MessageContent::TransferStart(TransfertStartMessage {
-                        transfert_number: TransferIdentifier(transfert_number),
-                        segment_index: segment_index,
-                        data: &content_buffer[8..]
-                    }), metadata: header.metadata },
-                    header_length+content_length as usize
+                    Message {
+                        content: MessageContent::TransferStart(TransfertStartMessage {
+                            transfert_number: TransferIdentifier(transfert_number),
+                            segment_index,
+                            data: &content_buffer[8..],
+                        }),
+                        metadata,
+                    },
+                    bytes_read + content_length,
                 ))
-            },
+            }
             MessageType::TransferSegment => {
-                let transfert_number_bytes: [u8; 4] = parser_get!(content_buffer, 0..4)?;
-                let transfert_number = u32::from_be_bytes(transfert_number_bytes);
-
-                let segment_index_bytes: [u8; 4] = parser_get!(content_buffer, 4..8)?;
-                let segment_index = u32::from_be_bytes(segment_index_bytes);
+                let transfert_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
+                let segment_index = u32::from_be_bytes(parser_get!(content_buffer, 4..8)?);
 
                 Ok((
-                    Message { content: MessageContent::TransferSegment(TransfertSegmentMessage {
-                        transfert_number: TransferIdentifier(transfert_number),
-                        segment_index: segment_index,
-                        data: &content_buffer[8..]
-                    }), metadata: header.metadata },
-                    header_length+content_length as usize
+                    Message {
+                        content: MessageContent::TransferSegment(TransfertSegmentMessage {
+                            transfert_number: TransferIdentifier(transfert_number),
+                            segment_index,
+                            data: &content_buffer[8..],
+                        }),
+                        metadata,
+                    },
+                    bytes_read + content_length,
                 ))
-            },
+            }
             MessageType::TransferCancel => {
                 if content_buffer.len() != 4 {
                     return Err(ParseError::InvalidContent);
                 }
 
-                let transfert_number_bytes: [u8; 4] = parser_get!(content_buffer, 0..4)?;
-                let transfert_number = u32::from_be_bytes(transfert_number_bytes);
+                let transfert_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
 
                 Ok((
-                    Message { content: MessageContent::TransferCancel(TransfertCancelMessage {
-                        transfert_number: TransferIdentifier(transfert_number)
-                    }), metadata: header.metadata},
-                    header_length+4
+                    Message {
+                        content: MessageContent::TransferCancel(TransfertCancelMessage {
+                            transfert_number: TransferIdentifier(transfert_number),
+                        }),
+                        metadata,
+                    },
+                    bytes_read + 4,
                 ))
-            },
+            }
         }
     }
 
     /// Parse a message header from a buffer
-    pub fn parse_message_header(&mut self, buffer: &[u8]) -> Result<(MessageHeader, usize), ParseError> {
-        let kind_bytes: [u8;1] = parser_get!(buffer, 0..1)?;
+    ///
+    /// Returns a tuple of [MessageHeader] and the number of bytes read on success
+    pub fn parse_message_header(
+        &mut self,
+        buffer: &[u8],
+    ) -> Result<(MessageHeader, usize), ParseError> {
+        let kind_bytes: [u8; 1] = parser_get!(buffer, 0..1)?;
         let kind = MessageType::try_from(u8::from_be_bytes(kind_bytes))
-            .map_err(|other| ParseError::UnknownType(other))?;
-    
-        if matches!(kind, MessageType::IndefinitePadding){
-            return Ok((MessageHeader {
-                kind: kind,
-                flags: 0,
-                length: 0,
-                content_length: 0,
-                metadata: None
-            }, 1));
+            .map_err(ParseError::UnknownType)?;
+
+        if matches!(kind, MessageType::IndefinitePadding) {
+            return Ok((
+                MessageHeader {
+                    kind,
+                    flags: 0,
+                    length: 0,
+                },
+                1,
+            ));
         }
 
-        let flags_bytes: [u8;1] = parser_get!(buffer, 1..2)?;
+        let flags_bytes: [u8; 1] = parser_get!(buffer, 1..2)?;
 
-        let flags: u8 = ( u8::from_be_bytes(flags_bytes) & 0b11110000 ) >> 4;
+        let flags: u8 = (u8::from_be_bytes(flags_bytes) & 0b11110000) >> 4;
 
         let length_byte: [u8; 3] = parser_get!(buffer, 1..4)?;
-        let mut length_bytes_buffer = [0_u8;4];
+        let mut length_bytes_buffer = [0_u8; 4];
         length_bytes_buffer.as_mut_slice()[1..4].copy_from_slice(&length_byte);
         length_bytes_buffer[1] &= 0b00001111;
 
         let length = u32::from_be_bytes(length_bytes_buffer);
-        let mut content_length = length;
 
-        let mut byte_red = 4;
-
-        return Ok((
+        Ok((
             MessageHeader {
                 kind,
-                flags, 
+                flags,
                 length,
-                metadata: if (flags & METADATA_FLAG) == METADATA_FLAG {
-                    let (meta, length) = self.parse_metadata(&buffer[4..])?;
-                    byte_red += length;
-                    content_length -= length as u32;
-                    Some(meta)
-                } else { None },
-                content_length
             },
-            byte_red
+            4,
         ))
     }
 
@@ -203,49 +221,57 @@ impl Parser {
         let length_bytes = parser_get!(buffer, 1..2)?;
         let length = u8::from_be_bytes(length_bytes);
 
-        return match kind {
+        match kind {
             1 => match length {
                 1 => {
                     let bytes: [u8; 1] = parser_get!(buffer, 2..3)?;
                     let bundle_length = u8::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 3))
-                },
+                }
                 2 => {
                     let bytes: [u8; 2] = parser_get!(buffer, 2..4)?;
                     let bundle_length = u16::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 4))
-                },
+                }
                 4 => {
                     let bytes: [u8; 4] = parser_get!(buffer, 2..6)?;
                     let bundle_length = u32::from_be_bytes(bytes);
                     Ok((Metadata::BundleLength(bundle_length as u64), 6))
-                },
+                }
                 8 => {
                     let bytes: [u8; 8] = parser_get!(buffer, 2..10)?;
                     let bundle_length = u64::from_be_bytes(bytes);
-                    Ok((Metadata::BundleLength(bundle_length as u64), 10))
-                },
-                _ => Err(ParseError::InvalidBundleLengthMetadata)
-            }
-            other => Err(ParseError::UnknownMetadataType(other))
+                    Ok((Metadata::BundleLength(bundle_length), 10))
+                }
+                _ => Err(ParseError::InvalidBundleLengthMetadata),
+            },
+            other => Err(ParseError::UnknownMetadataType(other)),
         }
     }
+}
 
+impl Default for Parser {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{TransferIdentifier, message::{METADATA_FLAG, MessageContent, MessageHeader, MessageType, Metadata}, parser::{ParseError, Parser}};
-
+    use crate::{
+        TransferIdentifier,
+        message::{METADATA_FLAG, MessageContent, MessageHeader, MessageType, Metadata},
+        parser::{ParseError, Parser},
+    };
 
     #[test]
-    fn indefinite_padding_message(){
+    fn indefinite_padding_message() {
         let bytes = [
-                    0x0, // Type
-                    0x0, // Flags & length
-                    0x0, 0x0, // length
-                    0x0, 0x0, 0x0, 0x0, 0x1, 
-                ];
+            0x0, // Type
+            0x0, // Flags & length
+            0x0, 0x0, // length
+            0x0, 0x0, 0x0, 0x0, 0x1,
+        ];
 
         let (message, bytes_red) = Parser::new()
             .parse_message(&bytes)
@@ -254,25 +280,29 @@ mod test {
         let MessageContent::IndefinitePadding(padding_content) = message.content else {
             panic!("Expected Indefinite length padding message");
         };
-        
+
         assert_eq!(message.metadata, None);
         assert_eq!(bytes_red, 8);
         assert_eq!(padding_content.len(), 7);
     }
 
     #[test]
-    fn bundle_message(){
+    fn bundle_message() {
         let bytes = [
-                    0x2, // Type
-                    0x0, // Flags & length
-                    0x0, 121, // length
-                    // Bundle content
-                    0x9f,0x89,0x07,0x00,0x01,0x82,0x01,0x71,0x2f,0x2f,0x65,0x78,0x61,0x6d,0x70,0x6c,0x65,0x2e,0x6f,0x72,0x67,0x2f,0x6c,0x6f,0x67,0x82,0x01,0x78,0x33,0x2f,
-                    0x2f,0x65,0x70,0x69,0x63,0x6b,0x69,0x77,0x69,0x2e,0x64,0x74,0x6e,0x2f,0x36,0x65,0x31,0x34,0x32,0x39,0x37,0x32,0x2d,0x35,0x35,0x65,0x32,0x2d,0x34,0x33,
-                    0x63,0x37,0x2d,0x38,0x64,0x62,0x32,0x2d,0x37,0x31,0x65,0x31,0x63,0x65,0x38,0x31,0x66,0x33,0x31,0x62,0x82,0x01,0x00,0x82,0x1b,0x00,0x00,0x00,0xbd,0xc4,
-                    0x7b,0xae,0x02,0x01,0x1a,0x05,0x26,0x5c,0x00,0x42,0x58,0xbc,0x85,0x01,0x01,0x00,0x00,0x4c,0x48,0x65,0x6c,0x6c,0x6f,0x20,0x77,0x6f,0x72,0x6c,0x64,0x0a,
-                    0xff
-                ];
+            0x2, // Type
+            0x0, // Flags & length
+            0x0, 121, // length
+            // Bundle content
+            0x9f, 0x89, 0x07, 0x00, 0x01, 0x82, 0x01, 0x71, 0x2f, 0x2f, 0x65, 0x78, 0x61, 0x6d,
+            0x70, 0x6c, 0x65, 0x2e, 0x6f, 0x72, 0x67, 0x2f, 0x6c, 0x6f, 0x67, 0x82, 0x01, 0x78,
+            0x33, 0x2f, 0x2f, 0x65, 0x70, 0x69, 0x63, 0x6b, 0x69, 0x77, 0x69, 0x2e, 0x64, 0x74,
+            0x6e, 0x2f, 0x36, 0x65, 0x31, 0x34, 0x32, 0x39, 0x37, 0x32, 0x2d, 0x35, 0x35, 0x65,
+            0x32, 0x2d, 0x34, 0x33, 0x63, 0x37, 0x2d, 0x38, 0x64, 0x62, 0x32, 0x2d, 0x37, 0x31,
+            0x65, 0x31, 0x63, 0x65, 0x38, 0x31, 0x66, 0x33, 0x31, 0x62, 0x82, 0x01, 0x00, 0x82,
+            0x1b, 0x00, 0x00, 0x00, 0xbd, 0xc4, 0x7b, 0xae, 0x02, 0x01, 0x1a, 0x05, 0x26, 0x5c,
+            0x00, 0x42, 0x58, 0xbc, 0x85, 0x01, 0x01, 0x00, 0x00, 0x4c, 0x48, 0x65, 0x6c, 0x6c,
+            0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x0a, 0xff,
+        ];
 
         let (message, bytes_red) = Parser::new()
             .parse_message(&bytes)
@@ -281,25 +311,48 @@ mod test {
         let MessageContent::BundleMessage(bundle_content) = message.content else {
             panic!("Expected bundle message");
         };
-        
+
         assert_eq!(message.metadata, None);
         assert_eq!(bytes_red, 125);
         assert_eq!(bundle_content.len(), 121);
     }
 
     #[test]
-    fn transfer_start_message(){
+    fn transfer_start_message() {
         let bytes = [
-                    0x3, // Type
-                    METADATA_FLAG << 4, // Flags (with metadata) & length
-                    0x0, 26, // length
-                    // Bundle length metadata
-                    1, 1, 121,
-                    0x0, 0x0, 0x0, 64, // Transfer number
-                    0x0, 0x0, 0x0, 8, // Segment index
-                    // Bundle content
-                    0x9f,0x89,0x07,0x00,0x01,0x82,0x01,0x71,0x2f,0x2f,0x65,0x78,0x61,0x6d,0x70
-                ];
+            0x3,                // Type
+            METADATA_FLAG << 4, // Flags (with metadata) & length
+            0x0,
+            26, // length
+            // Bundle length metadata
+            1,
+            1,
+            121,
+            0x0,
+            0x0,
+            0x0,
+            64, // Transfer number
+            0x0,
+            0x0,
+            0x0,
+            8, // Segment index
+            // Bundle content
+            0x9f,
+            0x89,
+            0x07,
+            0x00,
+            0x01,
+            0x82,
+            0x01,
+            0x71,
+            0x2f,
+            0x2f,
+            0x65,
+            0x78,
+            0x61,
+            0x6d,
+            0x70,
+        ];
 
         let (message, bytes_red) = Parser::new()
             .parse_message(&bytes)
@@ -308,7 +361,7 @@ mod test {
         let MessageContent::TransferStart(start_message) = message.content else {
             panic!("Expected a transfer start message");
         };
-        
+
         assert_eq!(bytes_red, 30);
         assert_eq!(message.metadata, Some(Metadata::BundleLength(121)));
         assert_eq!(start_message.transfert_number, TransferIdentifier(64));
@@ -317,16 +370,17 @@ mod test {
     }
 
     #[test]
-    fn transfer_segment_message(){
+    fn transfer_segment_message() {
         let bytes = [
-                    0x4, // Type
-                    0, // Flags (with metadata) & length
-                    0x0, 23, // length
-                    0x0, 0x0, 0x0, 64, // Transfer number
-                    0x0, 0x0, 0x0, 7, // Segment index
-                    // Bundle content
-                    0x6c,0x65,0x2e,0x6f,0x72,0x67,0x2f,0x6c,0x6f,0x67,0x82,0x01,0x78,0x33,0x2f
-                ];
+            0x4, // Type
+            0,   // Flags (with metadata) & length
+            0x0, 23, // length
+            0x0, 0x0, 0x0, 64, // Transfer number
+            0x0, 0x0, 0x0, 7, // Segment index
+            // Bundle content
+            0x6c, 0x65, 0x2e, 0x6f, 0x72, 0x67, 0x2f, 0x6c, 0x6f, 0x67, 0x82, 0x01, 0x78, 0x33,
+            0x2f,
+        ];
 
         let (message, bytes_red) = Parser::new()
             .parse_message(&bytes)
@@ -335,7 +389,7 @@ mod test {
         let MessageContent::TransferSegment(start_message) = message.content else {
             panic!("Expected a transfer segment message");
         };
-        
+
         assert_eq!(bytes_red, 27);
         assert_eq!(message.metadata, None);
         assert_eq!(start_message.transfert_number, TransferIdentifier(64));
@@ -344,13 +398,13 @@ mod test {
     }
 
     #[test]
-    fn transfer_cancel_message(){
+    fn transfer_cancel_message() {
         let bytes = [
-                    0x5, // Type
-                    0, // Flags (with metadata) & length
-                    0x0, 4, // length
-                    0x0, 0x0, 0x0, 64, // Transfer number
-                ];
+            0x5, // Type
+            0,   // Flags (with metadata) & length
+            0x0, 4, // length
+            0x0, 0x0, 0x0, 64, // Transfer number
+        ];
 
         let (message, bytes_red) = Parser::new()
             .parse_message(&bytes)
@@ -359,117 +413,141 @@ mod test {
         let MessageContent::TransferCancel(cancel_message) = message.content else {
             panic!("Expected a transfer cancel message");
         };
-        
+
         assert_eq!(bytes_red, 8);
         assert_eq!(message.metadata, None);
         assert_eq!(cancel_message.transfert_number, TransferIdentifier(64));
     }
     #[test]
-    fn incomplete_input(){
+    fn incomplete_input() {
         let bytes = [
-                    0x3, // Type
-                    METADATA_FLAG << 4, // Flags (with metadata) & length
-                    0x0, 26, // length
-                    // Bundle length metadata
-                    1, 1, 121,
-                    0x0, /* ...incomplete input... */
-                ];
+            0x3,                // Type
+            METADATA_FLAG << 4, // Flags (with metadata) & length
+            0x0,
+            26, // length
+            // Bundle length metadata
+            1,
+            1,
+            121,
+            0x0, /* ...incomplete input... */
+        ];
 
-        let Err(error) = Parser::new()
-            .parse_message(&bytes) else {
-                panic!("Parsing should fail");
+        let Err(error) = Parser::new().parse_message(&bytes) else {
+            panic!("Parsing should fail");
         };
         assert_eq!(error, ParseError::IncompleteInput)
     }
 
     #[test]
-    fn big_message(){
+    fn big_message() {
         assert_eq!(
-            Parser::new()
-                .parse_message_header(&[
-                    3, // Type
-                    0x0, // Flags & length
-                    0x0, 0x0F // length
-                ]),
-            Ok((MessageHeader {
-                kind: MessageType::TransferStart,
-                flags: 0,
-                length: 15,
-                content_length: 15,
-                metadata: None
-            }, 4))
+            Parser::new().parse_message_header(&[
+                3,   // Type
+                0x0, // Flags & length
+                0x0, 0x0F // length
+            ]),
+            Ok((
+                MessageHeader {
+                    kind: MessageType::TransferStart,
+                    flags: 0,
+                    length: 15,
+                },
+                4
+            ))
         );
     }
 
     #[test]
-    fn big_message_with_meta(){
+    fn big_message_with_meta() {
         assert_eq!(
-            Parser::new()
-                .parse_message_header(&[
-                    3, // Type
-                    0b10000000 | 0x03, // Flags (with metadata) & length
-                    0xff, 0x75, // length
-                    1, 1, 10
-                ]),
-            Ok((MessageHeader {
-                kind: MessageType::TransferStart,
-                flags: METADATA_FLAG,
-                length: 262005,
-                content_length: 262005 - 3,
-                metadata: Some(Metadata::BundleLength(10))
-            }, 7))
+            Parser::new().parse_message_header(&[
+                3,                 // Type
+                0b10000000 | 0x03, // Flags (with metadata) & length
+                0xff,
+                0x75, // length
+                1,
+                1,
+                10
+            ]),
+            Ok((
+                MessageHeader {
+                    kind: MessageType::TransferStart,
+                    flags: METADATA_FLAG,
+                    length: 262005
+                },
+                4
+            ))
         );
 
         assert_eq!(
-            Parser::new()
-                .parse_message_header(&[
-                    3, // Type
-                    0b10000000 | 0x03, // Flags (with metadata) & length
-                    0xff, 0x75, // length
-                    1, 2, 0, 10
-                ]),
-            Ok((MessageHeader {
-                kind: MessageType::TransferStart,
-                flags: METADATA_FLAG,
-                length: 262005,
-                content_length: 262005 - 4,
-                metadata: Some(Metadata::BundleLength(10))
-            }, 8))
+            Parser::new().parse_message_header(&[
+                3,                 // Type
+                0b10000000 | 0x03, // Flags (with metadata) & length
+                0xff,
+                0x75, // length
+                1,
+                2,
+                0,
+                10
+            ]),
+            Ok((
+                MessageHeader {
+                    kind: MessageType::TransferStart,
+                    flags: METADATA_FLAG,
+                    length: 262005
+                },
+                4
+            ))
         );
 
         assert_eq!(
-            Parser::new()
-                .parse_message_header(&[
-                    3, // Type
-                    0b10000000 | 0x03, // Flags (with metadata) & length
-                    0xff, 0x75, // length
-                    1, 4, 0, 0, 0, 10
-                ]),
-            Ok((MessageHeader {
-                kind: MessageType::TransferStart,
-                flags: METADATA_FLAG,
-                length: 262005,
-                content_length: 262005 - 6,
-                metadata: Some(Metadata::BundleLength(10))
-            }, 10))
+            Parser::new().parse_message_header(&[
+                3,                 // Type
+                0b10000000 | 0x03, // Flags (with metadata) & length
+                0xff,
+                0x75, // length
+                1,
+                4,
+                0,
+                0,
+                0,
+                10
+            ]),
+            Ok((
+                MessageHeader {
+                    kind: MessageType::TransferStart,
+                    flags: METADATA_FLAG,
+                    length: 262005,
+                },
+                4
+            ))
         );
 
         assert_eq!(
-            Parser::new()
-                .parse_message_header(&[
-                    3, // Type
-                    0b10000000 | 0x03, // Flags (with metadata) & length
-                    0xff, 0x75, // length
-                    1, 8, 0, 0, 0, 0, 0, 0, 0, 10
-                ]),
-            Ok((MessageHeader {
-                kind: MessageType::TransferStart,
-                flags: METADATA_FLAG,
-                length: 262005,
-                content_length: 262005 - 10,
-                metadata: Some(Metadata::BundleLength(10))
-            }, 14))
+            Parser::new().parse_message_header(&[
+                3,                 // Type
+                0b10000000 | 0x03, // Flags (with metadata) & length
+                0xff,
+                0x75, // length
+                1,
+                8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                10
+            ]),
+            Ok((
+                MessageHeader {
+                    kind: MessageType::TransferStart,
+                    flags: METADATA_FLAG,
+                    length: 262005,
+                },
+                4
+            ))
         );
     }
-
 }

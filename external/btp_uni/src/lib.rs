@@ -4,12 +4,10 @@
 
 //! If a [Bundle] is larger than a single PDU, the [Bundle] needs to be divided into multiple segments
 
-pub mod parser;
 pub mod message;
+pub mod parser;
 pub mod receiver;
 pub mod sender;
-
-//TODO Use Definite Padding Message
 
 /// Error to return when transfer window creation fails
 pub enum TransferWindowError {

@@ -15,7 +15,7 @@
 use crate::TransferIdentifier;
 
 /// Flag indicating that further metdata is included in message
-pub const METADATA_FLAG: u8 = 0b1000;
+pub const METADATA_FLAG: u8 = 0b00001000;
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,10 +40,12 @@ pub enum MessageType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Metadata {
     /// Ful length of bundle to be transfered (section 9.1)
-    BundleLength(u64)
+    BundleLength(u64), // pub struct Metadata {
+                       //     kind: MessageType,
+                       //     length: u8,
+                       //     content: [u8; 8],
 }
 
-#[repr(packed)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Header of any message
 pub struct MessageHeader {
@@ -51,12 +53,22 @@ pub struct MessageHeader {
     pub kind: MessageType,
     /// Flags added to this message (section 7.1)
     pub flags: u8,
-    /// Length of message including metadata (prefer content_length insteand)
+    /// Length of message including metadata
     pub length: u32,
-    /// Length of content of this message
-    pub content_length: u32,
-    /// An optional metadata field included in message
-    pub metadata: Option<Metadata>
+}
+
+impl From<MessageHeader> for [u8; 4] {
+    fn from(value: MessageHeader) -> Self {
+        let length_array = value.length.to_be_bytes();
+        let flags_length_mix: u8 =
+            ((value.flags << 4) & 0b11110000) | (length_array[0] & 0b00001111);
+        [
+            value.kind as u8,
+            flags_length_mix,
+            length_array[2],
+            length_array[3],
+        ]
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,7 +79,7 @@ pub struct TransfertStartMessage<'a> {
     /// index of first segment in this transfert
     pub segment_index: u32,
     /// Data of first segment in transfert
-    pub data: &'a [u8]
+    pub data: &'a [u8],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,14 +90,14 @@ pub struct TransfertSegmentMessage<'a> {
     /// Index of this segment
     pub segment_index: u32,
     /// Data of this segment
-    pub data: &'a [u8]
+    pub data: &'a [u8],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Message cancelling a transfert
 pub struct TransfertCancelMessage {
     /// Identifier of cancelled transfert
-    pub transfert_number: TransferIdentifier
+    pub transfert_number: TransferIdentifier,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,23 +114,23 @@ pub enum MessageContent<'a> {
     /// A segment transfert message (section 8.3)
     TransferSegment(TransfertSegmentMessage<'a>),
     /// A transfert cancellation message (section 8.4)
-    TransferCancel(TransfertCancelMessage)
+    TransferCancel(TransfertCancelMessage),
 }
 
 /// A message sent or received
 pub struct Message<'a> {
     /// Content of this message
     pub content: MessageContent<'a>,
-    /// Optional metadata of this message
-    pub metadata: Option<Metadata>
+    /// Optional metadata for this message
+    pub metadata: Option<Metadata>,
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::message::Message;
+    use crate::message::MessageHeader;
 
     #[test]
     fn message_size() {
-        assert_eq!(size_of::<Message>() * 8, 32);
+        assert_eq!(size_of::<MessageHeader>() * 8, 32);
     }
 }
