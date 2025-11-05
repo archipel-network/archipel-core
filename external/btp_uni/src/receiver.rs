@@ -1,6 +1,6 @@
 //! A module containing the bundle transfer protocol receiver logic
 
-use crate::{Segment, TransferWindow};
+use crate::{TransferWindow, message::Segment};
 
 /// A bundle transfer protocol receiver
 #[derive(Default)]

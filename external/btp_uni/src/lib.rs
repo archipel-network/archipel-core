@@ -8,6 +8,7 @@ pub mod message;
 pub mod parser;
 pub mod receiver;
 pub mod sender;
+pub mod serializer;
 
 /// Error to return when transfer window creation fails
 pub enum TransferWindowError {
@@ -83,17 +84,11 @@ impl TransferIdentifier {
     pub fn next(self) -> Self {
         Self(self.0.wrapping_add(1))
     }
-}
 
-/// A fragment of a divided [Bundle] that didn't fit entirely in a PDU
-pub struct Segment {
-    /// A monotonically decreasing integral index that indicates the relative position
-    /// of the [Segment] within the total sequence of [Segment]s
-    ///
-    /// `0` indicates the final segment
-    index: usize,
-    /// The ifentifier of the associated transfer of segments' sequence
-    transfer_identifier: TransferIdentifier,
+    /// Returns the memory representation of this identifier as a byte array in big-endian (network) byte order.
+    pub fn to_be_bytes(self) -> [u8; 4] {
+        self.0.to_be_bytes()
+    }
 }
 
 #[cfg(test)]
@@ -123,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_transfert() {
+    fn invalid_transfer() {
         let mut window = TransferWindow {
             greatest_transfer_identifier: Some(20),
             size: 16,

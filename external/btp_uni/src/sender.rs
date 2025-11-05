@@ -1,6 +1,6 @@
 //! A module containing the bundle transfer protocol sender logic
 
-use crate::{Segment, TransferWindow};
+use crate::{TransferWindow, message::Segment};
 
 /// A bundle transfer protocol sender
 pub struct Sender {

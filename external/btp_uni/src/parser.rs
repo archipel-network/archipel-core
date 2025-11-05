@@ -3,12 +3,11 @@
 use crate::{
     TransferIdentifier,
     message::{
-        METADATA_FLAG, Message, MessageContent, MessageHeader, MessageType, Metadata,
-        TransfertCancelMessage, TransfertSegmentMessage, TransfertStartMessage,
+        METADATA_FLAG, Message, MessageContent, MessageHeader, MessageType, Metadata, Segment,
     },
 };
 
-/// Parser struct
+/// Parser structure
 pub struct Parser;
 
 /// Error occuring during parsing
@@ -84,6 +83,7 @@ impl Parser {
                 } else {
                     return Ok((
                         Message {
+                            header,
                             content: MessageContent::IndefinitePadding(
                                 &buffer[bytes_read..(bytes_read + padding_length)],
                             ),
@@ -106,6 +106,7 @@ impl Parser {
             }
             MessageType::DefinitePadding => Ok((
                 Message {
+                    header,
                     content: MessageContent::DefinitePadding(content_buffer),
                     metadata,
                 },
@@ -113,20 +114,22 @@ impl Parser {
             )),
             MessageType::Bundle => Ok((
                 Message {
+                    header,
                     content: MessageContent::BundleMessage(content_buffer),
                     metadata,
                 },
                 bytes_read + content_length,
             )),
             MessageType::TransferStart => {
-                let transfert_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
+                let transfer_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
                 let segment_index = u32::from_be_bytes(parser_get!(content_buffer, 4..8)?);
 
                 Ok((
                     Message {
-                        content: MessageContent::TransferStart(TransfertStartMessage {
-                            transfert_number: TransferIdentifier(transfert_number),
-                            segment_index,
+                        header,
+                        content: MessageContent::TransferStart(Segment {
+                            index: segment_index,
+                            transfer_identifier: TransferIdentifier(transfer_number),
                             data: &content_buffer[8..],
                         }),
                         metadata,
@@ -135,14 +138,15 @@ impl Parser {
                 ))
             }
             MessageType::TransferSegment => {
-                let transfert_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
+                let transfer_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
                 let segment_index = u32::from_be_bytes(parser_get!(content_buffer, 4..8)?);
 
                 Ok((
                     Message {
-                        content: MessageContent::TransferSegment(TransfertSegmentMessage {
-                            transfert_number: TransferIdentifier(transfert_number),
-                            segment_index,
+                        header,
+                        content: MessageContent::TransferSegment(Segment {
+                            index: segment_index,
+                            transfer_identifier: TransferIdentifier(transfer_number),
                             data: &content_buffer[8..],
                         }),
                         metadata,
@@ -155,13 +159,14 @@ impl Parser {
                     return Err(ParseError::InvalidContent);
                 }
 
-                let transfert_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
+                let transfer_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
 
                 Ok((
                     Message {
-                        content: MessageContent::TransferCancel(TransfertCancelMessage {
-                            transfert_number: TransferIdentifier(transfert_number),
-                        }),
+                        header,
+                        content: MessageContent::TransferCancel(TransferIdentifier(
+                            transfer_number,
+                        )),
                         metadata,
                     },
                     bytes_read + 4,
@@ -358,15 +363,15 @@ mod test {
             .parse_message(&bytes)
             .expect("Parse should not fail");
 
-        let MessageContent::TransferStart(start_message) = message.content else {
+        let MessageContent::TransferStart(segment) = message.content else {
             panic!("Expected a transfer start message");
         };
 
         assert_eq!(bytes_red, 30);
         assert_eq!(message.metadata, Some(Metadata::BundleLength(121)));
-        assert_eq!(start_message.transfert_number, TransferIdentifier(64));
-        assert_eq!(start_message.segment_index, 8);
-        assert_eq!(start_message.data.len(), 15);
+        assert_eq!(segment.transfer_identifier, TransferIdentifier(64));
+        assert_eq!(segment.index, 8);
+        assert_eq!(segment.data.len(), 15);
     }
 
     #[test]
@@ -386,15 +391,15 @@ mod test {
             .parse_message(&bytes)
             .expect("Parse should not fail");
 
-        let MessageContent::TransferSegment(start_message) = message.content else {
+        let MessageContent::TransferSegment(segment) = message.content else {
             panic!("Expected a transfer segment message");
         };
 
         assert_eq!(bytes_red, 27);
         assert_eq!(message.metadata, None);
-        assert_eq!(start_message.transfert_number, TransferIdentifier(64));
-        assert_eq!(start_message.segment_index, 7);
-        assert_eq!(start_message.data.len(), 15);
+        assert_eq!(segment.transfer_identifier, TransferIdentifier(64));
+        assert_eq!(segment.index, 7);
+        assert_eq!(segment.data.len(), 15);
     }
 
     #[test]
@@ -410,13 +415,13 @@ mod test {
             .parse_message(&bytes)
             .expect("Parse should not fail");
 
-        let MessageContent::TransferCancel(cancel_message) = message.content else {
+        let MessageContent::TransferCancel(transfer_number) = message.content else {
             panic!("Expected a transfer cancel message");
         };
 
         assert_eq!(bytes_red, 8);
         assert_eq!(message.metadata, None);
-        assert_eq!(cancel_message.transfert_number, TransferIdentifier(64));
+        assert_eq!(transfer_number, TransferIdentifier(64));
     }
     #[test]
     fn incomplete_input() {

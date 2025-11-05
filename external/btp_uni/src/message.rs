@@ -27,11 +27,11 @@ pub enum MessageType {
     DefinitePadding = 1,
     /// Message is a single bundle message (section 8.1)
     Bundle = 2,
-    /// Message is a transfert start message (section 8.2)
+    /// Message is a transfer start message (section 8.2)
     TransferStart = 3,
-    /// Message is a segment transfert message (section 8.3)
+    /// Message is a segment transfer message (section 8.3)
     TransferSegment = 4,
-    /// Message is a transfert cancel message (Section 8.4)
+    /// Message is a transfer cancel message (Section 8.4)
     TransferCancel = 5,
     // 6 is reserved to avoid clash with BPv6
 }
@@ -44,6 +44,28 @@ pub enum Metadata {
                        //     kind: MessageType,
                        //     length: u8,
                        //     content: [u8; 8],
+}
+
+/// The size of the metadata type field in bytes
+const TYPE_SIZE: usize = 1;
+
+///The size of the metadata length field in bytes
+const LENGTH_SIZE: usize = 1;
+
+impl Metadata {
+    /// Returns the size in bytes of the metadata
+    pub fn size(&self) -> usize {
+        match self {
+            Metadata::BundleLength(length) => {
+                TYPE_SIZE
+                    + LENGTH_SIZE
+                    // Compute the needed size of the `bundle length` field in bytes
+                    + if *length < 0x10000 {
+                        if *length < 0x100 { 1 } else { 2 }
+                    } else if *length < 0x100000000 { 4 } else { 8 }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,33 +93,25 @@ impl From<MessageHeader> for [u8; 4] {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-/// Message starting a new transfert
-pub struct TransfertStartMessage<'a> {
-    /// Identifier of this transfert
-    pub transfert_number: TransferIdentifier,
-    /// index of first segment in this transfert
-    pub segment_index: u32,
-    /// Data of first segment in transfert
-    pub data: &'a [u8],
+impl MessageHeader {
+    /// Returns the memory representation of this identifier as a byte array in big-endian (network) byte order.
+    fn to_be_bytes(self) -> [u8; 4] {
+        self.into()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// A segment transfert message
-pub struct TransfertSegmentMessage<'a> {
-    /// Identifier of trnasfert this segmnt belongs to
-    pub transfert_number: TransferIdentifier,
-    /// Index of this segment
-    pub segment_index: u32,
-    /// Data of this segment
+/// A fragment of a divided [Bundle] that didn't fit entirely in a PDU
+pub struct Segment<'a> {
+    /// A monotonically decreasing integral index that indicates the relative position
+    /// of the [Segment] within the total sequence of [Segment]s
+    ///
+    /// `0` indicates the final segment
+    pub index: u32,
+    /// The ifentifier of the associated transfer of segments' sequence
+    pub transfer_identifier: TransferIdentifier,
+    /// Data of the segment in transfer
     pub data: &'a [u8],
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-/// Message cancelling a transfert
-pub struct TransfertCancelMessage {
-    /// Identifier of cancelled transfert
-    pub transfert_number: TransferIdentifier,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,28 +123,35 @@ pub enum MessageContent<'a> {
     DefinitePadding(&'a [u8]),
     /// A single bundle message (section 8.1)
     BundleMessage(&'a [u8]),
-    /// A transfert start message (section 8.2)
-    TransferStart(TransfertStartMessage<'a>),
-    /// A segment transfert message (section 8.3)
-    TransferSegment(TransfertSegmentMessage<'a>),
-    /// A transfert cancellation message (section 8.4)
-    TransferCancel(TransfertCancelMessage),
+    /// A transfer start message (section 8.2)
+    TransferStart(Segment<'a>),
+    /// A segment transfer message (section 8.3)
+    TransferSegment(Segment<'a>),
+    /// A transfer cancellation message (section 8.4)
+    TransferCancel(TransferIdentifier),
 }
 
+#[derive(Debug, PartialEq, Eq)]
 /// A message sent or received
 pub struct Message<'a> {
-    /// Content of this message
-    pub content: MessageContent<'a>,
+    /// The header of this message
+    pub header: MessageHeader,
     /// Optional metadata for this message
     pub metadata: Option<Metadata>,
+    /// Content of this message
+    pub content: MessageContent<'a>,
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::message::MessageHeader;
-
-    #[test]
-    fn message_size() {
-        assert_eq!(size_of::<MessageHeader>() * 8, 32);
-    }
+impl<'a> Message<'a> {
+    // pub fn to_be_bytes(self) -> &'a [u8] {}
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use crate::message::MessageHeader;
+
+//     #[test]
+//     fn message_size() {
+//         assert_eq!(size_of::<MessageHeader>() * 8, 32);
+//     }
+// }
