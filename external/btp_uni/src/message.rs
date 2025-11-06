@@ -49,12 +49,19 @@ pub enum Metadata {
 /// The size of the metadata type field in bytes
 const TYPE_SIZE: usize = 1;
 
-///The size of the metadata length field in bytes
+/// The size of the metadata length field in bytes
 const LENGTH_SIZE: usize = 1;
+
+/// Error occuring when trying to write data to a buffer
+pub enum WriteToError {
+    /// The provided buffer is too small
+    #[allow(missing_docs)]
+    BufferTooSmall { needs: usize, provided: usize },
+}
 
 impl Metadata {
     /// Returns the size in bytes of the metadata
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         match self {
             Metadata::BundleLength(length) => {
                 TYPE_SIZE
@@ -65,6 +72,43 @@ impl Metadata {
                     } else if *length < 0x100000000 { 4 } else { 8 }
             }
         }
+    }
+
+    /// Tries to write this [Metadata] as bytes into a buffer.
+    /// Returns the number of bytes written on success.
+    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
+        let size = self.size();
+        if buf.len() < size {
+            return Err(WriteToError::BufferTooSmall {
+                needs: size,
+                provided: buf.len(),
+            });
+        }
+        let bytes_written = match self {
+            Metadata::BundleLength(length) => {
+                buf[0] = 1;
+                let length_size = if *length < 0x10000 {
+                    if *length < 0x100 {
+                        buf[2] = *length as u8;
+                        1
+                    } else {
+                        buf[2..4].copy_from_slice(&(*length as u16).to_be_bytes());
+                        2
+                    }
+                } else if *length < 0x100000000 {
+                    buf[2..6].copy_from_slice(&(*length as u32).to_be_bytes());
+                    4
+                } else {
+                    buf[2..10].copy_from_slice(&(*length).to_be_bytes());
+                    8
+                };
+
+                buf[1] = length_size;
+                length_size as usize
+            }
+        };
+
+        Ok(TYPE_SIZE + LENGTH_SIZE + bytes_written)
     }
 }
 
@@ -95,8 +139,21 @@ impl From<MessageHeader> for [u8; 4] {
 
 impl MessageHeader {
     /// Returns the memory representation of this identifier as a byte array in big-endian (network) byte order.
-    fn to_be_bytes(self) -> [u8; 4] {
-        self.into()
+    fn to_be_bytes(&self) -> [u8; 4] {
+        self.clone().into()
+    }
+
+    /// Tries to write this [MessageHeader] as bytes into a buffer.
+    /// Returns the number of bytes written on success.
+    fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
+        if buf.len() < 4 {
+            return Err(WriteToError::BufferTooSmall {
+                needs: 4,
+                provided: buf.len(),
+            });
+        }
+        buf[..4].copy_from_slice(&self.to_be_bytes());
+        Ok(4)
     }
 }
 
@@ -112,6 +169,27 @@ pub struct Segment<'a> {
     pub transfer_identifier: TransferIdentifier,
     /// Data of the segment in transfer
     pub data: &'a [u8],
+}
+
+impl Segment<'_> {
+    /// Tries to write this [Segment] as bytes into a buffer.
+    /// Returns the number of bytes written on success.
+    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
+        // Size of the segment in bytes
+        let segment_size = 8 + self.data.len();
+        if buf.len() < segment_size {
+            return Err(WriteToError::BufferTooSmall {
+                needs: segment_size,
+                provided: buf.len(),
+            });
+        }
+
+        buf[..4].copy_from_slice(&self.index.to_be_bytes());
+        buf[4..8].copy_from_slice(&self.transfer_identifier.0.to_be_bytes());
+        buf[8..self.data.len()].copy_from_slice(self.data);
+
+        Ok(segment_size)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,6 +209,41 @@ pub enum MessageContent<'a> {
     TransferCancel(TransferIdentifier),
 }
 
+impl MessageContent<'_> {
+    /// Tries to write this [MessageContent] as bytes into a buffer.
+    /// Returns the number of bytes written on success.
+    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
+        Ok(match self {
+            MessageContent::IndefinitePadding(content)
+            | MessageContent::DefinitePadding(content)
+            | MessageContent::BundleMessage(content) => {
+                if buf.len() < content.len() {
+                    return Err(WriteToError::BufferTooSmall {
+                        needs: content.len(),
+                        provided: buf.len(),
+                    });
+                }
+
+                buf[..content.len()].copy_from_slice(content);
+                content.len()
+            }
+            MessageContent::TransferStart(segment) | MessageContent::TransferSegment(segment) => {
+                segment.write_to_buf(buf)?
+            }
+            MessageContent::TransferCancel(transfer_identifier) => {
+                if buf.len() < 4 {
+                    return Err(WriteToError::BufferTooSmall {
+                        needs: 4,
+                        provided: buf.len(),
+                    });
+                }
+                buf[..4].copy_from_slice(&transfer_identifier.0.to_be_bytes());
+                4
+            }
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 /// A message sent or received
 pub struct Message<'a> {
@@ -143,7 +256,19 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    // pub fn to_be_bytes(self) -> &'a [u8] {}
+    /// Tries to write this [Message] as bytes into a buffer.
+    /// Returns the number of bytes written on success.
+    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
+        let mut bytes_written = self.header.write_to_buf(buf)?;
+
+        if let Some(metadata) = self.metadata {
+            bytes_written += metadata.write_to_buf(&mut buf[bytes_written..])?;
+        }
+
+        bytes_written += self.content.write_to_buf(&mut buf[bytes_written..])?;
+
+        Ok(bytes_written)
+    }
 }
 
 // #[cfg(test)]
