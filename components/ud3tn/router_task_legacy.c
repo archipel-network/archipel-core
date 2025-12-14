@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
+
 #include "ud3tn/bundle.h"
 #include "ud3tn/bundle_fragmenter.h"
 #include "ud3tn/common.h"
@@ -12,6 +13,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if ROUTING_ALGORITHM == 0
 
 // COMMAND HANDLING
 
@@ -233,3 +236,5 @@ enum router_result_status router_route_bundle(struct bundle *b)
 		return br_to_rrs(proc_result.status_or_fragments);
 	return ROUTER_RESULT_OK;
 }
+
+#endif

@@ -249,6 +249,14 @@ ifeq "$(coverage)" "yes"
   ARCH_FLAGS += --coverage
 endif
 
+# Routing algorithm
+
+ifeq "$(ROUTING)" "spray_and_wait"
+  CPPFLAGS += -DROUTING_SPRAY_AND_WAIT
+else # Legacy by default
+  CPPFLAGS += -DROUTING_LEGACY
+endif
+
 ###############################################################################
 # uD3TN-Builds
 ###############################################################################

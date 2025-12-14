@@ -18,5 +18,5 @@
         "--ignore REPEATED_WORD",
         "--typedefsfile ./tools/analysis/stylecheck_typedefs.txt"
     ],
-    "C_Cpp.default.defines": ["ARCHIPEL_CORE"]
+    "C_Cpp.default.defines": ["ARCHIPEL_CORE", "ROUTING_SPRAY_AND_WAIT"]
 }

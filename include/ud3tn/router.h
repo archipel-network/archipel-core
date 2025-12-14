@@ -13,6 +13,22 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef ROUTING_LEGACY
+// Using routing in router_task_legacy.c
+#define ROUTING_ALGORITHM 0
+#endif
+
+#ifdef ROUTING_SPRAY_AND_WAIT
+// Using routing in router_task_spray_and_wait.c
+#define ROUTING_ALGORITHM 1
+#endif
+
+#ifndef ROUTING_ALGORITHM
+// By default switch to legacy routing
+#warning Archipel is building with legacy routing algorithm because no explicit routing algorithm was defined add ROUTING_LEGACY or ROUTING_SPRAY_AND_WAIT to remove this warning
+#define ROUTING_ALGORITHM 0
+#endif
+
 // Maximum number of fragments created by the router.
 #ifndef ROUTER_MAX_FRAGMENTS
 #define ROUTER_MAX_FRAGMENTS 10

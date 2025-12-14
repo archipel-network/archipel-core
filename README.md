@@ -24,10 +24,12 @@ Clone this repository (with optional `--depth 1` parameter for smaller repositor
 git clone https://github.com/EpicKiwi/archipel-core.git --depth 1 --recurse-submodules
 ```
 
+Choose your routing algorithm by defining `ROUTING` environement variable (see next section).
+
 Build
 
 ```sh-session
-make posix
+ROUTING=legacy make posix
 ```
 
 Install (as root)
@@ -37,6 +39,18 @@ make install-posix
 ```
 
 Archipel core is now installed on your machine.
+
+## Routing Algorithm
+
+Archipel core support multiple routing algorithm.
+Choosing a routing algorithm depends of your use case and how much other nodes you will meet.
+
+**`ROUTING=legacy`** Routing algorithm firstly implemented in ud3tn.
+It will forward bundle if destination matches a currently connected node or if this node can reach bundle destination regardless of distance.
+There is no wildcard forwarding or default forwarding in this routing algorithm.
+
+**`ROUTING=spray_and_wait`** Every bundle is forwarded to every contact connected to this node regardless of bundle destination every 30 seconds.
+This delay (in seconds) can be configured by `SPRAY_WAIT_ROUTING_DELAY` constant in `config.h`.
 
 ### System-wide node
 
