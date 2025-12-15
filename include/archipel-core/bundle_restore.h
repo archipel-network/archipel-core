@@ -8,11 +8,13 @@
 #include "platform/hal_store.h"
 
 enum bundle_restore_signal_type {
-    BUNDLE_RESTORE_DEST
+    BUNDLE_RESTORE_DEST,
+    BUNDLE_RESORE_ALL
 };
 
 struct bundle_restore_signal {
     enum bundle_restore_signal_type type;
+    // NULL if type != BUNDLE_RESTORE_DEST
     char* destination;
 };
 
@@ -24,9 +26,19 @@ struct bundle_restore_config {
 
 void bundle_restore_task(void* conf);
 
+/**
+    @brief Request restore task to restore all bundles currently persisted related to provided destination
+*/
 enum ud3tn_result bundle_restore_for_destination(
     QueueIdentifier_t restore_queue,
     const char* destination
+);
+
+/**
+    @brief Request restore task to restore all bundles currently persisted
+*/
+enum ud3tn_result bundle_restore_all(
+    QueueIdentifier_t restore_queue
 );
 
 #endif

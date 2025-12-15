@@ -20,25 +20,34 @@ void bundle_restore_task(void* conf){
             LOG_ERROR("BundleRestore : Error receiving message on queue");
             continue;
         }
-        if(signal.type == BUNDLE_RESTORE_DEST){
-            LOGF_INFO("BundleRestore : Should restore for %s", signal.destination);
+        switch(signal.type){
+            case BUNDLE_RESTORE_DEST:
+                LOGF_INFO("BundleRestore : Restoring bundle for %s", signal.destination);
+                free(signal.destination);
+                // And then, restore all (restoring only for one destination isn't currently supported)
+                __attribute__ ((fallthrough));
+            case BUNDLE_RESORE_ALL:
+                __attribute__((assume(signal.destination == NULL)));
 
-            struct bundle_store_popseq* seq = 
-                hal_store_popseq(config->store);
+                if(signal.type == BUNDLE_RESORE_ALL){
+                    LOG_INFO("BundleRestore : Restoring all stored bundles");
+                }
 
-            struct bundle* bundle = NULL;
-            while((bundle = hal_store_popseq_next(seq)) != NULL){
-                bundle_processor_inform(
-                    config->processor_signaling_queue,
-					(struct bundle_processor_signal) {
-						.type = BP_SIGNAL_BUNDLE_INCOMING,
-						.bundle = bundle
-                    }
-                );
-            }
-
-            hal_store_popseq_free(seq);
-            free(signal.destination);
+                struct bundle_store_popseq* seq = 
+                    hal_store_popseq(config->store);
+        
+                struct bundle* bundle = NULL;
+                while((bundle = hal_store_popseq_next(seq)) != NULL){
+                    bundle_processor_inform(
+                        config->processor_signaling_queue,
+                        (struct bundle_processor_signal) {
+                            .type = BP_SIGNAL_BUNDLE_INCOMING,
+                            .bundle = bundle
+                        }
+                    );
+                }
+        
+                hal_store_popseq_free(seq);
         }
     }
 
@@ -52,6 +61,16 @@ enum ud3tn_result bundle_restore_for_destination(
     struct bundle_restore_signal signal = (struct bundle_restore_signal) { 
         .type = BUNDLE_RESTORE_DEST,
         .destination = strdup(destination)
+    };
+    return hal_queue_try_push_to_back(restore_queue, &signal, -1);
+}
+
+enum ud3tn_result bundle_restore_all(
+    QueueIdentifier_t restore_queue
+){
+    struct bundle_restore_signal signal = (struct bundle_restore_signal) { 
+        .type = BUNDLE_RESORE_ALL,
+        .destination = NULL
     };
     return hal_queue_try_push_to_back(restore_queue, &signal, -1);
 }
