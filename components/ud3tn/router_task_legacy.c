@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if ROUTING_ALGORITHM == 0
+#ifdef ROUTING_LEGACY
 
 // COMMAND HANDLING
 

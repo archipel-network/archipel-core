@@ -12,7 +12,7 @@
 
 #include <stdbool.h>
 
-#if ROUTING_ALGORITHM == 1
+#ifdef ROUTING_SPRAY_AND_WAIT
 
 // COMMAND HANDLING
 
