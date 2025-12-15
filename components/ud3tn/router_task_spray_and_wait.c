@@ -11,18 +11,9 @@
 #include "platform/hal_time.h"
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 #ifdef ROUTING_SPRAY_AND_WAIT
-
-// COMMAND HANDLING
-
-enum ud3tn_result router_process_command(
-	struct router_command *command,
-	struct rescheduling_handle rescheduler)
-{
-	LOG_ERROR("process_router_command not yet implemented");
-	return UD3TN_OK;
-}
 
 // BUNDLE HANDLING
 
