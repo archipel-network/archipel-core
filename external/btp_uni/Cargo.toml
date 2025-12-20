@@ -10,3 +10,4 @@ license = "GPL-3.0-or-later"
 crate-type = ["staticlib"]
 
 [dependencies]
+heapless = "0.9.1"

@@ -21,7 +21,7 @@ pub enum TransferWindowError {
 /// A sliding window to know if a transfer is valid or needs to be rejected
 pub struct TransferWindow {
     size: u32,
-    greatest_transfer_identifier: Option<u32>,
+    greatest_transfer_identifier: Option<TransferIdentifier>,
 }
 
 impl Default for TransferWindow {
@@ -53,7 +53,7 @@ impl TransferWindow {
     /// Checks if the provided `id` is in window
     pub fn is_in(&self, id: TransferIdentifier) -> bool {
         self.greatest_transfer_identifier.is_none_or(|g_id| {
-            let greater = g_id as i32;
+            let greater = g_id.0 as i32;
             let distance = greater.wrapping_sub(id.0 as i32);
             (distance as u32) < self.size
         })
@@ -62,14 +62,14 @@ impl TransferWindow {
     /// Checks if the provided `id` is greater than the upper limit of the window
     pub fn is_new(&self, id: TransferIdentifier) -> bool {
         self.greatest_transfer_identifier.is_none_or(|g_id| {
-            let greatest = g_id as i32;
+            let greatest = g_id.0 as i32;
             greatest.wrapping_sub(id.0 as i32).is_negative()
         })
     }
 
     /// Slide the window to the provided `id` as an upper limit
     pub fn slide_to(&mut self, id: TransferIdentifier) {
-        self.greatest_transfer_identifier = Some(id.0)
+        self.greatest_transfer_identifier = Some(id)
     }
 }
 
@@ -120,13 +120,13 @@ mod tests {
     #[test]
     fn invalid_transfer() {
         let mut window = TransferWindow {
-            greatest_transfer_identifier: Some(20),
+            greatest_transfer_identifier: Some(TransferIdentifier(20)),
             size: 16,
         };
 
         assert!(!window.is_in(TransferIdentifier(4)));
 
-        window.greatest_transfer_identifier = Some(2);
+        window.greatest_transfer_identifier = Some(TransferIdentifier(2));
 
         assert!(!window.is_in(TransferIdentifier(2u32.wrapping_sub(17))))
     }

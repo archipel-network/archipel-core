@@ -17,6 +17,9 @@ use crate::TransferIdentifier;
 /// Flag indicating that further metdata is included in message
 pub const METADATA_FLAG: u8 = 0b00001000;
 
+/// Size of a message header in bytes
+pub const MESSAGE_HEADER_SIZE: usize = 4;
+
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Message type defined in message header
@@ -139,21 +142,21 @@ impl From<MessageHeader> for [u8; 4] {
 
 impl MessageHeader {
     /// Returns the memory representation of this identifier as a byte array in big-endian (network) byte order.
-    fn to_be_bytes(&self) -> [u8; 4] {
+    fn to_be_bytes(&self) -> [u8; MESSAGE_HEADER_SIZE] {
         self.clone().into()
     }
 
     /// Tries to write this [MessageHeader] as bytes into a buffer.
     /// Returns the number of bytes written on success.
     fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
-        if buf.len() < 4 {
+        if buf.len() < MESSAGE_HEADER_SIZE {
             return Err(WriteToError::BufferTooSmall {
-                needs: 4,
+                needs: MESSAGE_HEADER_SIZE,
                 provided: buf.len(),
             });
         }
-        buf[..4].copy_from_slice(&self.to_be_bytes());
-        Ok(4)
+        buf[..MESSAGE_HEADER_SIZE].copy_from_slice(&self.to_be_bytes());
+        Ok(MESSAGE_HEADER_SIZE)
     }
 }
 
@@ -190,84 +193,129 @@ impl Segment<'_> {
 
         Ok(segment_size)
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-/// Content of message
-pub enum MessageContent<'a> {
-    /// An indefinite length padding message (section 8.6)
-    IndefinitePadding(&'a [u8]),
-    /// A padding message (section 8.5)
-    DefinitePadding(&'a [u8]),
-    /// A single bundle message (section 8.1)
-    BundleMessage(&'a [u8]),
-    /// A transfer start message (section 8.2)
-    TransferStart(Segment<'a>),
-    /// A segment transfer message (section 8.3)
-    TransferSegment(Segment<'a>),
-    /// A transfer cancellation message (section 8.4)
-    TransferCancel(TransferIdentifier),
-}
-
-impl MessageContent<'_> {
-    /// Tries to write this [MessageContent] as bytes into a buffer.
-    /// Returns the number of bytes written on success.
-    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
-        Ok(match self {
-            MessageContent::IndefinitePadding(content)
-            | MessageContent::DefinitePadding(content)
-            | MessageContent::BundleMessage(content) => {
-                if buf.len() < content.len() {
-                    return Err(WriteToError::BufferTooSmall {
-                        needs: content.len(),
-                        provided: buf.len(),
-                    });
-                }
-
-                buf[..content.len()].copy_from_slice(content);
-                content.len()
-            }
-            MessageContent::TransferStart(segment) | MessageContent::TransferSegment(segment) => {
-                segment.write_to_buf(buf)?
-            }
-            MessageContent::TransferCancel(transfer_identifier) => {
-                if buf.len() < 4 {
-                    return Err(WriteToError::BufferTooSmall {
-                        needs: 4,
-                        provided: buf.len(),
-                    });
-                }
-                buf[..4].copy_from_slice(&transfer_identifier.0.to_be_bytes());
-                4
-            }
-        })
+    pub fn size(&self) -> usize {
+        size_of::<u32>() + size_of::<TransferIdentifier>() + self.data.len()
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-/// A message sent or received
-pub struct Message<'a> {
-    /// The header of this message
-    pub header: MessageHeader,
-    /// Optional metadata for this message
-    pub metadata: Option<Metadata>,
-    /// Content of this message
-    pub content: MessageContent<'a>,
+#[derive(PartialEq, Debug)]
+pub enum Message<'a> {
+    IndefinitePadding(usize),
+    DefinitePadding(usize),
+    Bundle {
+        content: &'a [u8],
+    },
+    TransferStart {
+        metadata: Option<Metadata>,
+        segment: Segment<'a>,
+    },
+    TransferSegment {
+        metadata: Option<Metadata>,
+        segment: Segment<'a>,
+    },
+    TransferCancel(TransferIdentifier),
 }
 
-impl<'a> Message<'a> {
+impl Message<'_> {
     /// Tries to write this [Message] as bytes into a buffer.
     /// Returns the number of bytes written on success.
     pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
-        let mut bytes_written = self.header.write_to_buf(buf)?;
+        Ok(match self {
+            Message::IndefinitePadding(size) => {
+                buf[..size + 1].fill(0);
+                size + 1
+            }
+            Message::DefinitePadding(size) => {
+                MessageHeader {
+                    kind: MessageType::DefinitePadding,
+                    flags: 0,
+                    length: *size as u32,
+                }
+                .write_to_buf(buf)?;
 
-        if let Some(metadata) = self.metadata {
-            bytes_written += metadata.write_to_buf(&mut buf[bytes_written..])?;
-        }
+                if buf.len() < (*size + MESSAGE_HEADER_SIZE) {
+                    return Err(WriteToError::BufferTooSmall {
+                        needs: *size + MESSAGE_HEADER_SIZE,
+                        provided: buf.len(),
+                    });
+                }
 
-        bytes_written += self.content.write_to_buf(&mut buf[bytes_written..])?;
+                buf[MESSAGE_HEADER_SIZE..*size + MESSAGE_HEADER_SIZE].fill(0);
+                *size + MESSAGE_HEADER_SIZE
+            }
+            Message::Bundle { content } => {
+                MessageHeader {
+                    kind: MessageType::Bundle,
+                    flags: 0,
+                    length: content.len() as u32,
+                }
+                .write_to_buf(buf)?;
 
-        Ok(bytes_written)
+                if buf.len() < content.len() {
+                    return Err(WriteToError::BufferTooSmall {
+                        needs: content.len() + MESSAGE_HEADER_SIZE,
+                        provided: buf.len(),
+                    });
+                }
+
+                buf[MESSAGE_HEADER_SIZE..content.len() + MESSAGE_HEADER_SIZE]
+                    .copy_from_slice(content);
+                content.len() + MESSAGE_HEADER_SIZE
+            }
+            Message::TransferStart { metadata, segment } => {
+                MessageHeader {
+                    kind: MessageType::TransferStart,
+                    flags: if metadata.is_some() { METADATA_FLAG } else { 0 },
+                    length: (segment.size() + metadata.map(|metadata| metadata.size()).unwrap_or(0))
+                        as u32,
+                }
+                .write_to_buf(buf)?;
+
+                let mut written = MESSAGE_HEADER_SIZE;
+
+                if let Some(metadata) = metadata {
+                    written += metadata.write_to_buf(&mut buf[MESSAGE_HEADER_SIZE..])?;
+                }
+
+                written + segment.write_to_buf(&mut buf[written..])?
+            }
+            Message::TransferSegment { metadata, segment } => {
+                MessageHeader {
+                    kind: MessageType::TransferSegment,
+                    flags: if metadata.is_some() { METADATA_FLAG } else { 0 },
+                    length: (segment.size() + metadata.map(|metadata| metadata.size()).unwrap_or(0))
+                        as u32,
+                }
+                .write_to_buf(buf)?;
+
+                let mut written = MESSAGE_HEADER_SIZE;
+
+                if let Some(metadata) = metadata {
+                    written += metadata.write_to_buf(&mut buf[MESSAGE_HEADER_SIZE..])?;
+                }
+
+                written + segment.write_to_buf(&mut buf[written..])?
+            }
+            Message::TransferCancel(transfer_identifier) => {
+                MessageHeader {
+                    kind: MessageType::TransferCancel,
+                    flags: 0,
+                    length: 4,
+                }
+                .write_to_buf(buf)?;
+
+                if buf.len() < 4 + MESSAGE_HEADER_SIZE {
+                    return Err(WriteToError::BufferTooSmall {
+                        needs: 4 + MESSAGE_HEADER_SIZE,
+                        provided: buf.len(),
+                    });
+                }
+                buf[MESSAGE_HEADER_SIZE..4 + MESSAGE_HEADER_SIZE]
+                    .copy_from_slice(&transfer_identifier.0.to_be_bytes());
+                4 + MESSAGE_HEADER_SIZE
+            }
+        })
     }
 }
 
