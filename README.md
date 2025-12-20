@@ -49,8 +49,9 @@ Choosing a routing algorithm depends of your use case and how much other nodes y
 It will forward bundle if destination matches a currently connected node or if this node can reach bundle destination regardless of distance.
 There is no wildcard forwarding or default forwarding in this routing algorithm.
 
-**`ROUTING=spray_and_wait`** Every bundle is forwarded to every contact connected to this node regardless of bundle destination every 30 seconds.
-This delay (in seconds) can be configured by `SPRAY_WAIT_ROUTING_DELAY` constant in `config.h`.
+**`ROUTING=epidemic`** Every bundle is forwarded to every new contact connected.
+This is basic floody way of routing bundle.
+Efficient on very small network but puts heavy load on larg networks.
 
 ### System-wide node
 

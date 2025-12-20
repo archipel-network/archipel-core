@@ -251,8 +251,8 @@ endif
 
 # Routing algorithm
 
-ifeq "$(ROUTING)" "spray_and_wait"
-  CPPFLAGS += -DROUTING_SPRAY_AND_WAIT
+ifeq "$(ROUTING)" "epidemic"
+  CPPFLAGS += -DROUTING_EPIDEMIC
 else # Legacy by default
   CPPFLAGS += -DROUTING_LEGACY
 endif

@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#ifdef ROUTING_SPRAY_AND_WAIT
+#ifdef ROUTING_EPIDEMIC
 
 // BUNDLE HANDLING
 

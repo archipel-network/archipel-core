@@ -20,6 +20,6 @@
     ],
     "C_Cpp.default.defines": [
         "ARCHIPEL_CORE",
-        "ROUTING_SPRAY_AND_WAIT"
+        "ROUTING_EPIDEMIC"
     ]
 }
