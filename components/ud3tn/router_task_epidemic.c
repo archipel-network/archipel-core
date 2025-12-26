@@ -10,6 +10,8 @@
 #include "platform/hal_time.h"
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #ifdef ROUTING_EPIDEMIC
@@ -26,6 +28,7 @@ enum router_result_status router_route_bundle(struct bundle *b)
 	struct node_list* node_list = routing_table_get_node_list();
 
 	enum router_result_status status = ROUTER_RESULT_NO_ROUTE;
+	size_t bundle_serialied_size = bundle_get_serialized_size(b);
 
 	while (node_list != NULL) {
 		struct node* node = node_list->node;
@@ -33,12 +36,16 @@ enum router_result_status router_route_bundle(struct bundle *b)
 		struct contact_list* contact_list = node->contacts;
 		while(contact_list != NULL){
 			if(contact_list->data->active){
-				if(router_add_bundle_to_contact(contact_list->data, b) == UD3TN_FAIL) {
-					LOGF_ERROR("Failed to emit bundle %p to %s", b, node->eid);
+				if(ROUTER_CONTACT_CAPACITY(contact_list->data, 0) < (int32_t)(bundle_serialied_size)){
+					LOGF_INFO("Cannot send bundle %p to %s since contact capacity is less than bundle size", b, node->eid);
+					//TODO Fragment bundle here
 				} else {
-					status = ROUTER_RESULT_OK;
+					if(router_add_bundle_to_contact(contact_list->data, b) == UD3TN_FAIL) {
+						LOGF_ERROR("Failed to emit bundle %p to %s", b, node->eid);
+					} else {
+						status = ROUTER_RESULT_OK;
+					}
 				}
-				break;
 			}
 			contact_list = contact_list->next;
 		}
