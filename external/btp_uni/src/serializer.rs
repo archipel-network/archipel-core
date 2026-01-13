@@ -2,7 +2,7 @@
 
 use crate::{
     TransferIdentifier,
-    message::{MESSAGE_HEADER_SIZE, METADATA_FLAG, Message, MessageHeader, MessageType, Segment},
+    message::{MESSAGE_HEADER_SIZE, Message, Segment},
 };
 
 #[derive(Clone, Copy)]
@@ -65,134 +65,70 @@ impl<'a> MessageIter<'a> {
         }
     }
 
-    pub fn next(&mut self, pdu: PduSize) -> Option<Message> {
+    /// Returns the next [Message] of this iterator
+    pub fn next(&'_ mut self, pdu: PduSize) -> Option<Message<'_>> {
         let mut mtu = pdu.0 - MESSAGE_HEADER_SIZE;
-        if self.bytes_read == 0 {
-            if self.bundle_buffer.len() <= mtu {
-                self.bytes_read = self.bundle_buffer.len();
-                Some(Message::Bundle {
-                    content: self.bundle_buffer,
-                })
-            } else {
-                let metadata = crate::message::Metadata::BundleLength(
-                    self.bundle_buffer
-                        .len()
-                        .try_into()
-                        .expect("Bundle buffer size is larger than u64 max value"),
-                );
+        if self.bytes_read == 0 && self.bundle_buffer.len() <= mtu {
+            self.bytes_read = self.bundle_buffer.len();
+            Some(Message::Bundle {
+                content: self.bundle_buffer,
+            })
+        } else if self.bytes_read < self.bundle_buffer.len() - 1 {
+            let segment_index = self.segment_index;
+            self.segment_index += 1;
+            let start_byte = self.bytes_read;
+            
+            let remaining_bytes = self.bundle_buffer.len() - self.bytes_read;
+            
+            let metadata = crate::message::Metadata::BundleLength(
+                self.bundle_buffer
+                    .len()
+                    .try_into()
+                    .expect("Bundle buffer size is larger than u64 max value"),
+            );
 
-                mtu -= metadata.size();
-                self.segment_index = self.bundle_buffer.len().div_ceil(self.mtu) as u32 - 1;
-                self.bytes_read = mtu;
-                Some(Message::TransferStart {
+            if remaining_bytes <= mtu - metadata.size() {
+                self.bytes_read = self.bundle_buffer.len();
+                Some(Message::TransferEnd {
                     metadata: Some(metadata),
                     segment: Segment {
                         transfer_identifier: self.transfer_identifier,
+                        index: segment_index,
+                        data: &self.bundle_buffer[start_byte..self.bundle_buffer.len()],
+                    },
+                })
+            } else {
+                mtu -= metadata.size();
+                self.bytes_read += mtu;
+                let data =
+                    &self.bundle_buffer[start_byte..self.bytes_read];
+
+                Some(Message::TransferSegment {
+                    metadata: Some(crate::message::Metadata::BundleLength(
+                        self.bundle_buffer
+                            .len()
+                            .try_into()
+                            .expect("Bundle buffer size is larger than u64 max value"),
+                    )),
+                    segment: Segment {
+                        transfer_identifier: self.transfer_identifier,
                         index: self.segment_index,
-                        data: &self.bundle_buffer[0..self.mtu],
+                        data,
                     },
                 })
             }
-        } else if self.bytes_read < self.bundle_buffer.len() - 1 {
-            self.segment_index -= 1;
-            let start_byte = self.bytes_read;
-            self.bytes_read += self.mtu;
-
-            let data =
-                &self.bundle_buffer[start_byte..self.bytes_read.min(self.bundle_buffer.len())];
-
-            Some(Message::TransferSegment {
-                metadata: Some(crate::message::Metadata::BundleLength(
-                    self.bundle_buffer
-                        .len()
-                        .try_into()
-                        .expect("Bundle buffer size is larger than u64 max value"),
-                )),
-                segment: Segment {
-                    transfer_identifier: self.transfer_identifier,
-                    index: self.segment_index,
-                    data,
-                },
-            })
         } else {
-            None
+            if self.repeat > 0 {
+                self.repeat -= 1;
+                self.bytes_read = 0;
+                self.next(pdu)
+            }
+            else {
+                None
+            }
         }
     }
 }
-
-/*
-impl<'a> Iterator for MessageIter<'a> {
-    type Item = Message<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.bytes_read == 0 && self.repeat > 0 {
-            if self.bundle_buffer.len() <= self.mtu {
-                self.bytes_read = self.bundle_buffer.len();
-                Some(Message {
-                    header: MessageHeader {
-                        kind: MessageType::Bundle,
-                        flags: 0,
-                        length: self.bundle_buffer.len() as u32,
-                    },
-                    content: MessageContent::BundleMessage(self.bundle_buffer),
-                    metadata: None,
-                })
-            } else {
-                let metadata = crate::message::Metadata::BundleLength(
-                    self.bundle_buffer
-                        .len()
-                        .try_into()
-                        .expect("Bundle buffer size is larger than u64 max value"),
-                );
-
-                self.mtu -= metadata.size();
-                self.segment_index = self.bundle_buffer.len().div_ceil(self.mtu) as u32 - 1;
-                self.bytes_read = self.mtu;
-                Some(Message {
-                    header: MessageHeader {
-                        kind: MessageType::TransferStart,
-                        flags: METADATA_FLAG,
-                        length: self.mtu as u32,
-                    },
-                    content: MessageContent::TransferStart(Segment {
-                        transfer_identifier: self.transfer_identifier,
-                        index: self.segment_index,
-                        data: &self.bundle_buffer[0..self.mtu],
-                    }),
-                    metadata: Some(metadata),
-                })
-            }
-        } else if self.bytes_read < self.bundle_buffer.len() - 1 {
-            self.segment_index -= 1;
-            let start_byte = self.bytes_read;
-            self.bytes_read += self.mtu;
-
-            let data =
-                &self.bundle_buffer[start_byte..self.bytes_read.min(self.bundle_buffer.len())];
-
-            Some(Message {
-                header: MessageHeader {
-                    kind: MessageType::TransferSegment,
-                    flags: METADATA_FLAG,
-                    length: data.len() as u32,
-                },
-                content: MessageContent::TransferSegment(Segment {
-                    transfer_identifier: self.transfer_identifier,
-                    index: self.segment_index,
-                    data,
-                }),
-                metadata: Some(crate::message::Metadata::BundleLength(
-                    self.bundle_buffer
-                        .len()
-                        .try_into()
-                        .expect("Bundle buffer size is larger than u64 max value"),
-                )),
-            })
-        } else {
-            None
-        }
-    }
-}*/
 
 #[cfg(test)]
 mod tests {
@@ -229,7 +165,7 @@ mod tests {
         let end = pdu - MESSAGE_HEADER_SIZE - METADATA_SIZE;
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
-            Some(Message::TransferStart {
+            Some(Message::TransferEnd {
                 metadata: Some(Metadata::BundleLength(1536)),
                 segment: Segment {
                     index: 3,

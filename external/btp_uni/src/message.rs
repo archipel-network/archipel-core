@@ -194,26 +194,39 @@ impl Segment<'_> {
         Ok(segment_size)
     }
 
+    /// Returns the size in bytes of this segment
     pub fn size(&self) -> usize {
         size_of::<u32>() + size_of::<TransferIdentifier>() + self.data.len()
     }
 }
 
+/// An enum of the different message types
 #[derive(PartialEq, Debug)]
 pub enum Message<'a> {
+    /// A padding without a defined length
     IndefinitePadding(usize),
+    /// A padding with a defined length
     DefinitePadding(usize),
+    /// A message containing an entire bundle
     Bundle {
+        /// The content of the bundle
         content: &'a [u8],
     },
-    TransferStart {
+    /// The last segment of a bundle
+    TransferEnd {
+        /// Optional [Metadata] accompagning this transfer
         metadata: Option<Metadata>,
+        /// The [Segment] of this transfer
         segment: Segment<'a>,
     },
+    /// A segment of a bundle
     TransferSegment {
+        /// Optional [Metadata] accompagning this transfer
         metadata: Option<Metadata>,
+        /// The [Segment] of this transfer
         segment: Segment<'a>,
     },
+    /// A message to cancel a transfer
     TransferCancel(TransferIdentifier),
 }
 
@@ -263,7 +276,7 @@ impl Message<'_> {
                     .copy_from_slice(content);
                 content.len() + MESSAGE_HEADER_SIZE
             }
-            Message::TransferStart { metadata, segment } => {
+            Message::TransferEnd { metadata, segment } => {
                 MessageHeader {
                     kind: MessageType::TransferStart,
                     flags: if metadata.is_some() { METADATA_FLAG } else { 0 },

@@ -117,7 +117,7 @@ impl<'a> Sender<'a> {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
                         match message {
                             Message::Bundle { content: _ } => (),
-                            Message::TransferStart {
+                            Message::TransferEnd {
                                 metadata: _,
                                 segment: _,
                             } => self
@@ -147,7 +147,7 @@ impl<'a> Sender<'a> {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
                         match message {
                             Message::Bundle { content: _ } => (),
-                            Message::TransferStart {
+                            Message::TransferEnd {
                                 metadata: _,
                                 segment: _,
                             } => self
@@ -177,7 +177,7 @@ impl<'a> Sender<'a> {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
                         match message {
                             Message::Bundle { content: _ } => (),
-                            Message::TransferStart {
+                            Message::TransferEnd {
                                 metadata: _,
                                 segment: _,
                             } => self

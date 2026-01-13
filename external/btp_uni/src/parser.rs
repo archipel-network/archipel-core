@@ -111,7 +111,7 @@ impl Parser {
                 let segment_index = u32::from_be_bytes(parser_get!(content_buffer, 4..8)?);
 
                 Ok((
-                    Message::TransferStart {
+                    Message::TransferEnd {
                         metadata,
                         segment: Segment {
                             index: segment_index,
@@ -339,7 +339,7 @@ mod test {
             .parse_message(&bytes)
             .expect("Parse should not fail");
 
-        let Message::TransferStart { metadata, segment } = message else {
+        let Message::TransferEnd { metadata, segment } = message else {
             panic!("Expected a transfer start message");
         };
 
