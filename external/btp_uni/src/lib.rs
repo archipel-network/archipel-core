@@ -10,6 +10,7 @@ pub mod receiver;
 pub mod sender;
 pub mod serializer;
 
+#[derive(Debug)]
 /// Error to return when transfer window creation fails
 pub enum TransferWindowError {
     /// The provided id is too small, it needs to be equal or greater than `4`

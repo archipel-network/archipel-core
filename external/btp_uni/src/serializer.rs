@@ -65,6 +65,11 @@ impl<'a> MessageIter<'a> {
         }
     }
 
+    /// Returns the tranfer identifier of the undelying message
+    pub fn transfer_id(&self) -> TransferIdentifier {
+        self.transfer_identifier
+    }
+
     /// Returns the next [Message] of this iterator
     pub fn next(&'_ mut self, pdu: PduSize) -> Option<Message<'_>> {
         let mut mtu = pdu.0 - MESSAGE_HEADER_SIZE;
@@ -77,9 +82,9 @@ impl<'a> MessageIter<'a> {
             let segment_index = self.segment_index;
             self.segment_index += 1;
             let start_byte = self.bytes_read;
-            
+
             let remaining_bytes = self.bundle_buffer.len() - self.bytes_read;
-            
+
             let metadata = crate::message::Metadata::BundleLength(
                 self.bundle_buffer
                     .len()
@@ -100,8 +105,7 @@ impl<'a> MessageIter<'a> {
             } else {
                 mtu -= metadata.size();
                 self.bytes_read += mtu;
-                let data =
-                    &self.bundle_buffer[start_byte..self.bytes_read];
+                let data = &self.bundle_buffer[start_byte..self.bytes_read];
 
                 Some(Message::TransferSegment {
                     metadata: Some(crate::message::Metadata::BundleLength(
@@ -122,8 +126,7 @@ impl<'a> MessageIter<'a> {
                 self.repeat -= 1;
                 self.bytes_read = 0;
                 self.next(pdu)
-            }
-            else {
+            } else {
                 None
             }
         }

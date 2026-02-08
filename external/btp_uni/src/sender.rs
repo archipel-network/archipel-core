@@ -1,41 +1,21 @@
 //! A module containing the bundle transfer protocol sender logic
 
-use heapless::{BinaryHeap, Deque, binary_heap::Max};
+use heapless::Deque;
 
 use crate::{
-    TransferIdentifier, TransferWindow,
-    message::{Message, WriteToError},
-    serializer::{MessageIter, PduSize},
+    TransferIdentifier, TransferWindow, TransferWindowError, message::{Message, WriteToError}, serializer::{MessageIter, PduSize}
 };
 
+/// The priority of a transfer
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
-enum Priority {
+pub enum Priority {
+    /// Low priority
     Low = 0x00,
+    /// Medium priority
     Normal = 0x01,
+    /// High priority
     High = 0x10,
-}
-
-struct BundlePriorityPair<'a>(MessageIter<'a>, Priority);
-
-impl PartialEq for BundlePriorityPair<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
-    }
-}
-
-impl Eq for BundlePriorityPair<'_> {}
-
-impl PartialOrd for BundlePriorityPair<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        self.1.partial_cmp(&other.1)
-    }
-}
-
-impl Ord for BundlePriorityPair<'_> {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.1.cmp(&other.1)
-    }
 }
 
 /// The minimum size in bytes of a tranfer for a complete or segmented bundle
@@ -44,36 +24,36 @@ impl Ord for BundlePriorityPair<'_> {
 pub const MIN_BUNDLE_TRANSFER_SIZE: usize = 4 + 4 + 4;
 
 /// A bundle transfer protocol sender
-pub struct Sender<'a> {
+/// 
+/// const 
+pub struct Sender<'a, const W: usize> {
     window: TransferWindow,
-    pdu: PduSize,
-    bundles: BinaryHeap<BundlePriorityPair<'a>, Max, 4096>,
-    low_priority_bundles: Deque<MessageIter<'a>, 4096>,
-    medium_priority_bundles: Deque<MessageIter<'a>, 4096>,
-    high_priority_bundles: Deque<MessageIter<'a>, 4096>,
+    low_priority_bundles: Deque<MessageIter<'a>, W>,
+    medium_priority_bundles: Deque<MessageIter<'a>, W>,
+    high_priority_bundles: Deque<MessageIter<'a>, W>,
 }
 
-impl<'a> Sender<'a> {
-    /// Creates a new sender with a sliding transfer window
-    pub const fn new(window: TransferWindow, pdu: PduSize) -> Self {
-        Self {
+impl<'a, const W: usize> Sender<'a, W> {
+    /// Creates a new sender
+    /// 
+    /// Returns an error if the window size is less than 4 or greater than 
+    pub const fn new() -> Result<Self, TransferWindowError> {
+        match TransferWindow::new(W as u32) {
+            Ok(window) => Ok(Self {
             window,
-            pdu,
-            bundles: BinaryHeap::new(),
             low_priority_bundles: Deque::new(),
             medium_priority_bundles: Deque::new(),
             high_priority_bundles: Deque::new(),
+        }),
+            Err(err) => Err(err),
         }
     }
 
-    fn cancel_outdated_transfers(&mut self) {
-        todo!()
-    }
-
-    fn continue_processing(&mut self) {
-        todo!()
-    }
-
+    /// Queues a bundle to transfer
+    /// 
+    /// # Parameters
+    /// - `priority`: The [Priority] of the transfer
+    /// - `repeat`: How many times the messages constituting the transfer are repeated
     pub fn queue_bundle<'b: 'a>(
         &mut self,
         bundle_buf: &'b [u8],
@@ -86,22 +66,19 @@ impl<'a> Sender<'a> {
             TransferIdentifier(0)
         };
 
-        let message_iter = MessageIter::new(bundle_buf, id, repeat);
+        self.window.slide_to(id);
+
+        self.low_priority_bundles.retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+        self.medium_priority_bundles.retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+        self.high_priority_bundles.retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+
+        let message_iter: MessageIter<'_> = MessageIter::new(bundle_buf, id, repeat);
 
         match prioriry {
             Priority::Low => self.low_priority_bundles.push_back(message_iter),
             Priority::Normal => self.medium_priority_bundles.push_back(message_iter),
             Priority::High => self.high_priority_bundles.push_back(message_iter),
-        };
-
-        //TODO: Slide window and remove outdated transfers
-
-        // if self.window.is_new(segment.transfer_identifier) {
-        //     self.window.slide_to(segment.transfer_identifier);
-        //     self.cancel_outdated_transfers();
-        // } else if self.window.is_in(segment.transfer_identifier) {
-        //     self.continue_processinmessageg();
-        // }
+        }.expect("No more room in bundles queue");
     }
 
     pub fn poll(&mut self, buf: &mut [u8]) -> Result<usize, WriteToError> {
@@ -116,7 +93,10 @@ impl<'a> Sender<'a> {
                     ) {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
                         match message {
-                            Message::Bundle { content: _ } => (),
+                            Message::Bundle { content: _ } => self
+                                .high_priority_bundles
+                                .push_front(message_iter)
+                                .expect("Can't push message iter"),
                             Message::TransferEnd {
                                 metadata: _,
                                 segment: _,
@@ -212,5 +192,26 @@ impl<'a> Sender<'a> {
         }
 
         Ok(bytes_written)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sender::{Priority, Sender};
+
+
+    #[test]
+    fn repeat() {
+        let mut sender: Sender<'_, 16> = Sender::new().unwrap();
+
+        sender.queue_bundle(&[1; 500], Priority::Normal, 3);
+        
+        let mut out = [0; 1500];
+        sender.poll(&mut out).unwrap();
+
+        assert_eq!(
+            out,
+            [1; 1500]
+        );
     }
 }

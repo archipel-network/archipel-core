@@ -55,6 +55,7 @@ const TYPE_SIZE: usize = 1;
 /// The size of the metadata length field in bytes
 const LENGTH_SIZE: usize = 1;
 
+#[derive(Debug)]
 /// Error occuring when trying to write data to a buffer
 pub enum WriteToError {
     /// The provided buffer is too small
