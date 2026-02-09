@@ -33,7 +33,7 @@ impl TryFrom<u8> for MessageType {
             0 => Ok(Self::IndefinitePadding),
             1 => Ok(Self::DefinitePadding),
             2 => Ok(Self::Bundle),
-            3 => Ok(Self::TransferStart),
+            3 => Ok(Self::TransferEnd),
             4 => Ok(Self::TransferSegment),
             5 => Ok(Self::TransferCancel),
             other => Err(other),
@@ -106,7 +106,7 @@ impl Parser {
                 },
                 bytes_read + content_length,
             )),
-            MessageType::TransferStart => {
+            MessageType::TransferEnd => {
                 let transfer_number = u32::from_be_bytes(parser_get!(content_buffer, 0..4)?);
                 let segment_index = u32::from_be_bytes(parser_get!(content_buffer, 4..8)?);
 
@@ -428,7 +428,7 @@ mod test {
             ]),
             Ok((
                 MessageHeader {
-                    kind: MessageType::TransferStart,
+                    kind: MessageType::TransferEnd,
                     flags: 0,
                     length: 15,
                 },
@@ -451,7 +451,7 @@ mod test {
             ]),
             Ok((
                 MessageHeader {
-                    kind: MessageType::TransferStart,
+                    kind: MessageType::TransferEnd,
                     flags: METADATA_FLAG,
                     length: 262005
                 },
@@ -472,7 +472,7 @@ mod test {
             ]),
             Ok((
                 MessageHeader {
-                    kind: MessageType::TransferStart,
+                    kind: MessageType::TransferEnd,
                     flags: METADATA_FLAG,
                     length: 262005
                 },
@@ -495,7 +495,7 @@ mod test {
             ]),
             Ok((
                 MessageHeader {
-                    kind: MessageType::TransferStart,
+                    kind: MessageType::TransferEnd,
                     flags: METADATA_FLAG,
                     length: 262005,
                 },
@@ -522,7 +522,7 @@ mod test {
             ]),
             Ok((
                 MessageHeader {
-                    kind: MessageType::TransferStart,
+                    kind: MessageType::TransferEnd,
                     flags: METADATA_FLAG,
                     length: 262005,
                 },

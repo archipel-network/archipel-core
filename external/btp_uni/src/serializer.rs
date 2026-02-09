@@ -74,7 +74,7 @@ impl<'a> MessageIter<'a> {
     pub fn next(&'_ mut self, pdu: PduSize) -> Option<Message<'_>> {
         let mut mtu = pdu.0 - MESSAGE_HEADER_SIZE;
         if self.bytes_read == 0 && self.bundle_buffer.len() <= mtu {
-            self.bytes_read = self.bundle_buffer.len();
+            let _ = self.repeat.saturating_sub(1);
             Some(Message::Bundle {
                 content: self.bundle_buffer,
             })
@@ -92,7 +92,7 @@ impl<'a> MessageIter<'a> {
                     .expect("Bundle buffer size is larger than u64 max value"),
             );
 
-            if remaining_bytes <= mtu - metadata.size() {
+            if remaining_bytes <= mtu - metadata.size() - 8 {
                 self.bytes_read = self.bundle_buffer.len();
                 Some(Message::TransferEnd {
                     metadata: Some(metadata),
@@ -104,6 +104,8 @@ impl<'a> MessageIter<'a> {
                 })
             } else {
                 mtu -= metadata.size();
+                mtu -= 8;
+                //todo Fix issues with header or metadata not handled correctly
                 self.bytes_read += mtu;
                 let data = &self.bundle_buffer[start_byte..self.bytes_read];
 

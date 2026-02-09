@@ -3,7 +3,9 @@
 use heapless::Deque;
 
 use crate::{
-    TransferIdentifier, TransferWindow, TransferWindowError, message::{Message, WriteToError}, serializer::{MessageIter, PduSize}
+    TransferIdentifier, TransferWindow, TransferWindowError,
+    message::{Message, WriteToError},
+    serializer::{MessageIter, PduSize},
 };
 
 /// The priority of a transfer
@@ -24,8 +26,8 @@ pub enum Priority {
 pub const MIN_BUNDLE_TRANSFER_SIZE: usize = 4 + 4 + 4;
 
 /// A bundle transfer protocol sender
-/// 
-/// const 
+///
+/// const
 pub struct Sender<'a, const W: usize> {
     window: TransferWindow,
     low_priority_bundles: Deque<MessageIter<'a>, W>,
@@ -35,22 +37,22 @@ pub struct Sender<'a, const W: usize> {
 
 impl<'a, const W: usize> Sender<'a, W> {
     /// Creates a new sender
-    /// 
-    /// Returns an error if the window size is less than 4 or greater than 
+    ///
+    /// Returns an error if the window size is less than 4 or greater than
     pub const fn new() -> Result<Self, TransferWindowError> {
         match TransferWindow::new(W as u32) {
             Ok(window) => Ok(Self {
-            window,
-            low_priority_bundles: Deque::new(),
-            medium_priority_bundles: Deque::new(),
-            high_priority_bundles: Deque::new(),
-        }),
+                window,
+                low_priority_bundles: Deque::new(),
+                medium_priority_bundles: Deque::new(),
+                high_priority_bundles: Deque::new(),
+            }),
             Err(err) => Err(err),
         }
     }
 
     /// Queues a bundle to transfer
-    /// 
+    ///
     /// # Parameters
     /// - `priority`: The [Priority] of the transfer
     /// - `repeat`: How many times the messages constituting the transfer are repeated
@@ -68,9 +70,12 @@ impl<'a, const W: usize> Sender<'a, W> {
 
         self.window.slide_to(id);
 
-        self.low_priority_bundles.retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
-        self.medium_priority_bundles.retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
-        self.high_priority_bundles.retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+        self.low_priority_bundles
+            .retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+        self.medium_priority_bundles
+            .retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+        self.high_priority_bundles
+            .retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
 
         let message_iter: MessageIter<'_> = MessageIter::new(bundle_buf, id, repeat);
 
@@ -78,7 +83,8 @@ impl<'a, const W: usize> Sender<'a, W> {
             Priority::Low => self.low_priority_bundles.push_back(message_iter),
             Priority::Normal => self.medium_priority_bundles.push_back(message_iter),
             Priority::High => self.high_priority_bundles.push_back(message_iter),
-        }.expect("No more room in bundles queue");
+        }
+        .expect("No more room in bundles queue");
     }
 
     pub fn poll(&mut self, buf: &mut [u8]) -> Result<usize, WriteToError> {
@@ -126,12 +132,15 @@ impl<'a, const W: usize> Sender<'a, W> {
                     ) {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
                         match message {
-                            Message::Bundle { content: _ } => (),
+                            Message::Bundle { content: _ } => self
+                                .medium_priority_bundles
+                                .push_front(message_iter)
+                                .expect("Can't push message iter"),
                             Message::TransferEnd {
                                 metadata: _,
                                 segment: _,
                             } => self
-                                .high_priority_bundles
+                                .medium_priority_bundles
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferSegment {
@@ -139,7 +148,7 @@ impl<'a, const W: usize> Sender<'a, W> {
                                 segment,
                             } => {
                                 if segment.index > 0 {
-                                    self.high_priority_bundles
+                                    self.medium_priority_bundles
                                         .push_front(message_iter)
                                         .expect("Can't push message iter")
                                 }
@@ -156,12 +165,15 @@ impl<'a, const W: usize> Sender<'a, W> {
                     ) {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
                         match message {
-                            Message::Bundle { content: _ } => (),
+                            Message::Bundle { content: _ } => self
+                                .low_priority_bundles
+                                .push_front(message_iter)
+                                .expect("Can't push message iter"),
                             Message::TransferEnd {
                                 metadata: _,
                                 segment: _,
                             } => self
-                                .high_priority_bundles
+                                .low_priority_bundles
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferSegment {
@@ -169,7 +181,7 @@ impl<'a, const W: usize> Sender<'a, W> {
                                 segment,
                             } => {
                                 if segment.index > 0 {
-                                    self.high_priority_bundles
+                                    self.low_priority_bundles
                                         .push_front(message_iter)
                                         .expect("Can't push message iter")
                                 }
@@ -199,19 +211,15 @@ impl<'a, const W: usize> Sender<'a, W> {
 mod tests {
     use crate::sender::{Priority, Sender};
 
-
     #[test]
     fn repeat() {
         let mut sender: Sender<'_, 16> = Sender::new().unwrap();
 
-        sender.queue_bundle(&[1; 500], Priority::Normal, 3);
-        
+        sender.queue_bundle(&[1; 500], Priority::Normal, 2);
+
         let mut out = [0; 1500];
         sender.poll(&mut out).unwrap();
 
-        assert_eq!(
-            out,
-            [1; 1500]
-        );
+        assert_eq!(out, [1; 1500]);
     }
 }

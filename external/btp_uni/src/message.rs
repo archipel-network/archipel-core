@@ -14,7 +14,7 @@
 
 use crate::TransferIdentifier;
 
-/// Flag indicating that further metdata is included in message
+/// Flag indicating that further metadata is included in message
 pub const METADATA_FLAG: u8 = 0b00001000;
 
 /// Size of a message header in bytes
@@ -31,7 +31,7 @@ pub enum MessageType {
     /// Message is a single bundle message (section 8.1)
     Bundle = 2,
     /// Message is a transfer start message (section 8.2)
-    TransferStart = 3,
+    TransferEnd = 3,
     /// Message is a segment transfer message (section 8.3)
     TransferSegment = 4,
     /// Message is a transfer cancel message (Section 8.4)
@@ -190,7 +190,7 @@ impl Segment<'_> {
 
         buf[..4].copy_from_slice(&self.index.to_be_bytes());
         buf[4..8].copy_from_slice(&self.transfer_identifier.0.to_be_bytes());
-        buf[8..self.data.len()].copy_from_slice(self.data);
+        buf[8..8 + self.data.len()].copy_from_slice(self.data);
 
         Ok(segment_size)
     }
@@ -279,7 +279,7 @@ impl Message<'_> {
             }
             Message::TransferEnd { metadata, segment } => {
                 MessageHeader {
-                    kind: MessageType::TransferStart,
+                    kind: MessageType::TransferEnd,
                     flags: if metadata.is_some() { METADATA_FLAG } else { 0 },
                     length: (segment.size() + metadata.map(|metadata| metadata.size()).unwrap_or(0))
                         as u32,
@@ -333,12 +333,93 @@ impl Message<'_> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::message::MessageHeader;
+#[cfg(test)]
+mod tests {
+    use crate::{
+        TransferIdentifier,
+        message::{MESSAGE_HEADER_SIZE, Message, Metadata, Segment},
+    };
 
-//     #[test]
-//     fn message_size() {
-//         assert_eq!(size_of::<MessageHeader>() * 8, 32);
-//     }
-// }
+    #[test]
+    fn indefinite_padding_message() {
+        let mut out = [0; 9];
+        Message::IndefinitePadding(8)
+            .write_to_buf(&mut out)
+            .unwrap();
+        assert_eq!(out, [0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn definite_padding_message() {
+        let mut out = [0; 8 + MESSAGE_HEADER_SIZE];
+        Message::DefinitePadding(8).write_to_buf(&mut out).unwrap();
+        assert_eq!(out, [1, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn bundle_message() {
+        let mut out = [0; 10 + MESSAGE_HEADER_SIZE];
+        Message::Bundle {
+            content: &[128; 10],
+        }
+        .write_to_buf(&mut out)
+        .unwrap();
+        assert_eq!(
+            out,
+            [
+                2, 0, 0, 10, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128
+            ]
+        );
+    }
+
+    #[test]
+    fn transfer_end_message() {
+        let mut out = [0; 19];
+        Message::TransferEnd {
+            metadata: Some(Metadata::BundleLength(4)),
+            segment: Segment {
+                index: 5,
+                transfer_identifier: TransferIdentifier(7),
+                data: &[128; 4],
+            },
+        }
+        .write_to_buf(&mut out)
+        .unwrap();
+        assert_eq!(
+            out,
+            [
+                3, 0b10000000, 0, 15, 1, 1, 4, 0, 0, 0, 5, 0, 0, 0, 7, 128, 128, 128, 128
+            ]
+        );
+    }
+
+    #[test]
+    fn transfer_segment_message() {
+        let mut out = [0; 19];
+        Message::TransferSegment {
+            metadata: Some(Metadata::BundleLength(4)),
+            segment: Segment {
+                index: 5,
+                transfer_identifier: TransferIdentifier(7),
+                data: &[128; 4],
+            },
+        }
+        .write_to_buf(&mut out)
+        .unwrap();
+        assert_eq!(
+            out,
+            [
+                4, 0b10000000, 0, 15, 1, 1, 4, 0, 0, 0, 5, 0, 0, 0, 7, 128, 128, 128, 128
+            ]
+        );
+    }
+
+    #[test]
+    fn transfer_cancel_message() {
+        let mut out = [0; 8];
+        Message::TransferCancel(TransferIdentifier(7))
+            .write_to_buf(&mut out)
+            .unwrap();
+        assert_eq!(out, [5, 0, 0, 4, 0, 0, 0, 7]);
+    }
+}
