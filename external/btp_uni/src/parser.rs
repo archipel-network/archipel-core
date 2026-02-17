@@ -2,7 +2,7 @@
 
 use crate::{
     TransferIdentifier,
-    message::{METADATA_FLAG, Message, MessageHeader, MessageType, Metadata, Segment},
+    message::{HINT_FLAG, Hint, Message, MessageHeader, MessageType, Segment},
 };
 
 /// Parser structure
@@ -17,10 +17,10 @@ pub enum ParseError {
     MaybeIncompleteInput,
     /// Message type is unknown
     UnknownType(u8),
-    /// Metadata type was unknown
-    UnknownMetadataType(u8),
-    /// Parsing of Bundle length metadata failed
-    InvalidBundleLengthMetadata,
+    /// Hint type was unknown
+    UnknownHintType(u8),
+    /// Parsing of Bundle length hint failed
+    InvalidBundleLengthHint,
     /// Invalid message content
     InvalidContent,
 }
@@ -62,15 +62,15 @@ impl Parser {
         buffer: &'a [u8],
     ) -> Result<(Message<'a>, usize), ParseError> {
         let (header, mut bytes_read) = self.parse_message_header(buffer)?;
-        let (metadata, metadata_length) = if (header.flags & METADATA_FLAG) == METADATA_FLAG {
-            let (meta, length) = self.parse_metadata(&buffer[4..])?;
+        let (hint, hint_length) = if (header.flags & HINT_FLAG) == HINT_FLAG {
+            let (meta, length) = self.parse_hint(&buffer[4..])?;
             bytes_read += length;
             (Some(meta), length)
         } else {
             (None, 0)
         };
 
-        let content_length = header.length as usize - metadata_length;
+        let content_length = header.length as usize - hint_length;
 
         // Special case for indefinite padding message
         if matches!(header.kind, MessageType::IndefinitePadding) {
@@ -112,7 +112,7 @@ impl Parser {
 
                 Ok((
                     Message::TransferEnd {
-                        metadata,
+                        hint,
                         segment: Segment {
                             index: segment_index,
                             transfer_identifier: TransferIdentifier(transfer_number),
@@ -128,7 +128,7 @@ impl Parser {
 
                 Ok((
                     Message::TransferSegment {
-                        metadata,
+                        hint,
                         segment: Segment {
                             index: segment_index,
                             transfer_identifier: TransferIdentifier(transfer_number),
@@ -196,8 +196,8 @@ impl Parser {
         ))
     }
 
-    /// Parse a single metadata item in a buffer
-    pub fn parse_metadata(&mut self, buffer: &[u8]) -> Result<(Metadata, usize), ParseError> {
+    /// Parse a single hint item in a buffer
+    pub fn parse_hint(&mut self, buffer: &[u8]) -> Result<(Hint, usize), ParseError> {
         let kind_bytes = parser_get!(buffer, 0..1)?;
         let kind = u8::from_be_bytes(kind_bytes);
 
@@ -209,26 +209,26 @@ impl Parser {
                 1 => {
                     let bytes: [u8; 1] = parser_get!(buffer, 2..3)?;
                     let bundle_length = u8::from_be_bytes(bytes);
-                    Ok((Metadata::BundleLength(bundle_length as u64), 3))
+                    Ok((Hint::BundleLength(bundle_length as u64), 3))
                 }
                 2 => {
                     let bytes: [u8; 2] = parser_get!(buffer, 2..4)?;
                     let bundle_length = u16::from_be_bytes(bytes);
-                    Ok((Metadata::BundleLength(bundle_length as u64), 4))
+                    Ok((Hint::BundleLength(bundle_length as u64), 4))
                 }
                 4 => {
                     let bytes: [u8; 4] = parser_get!(buffer, 2..6)?;
                     let bundle_length = u32::from_be_bytes(bytes);
-                    Ok((Metadata::BundleLength(bundle_length as u64), 6))
+                    Ok((Hint::BundleLength(bundle_length as u64), 6))
                 }
                 8 => {
                     let bytes: [u8; 8] = parser_get!(buffer, 2..10)?;
                     let bundle_length = u64::from_be_bytes(bytes);
-                    Ok((Metadata::BundleLength(bundle_length), 10))
+                    Ok((Hint::BundleLength(bundle_length), 10))
                 }
-                _ => Err(ParseError::InvalidBundleLengthMetadata),
+                _ => Err(ParseError::InvalidBundleLengthHint),
             },
-            other => Err(ParseError::UnknownMetadataType(other)),
+            other => Err(ParseError::UnknownHintType(other)),
         }
     }
 }
@@ -243,7 +243,7 @@ impl Default for Parser {
 mod test {
     use crate::{
         TransferIdentifier,
-        message::{METADATA_FLAG, Message, MessageHeader, MessageType, Metadata},
+        message::{HINT_FLAG, Hint, Message, MessageHeader, MessageType},
         parser::{ParseError, Parser},
     };
 
@@ -301,11 +301,11 @@ mod test {
     #[test]
     fn transfer_start_message() {
         let bytes = [
-            0x3,                // Type
-            METADATA_FLAG << 4, // Flags (with metadata) & length
+            0x3,            // Type
+            HINT_FLAG << 4, // Flags (with hint) & length
             0x0,
             26, // length
-            // Bundle length metadata
+            // Bundle length hint
             1,
             1,
             121,
@@ -339,12 +339,12 @@ mod test {
             .parse_message(&bytes)
             .expect("Parse should not fail");
 
-        let Message::TransferEnd { metadata, segment } = message else {
+        let Message::TransferEnd { hint, segment } = message else {
             panic!("Expected a transfer start message");
         };
 
         assert_eq!(bytes_red, 30);
-        assert_eq!(metadata, Some(Metadata::BundleLength(121)));
+        assert_eq!(hint, Some(Hint::BundleLength(121)));
         assert_eq!(segment.transfer_identifier, TransferIdentifier(64));
         assert_eq!(segment.index, 8);
         assert_eq!(segment.data.len(), 15);
@@ -354,7 +354,7 @@ mod test {
     fn transfer_segment_message() {
         let bytes = [
             0x4, // Type
-            0,   // Flags (with metadata) & length
+            0,   // Flags (with hint) & length
             0x0, 23, // length
             0x0, 0x0, 0x0, 64, // Transfer number
             0x0, 0x0, 0x0, 7, // Segment index
@@ -367,12 +367,12 @@ mod test {
             .parse_message(&bytes)
             .expect("Parse should not fail");
 
-        let Message::TransferSegment { metadata, segment } = message else {
+        let Message::TransferSegment { hint, segment } = message else {
             panic!("Expected a transfer segment message");
         };
 
         assert_eq!(bytes_red, 27);
-        assert_eq!(metadata, None);
+        assert_eq!(hint, None);
         assert_eq!(segment.transfer_identifier, TransferIdentifier(64));
         assert_eq!(segment.index, 7);
         assert_eq!(segment.data.len(), 15);
@@ -382,7 +382,7 @@ mod test {
     fn transfer_cancel_message() {
         let bytes = [
             0x5, // Type
-            0,   // Flags (with metadata) & length
+            0,   // Flags (with hint) & length
             0x0, 4, // length
             0x0, 0x0, 0x0, 64, // Transfer number
         ];
@@ -401,11 +401,11 @@ mod test {
     #[test]
     fn incomplete_input() {
         let bytes = [
-            0x3,                // Type
-            METADATA_FLAG << 4, // Flags (with metadata) & length
+            0x3,            // Type
+            HINT_FLAG << 4, // Flags (with hint) & length
             0x0,
             26, // length
-            // Bundle length metadata
+            // Bundle length hint
             1,
             1,
             121,
@@ -442,7 +442,7 @@ mod test {
         assert_eq!(
             Parser::new().parse_message_header(&[
                 3,                 // Type
-                0b10000000 | 0x03, // Flags (with metadata) & length
+                0b10000000 | 0x03, // Flags (with hint) & length
                 0xff,
                 0x75, // length
                 1,
@@ -452,7 +452,7 @@ mod test {
             Ok((
                 MessageHeader {
                     kind: MessageType::TransferEnd,
-                    flags: METADATA_FLAG,
+                    flags: HINT_FLAG,
                     length: 262005
                 },
                 4
@@ -462,7 +462,7 @@ mod test {
         assert_eq!(
             Parser::new().parse_message_header(&[
                 3,                 // Type
-                0b10000000 | 0x03, // Flags (with metadata) & length
+                0b10000000 | 0x03, // Flags (with hint) & length
                 0xff,
                 0x75, // length
                 1,
@@ -473,7 +473,7 @@ mod test {
             Ok((
                 MessageHeader {
                     kind: MessageType::TransferEnd,
-                    flags: METADATA_FLAG,
+                    flags: HINT_FLAG,
                     length: 262005
                 },
                 4
@@ -483,7 +483,7 @@ mod test {
         assert_eq!(
             Parser::new().parse_message_header(&[
                 3,                 // Type
-                0b10000000 | 0x03, // Flags (with metadata) & length
+                0b10000000 | 0x03, // Flags (with hint) & length
                 0xff,
                 0x75, // length
                 1,
@@ -496,7 +496,7 @@ mod test {
             Ok((
                 MessageHeader {
                     kind: MessageType::TransferEnd,
-                    flags: METADATA_FLAG,
+                    flags: HINT_FLAG,
                     length: 262005,
                 },
                 4
@@ -506,7 +506,7 @@ mod test {
         assert_eq!(
             Parser::new().parse_message_header(&[
                 3,                 // Type
-                0b10000000 | 0x03, // Flags (with metadata) & length
+                0b10000000 | 0x03, // Flags (with hint) & length
                 0xff,
                 0x75, // length
                 1,
@@ -523,7 +523,7 @@ mod test {
             Ok((
                 MessageHeader {
                     kind: MessageType::TransferEnd,
-                    flags: METADATA_FLAG,
+                    flags: HINT_FLAG,
                     length: 262005,
                 },
                 4

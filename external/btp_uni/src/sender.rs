@@ -4,8 +4,7 @@ use heapless::Deque;
 
 use crate::{
     TransferIdentifier, TransferWindow, TransferWindowError,
-    message::{Message, WriteToError},
-    serializer::{MessageIter, PduSize},
+    message::{Message, MessageIter, PduSize, WriteToError},
 };
 
 /// The priority of a transfer
@@ -104,14 +103,14 @@ impl<'a, const W: usize> Sender<'a, W> {
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferEnd {
-                                metadata: _,
+                                hint: _,
                                 segment: _,
                             } => self
                                 .high_priority_bundles
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferSegment {
-                                metadata: _,
+                                hint: _,
                                 segment,
                             } => {
                                 if segment.index > 0 {
@@ -137,14 +136,14 @@ impl<'a, const W: usize> Sender<'a, W> {
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferEnd {
-                                metadata: _,
+                                hint: _,
                                 segment: _,
                             } => self
                                 .medium_priority_bundles
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferSegment {
-                                metadata: _,
+                                hint: _,
                                 segment,
                             } => {
                                 if segment.index > 0 {
@@ -170,14 +169,14 @@ impl<'a, const W: usize> Sender<'a, W> {
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferEnd {
-                                metadata: _,
+                                hint: _,
                                 segment: _,
                             } => self
                                 .low_priority_bundles
                                 .push_front(message_iter)
                                 .expect("Can't push message iter"),
                             Message::TransferSegment {
-                                metadata: _,
+                                hint: _,
                                 segment,
                             } => {
                                 if segment.index > 0 {

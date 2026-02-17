@@ -8,7 +8,6 @@ pub mod message;
 pub mod parser;
 pub mod receiver;
 pub mod sender;
-pub mod serializer;
 
 #[derive(Debug)]
 /// Error to return when transfer window creation fails

@@ -7,15 +7,19 @@
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! |     Type      |Flags|      Length (20-bit unsigned int)       |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//! |              ... Optional Metadata Items ...                  :
+//! |              ... Optional Hint Items ...                  :
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! |                       ... Content ...                         :
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+use core::ops::{Sub, SubAssign};
+
+use libc_print::libc_println;
+
 use crate::TransferIdentifier;
 
-/// Flag indicating that further metadata is included in message
-pub const METADATA_FLAG: u8 = 0b00001000;
+/// Flag indicating that further hint is included in message
+pub const HINT_FLAG: u8 = 0b00001000;
 
 /// Size of a message header in bytes
 pub const MESSAGE_HEADER_SIZE: usize = 4;
@@ -30,29 +34,26 @@ pub enum MessageType {
     DefinitePadding = 1,
     /// Message is a single bundle message (section 8.1)
     Bundle = 2,
-    /// Message is a transfer start message (section 8.2)
-    TransferEnd = 3,
     /// Message is a segment transfer message (section 8.3)
-    TransferSegment = 4,
+    TransferSegment = 3,
+    /// Message is a transfer start message (section 8.2)
+    TransferEnd = 4,
     /// Message is a transfer cancel message (Section 8.4)
     TransferCancel = 5,
     // 6 is reserved to avoid clash with BPv6
 }
 
-/// Different types of metadata included in some messages (section 7.2)
+/// Different types of hint included in some messages (section 7.2)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Metadata {
+pub enum Hint {
     /// Ful length of bundle to be transfered (section 9.1)
-    BundleLength(u64), // pub struct Metadata {
-                       //     kind: MessageType,
-                       //     length: u8,
-                       //     content: [u8; 8],
+    BundleLength(u64),
 }
 
-/// The size of the metadata type field in bytes
+/// The size of the hint type field in bytes
 const TYPE_SIZE: usize = 1;
 
-/// The size of the metadata length field in bytes
+/// The size of the hint length field in bytes
 const LENGTH_SIZE: usize = 1;
 
 #[derive(Debug)]
@@ -63,11 +64,11 @@ pub enum WriteToError {
     BufferTooSmall { needs: usize, provided: usize },
 }
 
-impl Metadata {
-    /// Returns the size in bytes of the metadata
+impl Hint {
+    /// Returns the size in bytes of the hint
     pub const fn size(&self) -> usize {
         match self {
-            Metadata::BundleLength(length) => {
+            Hint::BundleLength(length) => {
                 TYPE_SIZE
                     + LENGTH_SIZE
                     // Compute the needed size of the `bundle length` field in bytes
@@ -78,7 +79,7 @@ impl Metadata {
         }
     }
 
-    /// Tries to write this [Metadata] as bytes into a buffer.
+    /// Tries to write this [Hint] as bytes into a buffer.
     /// Returns the number of bytes written on success.
     pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<usize, WriteToError> {
         let size = self.size();
@@ -89,8 +90,8 @@ impl Metadata {
             });
         }
         let bytes_written = match self {
-            Metadata::BundleLength(length) => {
-                buf[0] = 1;
+            Hint::BundleLength(length) => {
+                buf[0] = 0;
                 let length_size = if *length < 0x10000 {
                     if *length < 0x100 {
                         buf[2] = *length as u8;
@@ -123,7 +124,7 @@ pub struct MessageHeader {
     pub kind: MessageType,
     /// Flags added to this message (section 7.1)
     pub flags: u8,
-    /// Length of message including metadata
+    /// Length of message including hint
     pub length: u32,
 }
 
@@ -215,15 +216,15 @@ pub enum Message<'a> {
     },
     /// The last segment of a bundle
     TransferEnd {
-        /// Optional [Metadata] accompagning this transfer
-        metadata: Option<Metadata>,
+        /// Optional [Hint] accompagning this transfer
+        hint: Option<Hint>,
         /// The [Segment] of this transfer
         segment: Segment<'a>,
     },
     /// A segment of a bundle
     TransferSegment {
-        /// Optional [Metadata] accompagning this transfer
-        metadata: Option<Metadata>,
+        /// Optional [Hint] accompagning this transfer
+        hint: Option<Hint>,
         /// The [Segment] of this transfer
         segment: Segment<'a>,
     },
@@ -277,36 +278,34 @@ impl Message<'_> {
                     .copy_from_slice(content);
                 content.len() + MESSAGE_HEADER_SIZE
             }
-            Message::TransferEnd { metadata, segment } => {
+            Message::TransferEnd { hint, segment } => {
                 MessageHeader {
                     kind: MessageType::TransferEnd,
-                    flags: if metadata.is_some() { METADATA_FLAG } else { 0 },
-                    length: (segment.size() + metadata.map(|metadata| metadata.size()).unwrap_or(0))
-                        as u32,
+                    flags: if hint.is_some() { HINT_FLAG } else { 0 },
+                    length: (segment.size() + hint.map(|hint| hint.size()).unwrap_or(0)) as u32,
                 }
                 .write_to_buf(buf)?;
 
                 let mut written = MESSAGE_HEADER_SIZE;
 
-                if let Some(metadata) = metadata {
-                    written += metadata.write_to_buf(&mut buf[MESSAGE_HEADER_SIZE..])?;
+                if let Some(hint) = hint {
+                    written += hint.write_to_buf(&mut buf[MESSAGE_HEADER_SIZE..])?;
                 }
 
                 written + segment.write_to_buf(&mut buf[written..])?
             }
-            Message::TransferSegment { metadata, segment } => {
+            Message::TransferSegment { hint, segment } => {
                 MessageHeader {
                     kind: MessageType::TransferSegment,
-                    flags: if metadata.is_some() { METADATA_FLAG } else { 0 },
-                    length: (segment.size() + metadata.map(|metadata| metadata.size()).unwrap_or(0))
-                        as u32,
+                    flags: if hint.is_some() { HINT_FLAG } else { 0 },
+                    length: (segment.size() + hint.map(|hint| hint.size()).unwrap_or(0)) as u32,
                 }
                 .write_to_buf(buf)?;
 
                 let mut written = MESSAGE_HEADER_SIZE;
 
-                if let Some(metadata) = metadata {
-                    written += metadata.write_to_buf(&mut buf[MESSAGE_HEADER_SIZE..])?;
+                if let Some(hint) = hint {
+                    written += hint.write_to_buf(&mut buf[MESSAGE_HEADER_SIZE..])?;
                 }
 
                 written + segment.write_to_buf(&mut buf[written..])?
@@ -333,11 +332,150 @@ impl Message<'_> {
     }
 }
 
+#[derive(Clone, Copy)]
+/// The size of the link-layer protocol data unit in bytes
+pub struct PduSize(usize);
+
+/// An error occuring at [PduSize] creation
+#[derive(Debug)]
+pub enum PduError {
+    /// The provided size is zero
+    Zero,
+    /// The provided size is larger than `1048580` which is : `2^20` (`length` field's length) + 4 bytes of header
+    TooLarge,
+}
+
+impl PduSize {
+    /// Returns a new [PduSize] if the provided size is greater than zero and less than 1048580
+    pub const fn new(size: usize) -> Result<Self, PduError> {
+        if size == 0 {
+            Err(PduError::Zero)
+        } else if size > 2usize.pow(20) {
+            Err(PduError::TooLarge)
+        } else {
+            Ok(Self(size))
+        }
+    }
+}
+
+impl TryFrom<usize> for PduSize {
+    type Error = PduError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        PduSize::new(value)
+    }
+}
+
+#[derive(Debug)]
+/// An iterator over [Message]s generated over a `Bundle` buffer
+pub struct MessageIter<'a> {
+    transfer_identifier: TransferIdentifier,
+    bundle_buffer: &'a [u8],
+    bytes_read: usize,
+    segment_index: u32,
+    repeat: usize,
+}
+
+impl<'a> MessageIter<'a> {
+    /// Creates an [Iterator] over [Message]s from a bundle buffer and a PDU size
+    pub fn new(
+        bundle_buffer: &'a [u8],
+        transfer_identifier: TransferIdentifier,
+        repeat: usize,
+    ) -> Self {
+        Self {
+            transfer_identifier,
+            bundle_buffer,
+            bytes_read: 0,
+            segment_index: 0,
+            repeat,
+        }
+    }
+
+    /// Returns the tranfer identifier of the undelying message
+    pub fn transfer_id(&self) -> TransferIdentifier {
+        self.transfer_identifier
+    }
+
+    /// Returns the next [Message] of this iterator
+    pub fn next(&'_ mut self, pdu: PduSize) -> Option<Message<'_>> {
+        let mut mtu = pdu.0 - MESSAGE_HEADER_SIZE;
+
+        libc_println!(
+            "self.bytes_read: {}, self.bundle_buffer.len() - 1: {}",
+            self.bytes_read,
+            self.bundle_buffer.len() - 1
+        );
+        if self.bytes_read == 0 && self.bundle_buffer.len() <= mtu {
+            let _ = self.repeat.saturating_sub(1);
+            self.bytes_read = self.bundle_buffer.len();
+            Some(Message::Bundle {
+                content: self.bundle_buffer,
+            })
+        } else if self.bytes_read < self.bundle_buffer.len() - 1 {
+            let segment_index = self.segment_index;
+            self.segment_index += 1;
+            let start_byte = self.bytes_read;
+
+            let remaining_bytes = self.bundle_buffer.len() - self.bytes_read;
+
+            let hint = crate::message::Hint::BundleLength(
+                self.bundle_buffer
+                    .len()
+                    .try_into()
+                    .expect("Bundle buffer size is larger than u64 max value"),
+            );
+
+            if remaining_bytes <= mtu.saturating_sub(hint.size() + 8) {
+                self.bytes_read = self.bundle_buffer.len();
+                Some(Message::TransferEnd {
+                    hint: Some(hint),
+                    segment: Segment {
+                        transfer_identifier: self.transfer_identifier,
+                        index: segment_index,
+                        data: &self.bundle_buffer[start_byte..self.bundle_buffer.len()],
+                    },
+                })
+            } else {
+                mtu = mtu.saturating_sub(hint.size() + 8);
+
+                self.bytes_read += mtu;
+                let data = &self.bundle_buffer[start_byte..self.bytes_read];
+
+                libc_println!("segment_index {segment_index}");
+                Some(Message::TransferSegment {
+                    hint: Some(crate::message::Hint::BundleLength(
+                        self.bundle_buffer
+                            .len()
+                            .try_into()
+                            .expect("Bundle buffer size is larger than u64 max value"),
+                    )),
+                    segment: Segment {
+                        transfer_identifier: self.transfer_identifier,
+                        index: segment_index,
+                        data,
+                    },
+                })
+            }
+        } else {
+            if self.repeat > 0 {
+                self.repeat -= 1;
+                self.bytes_read = 0;
+                self.next(pdu)
+            } else {
+                None
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use libc_print::libc_println;
+
     use crate::{
         TransferIdentifier,
-        message::{MESSAGE_HEADER_SIZE, Message, Metadata, Segment},
+        message::{Hint, MESSAGE_HEADER_SIZE, Message, MessageIter, PduSize, Segment},
     };
 
     #[test]
@@ -373,10 +511,10 @@ mod tests {
     }
 
     #[test]
-    fn transfer_end_message() {
+    fn transfer_segment_message() {
         let mut out = [0; 19];
-        Message::TransferEnd {
-            metadata: Some(Metadata::BundleLength(4)),
+        Message::TransferSegment {
+            hint: Some(Hint::BundleLength(4)),
             segment: Segment {
                 index: 5,
                 transfer_identifier: TransferIdentifier(7),
@@ -388,16 +526,16 @@ mod tests {
         assert_eq!(
             out,
             [
-                3, 0b10000000, 0, 15, 1, 1, 4, 0, 0, 0, 5, 0, 0, 0, 7, 128, 128, 128, 128
+                3, 0b10000000, 0, 15, 0, 1, 4, 0, 0, 0, 5, 0, 0, 0, 7, 128, 128, 128, 128
             ]
         );
     }
 
     #[test]
-    fn transfer_segment_message() {
+    fn transfer_end_message() {
         let mut out = [0; 19];
-        Message::TransferSegment {
-            metadata: Some(Metadata::BundleLength(4)),
+        Message::TransferEnd {
+            hint: Some(Hint::BundleLength(4)),
             segment: Segment {
                 index: 5,
                 transfer_identifier: TransferIdentifier(7),
@@ -409,7 +547,7 @@ mod tests {
         assert_eq!(
             out,
             [
-                4, 0b10000000, 0, 15, 1, 1, 4, 0, 0, 0, 5, 0, 0, 0, 7, 128, 128, 128, 128
+                4, 0b10000000, 0, 15, 0, 1, 4, 0, 0, 0, 5, 0, 0, 0, 7, 128, 128, 128, 128
             ]
         );
     }
@@ -421,5 +559,91 @@ mod tests {
             .write_to_buf(&mut out)
             .unwrap();
         assert_eq!(out, [5, 0, 0, 4, 0, 0, 0, 7]);
+    }
+
+    #[test]
+    fn single_message() {
+        let mut iter = MessageIter::new(&[0; 500], crate::TransferIdentifier(1), 0);
+
+        assert_eq!(
+            iter.next(PduSize::new(504).unwrap())
+                .inspect(|message| libc_println!("message: {message:?}")),
+            Some(Message::Bundle { content: &[0; 500] })
+        );
+
+        assert_eq!(
+            iter.next(PduSize::new(12).unwrap())
+                .inspect(|message| libc_println!("message: {message:?}")),
+            None
+        )
+    }
+
+    #[test]
+    fn multiple_messages() {
+        let mut bundle_buffer: [u8; 1536] = [0; 1536];
+        let pdu = 512;
+
+        const HINT_SIZE: usize = 4;
+
+        for (index, value) in bundle_buffer.iter_mut().enumerate() {
+            *value = (index % 255) as u8;
+        }
+
+        let mut iter = MessageIter::new(&bundle_buffer, crate::TransferIdentifier(1), 1);
+
+        let end = pdu - MESSAGE_HEADER_SIZE - HINT_SIZE;
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferSegment {
+                hint: Some(Hint::BundleLength(1536)),
+                segment: Segment {
+                    index: 0,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[0..end]
+                }
+            })
+        );
+
+        let start = end;
+        let end = end + pdu - MESSAGE_HEADER_SIZE - HINT_SIZE;
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferEnd {
+                hint: Some(Hint::BundleLength(1536)),
+                segment: Segment {
+                    index: 1,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[start..end]
+                }
+            })
+        );
+
+        let start = end;
+        let end = end + pdu - MESSAGE_HEADER_SIZE - HINT_SIZE;
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferSegment {
+                hint: Some(Hint::BundleLength(1536)),
+                segment: Segment {
+                    index: 1,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[start..end]
+                }
+            })
+        );
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferSegment {
+                hint: Some(Hint::BundleLength(1536)),
+                segment: Segment {
+                    index: 0,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[end..]
+                }
+            })
+        );
     }
 }

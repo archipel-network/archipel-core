@@ -11,4 +11,5 @@ crate-type = ["staticlib"]
 
 [dependencies]
 heapless = "0.9.2"
+libc-print = "0.1.23"
 # libc-print ={ git="https://github.com/mmastrac/rust-libc-print.git"}
