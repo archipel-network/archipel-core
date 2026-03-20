@@ -732,7 +732,7 @@ static void bundle_deliver_local(
 
 	}
 
-	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
+	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0, ctx->store);
 
 	/* Check and record knowledge of bundle */
 	if (bundle_record_add_and_check_known(ctx, bundle)) {
