@@ -23,21 +23,21 @@ void bundle_restore_task(void* conf){
         if(signal.type == BUNDLE_RESTORE_DEST){
             LOGF_INFO("BundleRestore : Should restore for %s", signal.destination);
 
-            struct bundle_store_popseq* seq = 
-                hal_store_popseq(config->store);
+            struct bundle_store_loadall* loader = 
+                hal_store_loadall(config->store);
 
             struct bundle* bundle = NULL;
-            while((bundle = hal_store_popseq_next(seq)) != NULL){
+            while((bundle = hal_store_loadall_next(loader)) != NULL){
                 bundle_processor_inform(
                     config->processor_signaling_queue,
 					(struct bundle_processor_signal) {
-						.type = BP_SIGNAL_BUNDLE_INCOMING,
+						.type = BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
 						.bundle = bundle
                     }
                 );
             }
 
-            hal_store_popseq_free(seq);
+            hal_store_loadall_free(loader);
             free(signal.destination);
         }
     }

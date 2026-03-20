@@ -12,7 +12,7 @@ struct bundle_store {
     const char* identifier;
 };
 
-struct bundle_store_popseq {
+struct bundle_store_loadall {
     struct bundle_store* store;
 };
 
@@ -29,6 +29,12 @@ struct bundle_store* hal_store_init(const char* identifier);
  * @return Whether bundle was correctly persisted
 */
 enum ud3tn_result hal_store_bundle(struct bundle_store* store, struct bundle *bundle);
+
+// TODO Doc
+enum ud3tn_result hal_store_bundle_metadata(struct bundle_store* store, struct bundle *bundle);
+
+// TODO Doc
+enum ud3tn_result hal_store_bundle_delete(struct bundle_store* store, struct bundle *bundle);
 
 /**
  * @brief hal_store_set_uint64_value store a value identified by a key
@@ -48,29 +54,14 @@ enum ud3tn_result hal_store_set_uint64_value(struct bundle_store* store, const c
 */
 uint64_t hal_store_get_uint64_value(struct bundle_store* store, const char* key, uint64_t default_value);
 
-/**
- * @brief hal_store_popseq returns a sequence of bundles available to read
- * 
- * Returned popseq is guarendeed to return only bundles persisted before its creation
- * Ignoring newly persisted bundles (e.g. after a failed routing)
- * 
- * @param store Store to operate on (see hal_store_init)
- * @return A pop sequence iterating over available bundles or NULL if an error occured
-*/
-struct bundle_store_popseq* hal_store_popseq(struct bundle_store* store);
+// TODO Doc
+struct bundle_store_loadall* hal_store_loadall(struct bundle_store* store);
 
-/**
- * @brief hal_store_popseq_next get next bundle in sequence
- * @param popseq Poseq to take bundle from
- * @return a bundle poped from store or NULL if there is no bundle remaining
-*/
-struct bundle* hal_store_popseq_next(struct bundle_store_popseq* popseq);
+// TODO Doc
+struct bundle* hal_store_loadall_next(struct bundle_store_loadall* loader);
 
-/**
- * @brief hal_store_popseq_free free a pop sequence created with hal_store_popseq
- * @param popseq Popseq to free
-*/
-void hal_store_popseq_free(struct bundle_store_popseq* popseq); 
+// TODO Doc
+void hal_store_loadall_free(struct bundle_store_loadall* loader); 
 
 #endif /* HAL_STORE_H_INCLUDED */
 #endif /* ARCHIPEL_CORE */

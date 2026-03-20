@@ -28,9 +28,11 @@ struct bundle_agent_interface {
 };
 
 enum bundle_processor_signal_type {
+	// Signal when a bundle was received from a CLA
 	BP_SIGNAL_BUNDLE_INCOMING,
 	BP_SIGNAL_TRANSMISSION_SUCCESS,
 	BP_SIGNAL_TRANSMISSION_FAILURE,
+	// Signal when a bundle was dispactched locally (from an agent or storage)
 	BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
 	BP_SIGNAL_AGENT_REGISTER,
 	BP_SIGNAL_AGENT_DEREGISTER,
