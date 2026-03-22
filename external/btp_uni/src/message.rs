@@ -451,6 +451,7 @@ impl<'a> MessageIter<'a> {
             if self.repeat > 0 {
                 self.repeat -= 1;
                 self.bytes_read = 0;
+                self.segment_index = 0;
                 self.next(pdu)
             } else {
                 None
@@ -563,7 +564,7 @@ mod tests {
 
     #[test]
     fn multiple_messages() {
-        let mut bundle_buffer: [u8; 1536] = [0; 1536];
+        let mut bundle_buffer: [u8; 1488] = [0; 1488];
         let pdu = 512;
 
         const HINT_SIZE: usize = 4;
@@ -578,14 +579,11 @@ mod tests {
 
         let end =
             pdu - MESSAGE_HEADER_SIZE - HINT_SIZE - TRANSFER_IDENTIFIER_SIZE - SEGMENT_INDEX_SIZE;
-        let mut buf = [0u8; 512];
-        let mesg = iter.next(pdu.try_into().unwrap()).unwrap();
-        mesg.write_to_buf(&mut buf).unwrap();
 
         assert_eq!(
-            Some(mesg),
+            iter.next(pdu.try_into().unwrap()),
             Some(Message::TransferSegment {
-                hint: Some(Hint::BundleLength(1536)),
+                hint: Some(Hint::BundleLength(1488)),
                 segment: Segment {
                     index: 0,
                     transfer_identifier: crate::TransferIdentifier(1),
@@ -604,11 +602,73 @@ mod tests {
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
             Some(Message::TransferSegment {
-                hint: Some(Hint::BundleLength(1536)),
+                hint: Some(Hint::BundleLength(1488)),
                 segment: Segment {
                     index: 1,
                     transfer_identifier: crate::TransferIdentifier(1),
                     data: &bundle_buffer[start..end]
+                }
+            })
+        );
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferEnd {
+                hint: Some(Hint::BundleLength(1488)),
+                segment: Segment {
+                    index: 2,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[end..]
+                }
+            })
+        );
+
+        assert_eq!(iter.next(pdu.try_into().unwrap()), None);
+    }
+
+    #[test]
+    fn repeat_single_message() {
+        let mut iter = MessageIter::new(&[0; 500], crate::TransferIdentifier(1), 1);
+
+        assert_eq!(
+            iter.next(PduSize::new(504).unwrap()),
+            Some(Message::Bundle { content: &[0; 500] })
+        );
+
+        assert_eq!(
+            iter.next(PduSize::new(504).unwrap()),
+            Some(Message::Bundle { content: &[0; 500] })
+        );
+
+        assert_eq!(iter.next(PduSize::new(12).unwrap()), None)
+    }
+
+    #[test]
+    fn repeat_multiple_messages() {
+        let mut bundle_buffer: [u8; 1488] = [0; 1488];
+        let pdu = 512;
+
+        const HINT_SIZE: usize = 4;
+        const TRANSFER_IDENTIFIER_SIZE: usize = size_of::<TransferIdentifier>();
+        const SEGMENT_INDEX_SIZE: usize = size_of::<u32>();
+
+        for (index, value) in bundle_buffer.iter_mut().enumerate() {
+            *value = (index % 256) as u8;
+        }
+
+        let mut iter = MessageIter::new(&bundle_buffer, crate::TransferIdentifier(1), 1);
+
+        let end =
+            pdu - MESSAGE_HEADER_SIZE - HINT_SIZE - TRANSFER_IDENTIFIER_SIZE - SEGMENT_INDEX_SIZE;
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferSegment {
+                hint: Some(Hint::BundleLength(1488)),
+                segment: Segment {
+                    index: 0,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[0..end]
                 }
             })
         );
@@ -623,9 +683,9 @@ mod tests {
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
             Some(Message::TransferSegment {
-                hint: Some(Hint::BundleLength(1536)),
+                hint: Some(Hint::BundleLength(1488)),
                 segment: Segment {
-                    index: 2,
+                    index: 1,
                     transfer_identifier: crate::TransferIdentifier(1),
                     data: &bundle_buffer[start..end]
                 }
@@ -635,9 +695,55 @@ mod tests {
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
             Some(Message::TransferEnd {
-                hint: Some(Hint::BundleLength(1536)),
+                hint: Some(Hint::BundleLength(1488)),
                 segment: Segment {
-                    index: 3,
+                    index: 2,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[end..]
+                }
+            })
+        );
+
+        let end =
+            pdu - MESSAGE_HEADER_SIZE - HINT_SIZE - TRANSFER_IDENTIFIER_SIZE - SEGMENT_INDEX_SIZE;
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferSegment {
+                hint: Some(Hint::BundleLength(1488)),
+                segment: Segment {
+                    index: 0,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[0..end]
+                }
+            })
+        );
+
+        let start = end;
+        let end = end + pdu
+            - MESSAGE_HEADER_SIZE
+            - HINT_SIZE
+            - TRANSFER_IDENTIFIER_SIZE
+            - SEGMENT_INDEX_SIZE;
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferSegment {
+                hint: Some(Hint::BundleLength(1488)),
+                segment: Segment {
+                    index: 1,
+                    transfer_identifier: crate::TransferIdentifier(1),
+                    data: &bundle_buffer[start..end]
+                }
+            })
+        );
+
+        assert_eq!(
+            iter.next(pdu.try_into().unwrap()),
+            Some(Message::TransferEnd {
+                hint: Some(Hint::BundleLength(1488)),
+                segment: Segment {
+                    index: 2,
                     transfer_identifier: crate::TransferIdentifier(1),
                     data: &bundle_buffer[end..]
                 }
