@@ -12,10 +12,6 @@
 //! |                       ... Content ...                         :
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-use core::ops::{Sub, SubAssign};
-
-use libc_print::libc_println;
-
 use crate::TransferIdentifier;
 
 /// Flag indicating that further hint is included in message
@@ -400,12 +396,6 @@ impl<'a> MessageIter<'a> {
     /// Returns the next [Message] of this iterator
     pub fn next(&'_ mut self, pdu: PduSize) -> Option<Message<'_>> {
         let mut mtu = pdu.0 - MESSAGE_HEADER_SIZE;
-
-        libc_println!(
-            "self.bytes_read: {}, self.bundle_buffer.len() - 1: {}",
-            self.bytes_read,
-            self.bundle_buffer.len() - 1
-        );
         if self.bytes_read == 0 && self.bundle_buffer.len() <= mtu {
             let _ = self.repeat.saturating_sub(1);
             self.bytes_read = self.bundle_buffer.len();
@@ -426,7 +416,11 @@ impl<'a> MessageIter<'a> {
                     .expect("Bundle buffer size is larger than u64 max value"),
             );
 
-            if remaining_bytes <= mtu.saturating_sub(hint.size() + 8) {
+            if remaining_bytes
+                <= mtu.saturating_sub(
+                    hint.size() + size_of::<TransferIdentifier>() + size_of::<u32>(),
+                )
+            {
                 self.bytes_read = self.bundle_buffer.len();
                 Some(Message::TransferEnd {
                     hint: Some(hint),
@@ -437,19 +431,15 @@ impl<'a> MessageIter<'a> {
                     },
                 })
             } else {
-                mtu = mtu.saturating_sub(hint.size() + 8);
+                mtu = mtu.saturating_sub(
+                    hint.size() + size_of::<TransferIdentifier>() + size_of::<u32>(),
+                );
 
                 self.bytes_read += mtu;
                 let data = &self.bundle_buffer[start_byte..self.bytes_read];
 
-                libc_println!("segment_index {segment_index}");
                 Some(Message::TransferSegment {
-                    hint: Some(crate::message::Hint::BundleLength(
-                        self.bundle_buffer
-                            .len()
-                            .try_into()
-                            .expect("Bundle buffer size is larger than u64 max value"),
-                    )),
+                    hint: Some(hint),
                     segment: Segment {
                         transfer_identifier: self.transfer_identifier,
                         index: segment_index,
@@ -471,8 +461,6 @@ impl<'a> MessageIter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use libc_print::libc_println;
-
     use crate::{
         TransferIdentifier,
         message::{Hint, MESSAGE_HEADER_SIZE, Message, MessageIter, PduSize, Segment},
@@ -566,16 +554,11 @@ mod tests {
         let mut iter = MessageIter::new(&[0; 500], crate::TransferIdentifier(1), 0);
 
         assert_eq!(
-            iter.next(PduSize::new(504).unwrap())
-                .inspect(|message| libc_println!("message: {message:?}")),
+            iter.next(PduSize::new(504).unwrap()),
             Some(Message::Bundle { content: &[0; 500] })
         );
 
-        assert_eq!(
-            iter.next(PduSize::new(12).unwrap())
-                .inspect(|message| libc_println!("message: {message:?}")),
-            None
-        )
+        assert_eq!(iter.next(PduSize::new(12).unwrap()), None)
     }
 
     #[test]
@@ -584,16 +567,23 @@ mod tests {
         let pdu = 512;
 
         const HINT_SIZE: usize = 4;
+        const TRANSFER_IDENTIFIER_SIZE: usize = size_of::<TransferIdentifier>();
+        const SEGMENT_INDEX_SIZE: usize = size_of::<u32>();
 
         for (index, value) in bundle_buffer.iter_mut().enumerate() {
-            *value = (index % 255) as u8;
+            *value = (index % 256) as u8;
         }
 
-        let mut iter = MessageIter::new(&bundle_buffer, crate::TransferIdentifier(1), 1);
+        let mut iter = MessageIter::new(&bundle_buffer, crate::TransferIdentifier(1), 0);
 
-        let end = pdu - MESSAGE_HEADER_SIZE - HINT_SIZE;
+        let end =
+            pdu - MESSAGE_HEADER_SIZE - HINT_SIZE - TRANSFER_IDENTIFIER_SIZE - SEGMENT_INDEX_SIZE;
+        let mut buf = [0u8; 512];
+        let mesg = iter.next(pdu.try_into().unwrap()).unwrap();
+        mesg.write_to_buf(&mut buf).unwrap();
+
         assert_eq!(
-            iter.next(pdu.try_into().unwrap()),
+            Some(mesg),
             Some(Message::TransferSegment {
                 hint: Some(Hint::BundleLength(1536)),
                 segment: Segment {
@@ -605,11 +595,15 @@ mod tests {
         );
 
         let start = end;
-        let end = end + pdu - MESSAGE_HEADER_SIZE - HINT_SIZE;
+        let end = end + pdu
+            - MESSAGE_HEADER_SIZE
+            - HINT_SIZE
+            - TRANSFER_IDENTIFIER_SIZE
+            - SEGMENT_INDEX_SIZE;
 
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
-            Some(Message::TransferEnd {
+            Some(Message::TransferSegment {
                 hint: Some(Hint::BundleLength(1536)),
                 segment: Segment {
                     index: 1,
@@ -620,14 +614,18 @@ mod tests {
         );
 
         let start = end;
-        let end = end + pdu - MESSAGE_HEADER_SIZE - HINT_SIZE;
+        let end = end + pdu
+            - MESSAGE_HEADER_SIZE
+            - HINT_SIZE
+            - TRANSFER_IDENTIFIER_SIZE
+            - SEGMENT_INDEX_SIZE;
 
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
             Some(Message::TransferSegment {
                 hint: Some(Hint::BundleLength(1536)),
                 segment: Segment {
-                    index: 1,
+                    index: 2,
                     transfer_identifier: crate::TransferIdentifier(1),
                     data: &bundle_buffer[start..end]
                 }
@@ -636,14 +634,16 @@ mod tests {
 
         assert_eq!(
             iter.next(pdu.try_into().unwrap()),
-            Some(Message::TransferSegment {
+            Some(Message::TransferEnd {
                 hint: Some(Hint::BundleLength(1536)),
                 segment: Segment {
-                    index: 0,
+                    index: 3,
                     transfer_identifier: crate::TransferIdentifier(1),
                     data: &bundle_buffer[end..]
                 }
             })
         );
+
+        assert_eq!(iter.next(pdu.try_into().unwrap()), None);
     }
 }
