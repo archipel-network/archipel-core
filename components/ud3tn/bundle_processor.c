@@ -99,7 +99,7 @@ static void bundle_deliver_adu(
 static void bundle_delete(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason);
-static void bundle_discard(struct bundle *bundle);
+static void bundle_discard(struct bundle_store* store, struct bundle *bundle);
 static void bundle_handle_custody_signal(
 	struct bundle_administrative_record *signal);
 static void bundle_dangling(
@@ -137,9 +137,7 @@ static inline void bundle_rem_rc(struct bundle *bundle,
 	bundle->ret_constraints &= ~constraint;
 
 	if (discard && bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE){
-		if(hal_store_bundle_delete(store, bundle) != UD3TN_OK)
-			LOGF_ERROR("BundleProcessor: Failed to delete bundle %p from store", bundle);	
-		bundle_discard(bundle);
+		bundle_discard(store, bundle);
 	} else if(store != NULL)  {
 		if(hal_store_bundle_metadata(store, bundle) != UD3TN_OK)
 				LOGF_ERROR("BundleProcessor: Failed to save bundle %p metadata", bundle);
@@ -494,13 +492,18 @@ static enum ud3tn_result bundle_dispatch(
 		LOGF_INFO("BundleProcessor: Bundle %p persisted", bundle);
 	};
 
-	/* 5.3-1 */
+	enum ud3tn_result deliver_result = UD3TN_FAIL;
+
 	if (bundle_endpoint_is_local(ctx, bundle)) {
+		/* 5.3-1 */
 		bundle_deliver_local(ctx, bundle);
-		return UD3TN_OK;
+		deliver_result = UD3TN_OK;
+	} else {
+		/* 5.3-2 */
+		deliver_result = bundle_forward(ctx, bundle);
 	}
-	/* 5.3-2 */
-	return bundle_forward(ctx, bundle);
+
+	return deliver_result;
 }
 
 enum ud3tn_result bundle_processor_bundle_dispatch(
@@ -741,7 +744,7 @@ static void bundle_deliver_local(
 			bundle
 		);
 		// NOTE: We cannot have custody as the CM checks for duplicates
-		bundle_discard(bundle);
+		bundle_discard(ctx->store, bundle);
 		return;
 	}
 
@@ -788,8 +791,7 @@ static void bundle_deliver_local(
 	} else {
 		struct bundle_adu adu = bundle_to_adu(bundle);
 
-		hal_store_bundle_delete(ctx->store, bundle);
-		bundle_discard(bundle);
+		bundle_discard(ctx->store, bundle);
 		bundle_deliver_adu(ctx, adu);
 	}
 }
@@ -911,7 +913,7 @@ static void try_reassemble(
 		}
 
 		bundle_rem_rc(b, BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING, 0, ctx->store);
-		bundle_discard(b);
+		bundle_discard(ctx->store, b);
 	}
 
 	// Delete slot
@@ -944,7 +946,7 @@ static void bundle_attempt_reassembly(
 			0,
 			ctx->store
 		);
-		bundle_discard(bundle);
+		bundle_discard(ctx->store, bundle);
 	}
 
 	// Find bundle
@@ -1085,18 +1087,18 @@ static void bundle_delete(
 		);
 
 	bundle->ret_constraints &= BUNDLE_RET_CONSTRAINT_NONE;
-	if(hal_store_bundle_delete(ctx->store, bundle) != UD3TN_OK){
-		LOGF_ERROR("BundleProcessor: Failed to delete bundle %p", bundle);
-	} else {
-		LOGF_ERROR("BundleProcessor: Bundle %p deleted from store", bundle);
-	};
-	bundle_discard(bundle);
+	bundle_discard(ctx->store, bundle);
 }
 
 /* 5.14 (RFC 5050) */
 /* 5.15 (BPv7-bis) */
-static void bundle_discard(struct bundle *bundle)
+static void bundle_discard(struct bundle_store* store, struct bundle *bundle)
 {
+	if(hal_store_bundle_delete(store, bundle) != UD3TN_OK){
+		LOGF_ERROR("BundleProcessor: Failed to delete bundle %p", bundle);
+	} else {
+		LOGF_ERROR("BundleProcessor: Bundle %p deleted from store", bundle);
+	};
 	bundle_drop(bundle);
 }
 

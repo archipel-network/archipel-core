@@ -260,8 +260,10 @@ enum ud3tn_result hal_store_bundle_delete(struct bundle_store* base_store, struc
 
     enum ud3tn_result return_result = UD3TN_FAIL;
 
-    if(remove(path) == 0){
+    if(remove(path) == 0 || errno == ENOENT){
         return_result = UD3TN_OK;
+    } else {
+        LOG_ERRNO("HALStore", "Failed to remove bundle", errno);
     };
     remove(metadata_path);
 
