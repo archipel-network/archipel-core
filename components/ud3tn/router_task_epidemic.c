@@ -45,6 +45,8 @@ enum router_result_status router_route_bundle(struct bundle *b)
 		node_list = node_list->next;
 	}
 
+	b->ret_constraints |= BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING;
+
 	return status;
 }
 
