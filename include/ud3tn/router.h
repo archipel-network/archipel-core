@@ -13,10 +13,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef ROUTING_ALGORITHM
+#ifndef ROUTING_LEGACY
 #ifndef ROUTING_EPIDEMIC
 // By default switch to legacy routing
-#warning Archipel is building with legacy routing algorithm because no explicit routing algorithm was defined add ROUTING_LEGACY or ROUTING_EPIDEMIC to remove this warning
+#warning Archipel is building with legacy routing algorithm because no explicit routing algorithm was defined. Define ROUTING_LEGACY or ROUTING_EPIDEMIC to remove this warning
+#define ROUTING_LEGACY
 #endif
 #endif
 
