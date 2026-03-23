@@ -49,6 +49,13 @@ void start_tasks(const struct ud3tn_cmdline_options *const opt)
 
 	LOG_LEVEL = opt->log_level;
 
+	#ifdef ROUTING_EPIDEMIC
+	LOG_INFO("Routing algorithm: epidemic");
+	#endif
+	#ifdef ROUTING_LEGACY
+	LOG_INFO("Routing algorithm: legacy (ud3tn)");
+	#endif
+
 	LOGF_INFO("INIT: Configured to use EID \"%s\" and BPv%d",
 	     opt->eid, opt->bundle_version);
 
