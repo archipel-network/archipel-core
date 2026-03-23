@@ -156,6 +156,66 @@ enum ud3tn_result _hal_store_write_metadata(struct bundle* bundle, FILE* file) {
     return UD3TN_OK;
 }
 
+const size_t STORE_READ_METADATA_BUFFER = 255;
+
+enum ud3tn_result _hal_store_read_metadata(struct bundle* bundle, FILE* file) {
+    char buffer[STORE_READ_METADATA_BUFFER];
+    size_t buffer_offset = 0;
+    size_t buffer_length = 0;
+
+    do {
+        size_t bytes_red = fread(
+            &buffer[buffer_offset], 
+            sizeof(char), STORE_READ_METADATA_BUFFER - buffer_offset,
+            file);
+
+        buffer_length += bytes_red;
+        
+        size_t line_length = 0;
+        while(line_length < buffer_length){
+            if(buffer[line_length] == '\n'){
+                break;
+            }
+            line_length++;
+        }
+
+        if(line_length == 0 && bytes_red == 0){
+            break;
+        }
+
+        char* line_content = malloc(sizeof(char) * (line_length + 1));
+        memcpy(line_content, &buffer, line_length);
+        line_content[line_length] = '\0';
+        
+        if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FORWARD_PENDING) == 0){
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_FORWARD_PENDING;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FLAG_OWN) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_FLAG_OWN;
+            
+        } else {
+            LOGF_WARN("HALStore: Discarded unknown metadata %s", line_content);
+        }
+        
+        free(line_content);
+
+        memcpy(buffer, &buffer[line_length], buffer_length - line_length);
+        buffer_offset = buffer_length - line_length;
+
+    } while(buffer_length > 0);
+
+    return UD3TN_OK;
+}
+
 char* _hal_store_bundle_path(struct posix_bundle_store* store, struct bundle *bundle) {
     // prepare filename
     struct bundle_unique_identifier bundle_id = bundle_get_unique_identifier(bundle);
@@ -495,10 +555,26 @@ struct bundle* hal_store_loadall_next(struct bundle_store_loadall* loader_base) 
         }
 
     } while(basedata == NULL || basedata->status == PARSER_STATUS_GOOD);
-    
-    //TODO Load Metadata
 
     fclose(file);
+
+    if(next_bundle == NULL){
+        LOGF_ERROR("HALStore: No bundle found in %s", item->filepath);
+        goto jump_next;
+    }
+    
+    char* metadata_path = malloc(sizeof(char) * strlen(item->filepath) + 5 + 1);
+    sprintf(metadata_path, "%s.meta", item->filepath);
+
+    FILE* metadata_file = fopen( metadata_path, "r");
+    if(metadata_file != NULL){
+        _hal_store_read_metadata(next_bundle, metadata_file);
+        fclose(metadata_file);
+    } else {
+        LOGF_ERROR("SHALStore: Failed to read metadata from %s: %d (%s)", metadata_path, errno, strerror(errno));
+    }
+    free(metadata_path);
+
 
     jump_next:
     if(next_bundle != NULL)
@@ -506,6 +582,7 @@ struct bundle* hal_store_loadall_next(struct bundle_store_loadall* loader_base) 
     _hal_store_loadall_item_free(item);
     if(next_bundle == NULL)
         return hal_store_loadall_next(loader_base);
+
     return next_bundle;
 }
 
