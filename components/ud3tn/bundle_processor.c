@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause OR Apache-2.0
 #include "ud3tn/agent_manager.h"
 #include "ud3tn/bundle_processor.h"
+#include "ud3tn/bundle.h"
 #include "ud3tn/contact_manager.h"
 #include "ud3tn/common.h"
 #include "ud3tn/eid.h"
@@ -10,18 +11,13 @@
 
 #include "agents/config_agent.h"
 
-#include "bundle6/bundle6.h"
-#include "bundle7/bundle_age.h"
 #include "bundle7/hopcount.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
-#include "platform/hal_task.h"
 #include "platform/hal_store.h"
 #include "platform/hal_time.h"
-
-#include "cbor.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -98,7 +94,7 @@ static void bundle_deliver_adu(
 static void bundle_delete(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason);
-static void bundle_discard(struct bundle *bundle);
+static void bundle_discard(struct bundle_store* store, struct bundle *bundle);
 static void bundle_handle_custody_signal(
 	struct bundle_administrative_record *signal);
 static void bundle_dangling(
@@ -122,17 +118,25 @@ static enum ud3tn_result send_bundle(
 	const struct bp_context *const ctx, struct bundle *bundle);
 
 static inline void bundle_add_rc(struct bundle *bundle,
-	const enum bundle_retention_constraints constraint)
+	const enum bundle_retention_constraints constraint, struct bundle_store* store)
 {
 	bundle->ret_constraints |= constraint;
+	if(store != NULL)
+		if(hal_store_bundle_metadata(store, bundle) != UD3TN_OK)
+			LOGF_ERROR("BundleProcessor: Failed to save bundle %p metadata", bundle);
 }
 
 static inline void bundle_rem_rc(struct bundle *bundle,
-	const enum bundle_retention_constraints constraint, int discard)
+	const enum bundle_retention_constraints constraint, int discard, struct bundle_store* store)
 {
 	bundle->ret_constraints &= ~constraint;
-	if (discard && bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE)
-		bundle_discard(bundle);
+
+	if (discard && bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE){
+		bundle_discard(store, bundle);
+	} else if(store != NULL)  {
+		if(hal_store_bundle_metadata(store, bundle) != UD3TN_OK)
+				LOGF_ERROR("BundleProcessor: Failed to save bundle %p metadata", bundle);
+	}
 }
 
 #ifdef ARCHIPEL_CORE
@@ -475,13 +479,26 @@ static enum ud3tn_result bundle_dispatch(
 		bundle->source,
 		bundle->destination
 	);
-	/* 5.3-1 */
+	
+	// Persist received bundle
+	if(hal_store_bundle(ctx->store, bundle) != UD3TN_OK) {
+		LOGF_ERROR("BundleProcessor: Failed to store bundle %p", bundle);
+	} else {
+		LOGF_INFO("BundleProcessor: Bundle %p persisted", bundle);
+	};
+
+	enum ud3tn_result deliver_result = UD3TN_FAIL;
+
 	if (bundle_endpoint_is_local(ctx, bundle)) {
+		/* 5.3-1 */
 		bundle_deliver_local(ctx, bundle);
-		return UD3TN_OK;
+		deliver_result = UD3TN_OK;
+	} else {
+		/* 5.3-2 */
+		deliver_result = bundle_forward(ctx, bundle);
 	}
-	/* 5.3-2 */
-	return bundle_forward(ctx, bundle);
+
+	return deliver_result;
 }
 
 enum ud3tn_result bundle_processor_bundle_dispatch(
@@ -529,8 +546,8 @@ static enum ud3tn_result bundle_forward(
 	}
 
 	/* 5.4-1 */
-	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING);
-	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
+	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING, ctx->store);
+	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0, ctx->store);
 	/* 5.4-2 */
 	if (send_bundle(ctx, bundle) != UD3TN_OK)
 		return UD3TN_FAIL;
@@ -551,8 +568,8 @@ static void bundle_forwarding_success(
 			BUNDLE_SR_REASON_NO_INFO
 		);
 	}
-	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING, 0);
-	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_FLAG_OWN, 1);
+	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_FORWARD_PENDING, 0, ctx->store);
+	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_FLAG_OWN, 1, ctx->store);
 }
 
 /* 5.4.1 */
@@ -560,45 +577,9 @@ static void bundle_forwarding_contraindicated(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
-	#ifdef ARCHIPEL_CORE
-	if(
-		reason == BUNDLE_SR_REASON_NO_KNOWN_ROUTE ||
-		reason == BUNDLE_SR_REASON_TRANSMISSION_CANCELED
-	){
-
-		switch(reason){
-			case BUNDLE_SR_REASON_NO_KNOWN_ROUTE:
-				LOGF_ERROR("BundleProcessor: No route found for %s", bundle->destination);
-				break;
-			case BUNDLE_SR_REASON_TRANSMISSION_CANCELED:
-				LOGF_ERROR("BundleProcessor: Transmission cancelled for bundle %p", bundle);
-				break;
-			default:
-				break;
-		}
-
-		enum ud3tn_result result = hal_store_bundle(ctx->store, bundle);
-		if(result != UD3TN_OK) {
-			LOGF_ERROR("BundleProcessor: Failed to persist bundle %p", bundle);
-			bundle_forwarding_failed(ctx, bundle, reason);
-		} else {
-			LOGF_ERROR("BundleProcessor: Bundle %s persisted for later dispatch", bundle->destination);
-			bundle_free(bundle);
-		}
-
-	} else {
-		
-		bundle_forwarding_failed(ctx, bundle, reason);
-		/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
-		/* 5.4.1-2 (b): Will not be handled */
-	
-	}
-	#endif
-	#ifndef ARCHIPEL_CORE
-		bundle_forwarding_failed(ctx, bundle, reason);
-		/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
-		/* 5.4.1-2 (b): Will not be handled */
-	#endif
+	bundle_forwarding_failed(ctx, bundle, reason);
+	/* 5.4.1-2 (a): At the moment, custody transfer is declared as failed */
+	/* 5.4.1-2 (b): Will not be handled */
 }
 
 /* 5.4.2 */
@@ -606,11 +587,20 @@ static void bundle_forwarding_failed(
 	const struct bp_context *const ctx,
 	struct bundle *bundle, enum bundle_status_report_reason reason)
 {
-	LOGF_INFO(
-		"BundleProcessor: Deleting bundle %p: Forwarding Failed",
-		bundle
-	);
-	bundle_delete(ctx, bundle, reason);
+	if(bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE){
+		LOGF_INFO(
+			"BundleProcessor: Forwarding Failed, deleting bundle %p",
+			bundle
+		);
+		bundle_delete(ctx, bundle, reason);
+	} else {
+		LOGF_INFO(
+			"BundleProcessor: Forwarding Failed, persisted bundle %p",
+			bundle
+		);
+		hal_store_bundle_metadata(ctx->store, bundle);
+		bundle_free(bundle);
+	}
 }
 
 /* 5.5 */
@@ -634,7 +624,7 @@ static void bundle_receive(struct bp_context *const ctx, struct bundle *bundle)
 	bundle->reception_timestamp_ms = hal_time_get_timestamp_ms();
 
 	/* 5.6-1 Add retention constraint */
-	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
+	bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, ctx->store);
 	/* 5.6-2 Request reception */
 	if (HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_REPORT_RECEPTION))
 		send_status_report(
@@ -723,18 +713,24 @@ static void bundle_deliver_local(
 	if(!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) &&
 		!is_agent_available(agent_id)){
 
-		enum ud3tn_result result = hal_store_bundle(ctx->store, bundle);
-		if(result != UD3TN_OK) {
-			LOGF_ERROR("BundleProcessor: Failed to persist bundle %p, dropping.", bundle);
-		} else {
-			LOGF_INFO("BundleProcessor: Persisted bundle %p for later dispatch", bundle);
-			bundle_free(bundle);
-			return;
+		if(bundle->ret_constraints != BUNDLE_RET_CONSTRAINT_NONE){
+			enum ud3tn_result result = hal_store_bundle_metadata(ctx->store, bundle);
+			if(result != UD3TN_OK) {
+				LOGF_ERROR("BundleProcessor: Failed to persist bundle %p, dropping.", bundle);
+			} else {
+				LOGF_INFO(
+					"BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), saving.",
+					bundle->source,
+					bundle->destination
+				);
+				bundle_free(bundle);
+				return;
+			}
 		}
 
 	}
 
-	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0);
+	bundle_rem_rc(bundle, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, 0, ctx->store);
 
 	/* Check and record knowledge of bundle */
 	if (bundle_record_add_and_check_known(ctx, bundle)) {
@@ -743,7 +739,7 @@ static void bundle_deliver_local(
 			bundle
 		);
 		// NOTE: We cannot have custody as the CM checks for duplicates
-		bundle_discard(bundle);
+		bundle_discard(ctx->store, bundle);
 		return;
 	}
 
@@ -759,27 +755,38 @@ static void bundle_deliver_local(
 
 	if (!HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_ADMINISTRATIVE_RECORD) && agent_id == NULL) {
 		// If it is no admin. record and we have no agent to deliver
-		// it to, drop it.
-		LOGF_INFO(
-			"BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping.",
-			bundle->source,
-			bundle->destination
-		);
-		bundle_delete(
-			ctx,
-			bundle,
-			BUNDLE_SR_REASON_DEST_EID_UNINTELLIGIBLE
-		);
-		return;
+		// it to, save it for later dispatch od drop it.
+		if(bundle->ret_constraints == BUNDLE_RET_CONSTRAINT_NONE){
+			LOGF_INFO(
+				"BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), dropping.",
+				bundle->source,
+				bundle->destination
+			);
+			bundle_delete(
+				ctx,
+				bundle,
+				BUNDLE_SR_REASON_DEST_EID_UNINTELLIGIBLE
+			);
+			return;
+		} else {
+			LOGF_INFO(
+				"BundleProcessor: Received bundle not destined for any registered EID (from = %s, to = %s), saving.",
+				bundle->source,
+				bundle->destination
+			);
+			hal_store_bundle_metadata(ctx->store, bundle);
+			bundle_free(bundle);
+			return;
+		}
 	}
 
 	if (HAS_FLAG(bundle->proc_flags, BUNDLE_FLAG_IS_FRAGMENT)) {
-		bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING);
+		bundle_add_rc(bundle, BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING, ctx->store);
 		bundle_attempt_reassembly(ctx, bundle);
 	} else {
 		struct bundle_adu adu = bundle_to_adu(bundle);
 
-		bundle_discard(bundle);
+		bundle_discard(ctx->store, bundle);
 		bundle_deliver_adu(ctx, adu);
 	}
 }
@@ -900,8 +907,8 @@ static void try_reassemble(
 			pos_in_bundle += bytes_copied;
 		}
 
-		bundle_rem_rc(b, BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING, 0);
-		bundle_discard(b);
+		bundle_rem_rc(b, BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING, 0, ctx->store);
+		bundle_discard(ctx->store, b);
 	}
 
 	// Delete slot
@@ -931,9 +938,10 @@ static void bundle_attempt_reassembly(
 		bundle_rem_rc(
 			bundle,
 			BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING,
-			0
+			0,
+			ctx->store
 		);
-		bundle_discard(bundle);
+		bundle_discard(ctx->store, bundle);
 	}
 
 	// Find bundle
@@ -1074,13 +1082,18 @@ static void bundle_delete(
 		);
 
 	bundle->ret_constraints &= BUNDLE_RET_CONSTRAINT_NONE;
-	bundle_discard(bundle);
+	bundle_discard(ctx->store, bundle);
 }
 
 /* 5.14 (RFC 5050) */
 /* 5.15 (BPv7-bis) */
-static void bundle_discard(struct bundle *bundle)
+static void bundle_discard(struct bundle_store* store, struct bundle *bundle)
 {
+	if(hal_store_bundle_delete(store, bundle) != UD3TN_OK){
+		LOGF_ERROR("BundleProcessor: Failed to delete bundle %p", bundle);
+	} else {
+		LOGF_ERROR("BundleProcessor: Bundle %p deleted from store", bundle);
+	};
 	bundle_drop(bundle);
 }
 
@@ -1143,7 +1156,7 @@ static void send_status_report(
 	);
 
 	if (b != NULL) {
-		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING);
+		bundle_add_rc(b, BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING, ctx->store);
 		if (bundle_forward(ctx, b) != UD3TN_OK)
 			LOGF_INFO(
 				"BundleProcessor: Failed sending status report for bundle %p.",

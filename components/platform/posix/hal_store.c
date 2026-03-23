@@ -7,14 +7,12 @@
  *
  */
 
-#include "bundle7/parser.h"
 #include "bundle6/parser.h"
-#include "ud3tn/common.h"
-#include "ud3tn/parser.h"
+#include "bundle7/parser.h"
+#include "ud3tn/bundle.h"
 #include "ud3tn/result.h"
 #include "platform/hal_store.h"
 #include "platform/hal_io.h"
-#include "platform/hal_semaphore.h"
 #include <stddef.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -30,16 +28,18 @@
 
 struct posix_bundle_store {
     struct bundle_store base;
-
-    Semaphore_t current_sequence_number_sem;
-    uint64_t current_sequence_number;
+    char* datadir;
 };
 
-struct posix_bundle_store_popseq {
-    struct bundle_store_popseq base;
-    uint64_t max_sequence_number;
-    char* folder_path;
-    DIR* dir;
+struct posix_bundle_store_loadall_item {
+    char* filepath;
+    char protocol_version;
+    struct posix_bundle_store_loadall_item* next;
+};
+
+struct posix_bundle_store_loadall {
+    struct bundle_store_loadall base;
+    struct posix_bundle_store_loadall_item* next_item;
 };
 
 struct bundle_store* hal_store_init(const char* identifier) {
@@ -62,18 +62,14 @@ struct bundle_store* hal_store_init(const char* identifier) {
         LOGF_ERROR("Bundle Store : Failed to create folder %s (error %d)", data_path, errno);
         return NULL;
     }
-    free(data_path);
-
+    
     struct posix_bundle_store* s = malloc(sizeof(struct posix_bundle_store));
     if(s == NULL){
         return NULL;
     }
     s->base.identifier = strdup(identifier);
+    s->datadir = data_path;
 
-    s->current_sequence_number = 0;
-    s->current_sequence_number_sem = hal_semaphore_init_binary();
-    s->current_sequence_number = hal_store_get_uint64_value((struct bundle_store*) s, SEQUENCE_NUMBER_KEY, 0);
-    hal_semaphore_release(s->current_sequence_number_sem);
 
     return ((struct bundle_store*) s);
 }
@@ -100,17 +96,127 @@ void write_bundle_to_file(void* file, const void * b, const size_t size){
 	}
 }
 
-enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundle *bundle) {
-    struct posix_bundle_store* store = 
-        (struct posix_bundle_store*) base_store;
+const char* BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED = "RET_CONSTRAINT_CUSTODY_ACCEPTED";
+const char* BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING = "RET_CONSTRAINT_REASSEMBLY_PENDING";
+const char* BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FORWARD_PENDING = "RET_CONSTRAINT_FORWARD_PENDING";
+const char* BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING = "RET_CONSTRAINT_DISPATCH_PENDING";
+const char* BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FLAG_OWN = "RET_CONSTRAINT_FLAG_OWN";
 
-    hal_semaphore_take_blocking(store->current_sequence_number_sem);
-    uint64_t current_seqnum = store->current_sequence_number;
-    hal_semaphore_release(store->current_sequence_number_sem);
+enum ud3tn_result _hal_store_write_metadata(struct bundle* bundle, FILE* file) {
+    if((bundle->ret_constraints & BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED) == BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED){
+        fwrite(
+            BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED,
+            sizeof(char),
+            strlen(BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED),
+            file
+        );
+        fwrite("\n", sizeof(char), 1, file);
+    }
 
-    char* dirpath = malloc(sizeof(char) * (strlen(store->base.identifier) + 5 + 1));
-    sprintf(dirpath, "%s/data", store->base.identifier);
+    if((bundle->ret_constraints & BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING) == BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING){
+        fwrite(
+            BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING,
+            sizeof(char),
+            strlen(BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING),
+            file
+        );
+        fwrite("\n", sizeof(char), 1, file);
+    }
 
+    if((bundle->ret_constraints & BUNDLE_RET_CONSTRAINT_FORWARD_PENDING) == BUNDLE_RET_CONSTRAINT_FORWARD_PENDING){
+        fwrite(
+            BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FORWARD_PENDING,
+            sizeof(char),
+            strlen(BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FORWARD_PENDING),
+            file
+        );
+        fwrite("\n", sizeof(char), 1, file);
+    }
+
+    if((bundle->ret_constraints & BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING) == BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING){
+        fwrite(
+            BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING,
+            sizeof(char),
+            strlen(BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING),
+            file
+        );
+        fwrite("\n", sizeof(char), 1, file);
+    }
+
+    if((bundle->ret_constraints & BUNDLE_RET_CONSTRAINT_FLAG_OWN) == BUNDLE_RET_CONSTRAINT_FLAG_OWN){
+        fwrite(
+            BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FLAG_OWN,
+            sizeof(char),
+            strlen(BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FLAG_OWN),
+            file
+        );
+        fwrite("\n", sizeof(char), 1, file);
+    }
+
+    return UD3TN_OK;
+}
+
+const size_t STORE_READ_METADATA_BUFFER = 255;
+
+enum ud3tn_result _hal_store_read_metadata(struct bundle* bundle, FILE* file) {
+    char buffer[STORE_READ_METADATA_BUFFER];
+    size_t buffer_offset = 0;
+    size_t buffer_length = 0;
+
+    do {
+        size_t bytes_red = fread(
+            &buffer[buffer_offset], 
+            sizeof(char), STORE_READ_METADATA_BUFFER - buffer_offset,
+            file);
+
+        buffer_length += bytes_red;
+        
+        size_t line_length = 0;
+        while(line_length < buffer_length){
+            if(buffer[line_length] == '\n'){
+                break;
+            }
+            line_length++;
+        }
+
+        if(line_length == 0 && bytes_red == 0){
+            break;
+        }
+
+        char* line_content = malloc(sizeof(char) * (line_length + 1));
+        memcpy(line_content, &buffer, line_length);
+        line_content[line_length] = '\0';
+        
+        if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FORWARD_PENDING) == 0){
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_FORWARD_PENDING;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_DISPATCH_PENDING;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_REASSEMBLY_PENDING;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_CUSTODY_ACCEPTED;
+
+        } else if(strcmp(line_content, BUNDLE_METADATA_BUNDLE_RET_CONSTRAINT_FLAG_OWN) == 0) {
+            bundle->ret_constraints |= BUNDLE_RET_CONSTRAINT_FLAG_OWN;
+            
+        } else {
+            LOGF_WARN("HALStore: Discarded unknown metadata %s", line_content);
+        }
+        
+        free(line_content);
+
+        memcpy(buffer, &buffer[line_length], buffer_length - line_length);
+        buffer_offset = buffer_length - line_length;
+
+    } while(buffer_length > 0);
+
+    return UD3TN_OK;
+}
+
+char* _hal_store_bundle_path(struct posix_bundle_store* store, struct bundle *bundle) {
     // prepare filename
     struct bundle_unique_identifier bundle_id = bundle_get_unique_identifier(bundle);
     size_t max_len = (
@@ -129,8 +235,7 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundl
         + 10 // Payload length
     );
     char* filename = malloc(sizeof(char) * (max_len + 1));
-    snprintf(filename, max_len, "%ld-%d_%s_%ld_%ld_%d_%d",
-        current_seqnum,
+    snprintf(filename, max_len, "%d_%s_%ld_%ld_%d_%d",
         bundle_id.protocol_version,
         bundle_id.source,
         bundle_id.creation_timestamp_ms,
@@ -141,11 +246,45 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundl
     bundle_free_unique_identifier(&bundle_id);
     eid_to_filename(filename);
 
-    // create path
-    char* path = malloc(sizeof(char) * (strlen(dirpath) + 1 + max_len));
-    sprintf(path, "%s/%s", dirpath, filename);
+    char* path = malloc(sizeof(char) * (strlen(store->datadir) + 1 + max_len));
+    sprintf(path, "%s/%s", store->datadir, filename);
+
     free(filename);
-    free(dirpath);
+    
+    return path;
+}
+
+enum ud3tn_result hal_store_bundle_metadata(struct bundle_store* base_store, struct bundle *bundle) {
+    struct posix_bundle_store* store = (struct posix_bundle_store*) base_store;
+
+    // create path
+    char* path = _hal_store_bundle_path(store, bundle);
+    char* metadata_path = malloc(sizeof(char) * strlen(path) + 1 + 5);
+    sprintf(metadata_path, "%s.meta", path);
+
+    enum ud3tn_result return_result = UD3TN_FAIL;
+
+    FILE* metadata_fd = fopen(metadata_path, "w");
+    if(metadata_fd){
+        return_result = _hal_store_write_metadata(bundle, metadata_fd);
+        fclose(metadata_fd);
+    } else {
+        LOGF_ERROR("Bundle Store : Failed to create file %s (error %d)", metadata_path, errno);
+    }
+
+    free(path);
+    free(metadata_path);
+    return return_result;
+}
+
+enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundle *bundle) {
+    struct posix_bundle_store* store = 
+        (struct posix_bundle_store*) base_store;
+
+    // create path
+    char* path = _hal_store_bundle_path(store, bundle);
+    char* metadata_path = malloc(sizeof(char) * strlen(path) + 1 + 5);
+    sprintf(metadata_path, "%s.meta", path);
 
     enum ud3tn_result return_result = UD3TN_FAIL;
 
@@ -157,214 +296,40 @@ enum ud3tn_result hal_store_bundle(struct bundle_store* base_store, struct bundl
         LOGF_ERROR("Bundle Store : Failed to create file %s (error %d)", path, errno);
     }
 
+    FILE* metadata_fd = fopen(metadata_path, "w");
+    if(metadata_fd){
+        _hal_store_write_metadata(bundle, metadata_fd);
+        fclose(metadata_fd);
+    } else {
+        LOGF_ERROR("Bundle Store : Failed to create file %s (error %d)", metadata_path, errno);
+    }
+
     free(path);
+    free(metadata_path);
     return return_result;
 }
 
-struct bundle_store_popseq* hal_store_popseq(struct bundle_store* base_store){
-
+enum ud3tn_result hal_store_bundle_delete(struct bundle_store* base_store, struct bundle *bundle) {
     struct posix_bundle_store* store = 
         (struct posix_bundle_store*) base_store;
 
-    hal_semaphore_take_blocking(store->current_sequence_number_sem);
-    const uint64_t max_seqnum = store->current_sequence_number;
-    store->current_sequence_number += 1;
-    hal_store_set_uint64_value(
-        base_store,
-        SEQUENCE_NUMBER_KEY,
-        store->current_sequence_number);
-    hal_semaphore_release(store->current_sequence_number_sem);
+    // create path
+    char* path = _hal_store_bundle_path(store, bundle);
+    char* metadata_path = malloc(sizeof(char) * strlen(path) + 1 + 5);
+    sprintf(metadata_path, "%s.meta", path);
 
-    struct posix_bundle_store_popseq* popseq = malloc(sizeof(struct posix_bundle_store_popseq));
-    popseq->base.store = base_store;
-    popseq->max_sequence_number = max_seqnum;
+    enum ud3tn_result return_result = UD3TN_FAIL;
 
-    popseq->folder_path = malloc(sizeof(char) * (
-        strlen(store->base.identifier)
-        + 5 // /data
-        + 1 // \0
-    ));
-    sprintf(popseq->folder_path, "%s/data", store->base.identifier);
+    if(remove(path) == 0 || errno == ENOENT){
+        return_result = UD3TN_OK;
+    } else {
+        LOG_ERRNO("HALStore", "Failed to remove bundle", errno);
+    };
+    remove(metadata_path);
 
-    popseq->dir = opendir(popseq->folder_path);
-
-    return (struct bundle_store_popseq*) popseq;
-}
-
-void hal_store_popseq_free(struct bundle_store_popseq* base_popseq){
-    struct posix_bundle_store_popseq* popseq = 
-        (struct posix_bundle_store_popseq*) base_popseq;
-
-    closedir(popseq->dir);
-    free(popseq->folder_path);
-    free(popseq);
-}
-
-static void _hal_store_get_bundle(struct bundle *bundle, void* p){
-    struct bundle** bundle_box = (struct bundle**) p;
-    (*bundle_box) = bundle;
-}
-
-struct bundle* hal_store_popseq_next(struct bundle_store_popseq* base_popseq){
-    struct posix_bundle_store_popseq* popseq = 
-        (struct posix_bundle_store_popseq*) base_popseq;
-
-    if(popseq->dir == NULL){
-        return NULL;
-    }
-
-    struct bundle* next_bundle = NULL;
-
-	struct bundle7_parser b7_parser;
-	bundle7_parser_init(&b7_parser, &_hal_store_get_bundle, &next_bundle);
-	b7_parser.bundle_quota = BUNDLE_MAX_SIZE;
-
-	struct bundle6_parser b6_parser;
-	bundle6_parser_init(&b6_parser, &_hal_store_get_bundle, &next_bundle);
-
-    char seqnum_buf[256];
-
-    struct dirent* entry;
-    uintmax_t seqnum;
-    char protocol_version;
-    size_t len = 0;
-    size_t buffer_offset = 0;
-    size_t parsed_bytes = 0;
-    uint8_t buffer[HAL_STORE_READ_BUFFER_SIZE];
-
-    
-    while ((entry = readdir(popseq->dir)) != NULL)
-    {
-        bundle6_parser_reset(&b6_parser);
-        bundle7_parser_reset(&b7_parser);
-
-        if(entry->d_type != 8 /* DT_REG */){
-            continue; // Not a file
-        }
-        
-        for(size_t i = 0; i<256; i++){
-            if(entry->d_name[i] == '-'){
-                if(i+1<256){
-                    if(entry->d_name[i+1] == '7' || entry->d_name[i+1] == '6'){
-                        protocol_version = entry->d_name[i+1];
-                    } else {
-                        continue; // No protocol version in filename
-                    }
-                }
-                break;
-            }
-            if(entry->d_name[i] == '\0'){
-                break;
-            }
-            seqnum_buf[i] = entry->d_name[i];
-        }
-        seqnum = strtoumax(&seqnum_buf[0], NULL, 10);
-        
-        
-        if(seqnum <= popseq->max_sequence_number){
-
-            char* filename = malloc(sizeof(char) * (
-                strlen(popseq->folder_path)
-                + 1
-                + strlen(entry->d_name)
-                + 1
-            ));
-            sprintf(filename, "%s/%s", popseq->folder_path, entry->d_name);
-            FILE* file = fopen( filename,"r");
-
-            if(file == NULL){
-                LOGF_ERROR("Storage: Error opening file %s: %d (%s)", filename, errno, strerror(errno));
-                free(filename);
-                continue; // Error reading file
-            }
-
-            struct parser *basedata = NULL;
-            do {
-
-                if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
-
-                    LOGF_DEBUG("BULK READ REMANING of %d bytes", basedata->next_bytes);
-
-                    len = fread(basedata->next_buffer, sizeof(char), basedata->next_bytes, file);
-                    if(len == 0)
-                        break; // Unexpected end
-
-                    basedata->next_buffer += len;
-                    basedata->next_bytes -= len;
-
-                    // We done filled the buffer
-                    if(basedata->next_bytes == 0){
-                        // Disable bulk read
-                        basedata->flags &= ~PARSER_FLAG_BULK_READ;
-                        // Feed with empty buffer
-                        if(protocol_version == '7'){
-                            bundle7_parser_read(&b7_parser, NULL, 0);
-                        } else if(protocol_version == '6'){
-                            bundle6_parser_read(&b6_parser, NULL, 0);
-                        }
-
-                        len = 0;
-                        buffer_offset = 0;
-                    }
-
-                } else {
-                    if((len-buffer_offset) == 0){
-                        /// All data was red by parser, refill from stream
-                        len = fread(&buffer, sizeof(char), HAL_STORE_READ_BUFFER_SIZE, file);
-                        buffer_offset = 0;
-                        if(len == 0)
-                            break;
-                    }
-
-                    if(protocol_version == '7'){
-                        parsed_bytes = bundle7_parser_read(&b7_parser, buffer+buffer_offset, len-buffer_offset);
-                        basedata = b7_parser.basedata;
-                    } else if(protocol_version == '6'){
-                        parsed_bytes = bundle6_parser_read(&b6_parser, buffer+buffer_offset, len-buffer_offset);
-                        basedata = b6_parser.basedata;
-                    }
-
-                    buffer_offset += parsed_bytes;
-
-                    LOGF_DEBUG("PARSED %d bytes of data", parsed_bytes);
-
-                    if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
-                        // Bulk read requested (data needs to be red in a pre_allocated buffer)
-                        LOGF_DEBUG("BULK READ of %d bytes requested", basedata->next_bytes);
-    
-                        if(len-buffer_offset > 0){
-                            size_t bytes_to_copy = MIN(len-buffer_offset, basedata->next_bytes);
-                            memcpy(basedata->next_buffer, buffer+buffer_offset, bytes_to_copy);
-                            basedata->next_buffer += bytes_to_copy;
-                            basedata->next_bytes -= bytes_to_copy;
-                            buffer_offset -= bytes_to_copy;
-                            LOGF_DEBUG("MOVED %d bytes from local buffer", bytes_to_copy);
-                        }
-    
-                    }
-                }
-
-            } while(basedata == NULL || basedata->status == PARSER_STATUS_GOOD);
-            
-            fclose(file);
-                
-            if(basedata != NULL && basedata->status != PARSER_STATUS_DONE){
-                LOGF_ERROR("Storage: Error parsing bundle file %s", filename);
-            }
-            
-            if(next_bundle != NULL){
-                if(remove(filename)){
-                    LOGF_ERROR("Bundle Store : Error removing file %s: %d (%s)", filename, errno, strerror(errno));
-                }
-                free(filename);
-                break;
-            }
-            
-            free(filename);
-        }
-    }
-
-    return next_bundle;
+    free(path);
+    free(metadata_path);
+    return return_result;
 }
 
 char* _hal_store_get_value_path(struct bundle_store* store, const char* key){
@@ -427,6 +392,198 @@ uint64_t hal_store_get_uint64_value(
 
     free(filepath);
     return value;
+}
+
+struct bundle_store_loadall* hal_store_loadall(struct bundle_store* base_store){
+    struct posix_bundle_store* store = (struct posix_bundle_store*) base_store;
+
+    DIR* dir = opendir(store->datadir);
+    if(dir == NULL){
+        return NULL;
+    }
+
+    struct posix_bundle_store_loadall* loader = malloc(sizeof(struct posix_bundle_store_loadall));
+    loader->base.store = (struct bundle_store*) store;
+    loader->next_item = NULL;
+
+    struct posix_bundle_store_loadall_item** item_container = &loader->next_item;
+    struct dirent* dirent;
+    while((dirent = readdir(dir)) != NULL){
+        if(dirent->d_type != DT_REG){
+            continue;
+        }
+
+        char* ext = dirent->d_name + sizeof(char) * (strlen(dirent->d_name) - 5);
+        if(strcmp(ext, ".meta") == 0){
+            continue;
+        }
+
+        char protocol_version = dirent->d_name[0];
+        if(protocol_version != '7' && protocol_version != '6'){
+            continue;
+        }
+
+        struct posix_bundle_store_loadall_item* item = malloc(sizeof(struct posix_bundle_store_loadall_item));
+        item->filepath = malloc(sizeof(char) * (strlen(store->datadir) + strlen(dirent->d_name) + 1 /* '/' */ + 1 /* \0 */ ));
+        sprintf(item->filepath, "%s/%s", store->datadir, dirent->d_name);
+        item->protocol_version = protocol_version;
+        item->next = NULL;
+        *item_container = item;
+        item_container = &item->next;
+    }
+
+    return (struct bundle_store_loadall*) loader;
+}
+
+void _hal_store_loadall_item_free(struct posix_bundle_store_loadall_item* item){
+    free(item->filepath);
+    if(item->next != NULL)
+        return _hal_store_loadall_item_free(item->next);
+}
+
+void hal_store_loadall_free(struct bundle_store_loadall* loader_base) {
+    struct posix_bundle_store_loadall* loader = (struct posix_bundle_store_loadall*) loader_base;
+
+    if(loader->next_item != NULL)
+        return _hal_store_loadall_item_free(loader->next_item);
+}
+
+static void _hal_store_get_bundle(
+    struct bundle *bundle,
+    void * out
+){
+    *((struct bundle**) out) = bundle;
+}
+
+struct bundle* hal_store_loadall_next(struct bundle_store_loadall* loader_base) {
+    struct posix_bundle_store_loadall* loader = (struct posix_bundle_store_loadall*) loader_base;
+    
+    if(loader->next_item == NULL){
+        return NULL;
+    }
+
+    struct posix_bundle_store_loadall_item* item = loader->next_item;
+    loader->next_item = item->next;
+    item->next = NULL;
+
+    // Bundle parsing
+
+    struct bundle* next_bundle = NULL;
+
+	struct bundle7_parser b7_parser;
+	bundle7_parser_init(&b7_parser, &_hal_store_get_bundle, &next_bundle);
+	b7_parser.bundle_quota = BUNDLE_MAX_SIZE;
+
+	struct bundle6_parser b6_parser;
+	bundle6_parser_init(&b6_parser, &_hal_store_get_bundle, &next_bundle);
+
+    FILE* file = fopen( item->filepath, "r");
+    if(file == NULL){
+        LOGF_ERROR("Storage: Error opening file %s: %d (%s)", item->filepath, errno, strerror(errno));
+        goto jump_next;
+    }
+
+    size_t len = 0;
+    size_t buffer_offset = 0;
+    size_t parsed_bytes = 0;
+    uint8_t buffer[HAL_STORE_READ_BUFFER_SIZE];
+
+    struct parser *basedata = NULL;
+    do {
+
+        if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
+
+            LOGF_DEBUG("BULK READ REMANING of %d bytes", basedata->next_bytes);
+
+            len = fread(basedata->next_buffer, sizeof(char), basedata->next_bytes, file);
+            if(len == 0)
+                break; // Unexpected end
+
+            basedata->next_buffer += len;
+            basedata->next_bytes -= len;
+
+            // We done filled the buffer
+            if(basedata->next_bytes == 0){
+                // Disable bulk read
+                basedata->flags &= ~PARSER_FLAG_BULK_READ;
+                // Feed with empty buffer
+                if(item->protocol_version == '7'){
+                    bundle7_parser_read(&b7_parser, NULL, 0);
+                } else if(item->protocol_version == '6'){
+                    bundle6_parser_read(&b6_parser, NULL, 0);
+                }
+
+                len = 0;
+                buffer_offset = 0;
+            }
+
+        } else {
+            if((len-buffer_offset) == 0){
+                /// All data was red by parser, refill from stream
+                len = fread(&buffer, sizeof(char), HAL_STORE_READ_BUFFER_SIZE, file);
+                buffer_offset = 0;
+                if(len == 0)
+                    break;
+            }
+
+            if(item->protocol_version == '7'){
+                parsed_bytes = bundle7_parser_read(&b7_parser, buffer+buffer_offset, len-buffer_offset);
+                basedata = b7_parser.basedata;
+            } else if(item->protocol_version == '6'){
+                parsed_bytes = bundle6_parser_read(&b6_parser, buffer+buffer_offset, len-buffer_offset);
+                basedata = b6_parser.basedata;
+            }
+
+            buffer_offset += parsed_bytes;
+
+            LOGF_DEBUG("PARSED %d bytes of data", parsed_bytes);
+
+            if(basedata != NULL && HAS_FLAG(basedata->flags, PARSER_FLAG_BULK_READ)){
+                // Bulk read requested (data needs to be red in a pre_allocated buffer)
+                LOGF_DEBUG("BULK READ of %d bytes requested", basedata->next_bytes);
+
+                if(len-buffer_offset > 0){
+                    size_t bytes_to_copy = MIN(len-buffer_offset, basedata->next_bytes);
+                    memcpy(basedata->next_buffer, buffer+buffer_offset, bytes_to_copy);
+                    basedata->next_buffer += bytes_to_copy;
+                    basedata->next_bytes -= bytes_to_copy;
+                    buffer_offset -= bytes_to_copy;
+                    LOGF_DEBUG("MOVED %d bytes from local buffer", bytes_to_copy);
+                }
+
+            }
+        }
+
+    } while(basedata == NULL || basedata->status == PARSER_STATUS_GOOD);
+
+    fclose(file);
+
+    if(next_bundle == NULL){
+        LOGF_ERROR("HALStore: No bundle found in %s", item->filepath);
+        goto jump_next;
+    }
+    
+    char* metadata_path = malloc(sizeof(char) * strlen(item->filepath) + 5 + 1);
+    sprintf(metadata_path, "%s.meta", item->filepath);
+
+    FILE* metadata_file = fopen( metadata_path, "r");
+    if(metadata_file != NULL){
+        _hal_store_read_metadata(next_bundle, metadata_file);
+        fclose(metadata_file);
+    } else {
+        LOGF_ERROR("SHALStore: Failed to read metadata from %s: %d (%s)", metadata_path, errno, strerror(errno));
+    }
+    free(metadata_path);
+
+
+    jump_next:
+    if(next_bundle != NULL)
+        LOGF_DEBUG("Store loaded %s", item->filepath);
+    _hal_store_loadall_item_free(item);
+    if(next_bundle == NULL)
+        return hal_store_loadall_next(loader_base);
+
+    return next_bundle;
 }
 
 #endif

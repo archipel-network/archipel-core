@@ -29,25 +29,22 @@ void bundle_restore_task(void* conf){
             case BUNDLE_RESORE_ALL:
                 __attribute__((assume(signal.destination == NULL)));
 
-                if(signal.type == BUNDLE_RESORE_ALL){
-                    LOG_INFO("BundleRestore : Restoring all stored bundles");
-                }
+            struct bundle_store_loadall* loader = 
+                hal_store_loadall(config->store);
 
-                struct bundle_store_popseq* seq = 
-                    hal_store_popseq(config->store);
-        
-                struct bundle* bundle = NULL;
-                while((bundle = hal_store_popseq_next(seq)) != NULL){
-                    bundle_processor_inform(
-                        config->processor_signaling_queue,
-                        (struct bundle_processor_signal) {
-                            .type = BP_SIGNAL_BUNDLE_INCOMING,
-                            .bundle = bundle
-                        }
-                    );
-                }
-        
-                hal_store_popseq_free(seq);
+            struct bundle* bundle = NULL;
+            while((bundle = hal_store_loadall_next(loader)) != NULL){
+                bundle_processor_inform(
+                    config->processor_signaling_queue,
+					(struct bundle_processor_signal) {
+						.type = BP_SIGNAL_BUNDLE_LOCAL_DISPATCH,
+						.bundle = bundle
+                    }
+                );
+            }
+
+            hal_store_loadall_free(loader);
+            free(signal.destination);
         }
     }
 
