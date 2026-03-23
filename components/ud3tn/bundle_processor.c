@@ -11,18 +11,13 @@
 
 #include "agents/config_agent.h"
 
-#include "bundle6/bundle6.h"
-#include "bundle7/bundle_age.h"
 #include "bundle7/hopcount.h"
 
 #include "platform/hal_io.h"
 #include "platform/hal_queue.h"
 #include "platform/hal_semaphore.h"
-#include "platform/hal_task.h"
 #include "platform/hal_store.h"
 #include "platform/hal_time.h"
-
-#include "cbor.h"
 
 #include <stdbool.h>
 #include <stddef.h>
