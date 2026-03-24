@@ -29,9 +29,9 @@ pub const MIN_BUNDLE_TRANSFER_SIZE: usize = 4 + 4 + 4;
 /// const
 pub struct Sender<'a, const W: usize> {
     window: TransferWindow,
-    low_priority_bundles: Deque<MessageIter<'a>, W>,
-    medium_priority_bundles: Deque<MessageIter<'a>, W>,
-    high_priority_bundles: Deque<MessageIter<'a>, W>,
+    low_priority_bundles: Deque<(MessageIter<'a>, usize), W>,
+    medium_priority_bundles: Deque<(MessageIter<'a>, usize), W>,
+    high_priority_bundles: Deque<(MessageIter<'a>, usize), W>,
 }
 
 impl<'a, const W: usize> Sender<'a, W> {
@@ -70,125 +70,63 @@ impl<'a, const W: usize> Sender<'a, W> {
         self.window.slide_to(id);
 
         self.low_priority_bundles
-            .retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+            .retain(|(message_iter, _)| self.window.is_in(message_iter.transfer_id()));
         self.medium_priority_bundles
-            .retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+            .retain(|(message_iter, _)| self.window.is_in(message_iter.transfer_id()));
         self.high_priority_bundles
-            .retain(|message_iter| self.window.is_in(message_iter.transfer_id()));
+            .retain(|(message_iter, _)| self.window.is_in(message_iter.transfer_id()));
 
         let message_iter: MessageIter<'_> = MessageIter::new(bundle_buf, id, repeat);
 
         match prioriry {
-            Priority::Low => self.low_priority_bundles.push_back(message_iter),
-            Priority::Normal => self.medium_priority_bundles.push_back(message_iter),
-            Priority::High => self.high_priority_bundles.push_back(message_iter),
+            Priority::Low => self.low_priority_bundles.push_back((message_iter, repeat)),
+            Priority::Normal => self
+                .medium_priority_bundles
+                .push_back((message_iter, repeat)),
+            Priority::High => self.high_priority_bundles.push_back((message_iter, repeat)),
         }
         .expect("No more room in bundles queue");
     }
 
     pub fn poll(&mut self, buf: &mut [u8]) -> Result<usize, WriteToError> {
         let mut bytes_written = 0;
-        while bytes_written < buf.len() {
-            let remaining = buf.len() - bytes_written;
+        while let Some(remaining) = buf.len().checked_sub(bytes_written) {
             if remaining > MIN_BUNDLE_TRANSFER_SIZE {
-                if let Some(mut message_iter) = self.high_priority_bundles.pop_front() {
-                    if let Some(message) = message_iter.next(
-                        PduSize::new(buf.len() - bytes_written)
-                            .expect("No remaining space in buffer"),
-                    ) {
+                if let Some(message_iter) = self.high_priority_bundles.front_mut() {
+                    if let Some(message) = message_iter
+                        .0
+                        .next(PduSize::new(remaining).expect("No remaining space in buffer"))
+                    {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
-                        match message {
-                            Message::Bundle { content: _ } => self
-                                .high_priority_bundles
-                                .push_front(message_iter)
-                                .expect("Can't push message iter"),
-                            Message::TransferEnd {
-                                hint: _,
-                                segment: _,
-                            } => self
-                                .high_priority_bundles
-                                .push_front(message_iter)
-                                .expect("Can't push message iter"),
-                            Message::TransferSegment {
-                                hint: _,
-                                segment,
-                            } => {
-                                if segment.index > 0 {
-                                    self.high_priority_bundles
-                                        .push_front(message_iter)
-                                        .expect("Can't push message iter")
-                                }
-                            }
-                            Message::IndefinitePadding(_)
-                            | Message::DefinitePadding(_)
-                            | Message::TransferCancel(_) => unreachable!(),
+                        if matches!(message, Message::TransferEnd { .. }) {
+                            self.high_priority_bundles.pop_front();
                         }
+                    } else {
+                        self.high_priority_bundles.pop_front();
                     }
-                } else if let Some(mut message_iter) = self.medium_priority_bundles.pop_front() {
-                    if let Some(message) = message_iter.next(
-                        PduSize::new(buf.len() - bytes_written)
-                            .expect("No remaining space in buffer"),
-                    ) {
+                } else if let Some(message_iter) = self.medium_priority_bundles.front_mut() {
+                    if let Some(message) = message_iter
+                        .0
+                        .next(PduSize::new(remaining).expect("No remaining space in buffer"))
+                    {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
-                        match message {
-                            Message::Bundle { content: _ } => self
-                                .medium_priority_bundles
-                                .push_front(message_iter)
-                                .expect("Can't push message iter"),
-                            Message::TransferEnd {
-                                hint: _,
-                                segment: _,
-                            } => self
-                                .medium_priority_bundles
-                                .push_front(message_iter)
-                                .expect("Can't push message iter"),
-                            Message::TransferSegment {
-                                hint: _,
-                                segment,
-                            } => {
-                                if segment.index > 0 {
-                                    self.medium_priority_bundles
-                                        .push_front(message_iter)
-                                        .expect("Can't push message iter")
-                                }
-                            }
-                            Message::IndefinitePadding(_)
-                            | Message::DefinitePadding(_)
-                            | Message::TransferCancel(_) => unreachable!(),
+                        if matches!(message, Message::TransferEnd { .. }) {
+                            self.medium_priority_bundles.pop_front();
                         }
+                    } else {
+                        self.medium_priority_bundles.pop_front();
                     }
-                } else if let Some(mut message_iter) = self.low_priority_bundles.pop_front() {
-                    if let Some(message) = message_iter.next(
-                        PduSize::new(buf.len() - bytes_written)
-                            .expect("No remaining space in buffer"),
-                    ) {
+                } else if let Some(message_iter) = self.low_priority_bundles.front_mut() {
+                    if let Some(message) = message_iter
+                        .0
+                        .next(PduSize::new(remaining).expect("No remaining space in buffer"))
+                    {
                         bytes_written += message.write_to_buf(&mut buf[bytes_written..])?;
-                        match message {
-                            Message::Bundle { content: _ } => self
-                                .low_priority_bundles
-                                .push_front(message_iter)
-                                .expect("Can't push message iter"),
-                            Message::TransferEnd {
-                                hint: _,
-                                segment: _,
-                            } => self
-                                .low_priority_bundles
-                                .push_front(message_iter)
-                                .expect("Can't push message iter"),
-                            Message::TransferSegment {
-                                hint: _,
-                                segment,
-                            } => {
-                                if segment.index > 0 {
-                                    self.low_priority_bundles
-                                        .push_front(message_iter)
-                                        .expect("Can't push message iter")
-                                }
-                            }
-                            Message::IndefinitePadding(_)
-                            | Message::DefinitePadding(_)
-                            | Message::TransferCancel(_) => unreachable!(),
+                        if matches!(message, Message::TransferEnd { .. }) {
+                            self.low_priority_bundles.pop_front();
                         }
+                    } else {
+                        self.low_priority_bundles.pop_front();
                     }
                 } else {
                     return Ok(0);
@@ -214,7 +152,7 @@ mod tests {
     fn repeat() {
         let mut sender: Sender<'_, 16> = Sender::new().unwrap();
 
-        sender.queue_bundle(&[1; 500], Priority::Normal, 2);
+        sender.queue_bundle(&[1; 500], Priority::Normal, 1);
 
         let mut out = [0; 1500];
         sender.poll(&mut out).unwrap();
